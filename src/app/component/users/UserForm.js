@@ -186,9 +186,13 @@ const UserForm = ({
           <input
             type="text"
             value={form.mobileNumber}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, mobileNumber: e.target.value }))
-            }
+            maxLength={10}
+            onChange={(e) => {
+              const val = e.target.value.replace(/\D/g, "");
+              if (val.length <= 10) {
+                setForm((f) => ({ ...f, mobileNumber: val }));
+              }
+            }}
             className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
             placeholder="10-digit number"
           />
