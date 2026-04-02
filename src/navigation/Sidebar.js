@@ -13,6 +13,7 @@ import {
   MdQuiz,
   MdSettings,
   MdHistory,
+  MdShoppingCart,
 } from "react-icons/md";
 import { MdChevronLeft, MdChevronRight } from "react-icons/md";
 import { FiMessageCircle } from "react-icons/fi";
@@ -133,6 +134,13 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
               >
                 <MdQuiz size={20} />
                 {!isCollapsed && <span>Questions</span>}
+              </Link>
+              <Link
+                href="/component/product"
+                className={linkClasses("/component/product")}
+              >
+                <MdShoppingCart size={20} />
+                {!isCollapsed && <span>Products</span>}
               </Link>
             </>
           )}

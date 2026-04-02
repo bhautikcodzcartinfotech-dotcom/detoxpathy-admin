@@ -1,7 +1,8 @@
 import axios from "axios";
 
 // export const API_BASE = "http://localhost:3002/api/v1";
-export const API_BASE = "https://backend.fatendfit.com/api/v1";
+export const API_BASE = "http://69.62.73.194:4009/api/v1";
+// export const API_BASE = "https://backend.fatendfit.com/api/v1";
 // Host base used to resolve file URLs coming from multer (e.g., uploads/..)
 export const API_HOST = API_BASE.replace(/\/?api\/?v1\/?$/, "").replace(
   /\/$/,
@@ -768,6 +769,46 @@ export const getSetting = async () => {
 
 export const updateSettingById = async (id, data) => {
   const res = await axios.put(`${API_BASE}/admin/setting/update/${id}`, data, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/* -------------------- PRODUCT APIs -------------------- */
+export const addProduct = async (payload) => {
+  const res = await axios.post(`${API_BASE}/admin/product/add`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const getProduct = async (id) => {
+  const res = await axios.get(`${API_BASE}/user/product/get/${id}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const getAllProducts = async (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.start) queryParams.append('start', params.start);
+  if (params.limit) queryParams.append('limit', params.limit);
+
+  const res = await axios.get(`${API_BASE}/user/product/all?${queryParams.toString()}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const updateProduct = async (id, payload) => {
+  const res = await axios.put(`${API_BASE}/admin/product/update/${id}`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const deleteProduct = async (id) => {
+  const res = await axios.delete(`${API_BASE}/admin/product/delete/${id}`, {
     headers: getAuthHeaders(),
   });
   return res.data;
