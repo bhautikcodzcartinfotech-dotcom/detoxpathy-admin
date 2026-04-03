@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import RoleGuard from "@/components/RoleGuard";
 import { Header } from "@/utils/header";
-import { getSetting, updateSettingById } from "@/Api/AllApi";
+import { getSetting, updateSettingById, listVideos } from "@/Api/AllApi";
 import toast from "react-hot-toast";
 import Loader from "@/utils/loader";
 import RichTextEditor from "@/components/RichTextEditor";
@@ -12,6 +12,19 @@ const SettingsPage = () => {
   const [saving, setSaving] = useState(false);
   const [settings, setSettings] = useState(null);
   const [formData, setFormData] = useState({});
+  const [trialVideos, setTrialVideos] = useState([]);
+  const [loadingTrialVideos, setLoadingTrialVideos] = useState(true);
+
+  // Utility function to transform raw video path to API URL
+  const getVideoUrl = (rawPath) => {
+    if (!rawPath) return '';
+    const normalizedPath = rawPath.replace(/\\/g, '/');
+    const filePath = normalizedPath.startsWith('uploads/') 
+      ? normalizedPath.slice(8) 
+      : normalizedPath;
+    const encodedPath = encodeURIComponent(filePath);
+    return `/api/v1/uploads/${encodedPath}`;
+  };
 
   // Fetch settings
   const fetchSettings = async () => {
@@ -46,6 +59,22 @@ const SettingsPage = () => {
 
   useEffect(() => {
     fetchSettings();
+  }, []);
+
+  useEffect(() => {
+    const fetchTrialVideos = async () => {
+      try {
+        setLoadingTrialVideos(true);
+        const videos = await listVideos({ type: 6, limit: 6, start: 1 });
+        setTrialVideos(videos || []);
+      } catch (error) {
+        console.error("Failed to fetch trial videos:", error);
+        setTrialVideos([]);
+      } finally {
+        setLoadingTrialVideos(false);
+      }
+    };
+    fetchTrialVideos();
   }, []);
 
   // Update settings
@@ -361,31 +390,64 @@ const SettingsPage = () => {
           {/* Video Display */}
           {formData.resumeLink && (
             <div className="bg-gradient-to-br from-white to-yellow-50 rounded-2xl shadow-lg border border-yellow-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <svg
-                  className="w-6 h-6 text-yellow-600"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                  />
-                </svg>
-                Resume Video Preview
-              </h3>
-              <div className="relative">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      
+                {/* Resume Video */}
+                <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <svg
+                    className="w-6 h-6 text-yellow-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
+                  </svg>
+                  Resume Video Preview
+                </h3>
+        
                 <video
-                  src={formData.resumeLink}
+                  src={getVideoUrl(formData.resumeLink)}
                   controls
-                  className="w-full max-w-2xl rounded-xl shadow-lg"
-                  poster=""
+                  className="w-full rounded-xl shadow-lg"
                 >
                   Your browser does not support the video tag.
                 </video>
+                </div>
+                  
+                {/* Trial Video */}
+                <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                  <svg
+                    className="w-6 h-6 text-yellow-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                    />
+                  </svg>
+                  Trial Video Preview
+                </h3>
+        
+                <video
+                  src={getVideoUrl(formData.trialLink || formData.resumeLink)}
+                  controls
+                  className="w-full rounded-xl shadow-lg"
+                >
+                  Your browser does not support the video tag.
+                </video>
+                </div>
+        
               </div>
             </div>
           )}

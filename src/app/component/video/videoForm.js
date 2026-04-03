@@ -305,6 +305,7 @@ const VideoForm = ({
     { label: "Testimonial", value: 3 },
     { label: "Categoywise Testimonial", value: 4 },
     { label: "Resume Plan", value: 5 },
+    { label: "Trial Video", value: 6 },
   ];
 
   const videoTypeOptions = [

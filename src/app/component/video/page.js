@@ -25,14 +25,17 @@ const VideoPage = () => {
   const [editing, setEditing] = useState(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [videoToDelete, setVideoToDelete] = useState(null);
+  const [typeFilter, setTypeFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedDate, setSelectedDate] = useState('');
+  const [planHistoryFilter, setPlanHistoryFilter] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
-  const fetchList = async () => {
+  const fetchList = async (params = {}) => {
     try {
       setListLoading(true);
-      const data = await listVideos();
+      const data = await listVideos(params);
       const videoData = Array.isArray(data) ? data : [];
       setVideos(videoData);
-      setFilteredVideos(videoData);
     } catch (e) {
       setError(e?.response?.data?.message || "Failed to load videos");
       toast.error(e?.response?.data?.message || "Failed to load videos");
@@ -41,36 +44,20 @@ const VideoPage = () => {
     }
   };
 
-  useEffect(() => {
-    fetchList();
-  }, []);
-
-  const handleSearch = (term) => {
-    setSearchLoading(true);
-
-    if (!term) {
-      setFilteredVideos(videos);
-      setSearchLoading(false);
-      return;
-    }
-
-    const filtered = videos.filter((video) => {
-      const searchTerm = term.toLowerCase();
-      return (
-        video.title_english?.toLowerCase().includes(searchTerm) ||
-        video.title_gujarati?.toLowerCase().includes(searchTerm) ||
-        video.title_hindi?.toLowerCase().includes(searchTerm) ||
-        video.description_english?.toLowerCase().includes(searchTerm) ||
-        video.description_gujarati?.toLowerCase().includes(searchTerm) ||
-        video.description_hindi?.toLowerCase().includes(searchTerm) ||
-        video.day?.toString().includes(searchTerm) ||
-        video.category?.categoryTitle?.toLowerCase().includes(searchTerm)
-      );
-    });
-
-    setFilteredVideos(filtered);
-    setSearchLoading(false);
+  const fetchWithFilters = () => {
+    const params = {};
+    if (typeFilter !== 'all') params.type = typeFilter;
+    if (searchTerm) params.search = searchTerm;
+    if (selectedDate) params.startDate = selectedDate;
+    if (planHistoryFilter) params.planHistory = planHistoryFilter;
+    fetchList(params);
   };
+
+  useEffect(() => {
+    fetchWithFilters();
+  }, [typeFilter, searchTerm, selectedDate, planHistoryFilter]);
+
+
 
   const handleSubmit = async (formData) => {
     try {
@@ -87,8 +74,15 @@ const VideoPage = () => {
       setIsOpen(false);
       setEditing(null);
     } catch (err) {
-      setError(err?.response?.data?.message || "Failed to save video");
-      toast.error(err?.response?.data?.message || "Failed to save video");
+      const errorData = err?.response?.data;
+      const errorStr = errorData?.error || errorData?.message || "Failed to save video";
+      
+      if (errorData?.error === 'A video with type 6 already exists.' || errorStr.includes('type 6')) {
+        toast.error("Trial Video is already found");
+      } else {
+        setError(errorStr);
+        toast.error(errorStr);
+      }
     } finally {
       setLoading(false);
     }
@@ -138,7 +132,9 @@ const VideoPage = () => {
         )}
 
         <SearchComponent
-          onSearch={handleSearch}
+          onSearch={setSearchTerm}
+          onFilterChange={setTypeFilter}
+          onDateChange={setSelectedDate}
           searchLoading={searchLoading}
           searchPlaceholder="Search by title, description, day, or category..."
           filterOptions={[
@@ -148,19 +144,21 @@ const VideoPage = () => {
             { label: "Testimonial", value: "3" },
             { label: "Category Testimonial", value: "4" },
             { label: "Resume Plan", value: "5" },
+            { label: "Trial Video", value: "6" },
           ]}
-          filterValue="all"
+          filterValue={typeFilter}
           filterLabel="Type"
+          selectedDate={selectedDate}
         />
 
         {!listLoading && (
           <div className="mb-4 text-sm text-gray-600">
-            Showing {filteredVideos.length} of {videos.length} videos
+            Showing {videos.length} videos
           </div>
         )}
 
         <VideoTable
-          items={filteredVideos}
+          items={videos}
           loading={listLoading}
           onEdit={handleEdit}
           onDelete={handleDelete}
