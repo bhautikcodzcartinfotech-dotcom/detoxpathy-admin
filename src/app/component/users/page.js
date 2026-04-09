@@ -11,6 +11,7 @@ import {
 } from "@/Api/AllApi";
 import UserForm from "./UserForm";
 import UserList from "./UserList";
+import ProgramSuggestionForm from "./ProgramSuggestionForm";
 import SearchComponent from "@/components/SearchComponent";
 import Dropdown from "@/utils/dropdown";
 import toast from "react-hot-toast";
@@ -25,6 +26,8 @@ const UsersPage = () => {
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [editing, setEditing] = useState(null);
+  const [suggestionUser, setSuggestionUser] = useState(null);
+  const [isSuggestOpen, setIsSuggestOpen] = useState(false);
   const [searchLoading, setSearchLoading] = useState(false);
   const [filter, setFilter] = useState("active"); // all | active | inactive
   const [selectedPlan, setSelectedPlan] = useState("");
@@ -228,6 +231,11 @@ const UsersPage = () => {
     setEditing(item);
     setIsOpen(true);
   };
+  
+  const handleSuggest = (item) => {
+    setSuggestionUser(item);
+    setIsSuggestOpen(true);
+  };
 
   const handleDelete = async (id) => {
     try {
@@ -303,6 +311,7 @@ const UsersPage = () => {
             loading={listLoading}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onSuggest={handleSuggest}
           />
         </div>
 
@@ -322,6 +331,22 @@ const UsersPage = () => {
             initialValues={editing}
             submitLabel={editing ? "Update" : "Create"}
           />
+        </Drawer>
+
+        <Drawer isOpen={isSuggestOpen} onClose={() => setIsSuggestOpen(false)}>
+          <div className="mb-6 text-center">
+            <h2 className="text-3xl font-bold text-purple-600">Suggest Programs</h2>
+            {suggestionUser && (
+              <p className="text-sm text-gray-500 mt-1">{suggestionUser.name}</p>
+            )}
+          </div>
+          {suggestionUser && (
+            <ProgramSuggestionForm
+              user={suggestionUser}
+              onCancel={() => setIsSuggestOpen(false)}
+              onSave={() => setIsSuggestOpen(false)}
+            />
+          )}
         </Drawer>
       </div>
     </RoleGuard>

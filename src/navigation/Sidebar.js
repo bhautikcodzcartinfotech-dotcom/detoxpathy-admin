@@ -14,6 +14,8 @@ import {
   MdSettings,
   MdHistory,
   MdShoppingCart,
+  MdAccessTime,
+  MdCalendarMonth,
 } from "react-icons/md";
 import { MdChevronLeft, MdChevronRight } from "react-icons/md";
 import { FiMessageCircle } from "react-icons/fi";
@@ -142,6 +144,20 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                 <MdShoppingCart size={20} />
                 {!isCollapsed && <span>Products</span>}
               </Link>
+              <Link
+                href="/component/program"
+                className={linkClasses("/component/program")}
+              >
+                <MdAssignment size={20} />
+                {!isCollapsed && <span>Programs</span>}
+              </Link>
+              <Link
+                href="/component/order"
+                className={linkClasses("/component/order")}
+              >
+                <MdShoppingCart size={20} />
+                {!isCollapsed && <span>Orders</span>}
+              </Link>
             </>
           )}
         </div>
@@ -162,6 +178,24 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                 <MdPeople size={20} />
                 {!isCollapsed && <span>Users</span>}
               </Link>
+              {role === "subadmin" && (
+                <>
+                  <Link
+                    href="/component/branch-time"
+                    className={linkClasses("/component/branch-time")}
+                  >
+                    <MdAccessTime size={20} />
+                    {!isCollapsed && <span>Branch Time</span>}
+                  </Link>
+                  <Link
+                    href="/component/appointment"
+                    className={linkClasses("/component/appointment")}
+                  >
+                    <MdCalendarMonth size={20} />
+                    {!isCollapsed && <span>Appointments</span>}
+                  </Link>
+                </>
+              )}
 
               {role === "Admin" && (
                 <Link

@@ -60,7 +60,8 @@ const QuestionTable = ({
 
     // If it's an object (new multi-language format), get the specific language
     if (typeof multiLangObj === "object") {
-      return multiLangObj[language] || multiLangObj.english || "";
+      const result = multiLangObj[language] || multiLangObj.english || "";
+      return Array.isArray(result) ? result.join(", ") : result;
     }
 
     return "";

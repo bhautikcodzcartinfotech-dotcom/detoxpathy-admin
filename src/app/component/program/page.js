@@ -4,43 +4,34 @@ import RoleGuard from "@/components/RoleGuard";
 import { Header, Button } from "@/utils/header";
 import Drawer from "@/utils/formanimation";
 import toast from "react-hot-toast";
+import ConfirmationDialog from "@/components/ConfirmationDialog";
 import {
-  getAllProducts,
-  addProduct,
-  updateProduct,
-  deleteProduct,
+  getAllPrograms,
+  createProgram,
+  updateProgram,
+  deleteProgram,
 } from "@/Api/AllApi";
-import ProductForm from "./productForm";
-import ProductTable from "./productTable";
+import ProgramForm from "./programForm";
+import ProgramTable from "./programTable";
 
-const ProductPage = () => {
+const ProgramPage = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [listLoading, setListLoading] = useState(true);
   const [error, setError] = useState("");
   const [items, setItems] = useState([]);
   const [editing, setEditing] = useState(null);
-  const [pagination, setPagination] = useState({
-    start: 1,
-    limit: 10,
-    total: 0,
-  });
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteId, setDeleteId] = useState(null);
 
   const fetchList = async () => {
     try {
       setListLoading(true);
-      const data = await getAllProducts({
-        start: pagination.start,
-        limit: pagination.limit,
-      });
-      setItems(Array.isArray(data?.products) ? data.products : []);
-      setPagination((prev) => ({
-        ...prev,
-        total: data?.total || 0,
-      }));
+      const data = await getAllPrograms();
+      setItems(Array.isArray(data) ? data : []);
     } catch (e) {
-      setError(e?.response?.data?.message || "Failed to load products");
-      toast.error(e?.response?.data?.message || "Failed to load products");
+      setError(e?.response?.data?.message || "Failed to load programs");
+      toast.error(e?.response?.data?.message || "Failed to load programs");
     } finally {
       setListLoading(false);
     }
@@ -48,25 +39,25 @@ const ProductPage = () => {
 
   useEffect(() => {
     fetchList();
-  }, [pagination.start, pagination.limit]);
+  }, []);
 
-  const handleSubmit = async (formData) => {
+  const handleSubmit = async (payload) => {
     try {
       setLoading(true);
       setError("");
       if (editing) {
-        await updateProduct(editing._id, formData);
-        toast.success("Product updated successfully!");
+        await updateProgram(editing._id, payload);
+        toast.success("Program updated successfully!");
       } else {
-        await addProduct(formData);
-        toast.success("Product created successfully!");
+        await createProgram(payload);
+        toast.success("Program created successfully!");
       }
       await fetchList();
       setIsOpen(false);
       setEditing(null);
     } catch (err) {
-      setError(err?.response?.data?.message || "Failed to save product");
-      toast.error(err?.response?.data?.message || "Failed to save product");
+      setError(err?.response?.data?.message || "Failed to save program");
+      toast.error(err?.response?.data?.message || "Failed to save program");
     } finally {
       setLoading(false);
     }
@@ -78,15 +69,21 @@ const ProductPage = () => {
   };
 
   const handleDelete = async (id) => {
+    setDeleteId(id);
+    setIsDeleting(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteId) return;
     try {
       setLoading(true);
-      setError("");
-      await deleteProduct(id);
+      await deleteProgram(deleteId);
+      toast.success("Program deleted successfully!");
+      setIsDeleting(false);
+      setDeleteId(null);
       await fetchList();
-      toast.success("Product deleted successfully!");
     } catch (err) {
-      setError(err?.response?.data?.message || "Failed to delete product");
-      toast.error(err?.response?.data?.message || "Failed to delete product");
+      toast.error(err?.response?.data?.message || "Failed to delete program");
     } finally {
       setLoading(false);
     }
@@ -96,8 +93,8 @@ const ProductPage = () => {
     <RoleGuard allow={["Admin"]}>
       <div className="w-full h-full px-18">
         <div className="flex items-center justify-between mb-4">
-          <Header size="3xl">Products</Header>
-          <Button onClick={() => setIsOpen(true)}>Create Product</Button>
+          <Header size="3xl">Programs</Header>
+          <Button onClick={() => setIsOpen(true)}>Create Program</Button>
         </div>
 
         {error && (
@@ -106,20 +103,23 @@ const ProductPage = () => {
           </div>
         )}
 
-        <ProductTable
+        <ProgramTable
           items={items}
           loading={listLoading}
           onEdit={handleEdit}
           onDelete={handleDelete}
         />
 
-        <Drawer isOpen={isOpen} onClose={() => setIsOpen(false)}>
+        <Drawer isOpen={isOpen} onClose={() => {
+            setIsOpen(false);
+            setEditing(null);
+        }}>
           <div className="mb-6 text-center">
             <h2 className="text-3xl font-bold text-yellow-600">
-              {editing ? "Update Product" : "Create Product"}
+              {editing ? "Update Program" : "Create Program"}
             </h2>
           </div>
-          <ProductForm
+          <ProgramForm
             onSubmit={handleSubmit}
             onCancel={() => {
               setIsOpen(false);
@@ -130,9 +130,22 @@ const ProductPage = () => {
             submitLabel={editing ? "Update" : "Create"}
           />
         </Drawer>
+
+        <ConfirmationDialog
+          isOpen={isDeleting}
+          onClose={() => {
+            setIsDeleting(false);
+            setDeleteId(null);
+          }}
+          onConfirm={confirmDelete}
+          title="Delete Program"
+          message="Are you sure you want to delete this program? This action cannot be undone."
+          confirmText="Delete"
+          type="danger"
+        />
       </div>
     </RoleGuard>
   );
 };
 
-export default ProductPage;
+export default ProgramPage;

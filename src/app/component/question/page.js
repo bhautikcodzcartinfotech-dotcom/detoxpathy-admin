@@ -13,6 +13,7 @@ import {
   deleteQuestion,
   createQuestionByVideoId,
   createQuestionDaily,
+  updateQuestion,
 } from "@/Api/AllApi";
 import toast from "react-hot-toast";
 
@@ -88,21 +89,33 @@ const QuestionPage = () => {
     try {
       setLoading(true);
 
-      if (questionType === "video") {
-        // Check if videoId is in formData or selectedVideoId
-        const videoId = formData.videoId || selectedVideoId;
-
-        if (!videoId) {
-          toast.error("Please select a video first");
-          return;
+      if (editing) {
+        if (questionType === "video") {
+          const videoId = formData.videoId || selectedVideoId;
+          if (!videoId) {
+            toast.error("Please select a video first");
+            return;
+          }
+          formData.videoId = videoId;
         }
-        formData.videoId = videoId;
-        await createQuestionByVideoId(formData);
+        await updateQuestion(editing._id, formData);
+        toast.success("Question updated successfully");
       } else {
-        await createQuestionDaily(formData);
-      }
+        if (questionType === "video") {
+          // Check if videoId is in formData or selectedVideoId
+          const videoId = formData.videoId || selectedVideoId;
 
-      toast.success("Question created successfully");
+          if (!videoId) {
+            toast.error("Please select a video first");
+            return;
+          }
+          formData.videoId = videoId;
+          await createQuestionByVideoId(formData);
+        } else {
+          await createQuestionDaily(formData);
+        }
+        toast.success("Question created successfully");
+      }
       setIsOpen(false);
       setEditing(null);
       fetchQuestions();

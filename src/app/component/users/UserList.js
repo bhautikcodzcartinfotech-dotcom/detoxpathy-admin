@@ -47,7 +47,7 @@ const ThemedCheckbox = ({ checked, onChange, ariaLabel, disabled = false }) => {
   );
 };
 
-const UserList = ({ users, loading, onEdit, onDelete, onBulkDelete }) => {
+const UserList = ({ users, loading, onEdit, onDelete, onBulkDelete, onSuggest }) => {
   const router = useRouter();
   const [deleteDialog, setDeleteDialog] = useState({
     isOpen: false,
@@ -275,6 +275,12 @@ const UserList = ({ users, loading, onEdit, onDelete, onBulkDelete }) => {
                     </span>
                   </td>
                   <td className="px-6 py-4 text-center space-x-2">
+                    <ActionButton
+                      type="suggest"
+                      onClick={() => onSuggest(u)}
+                      disabled={isDeleted}
+                      title="Suggest Program"
+                    />
                     <ActionButton
                       type="edit"
                       onClick={() => onEdit(u)}

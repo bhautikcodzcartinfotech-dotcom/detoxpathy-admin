@@ -18,14 +18,18 @@ const QuestionForm = ({
     questionText_english: "",
     questionText_gujarati: "",
     questionText_hindi: "",
-    correctAnswer_english: "",
-    correctAnswer_gujarati: "",
-    correctAnswer_hindi: "",
+    correctAnswer1_english: "",
+    correctAnswer2_english: "",
+    correctAnswer1_gujarati: "",
+    correctAnswer2_gujarati: "",
+    correctAnswer1_hindi: "",
+    correctAnswer2_hindi: "",
     section: "first",
     videoId: selectedVideoId || "",
   });
 
   const [errors, setErrors] = useState({});
+  const [copyAnswersToAll, setCopyAnswersToAll] = useState(false);
 
   useEffect(() => {
     if (editing) {
@@ -42,18 +46,12 @@ const QuestionForm = ({
           editing.questionTextMultiLang?.hindi ||
           editing.questionText?.hindi ||
           "",
-        correctAnswer_english:
-          editing.correctAnswerMultiLang?.english ||
-          editing.correctAnswer?.english ||
-          "",
-        correctAnswer_gujarati:
-          editing.correctAnswerMultiLang?.gujarati ||
-          editing.correctAnswer?.gujarati ||
-          "",
-        correctAnswer_hindi:
-          editing.correctAnswerMultiLang?.hindi ||
-          editing.correctAnswer?.hindi ||
-          "",
+        correctAnswer1_english: editing.correctAnswerMultiLang?.english?.[0] || editing.correctAnswer?.english?.[0] || "",
+        correctAnswer2_english: editing.correctAnswerMultiLang?.english?.[1] || editing.correctAnswer?.english?.[1] || "",
+        correctAnswer1_gujarati: editing.correctAnswerMultiLang?.gujarati?.[0] || editing.correctAnswer?.gujarati?.[0] || "",
+        correctAnswer2_gujarati: editing.correctAnswerMultiLang?.gujarati?.[1] || editing.correctAnswer?.gujarati?.[1] || "",
+        correctAnswer1_hindi: editing.correctAnswerMultiLang?.hindi?.[0] || editing.correctAnswer?.hindi?.[0] || "",
+        correctAnswer2_hindi: editing.correctAnswerMultiLang?.hindi?.[1] || editing.correctAnswer?.hindi?.[1] || "",
         section: editing.section || "first",
         videoId: editing.videoId || selectedVideoId || "",
       });
@@ -80,17 +78,25 @@ const QuestionForm = ({
       newErrors.questionText_hindi = "Hindi question text is required";
     }
 
-    // Validate correct answer only for video questions, not for daily questions
+    // Validate correct answers 1 and 2 only for video questions, not for daily questions
     if (questionType === "video") {
-      if (!form.correctAnswer_english.trim()) {
-        newErrors.correctAnswer_english = "English correct answer is required";
+      if (!form.correctAnswer1_english.trim()) {
+        newErrors.correctAnswer1_english = "English correct answer 1 is required";
       }
-      if (!form.correctAnswer_gujarati.trim()) {
-        newErrors.correctAnswer_gujarati =
-          "Gujarati correct answer is required";
+      if (!form.correctAnswer2_english.trim()) {
+        newErrors.correctAnswer2_english = "English correct answer 2 is required";
       }
-      if (!form.correctAnswer_hindi.trim()) {
-        newErrors.correctAnswer_hindi = "Hindi correct answer is required";
+      if (!form.correctAnswer1_gujarati.trim()) {
+        newErrors.correctAnswer1_gujarati = "Gujarati correct answer 1 is required";
+      }
+      if (!form.correctAnswer2_gujarati.trim()) {
+        newErrors.correctAnswer2_gujarati = "Gujarati correct answer 2 is required";
+      }
+      if (!form.correctAnswer1_hindi.trim()) {
+        newErrors.correctAnswer1_hindi = "Hindi correct answer 1 is required";
+      }
+      if (!form.correctAnswer2_hindi.trim()) {
+        newErrors.correctAnswer2_hindi = "Hindi correct answer 2 is required";
       }
     }
 
@@ -114,14 +120,24 @@ const QuestionForm = ({
     let formData = { ...form };
 
     // For daily questions, don't include correct answer fields
+    // For video questions, don't include section
     if (questionType === "daily") {
       const {
-        correctAnswer_english,
-        correctAnswer_gujarati,
-        correctAnswer_hindi,
+        correctAnswer1_english, correctAnswer2_english,
+        correctAnswer1_gujarati, correctAnswer2_gujarati,
+        correctAnswer1_hindi, correctAnswer2_hindi,
         ...dailyFormData
       } = form;
       formData = dailyFormData;
+    } else if (questionType === "video") {
+      delete formData.section;
+      formData.correctAnswer_english = [formData.correctAnswer1_english, formData.correctAnswer2_english].filter(Boolean);
+      formData.correctAnswer_gujarati = [formData.correctAnswer1_gujarati, formData.correctAnswer2_gujarati].filter(Boolean);
+      formData.correctAnswer_hindi = [formData.correctAnswer1_hindi, formData.correctAnswer2_hindi].filter(Boolean);
+      
+      delete formData.correctAnswer1_english; delete formData.correctAnswer2_english;
+      delete formData.correctAnswer1_gujarati; delete formData.correctAnswer2_gujarati;
+      delete formData.correctAnswer1_hindi; delete formData.correctAnswer2_hindi;
     }
 
     // Just call onSubmit - let the parent handle the API calls
@@ -129,11 +145,34 @@ const QuestionForm = ({
   };
 
   const handleInputChange = (field, value) => {
-    setForm((prev) => ({ ...prev, [field]: value }));
+    setForm((prev) => {
+      const next = { ...prev, [field]: value };
+      // Auto-copy for correct answers if checkbox is checked
+      if (copyAnswersToAll && field.endsWith('_english') && field.startsWith('correctAnswer')) {
+        const fieldType = field.replace('_english', '');
+        next[`${fieldType}_gujarati`] = value;
+        next[`${fieldType}_hindi`] = value;
+      }
+      return next;
+    });
 
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: "" }));
+    }
+  };
+
+  const handleCopyChange = (e) => {
+    const checked = e.target.checked;
+    setCopyAnswersToAll(checked);
+    if (checked) {
+      setForm((prev) => ({
+        ...prev,
+        correctAnswer1_gujarati: prev.correctAnswer1_english,
+        correctAnswer2_gujarati: prev.correctAnswer2_english,
+        correctAnswer1_hindi: prev.correctAnswer1_english,
+        correctAnswer2_hindi: prev.correctAnswer2_english,
+      }));
     }
   };
 
@@ -241,27 +280,85 @@ const QuestionForm = ({
 
         {/* Correct Answer - Multi-Language (only for video questions) */}
         {questionType === "video" && (
-          <MultiLanguageInput
-            label="Correct Answer"
-            icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-            values={{
-              correctAnswer_english: form.correctAnswer_english,
-              correctAnswer_gujarati: form.correctAnswer_gujarati,
-              correctAnswer_hindi: form.correctAnswer_hindi,
-            }}
-            onChange={(values) => {
-              setForm((f) => ({
-                ...f,
-                correctAnswer_english: values.correctAnswer_english,
-                correctAnswer_gujarati: values.correctAnswer_gujarati,
-                correctAnswer_hindi: values.correctAnswer_hindi,
-              }));
-            }}
-            errors={errors}
-            type="textarea"
-            rows={3}
-            sectionClassName="from-amber-50 to-yellow-50 border-amber-200"
-          />
+          <div className="bg-gradient-to-r from-amber-50 to-yellow-50 p-4 rounded-xl border border-amber-200">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
+                <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Correct Answers
+              </h3>
+
+              <label className="flex items-center cursor-pointer group">
+                <div className="relative">
+                  <input
+                    type="checkbox"
+                    checked={copyAnswersToAll}
+                    onChange={handleCopyChange}
+                    className="sr-only"
+                  />
+                  <div
+                    className={`w-6 h-6 rounded-lg border-2 transition-all duration-200 flex items-center justify-center ${
+                      copyAnswersToAll
+                        ? "bg-gradient-to-br from-yellow-400 to-amber-500 border-yellow-500 shadow-lg shadow-yellow-200"
+                        : "bg-white border-yellow-300 group-hover:border-yellow-400 group-hover:shadow-md"
+                    }`}
+                  >
+                    {copyAnswersToAll && (
+                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      </svg>
+                    )}
+                  </div>
+                </div>
+              </label>
+            </div>
+            
+            <div className="space-y-6">
+              {['english', 'gujarati', 'hindi'].map((lang) => {
+                const isDisabled = copyAnswersToAll && lang !== 'english';
+                return (
+                <div key={lang} className="p-4 bg-white rounded-lg border border-yellow-200 shadow-sm">
+                  <label className="block text-md font-bold text-gray-700 mb-3 capitalize flex items-center gap-2">
+                    {lang}
+                    {isDisabled && (
+                      <span className="text-xs font-normal bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full">
+                        Auto-filled
+                      </span>
+                    )}
+                  </label>
+                  <div className="space-y-3">
+                    <div>
+                      <textarea
+                        placeholder={`Enter ${lang} Answer 1`}
+                        value={form[`correctAnswer1_${lang}`]}
+                        onChange={(e) => handleInputChange(`correctAnswer1_${lang}`, e.target.value)}
+                        className={`w-full border rounded-lg p-3 focus:outline-none focus:ring-2 transition ${isDisabled ? 'bg-yellow-50 border-yellow-300 focus:ring-yellow-400' : 'border-yellow-400 focus:ring-yellow-400'}`}
+                        rows={2}
+                        disabled={isDisabled}
+                      />
+                      {errors[`correctAnswer1_${lang}`] && (
+                        <p className="text-amber-600 text-sm mt-1">{errors[`correctAnswer1_${lang}`]}</p>
+                      )}
+                    </div>
+                    <div>
+                      <textarea
+                        placeholder={`Enter ${lang} Answer 2`}
+                        value={form[`correctAnswer2_${lang}`]}
+                        onChange={(e) => handleInputChange(`correctAnswer2_${lang}`, e.target.value)}
+                        className={`w-full border rounded-lg p-3 focus:outline-none focus:ring-2 transition ${isDisabled ? 'bg-yellow-50 border-yellow-300 focus:ring-yellow-400' : 'border-yellow-200 bg-yellow-50 focus:ring-yellow-400'}`}
+                        rows={2}
+                        disabled={isDisabled}
+                      />
+                      {errors[`correctAnswer2_${lang}`] && (
+                        <p className="text-amber-600 text-sm mt-1">{errors[`correctAnswer2_${lang}`]}</p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )})}
+            </div>
+          </div>
         )}
 
         {/* Form Actions */}

@@ -9,6 +9,7 @@ import {
   getUserOverview,
   holdUserPlan,
   resumeUserPlan,
+  getUserVideoAnswers,
 } from "@/Api/AllApi";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import toast from "react-hot-toast";
@@ -23,6 +24,7 @@ const UserProfilePage = () => {
   const [selectedDay, setSelectedDay] = useState(null); // for popup
   const [closing, setClosing] = useState(false);
   const [planActionLoading, setPlanActionLoading] = useState(false);
+  const [videoAnswers, setVideoAnswers] = useState([]);
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
     title: "",
@@ -37,6 +39,14 @@ const UserProfilePage = () => {
         setLoading(true);
         const data = await getUserOverview(userId);
         setOverview(data || null);
+
+        // Fetch user video answers
+        try {
+          const vData = await getUserVideoAnswers(userId);
+          setVideoAnswers(vData || []);
+        } catch (err) {
+          console.error("Failed to load video answers", err);
+        }
       } catch {
         setOverview(null);
       } finally {
@@ -293,6 +303,38 @@ const UserProfilePage = () => {
                     {overview.user?.language || "-"}
                   </div>
                 </div>
+                <div className="p-5 rounded-xl bg-amber-100 shadow-sm">
+                  <div className="text-gray-500">Trial Booked</div>
+                  <div className="font-semibold text-gray-800">
+                    {overview.user?.bookTrial ? "Yes" : "No"}
+                  </div>
+                </div>
+                <div className="p-5 rounded-xl bg-amber-100 shadow-sm">
+                  <div className="text-gray-500">Medical Condition</div>
+                  <div className="font-semibold text-gray-800">
+                    {Array.isArray(overview.user?.medicalDescription)
+                      ? (overview.user.medicalDescription.length > 0 ? overview.user.medicalDescription.join(", ") : "-")
+                      : (typeof overview.user?.medicalDescription === "string" && overview.user.medicalDescription.trim() !== ""
+                        ? overview.user.medicalDescription
+                        : "-")}
+                  </div>
+                </div>
+                <div className="p-5 rounded-xl bg-amber-100 shadow-sm">
+                  <div className="text-gray-500">App Referer</div>
+                  <div className="font-semibold text-gray-800">
+                    {overview.user?.appReferer || "-"}
+                  </div>
+                </div>
+                <div className="p-5 rounded-xl bg-amber-100 shadow-sm col-span-2 md:col-span-3">
+                  <div className="text-gray-500">Body Measurements</div>
+                  <div className="font-semibold text-gray-800 flex flex-wrap gap-x-6 gap-y-2 mt-1">
+                    <span>Arm: {overview.user?.Arm || "-"}</span>
+                    <span>Chest: {overview.user?.Chest || "-"}</span>
+                    <span>Hip: {overview.user?.Hip || "-"}</span>
+                    <span>Thigh: {overview.user?.Thigh || "-"}</span>
+                    <span>Waist: {overview.user?.Waist || "-"}</span>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -305,9 +347,8 @@ const UserProfilePage = () => {
                       Plan Management
                     </h3>
                     <span
-                      className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold ${
-                        getPlanStatus().color
-                      }`}
+                      className={`inline-flex items-center px-4 py-2 rounded-full text-sm font-semibold ${getPlanStatus().color
+                        }`}
                     >
                       <span className="mr-2">{getPlanStatus().icon}</span>
                       {getPlanStatus().status}
@@ -449,7 +490,7 @@ const UserProfilePage = () => {
                     </div>
                     <div className="space-y-3">
                       {overview.user.planHoldDate &&
-                      !overview.user.planResumeDate ? (
+                        !overview.user.planResumeDate ? (
                         <button
                           onClick={handleResumePlan}
                           disabled={planActionLoading}
@@ -575,7 +616,7 @@ const UserProfilePage = () => {
                 <span className="text-sm text-gray-500">Recent first</span>
               </div>
               {Array.isArray(overview.planHistory) &&
-              overview.planHistory.length ? (
+                overview.planHistory.length ? (
                 <div className="space-y-4">
                   {overview.planHistory.map((h) => (
                     <div
@@ -600,15 +641,56 @@ const UserProfilePage = () => {
                 <div className="text-gray-500">No plan changes yet.</div>
               )}
             </div>
+
+            {/* ------------------ Video Answers ------------------ */}
+            <div className="p-6 mx-8 bg-white rounded-2xl shadow-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-gray-800">
+                  Video Answers
+                </h3>
+              </div>
+              {videoAnswers && videoAnswers.length > 0 ? (
+                <div className="space-y-6">
+                  {videoAnswers.map((va) => (
+                    <div
+                      key={va._id}
+                      className="rounded-xl border border-amber-200 overflow-hidden shadow-sm"
+                    >
+                      <div className="bg-amber-100 px-4 py-3 border-b border-amber-200 flex justify-between items-center">
+                        <span className="font-semibold text-gray-800">
+                          Video: {va.videoId?.title?.english || "Unknown Title"}
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {new Date(va.createdAt).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="p-4 bg-yellow-50 flex flex-col gap-3">
+                        {va.answers && va.answers.length > 0 ? (
+                          va.answers.map((ans, i) => (
+                            <div key={i} className="flex flex-col border-b border-yellow-200 pb-2 last:border-0 last:pb-0">
+                              <span className="text-sm font-medium text-gray-700 tracking-wide">Question : {ans.questionId?.questionText?.english || ans.questionId || "Unknown Question"}</span>
+                              <span className="text-md text-gray-900 mt-1 font-semibold">Answer : {ans.answer}</span>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="text-sm text-gray-500">No answers recorded.</div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-gray-500">No video answers available.</div>
+              )}
+            </div>
           </div>
         )}
 
         {/* ------------------ Popup Modal ------------------ */}
         {selectedDay && (
           <div
-            className={`fixed inset-0 flex items-center justify-center z-50 bg-black/50 ${
-              closing ? "animate-fade-out" : "animate-fade-in"
-            }`}
+            className={`fixed inset-0 flex items-center justify-center z-50 bg-black/50 ${closing ? "animate-fade-out" : "animate-fade-in"
+              }`}
           >
             <div className="bg-white w-[90%] md:w-[70%] lg:w-[50%] rounded-2xl shadow-2xl p-6 relative max-h-[90vh] overflow-y-auto">
               {/* Close Button */}

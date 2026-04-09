@@ -1,6 +1,6 @@
 import axios from "axios";
 
-// export const API_BASE = "http://localhost:3002/api/v1";
+// export const API_BASE = "http://192.168.29.228:3002/api/v1";
 export const API_BASE = "http://69.62.73.194:4009/api/v1";
 // export const API_BASE = "https://backend.fatendfit.com/api/v1";
 // Host base used to resolve file URLs coming from multer (e.g., uploads/..)
@@ -36,7 +36,7 @@ if (typeof window !== "undefined" && !axios.__AUTH_INTERCEPTOR_INSTALLED__) {
         try {
           localStorage.removeItem("token");
           localStorage.removeItem("user");
-        } catch {}
+        } catch { }
         // Redirect to login
         window.location.replace("/login");
       }
@@ -391,6 +391,15 @@ export const updateAdminProfile = async (payload) => {
 export const getUserOverview = async (userId) => {
   const res = await axios.get(`${API_BASE}/admin/user-overview/${userId}`, {
     headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const getUserVideoAnswers = async (userId) => {
+  const res = await axios.get(`${API_BASE}/admin/userAns/getUserAnswers`, {
+    headers: getAuthHeaders(),
+    params: { userId },
+    data: { userId }
   });
   return res.data.data;
 };
@@ -794,11 +803,59 @@ export const getAllProducts = async (params = {}) => {
   if (params.start) queryParams.append('start', params.start);
   if (params.limit) queryParams.append('limit', params.limit);
 
-  const res = await axios.get(`${API_BASE}/user/product/all?${queryParams.toString()}`, {
+  const res = await axios.get(`${API_BASE}/admin/product/all?${queryParams.toString()}`, {
     headers: getAuthHeaders(),
   });
   return res.data.data;
 };
+
+/* -------------------- BRANCH TIME APIs -------------------- */
+export const getBranchTime = async (branchId) => {
+  const res = await axios.get(`${API_BASE}/admin/branchTime/${branchId}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const getAppointmentsByBranch = async (branchId, params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.date) queryParams.append('date', params.date);
+  if (params.status) queryParams.append('status', params.status);
+  if (params.type) queryParams.append('type', params.type);
+
+  let url = `${API_BASE}/admin/appointment/get/${branchId}`;
+  if (queryParams.toString()) {
+    url += `?${queryParams.toString()}`;
+  }
+
+  const res = await axios.get(url, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const deleteAppointment = async (appointmentId) => {
+  const res = await axios.delete(`${API_BASE}/admin/appointment/delete/${appointmentId}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+export const createBranchTime = async (payload) => {
+  const res = await axios.post(`${API_BASE}/admin/branchTime/create`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const updateBranchTime = async (branchId, payload) => {
+  const res = await axios.put(`${API_BASE}/admin/branchTime/${branchId}`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+
 
 export const updateProduct = async (id, payload) => {
   const res = await axios.put(`${API_BASE}/admin/product/update/${id}`, payload, {
@@ -812,4 +869,82 @@ export const deleteProduct = async (id) => {
     headers: getAuthHeaders(),
   });
   return res.data;
+};
+
+/* -------------------- PROGRAM APIs -------------------- */
+export const getAllPrograms = async () => {
+  const res = await axios.get(`${API_BASE}/admin/program/getAll`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const getProgramById = async (id) => {
+  const res = await axios.get(`${API_BASE}/admin/program/get/${id}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const createProgram = async (payload) => {
+  const res = await axios.post(`${API_BASE}/admin/program/create`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+export const updateProgram = async (id, payload) => {
+  const res = await axios.put(`${API_BASE}/admin/program/update/${id}`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+export const deleteProgram = async (id) => {
+  const res = await axios.delete(`${API_BASE}/admin/program/delete/${id}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/* -------------------- PROGRAM SUGGESTION APIs -------------------- */
+export const suggestProgram = async (payload) => {
+  const res = await axios.post(`${API_BASE}/admin/programSuggestion/suggest`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+export const getSuggestedProgram = async (userId) => {
+  const res = await axios.get(`${API_BASE}/admin/programSuggestion/get/${userId}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const updateSuggestedProgram = async (userId, payload) => {
+  const res = await axios.put(`${API_BASE}/admin/programSuggestion/update/${userId}`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+export const deleteSuggestedProgram = async (userId) => {
+  const res = await axios.delete(`${API_BASE}/admin/programSuggestion/delete/${userId}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/* -------------------- ORDER APIs -------------------- */
+export const getAllOrders = async (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.start) queryParams.append("start", params.start);
+  if (params.limit) queryParams.append("limit", params.limit);
+  if (params.orderType) queryParams.append("orderType", params.orderType);
+
+  const res = await axios.get(`${API_BASE}/admin/order/userOrders?${queryParams.toString()}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
 };

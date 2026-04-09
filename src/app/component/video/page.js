@@ -145,6 +145,7 @@ const VideoPage = () => {
             { label: "Category Testimonial", value: "4" },
             { label: "Resume Plan", value: "5" },
             { label: "Trial Video", value: "6" },
+            { label: "Body Detoxification", value: "7" },
           ]}
           filterValue={typeFilter}
           filterLabel="Type"
