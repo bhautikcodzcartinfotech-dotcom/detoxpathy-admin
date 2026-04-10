@@ -843,6 +843,28 @@ export const deleteAppointment = async (appointmentId) => {
   return res.data;
 };
 
+export const joinAppointmentCall = async (appointmentId) => {
+  const res = await axios.post(
+    `${API_BASE}/admin/appointment/call/join/${appointmentId}`,
+    {},
+    {
+      headers: getAuthHeaders(),
+    }
+  );
+  return res.data.data;
+};
+
+export const endAppointmentCall = async (appointmentId) => {
+  const res = await axios.post(
+    `${API_BASE}/admin/appointment/call/end/${appointmentId}`,
+    {},
+    {
+      headers: getAuthHeaders(),
+    }
+  );
+  return res.data.data;
+};
+
 export const createBranchTime = async (payload) => {
   const res = await axios.post(`${API_BASE}/admin/branchTime/create`, payload, {
     headers: getAuthHeaders(),

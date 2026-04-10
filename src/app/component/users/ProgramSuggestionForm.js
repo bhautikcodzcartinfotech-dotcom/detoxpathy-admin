@@ -6,17 +6,15 @@ import {
   suggestProgram,
   updateSuggestedProgram,
   deleteSuggestedProgram,
-  getAllProducts,
   API_BASE,
 } from "@/Api/AllApi";
 import TimeButton from "@/utils/timebutton";
 import Loader from "@/utils/loader";
 import toast from "react-hot-toast";
-import ThemedCheckbox from "@/components/ThemedCheckbox";
 
 const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
   const [programs, setPrograms] = useState([]);
-  const [selectedPrograms, setSelectedPrograms] = useState([]);
+  const [selectedProgramId, setSelectedProgramId] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [existingSuggestion, setExistingSuggestion] = useState(null);
@@ -34,11 +32,13 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
           const suggestion = await getSuggestedProgram(user._id);
           if (suggestion) {
             setExistingSuggestion(suggestion);
-            setSelectedPrograms(suggestion.programs.map((p) => p._id || p));
+            const currentProgramId = suggestion.programs?.[0]?._id || suggestion.programs?.[0] || "";
+            setSelectedProgramId(currentProgramId);
           }
         } catch (err) {
           // If no suggestion found, it's fine
           setExistingSuggestion(null);
+          setSelectedProgramId("");
         }
       } catch (err) {
         toast.error("Failed to load program data");
@@ -49,32 +49,24 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
     fetchData();
   }, [user._id]);
 
-  const handleToggle = (programId) => {
-    setSelectedPrograms((prev) => {
-      if (prev.includes(programId)) {
-        return prev.filter((id) => id !== programId);
-      } else {
-        return [...prev, programId];
-      }
-    });
+  const handleSelect = (programId) => {
+    setSelectedProgramId((prev) => (prev === programId ? "" : programId));
   };
 
   const handleSave = async () => {
-    if (selectedPrograms.length === 0 && !existingSuggestion) {
-      toast.error("Please select at least one program");
+    if (!selectedProgramId) {
+      toast.error("Please select one program");
       return;
     }
 
     try {
       setSaving(true);
       if (existingSuggestion) {
-        // Update existing suggestion
-        await updateSuggestedProgram(user._id, { programs: selectedPrograms });
-        toast.success("Suggestions updated successfully!");
+        await updateSuggestedProgram(user._id, { programId: selectedProgramId });
+        toast.success("Suggestion updated successfully!");
       } else {
-        // Create new suggestion
-        await suggestProgram({ userId: user._id, programs: selectedPrograms });
-        toast.success("Programs suggested successfully!");
+        await suggestProgram({ userId: user._id, programId: selectedProgramId });
+        toast.success("Program suggested successfully!");
       }
       if (onSave) onSave();
     } catch (err) {
@@ -93,6 +85,8 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
       setSaving(true);
       await deleteSuggestedProgram(user._id);
       toast.success("Suggestions removed!");
+      setExistingSuggestion(null);
+      setSelectedProgramId("");
       if (onSave) onSave();
     } catch (err) {
       toast.error("Failed to delete suggestions");
@@ -107,7 +101,7 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
     <div className="flex flex-col h-full">
       <div className="flex-1 overflow-y-auto space-y-4 pr-1">
         <p className="text-sm text-gray-500 mb-4">
-          Select health programs to suggest to <strong>{user.name}</strong>.
+          Select one health program to suggest to <strong>{user.name}</strong>.
         </p>
 
         {programs.length === 0 ? (
@@ -117,20 +111,25 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
         ) : (
           <div className="grid grid-cols-1 gap-3">
             {programs.map((program) => {
+              const isSelected = selectedProgramId === program._id;
+
               return (
                 <div
                   key={program._id}
-                  onClick={() => handleToggle(program._id)}
+                  onClick={() => handleSelect(program._id)}
                   className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex items-center gap-4 ${
-                    selectedPrograms.includes(program._id)
+                    isSelected
                       ? "border-yellow-400 bg-yellow-50"
                       : "border-gray-100 bg-white hover:border-yellow-200"
                   }`}
                 >
-                  <ThemedCheckbox
-                    checked={selectedPrograms.includes(program._id)}
-                    onChange={() => handleToggle(program._id)}
-                  />
+                  <div
+                    className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
+                      isSelected ? "border-yellow-500 bg-yellow-500" : "border-gray-300 bg-white"
+                    }`}
+                  >
+                    <div className={`w-2 h-2 rounded-full ${isSelected ? "bg-white" : "bg-transparent"}`} />
+                  </div>
                   <div className="flex-1">
                     <h4 className="font-bold text-gray-800">{program.name}</h4>
                     <p className="text-xs text-gray-500 line-clamp-1">
@@ -184,7 +183,7 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
             Cancel
           </button>
           <TimeButton loading={saving} onClick={handleSave}>
-            Save Suggestions
+            Save Suggestion
           </TimeButton>
         </div>
 
