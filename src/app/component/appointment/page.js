@@ -50,7 +50,8 @@ const AppointmentPage = () => {
         if (role === "subadmin" && branches.length > 0) {
           setSelectedBranchId(branches[0]);
         } else {
-          setSelectedBranchId(data[0]._id);
+          const defaultBranch = role === "Admin" ? data.find(b => b.isMainBranch) : data[0];
+          setSelectedBranchId(defaultBranch ? defaultBranch._id : data[0]._id);
         }
       }
     } catch (e) {
@@ -127,18 +128,9 @@ const AppointmentPage = () => {
             {role === "Admin" && (
                 <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-gray-200 shadow-sm">
                 <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Branch</label>
-                <select
-                    value={selectedBranchId}
-                    onChange={(e) => setSelectedBranchId(e.target.value)}
-                    className="p-1 text-sm font-semibold text-gray-700 focus:outline-none bg-transparent"
-                >
-                    <option value="">Choose Branch</option>
-                    {allBranches.map((branch) => (
-                    <option key={branch._id} value={branch._id}>
-                        {branch.name}
-                    </option>
-                    ))}
-                </select>
+                <span className="p-1 text-sm font-semibold text-gray-700 whitespace-nowrap">
+                  {allBranches.find((b) => b._id === selectedBranchId)?.name || 'Loading...'}
+                </span>
                 </div>
             )}
             

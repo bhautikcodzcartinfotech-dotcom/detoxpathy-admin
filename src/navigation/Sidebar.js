@@ -104,6 +104,20 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                 <MdDeviceHub size={20} />
                 {!isCollapsed && <span>Branches</span>}
               </Link>
+              <Link
+                href="/component/branch-time"
+                className={linkClasses("/component/branch-time")}
+              >
+                <MdAccessTime size={20} />
+                {!isCollapsed && <span>Branch Time</span>}
+              </Link>
+              <Link
+                href="/component/appointment"
+                className={linkClasses("/component/appointment")}
+              >
+                <MdCalendarMonth size={20} />
+                {!isCollapsed && <span>Appointments</span>}
+              </Link>
               {!isCollapsed && (
                 <h2 className="text-xs font-semibold text-gray-400 uppercase mb-2 mt-5">
                   utils

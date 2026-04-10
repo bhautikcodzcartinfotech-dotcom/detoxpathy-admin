@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import TimeButton from "@/utils/timebutton";
+import toast from "react-hot-toast";
 
 const BranchTimeForm = ({
   onSubmit,
@@ -20,7 +21,7 @@ const BranchTimeForm = ({
   ];
 
   const [availability, setAvailability] = useState([
-    { day: "1", startTime: "09:00 AM", endTime: "05:00 PM", slotDuration: 30, bufferTime: 10 },
+    { day: "1", startTime: "09:00 AM", endTime: "05:00 PM", breakStartTime: "", breakEndTime: "", slotDuration: 30, bufferTime: 10 },
   ]);
 
   useEffect(() => {
@@ -32,7 +33,7 @@ const BranchTimeForm = ({
   const handleAddRow = () => {
     setAvailability([
       ...availability,
-      { day: "1", startTime: "09:00 AM", endTime: "05:00 PM", slotDuration: 30, bufferTime: 10 },
+      { day: "1", startTime: "09:00 AM", endTime: "05:00 PM", breakStartTime: "", breakEndTime: "", slotDuration: 30, bufferTime: 10 },
     ]);
   };
 
@@ -43,12 +44,26 @@ const BranchTimeForm = ({
 
   const handleChange = (index, field, value) => {
     const newAvailability = [...availability];
-    newAvailability[index][field] = field === "slotDuration" || field === "bufferTime" ? Number(value) : value;
+    if (field === "slotDuration" || field === "bufferTime") {
+      newAvailability[index][field] = Number(value);
+    } else if (["startTime", "endTime", "breakStartTime", "breakEndTime"].includes(field)) {
+      newAvailability[index][field] = value.toUpperCase();
+    } else {
+      newAvailability[index][field] = value;
+    }
     setAvailability(newAvailability);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    
+    const days = availability.map(item => String(item.day));
+    const uniqueDays = new Set(days);
+    if (days.length !== uniqueDays.size) {
+      toast.error("Multiple time slots for the same day are not allowed");
+      return;
+    }
+    
     onSubmit({ availability });
   };
 
@@ -89,6 +104,28 @@ const BranchTimeForm = ({
                              onChange={(e) => handleChange(index, "endTime", e.target.value)}
                              className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition"
                              placeholder="05:00 PM"
+                         />
+                     </div>
+                 </div>
+                 <div className="sm:col-span-2 grid grid-cols-2 gap-4">
+                     <div>
+                         <label className="block text-xs font-bold text-gray-500 uppercase mb-1 whitespace-nowrap">Break Start Time</label>
+                         <input
+                             type="text"
+                             value={item.breakStartTime || ""}
+                             onChange={(e) => handleChange(index, "breakStartTime", e.target.value)}
+                             className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition"
+                             placeholder="01:00 PM"
+                         />
+                     </div>
+                     <div>
+                         <label className="block text-xs font-bold text-gray-500 uppercase mb-1 whitespace-nowrap">Break End Time</label>
+                         <input
+                             type="text"
+                             value={item.breakEndTime || ""}
+                             onChange={(e) => handleChange(index, "breakEndTime", e.target.value)}
+                             className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition"
+                             placeholder="02:00 PM"
                          />
                      </div>
                  </div>

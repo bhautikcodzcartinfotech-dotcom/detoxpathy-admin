@@ -1,7 +1,7 @@
 import axios from "axios";
 
-// export const API_BASE = "http://192.168.29.228:3002/api/v1";
-export const API_BASE = "http://69.62.73.194:4009/api/v1";
+export const API_BASE = "http://192.168.29.228:3002/api/v1";
+// export const API_BASE = "http://69.62.73.194:4009/api/v1";
 // export const API_BASE = "https://backend.fatendfit.com/api/v1";
 // Host base used to resolve file URLs coming from multer (e.g., uploads/..)
 export const API_HOST = API_BASE.replace(/\/?api\/?v1\/?$/, "").replace(
@@ -233,6 +233,7 @@ export const createBranchApi = async (payload) => {
       longitude: payload.longitude,
       mobilePrefix: payload.mobilePrefix,
       mobileNumber: payload.mobileNumber,
+      isMainBranch: payload.isMainBranch,
     },
     { headers: getAuthHeaders() }
   );
@@ -252,6 +253,7 @@ export const updateBranchById = async (id, payload) => {
     "longitude",
     "mobilePrefix",
     "mobileNumber",
+    "isMainBranch",
   ];
   keys.forEach((k) => {
     if (typeof payload[k] !== "undefined") body[k] = payload[k];
