@@ -143,7 +143,8 @@ const AppointmentPage = () => {
 
   const waitForPaint = () =>
     new Promise((resolve) => {
-      window.setTimeout(resolve, 0);
+      // Give React enough time to flush state and attach refs
+      setTimeout(resolve, 150);
     });
 
   const updateAppointmentCallState = (appointmentId, nextCallState) => {
@@ -383,7 +384,7 @@ const AppointmentPage = () => {
         if (mediaType === "video") {
           const remoteBody = ensureRemoteTile(user.uid);
           if (remoteBody) {
-            user.videoTrack.play(remoteBody);
+            user.videoTrack.play(remoteBody, { fit: "cover" });
           }
         }
 
@@ -415,8 +416,18 @@ const AppointmentPage = () => {
       agoraSessionRef.current.localAudioTrack = localAudioTrack;
       agoraSessionRef.current.localVideoTrack = localVideoTrack;
 
+      if (!localVideoRef.current) {
+        // Wait up to 1000ms for React to attach the ref
+        for (let i = 0; i < 20; i++) {
+          await new Promise((res) => setTimeout(res, 50));
+          if (localVideoRef.current) break;
+        }
+      }
+
       if (localVideoRef.current) {
-        localVideoTrack.play(localVideoRef.current);
+        localVideoTrack.play(localVideoRef.current, { fit: "cover" });
+      } else {
+        toast.error("Failed to render camera container");
       }
 
       const session = await joinAppointmentCall(appointment._id);
@@ -801,7 +812,7 @@ const AppointmentPage = () => {
                   </div>
                   <div
                     ref={localVideoRef}
-                    className="min-h-[260px] overflow-hidden rounded-[1.5rem] bg-slate-950"
+                    className="h-[260px] w-full relative overflow-hidden rounded-[1.5rem] bg-slate-950"
                   />
                 </div>
 
