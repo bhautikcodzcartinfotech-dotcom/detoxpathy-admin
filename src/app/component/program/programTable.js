@@ -14,7 +14,6 @@ const ProgramTable = ({ items, loading, onEdit, onDelete }) => {
           <thead className="bg-gradient-to-r from-gray-50 to-yellow-50 text-gray-700 uppercase text-xs font-bold">
             <tr>
               <th className="px-6 py-4">Name</th>
-              <th className="px-6 py-4">Products</th>
               <th className="px-6 py-4">Description</th>
               <th className="px-6 py-4">Duration</th>
               <th className="px-6 py-4">Price</th>
@@ -30,35 +29,6 @@ const ProgramTable = ({ items, loading, onEdit, onDelete }) => {
                 >
                   <td className="px-6 py-4">
                     <span className="font-semibold text-gray-800">{item.name}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-col gap-2">
-                      {item.products && item.products.length > 0 ? (
-                        item.products.map((p, idx) => (
-                          <div key={idx} className="flex items-center gap-2 bg-gray-50 p-1 rounded-lg border border-gray-100 pr-3">
-                            <div className="w-8 h-8 rounded-md overflow-hidden bg-gray-200 flex-shrink-0">
-                              {p.productId?.images?.[0] ? (
-                                <img
-                                  src={`${API_BASE}${p.productId.images[0]}`}
-                                  alt={p.productId.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-[10px] text-gray-400">NA</div>
-                              )}
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-xs font-medium text-gray-700 truncate max-w-[120px]">
-                                {p.productId?.name || "Unknown Product"}
-                              </span>
-                              <span className="text-[10px] text-gray-500">Qty: {p.quantity}</span>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <span className="text-xs text-gray-400 italic">No products</span>
-                      )}
-                    </div>
                   </td>
                   <td className="px-6 py-4">
                     <p className="text-sm text-gray-600 line-clamp-2 max-w-xs">

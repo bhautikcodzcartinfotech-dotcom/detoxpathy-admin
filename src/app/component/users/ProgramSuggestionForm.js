@@ -33,7 +33,7 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
           const suggestion = response?.suggestion || response;
           if (suggestion && suggestion.programs) {
             setExistingSuggestion(suggestion);
-            const currentProgramId = suggestion.programs?.[0]?._id || suggestion.programs?.[0] || "";
+            const currentProgramId = suggestion.programs?._id || suggestion.programs || "";
             setSelectedProgramId(currentProgramId);
           }
         } catch (err) {
@@ -136,28 +136,6 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
                     <p className="text-xs text-gray-500 line-clamp-1">
                       {program.description}
                     </p>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      {program.products && program.products.length > 0 ? (
-                        program.products.map((p, idx) => (
-                          <div key={idx} className="flex items-center gap-1 bg-white p-0.5 rounded border border-gray-100 pr-2 shadow-sm">
-                            <div className="w-5 h-5 rounded overflow-hidden bg-gray-100 flex-shrink-0">
-                              {p.productId?.images?.[0] ? (
-                                <img
-                                  src={`${API_BASE}${p.productId.images[0]}`}
-                                  alt={p.productId.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full flex items-center justify-center text-[6px] text-gray-400">NA</div>
-                              )}
-                            </div>
-                            <span className="text-[9px] text-gray-600 truncate max-w-[60px]">
-                              {p.productId?.name}
-                            </span>
-                          </div>
-                        ))
-                      ) : null}
-                    </div>
                     <div className="flex items-center gap-3 mt-2">
                       <span className="text-[10px] bg-gray-100 px-2 py-0.5 rounded text-gray-600">
                         {program.duration}
