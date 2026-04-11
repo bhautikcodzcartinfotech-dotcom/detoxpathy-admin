@@ -29,8 +29,9 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
 
         // 2. Get current suggestions for this user
         try {
-          const suggestion = await getSuggestedProgram(user._id);
-          if (suggestion) {
+          const response = await getSuggestedProgram(user._id);
+          const suggestion = response?.suggestion || response;
+          if (suggestion && suggestion.programs) {
             setExistingSuggestion(suggestion);
             const currentProgramId = suggestion.programs?.[0]?._id || suggestion.programs?.[0] || "";
             setSelectedProgramId(currentProgramId);
