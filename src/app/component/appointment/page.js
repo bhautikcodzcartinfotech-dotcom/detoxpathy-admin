@@ -223,6 +223,11 @@ const AppointmentPage = () => {
       throw new Error("Agora video call only works in the browser");
     }
 
+    // Check for Secure Context (HTTPS is required for getUserMedia on live servers)
+    if (!window.isSecureContext && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+      throw new Error("Camera and Microphone access requires a secure context (HTTPS). Please ensure your live server is using HTTPS.");
+    }
+
     if (window.AgoraRTC) {
       return window.AgoraRTC;
     }
@@ -373,6 +378,18 @@ const AppointmentPage = () => {
       await waitForPaint();
 
       const AgoraRTC = await ensureAgoraSdk();
+
+      // Check system requirements
+      const checkResult = AgoraRTC.checkSystemRequirements();
+      if (!checkResult) {
+        throw new Error("Your browser does not support the video calling feature. Please use a modern browser like Chrome or Firefox.");
+      }
+
+      // Check if getUserMedia is available (it's often missing on HTTP)
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error("Your browser or connection is not secure enough to access the camera/microphone. Please use HTTPS.");
+      }
+
       await cleanupAgoraSession();
 
       const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
