@@ -965,9 +965,16 @@ export const getAllOrders = async (params = {}) => {
   const queryParams = new URLSearchParams();
   if (params.start) queryParams.append("start", params.start);
   if (params.limit) queryParams.append("limit", params.limit);
-  if (params.orderType) queryParams.append("orderType", params.orderType);
+  if (params.orderType !== undefined && params.orderType !== "") queryParams.append("orderType", params.orderType);
 
   const res = await axios.get(`${API_BASE}/admin/order/userOrders?${queryParams.toString()}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const updateOrderStatus = async (id, orderStatus) => {
+  const res = await axios.put(`${API_BASE}/admin/order/update/${id}`, { orderStatus }, {
     headers: getAuthHeaders(),
   });
   return res.data.data;

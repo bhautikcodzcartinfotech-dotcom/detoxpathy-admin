@@ -19,6 +19,11 @@ const UserProfilePage = () => {
   const router = useRouter();
   const userId = params?.id;
 
+  const formatYesNo = (value) => {
+    if (value === "Yes" || value === "No") return value;
+    return value ? "Yes" : "No";
+  };
+
   const [loading, setLoading] = useState(true);
   const [overview, setOverview] = useState(null);
   const [selectedDay, setSelectedDay] = useState(null); // for popup
@@ -306,7 +311,19 @@ const UserProfilePage = () => {
                 <div className="p-5 rounded-xl bg-amber-100 shadow-sm">
                   <div className="text-gray-500">Trial Booked</div>
                   <div className="font-semibold text-gray-800">
-                    {overview.user?.bookTrial ? "Yes" : "No"}
+                    {formatYesNo(overview.user?.bookTrial)}
+                  </div>
+                </div>
+                <div className="p-5 rounded-xl bg-amber-100 shadow-sm">
+                  <div className="text-gray-500">Order</div>
+                  <div className="font-semibold text-gray-800">
+                    {formatYesNo(overview.user?.order)}
+                  </div>
+                </div>
+                <div className="p-5 rounded-xl bg-amber-100 shadow-sm">
+                  <div className="text-gray-500">Meet Doctor</div>
+                  <div className="font-semibold text-gray-800">
+                    {formatYesNo(overview.user?.meetDoctor)}
                   </div>
                 </div>
                 <div className="p-5 rounded-xl bg-amber-100 shadow-sm">

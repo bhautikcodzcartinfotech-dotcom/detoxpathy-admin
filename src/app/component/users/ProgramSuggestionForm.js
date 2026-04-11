@@ -166,7 +166,7 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
           </TimeButton>
         </div>
 
-        {existingSuggestion && (
+        {/* {existingSuggestion && (
           <button
             type="button"
             onClick={handleDelete}
@@ -175,7 +175,7 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
           >
             Remove All Suggestions
           </button>
-        )}
+        )} */}
       </div>
     </div>
   );

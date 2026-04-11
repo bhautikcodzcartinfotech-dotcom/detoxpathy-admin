@@ -10,7 +10,6 @@ const OrderPage = () => {
   const [filter, setFilter] = useState({
     start: 1,
     limit: 10,
-    orderType: "", // empty for all, 1 for product, 2 for program
   });
   const [pagination, setPagination] = useState({
     page: 1,
@@ -42,53 +41,15 @@ const OrderPage = () => {
     setFilter((prev) => ({ ...prev, start: newPage }));
   };
 
-  const handleTypeFilter = (type) => {
-    setFilter((prev) => ({ ...prev, orderType: type, start: 1 }));
-  };
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Order Management</h1>
-          <p className="text-gray-500 mt-1">Monitor and manage all customer orders</p>
-        </div>
-
-        <div className="flex bg-white p-1 rounded-xl shadow-sm border border-gray-100">
-          <button
-            onClick={() => handleTypeFilter("")}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
-              filter.orderType === ""
-                ? "bg-yellow-400 text-black shadow-md"
-                : "text-gray-600 hover:bg-gray-50"
-            }`}
-          >
-            All Orders
-          </button>
-          <button
-            onClick={() => handleTypeFilter(1)}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
-              filter.orderType === 1
-                ? "bg-yellow-400 text-black shadow-md"
-                : "text-gray-600 hover:bg-gray-50"
-            }`}
-          >
-            Product Orders
-          </button>
-          <button
-            onClick={() => handleTypeFilter(2)}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition ${
-              filter.orderType === 2
-                ? "bg-yellow-400 text-black shadow-md"
-                : "text-gray-600 hover:bg-gray-50"
-            }`}
-          >
-            Program Orders
-          </button>
-        </div>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Order Management</h1>
+        <p className="text-gray-500 mt-1">Monitor and manage all customer orders</p>
       </div>
 
-      <OrderTable items={orders} loading={loading} />
+      <OrderTable items={orders} loading={loading} onRefresh={fetchOrders} />
 
       {pagination.totalPages > 1 && (
         <div className="mt-8 flex justify-center items-center gap-4">
