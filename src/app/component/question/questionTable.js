@@ -47,24 +47,28 @@ const QuestionTable = ({
     );
   }
 
-  // Helper function to get text in specific language
+  // Helper: resolve a multi-lang text object to a string for a given language
   const getTextInLanguage = (multiLangObj, language = "english") => {
-    if (!multiLangObj) {
-      return "";
+    if (!multiLangObj) return "";
+    if (typeof multiLangObj === "string") return multiLangObj;
+    if (typeof multiLangObj === "object" && !Array.isArray(multiLangObj)) {
+      const result = multiLangObj[language] ?? multiLangObj.english ?? "";
+      // If the resolved value is itself an object (e.g. options { a,b,c,d }), don't return it raw
+      if (typeof result === "object") return "";
+      return Array.isArray(result) ? result.join(", ") : String(result);
     }
-
-    // If it's already a string (old format), return it
-    if (typeof multiLangObj === "string") {
-      return multiLangObj;
-    }
-
-    // If it's an object (new multi-language format), get the specific language
-    if (typeof multiLangObj === "object") {
-      const result = multiLangObj[language] || multiLangObj.english || "";
-      return Array.isArray(result) ? result.join(", ") : result;
-    }
-
     return "";
+  };
+
+  // Helper: render options object { a, b, c, d } as labeled rows
+  const renderOptions = (optionsObj) => {
+    if (!optionsObj || typeof optionsObj !== "object") return null;
+    return ["a", "b", "c", "d"].map((key) => (
+      <div key={key} className="flex items-start gap-2 text-sm">
+        <span className="font-bold text-amber-600 w-5 shrink-0">{key.toUpperCase()}.</span>
+        <span className="text-gray-800">{optionsObj[key] || "—"}</span>
+      </div>
+    ));
   };
 
   return (
@@ -126,8 +130,8 @@ const QuestionTable = ({
                     handleDeleteClick(
                       question._id,
                       question.question_english ||
-                        question.question ||
-                        "Question"
+                      question.question ||
+                      "Question"
                     )
                   }
                 />
@@ -143,9 +147,8 @@ const QuestionTable = ({
                   }
                 >
                   <svg
-                    className={`w-5 h-5 transition-transform duration-300 ${
-                      expandedCards[question._id] ? "rotate-180" : ""
-                    }`}
+                    className={`w-5 h-5 transition-transform duration-300 ${expandedCards[question._id] ? "rotate-180" : ""
+                      }`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -164,11 +167,10 @@ const QuestionTable = ({
 
           {/* Multi-Language Content */}
           <div
-            className={`overflow-hidden transition-all duration-300 ease-in-out ${
-              expandedCards[question._id]
+            className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedCards[question._id]
                 ? "max-h-[2000px] opacity-100"
                 : "max-h-0 opacity-0"
-            }`}
+              }`}
           >
             <div className="p-6 space-y-6">
               {/* Question Text Row */}
@@ -223,61 +225,59 @@ const QuestionTable = ({
                 </div>
               </div>
 
-              {/* Correct Answer Row - Only for video questions */}
+              {/* Correct Answer + Options — only for video questions */}
               {questionType === "video" && (
-                <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl p-5 border border-amber-200 shadow-sm">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center shadow-md">
-                      <span className="text-sm font-bold text-white">A</span>
+                <>
+                  {/* Correct Answer: now a single key (a/b/c/d) */}
+                  <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl p-5 border border-amber-200 shadow-sm">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 bg-amber-500 rounded-full flex items-center justify-center shadow-md">
+                        <span className="text-sm font-bold text-white">A</span>
+                      </div>
+                      <h4 className="text-lg font-bold text-gray-800">Correct Answer</h4>
                     </div>
-                    <h4 className="text-lg font-bold text-gray-800">
-                      Correct Answer
-                    </h4>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* English Answer */}
-                    <div>
-                      <p className="text-xs font-medium text-gray-600 mb-2">
-                        English
-                      </p>
-                      <p className="text-sm text-gray-800 bg-white p-3 rounded-lg border border-amber-200 h-24 overflow-y-auto">
-                        {getTextInLanguage(
-                          question.correctAnswerMultiLang ||
-                            question.correctAnswer,
-                          "english"
-                        )}
-                      </p>
-                    </div>
-
-                    {/* Gujarati Answer */}
-                    <div>
-                      <p className="text-xs font-medium text-gray-600 mb-2">
-                        Gujarati
-                      </p>
-                      <p className="text-sm text-gray-800 bg-white p-3 rounded-lg border border-amber-200 h-24 overflow-y-auto">
-                        {getTextInLanguage(
-                          question.correctAnswerMultiLang ||
-                            question.correctAnswer,
-                          "gujarati"
-                        )}
-                      </p>
-                    </div>
-
-                    {/* Hindi Answer */}
-                    <div>
-                      <p className="text-xs font-medium text-gray-600 mb-2">
-                        Hindi
-                      </p>
-                      <p className="text-sm text-gray-800 bg-white p-3 rounded-lg border border-amber-200 h-24 overflow-y-auto">
-                        {getTextInLanguage(
-                          question.correctAnswerMultiLang ||
-                            question.correctAnswer,
-                          "hindi"
-                        )}
-                      </p>
+                    <div className="flex items-center gap-3">
+                      {["a", "b", "c", "d"].map((key) => (
+                        <div
+                          key={key}
+                          className={`w-12 h-12 rounded-xl flex items-center justify-center font-bold text-lg border-2 transition-all
+                            ${question.correctAnswer === key
+                              ? "bg-gradient-to-br from-yellow-400 to-amber-500 border-amber-500 text-white shadow-md shadow-yellow-200"
+                              : "bg-white border-amber-200 text-gray-400"}`}
+                        >
+                          {key.toUpperCase()}
+                        </div>
+                      ))}
+                      <span className="text-sm text-gray-500 ml-2">
+                        Option <strong className="text-amber-600">{(question.correctAnswer || "").toUpperCase()}</strong> is correct
+                      </span>
                     </div>
                   </div>
-                </div>
+
+                  {/* Options: { english: {a,b,c,d}, gujarati: {...}, hindi: {...} } */}
+                  <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-xl p-5 border border-yellow-200 shadow-sm">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center shadow-md">
+                        <span className="text-sm font-bold text-white">O</span>
+                      </div>
+                      <h4 className="text-lg font-bold text-gray-800">Options</h4>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {["english", "gujarati", "hindi"].map((lang) => {
+                        const rawOptions = question.optionsMultiLang || question.options;
+                        const langOptions = rawOptions?.[lang] || {};
+                        return (
+                          <div key={lang}>
+                            <p className="text-xs font-semibold text-gray-600 mb-2 capitalize">{lang}</p>
+                            <div className="bg-white p-3 rounded-lg border border-yellow-200 space-y-1 min-h-[6rem]">
+                              {renderOptions(langOptions)}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
               )}
             </div>
           </div>

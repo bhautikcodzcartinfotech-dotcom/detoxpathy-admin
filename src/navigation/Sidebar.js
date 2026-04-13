@@ -50,7 +50,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
               <div className=""></div>
               <div className="relative">
                 <Image
-                  src="/image/logo1.png"
+                  src="/image/detoxpathy.png"
                   alt="fatEndfit Logo"
                   width={150}
                   height={50}
