@@ -44,6 +44,7 @@ const VideoForm = ({
     type: 1, // 1..5
     day: "",
     category: [],
+    requiredCorrectAnswer: "",
   });
   const [errors, setErrors] = useState({});
   const [categories, setCategories] = useState([]);
@@ -132,6 +133,7 @@ const VideoForm = ({
         category: Array.isArray(initialValues.category)
           ? initialValues.category
           : [],
+        requiredCorrectAnswer: initialValues.requiredCorrectAnswer ?? "",
       }));
       setErrors({});
     } else {
@@ -160,6 +162,7 @@ const VideoForm = ({
         type: 1,
         day: "",
         category: [],
+        requiredCorrectAnswer: "",
       });
       setErrors({});
     }
@@ -187,6 +190,7 @@ const VideoForm = ({
       const n = Number(String(v).trim());
       return isNaN(n) ? `${label} must be a number.` : null;
     };
+    const isUpdate = Boolean(initialValues);
     const videoTypeNum = Number(form.videoType);
     const thumbTypeNum = Number(form.thumbnailType);
     const typeNum = Number(form.type);
@@ -195,82 +199,86 @@ const VideoForm = ({
       // Multi-language title validation
       title_english: {
         value: form.title_english,
-        rules: [required("English Title")],
+        rules: isUpdate ? [] : [required("English Title")],
       },
       title_gujarati: {
         value: form.title_gujarati,
-        rules: [required("Gujarati Title")],
+        rules: isUpdate ? [] : [required("Gujarati Title")],
       },
       title_hindi: {
         value: form.title_hindi,
-        rules: [required("Hindi Title")],
+        rules: isUpdate ? [] : [required("Hindi Title")],
       },
 
       // Video validation
       video_english_url: {
         value: videoTypeNum === 2 ? form.video_english_url : "ok",
-        rules: [required("English Video URL")],
+        rules: isUpdate ? [] : [required("English Video URL")],
       },
       video_gujarati_url: {
         value: videoTypeNum === 2 ? form.video_gujarati_url : "ok",
-        rules: [required("Gujarati Video URL")],
+        rules: isUpdate ? [] : [required("Gujarati Video URL")],
       },
       video_hindi_url: {
         value: videoTypeNum === 2 ? form.video_hindi_url : "ok",
-        rules: [required("Hindi Video URL")],
+        rules: isUpdate ? [] : [required("Hindi Video URL")],
       },
       video_english: {
         value: videoTypeNum === 1 ? form.video_english : "ok",
-        rules: [required("English Video file")],
+        rules: isUpdate ? [] : [required("English Video file")],
       },
       video_gujarati: {
         value: videoTypeNum === 1 ? form.video_gujarati : "ok",
-        rules: [required("Gujarati Video file")],
+        rules: isUpdate ? [] : [required("Gujarati Video file")],
       },
       video_hindi: {
         value: videoTypeNum === 1 ? form.video_hindi : "ok",
-        rules: [required("Hindi Video file")],
+        rules: isUpdate ? [] : [required("Hindi Video file")],
       },
       videoSecond: {
         value: videoTypeNum === 2 ? form.videoSecond : "ok",
-        rules: [required("Video seconds"), numberRule("Video seconds")],
+        rules: isUpdate ? [numberRule("Video seconds")] : [required("Video seconds"), numberRule("Video seconds")],
       },
 
       // Thumbnail validation
       thumbnail_english_url: {
         value: thumbTypeNum === 2 ? form.thumbnail_english_url : "ok",
-        rules: [required("English Thumbnail URL")],
+        rules: isUpdate ? [] : [required("English Thumbnail URL")],
       },
       thumbnail_gujarati_url: {
         value: thumbTypeNum === 2 ? form.thumbnail_gujarati_url : "ok",
-        rules: [required("Gujarati Thumbnail URL")],
+        rules: isUpdate ? [] : [required("Gujarati Thumbnail URL")],
       },
       thumbnail_hindi_url: {
         value: thumbTypeNum === 2 ? form.thumbnail_hindi_url : "ok",
-        rules: [required("Hindi Thumbnail URL")],
+        rules: isUpdate ? [] : [required("Hindi Thumbnail URL")],
       },
       thumbnail_english: {
         value: thumbTypeNum === 1 ? form.thumbnail_english : "ok",
-        rules: [required("English Thumbnail file")],
+        rules: isUpdate ? [] : [required("English Thumbnail file")],
       },
       thumbnail_gujarati: {
         value: thumbTypeNum === 1 ? form.thumbnail_gujarati : "ok",
-        rules: [required("Gujarati Thumbnail file")],
+        rules: isUpdate ? [] : [required("Gujarati Thumbnail file")],
       },
       thumbnail_hindi: {
         value: thumbTypeNum === 1 ? form.thumbnail_hindi : "ok",
-        rules: [required("Hindi Thumbnail file")],
+        rules: isUpdate ? [] : [required("Hindi Thumbnail file")],
       },
 
       // Other validations
       type: { value: typeNum, rules: [required("Type")] },
       day: {
         value: typeNum === 1 ? form.day : "ok",
-        rules: [required("Day"), numberRule("Day")],
+        rules: isUpdate ? [numberRule("Day")] : [required("Day"), numberRule("Day")],
       },
       category: {
         value: typeNum === 4 ? (form.category?.length ? "ok" : "") : "ok",
-        rules: [required("Category")],
+        rules: isUpdate ? [] : [required("Category")],
+      },
+      requiredCorrectAnswer: {
+        value: form.requiredCorrectAnswer,
+        rules: isUpdate ? [numberRule("Required Correct Answer")] : [required("Required Correct Answer"), numberRule("Required Correct Answer")],
       },
     });
     // Allow day 0 as valid; remove previous restriction
@@ -296,6 +304,7 @@ const VideoForm = ({
       ...form,
       videoSecond: form.videoSecond ? Number(form.videoSecond) : undefined,
       day: form.day ? Number(form.day) : undefined,
+      requiredCorrectAnswer: form.requiredCorrectAnswer ? Number(form.requiredCorrectAnswer) : 0,
     });
   };
 
@@ -528,6 +537,26 @@ const VideoForm = ({
           )}
         </div>
       )}
+
+      <div>
+        <label className="block mb-1 font-semibold text-gray-700">
+          Required Correct Answer Count
+        </label>
+        <input
+          type="text"
+          value={form.requiredCorrectAnswer}
+          onChange={(e) =>
+            setForm((f) => ({ ...f, requiredCorrectAnswer: e.target.value }))
+          }
+          className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+          placeholder="e.g. 8"
+        />
+        {errors.requiredCorrectAnswer && (
+          <p className="text-amber-600 text-sm mt-1">
+            {errors.requiredCorrectAnswer}
+          </p>
+        )}
+      </div>
 
       {Number(form.type) === 4 && (
         <div>

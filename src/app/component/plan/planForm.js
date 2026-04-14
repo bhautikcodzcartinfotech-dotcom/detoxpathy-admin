@@ -11,7 +11,7 @@ const PlanForm = ({
   loading = false,
   title = "Plan",
 }) => {
-  const [form, setForm] = useState({ name: "", description: "", days: "" });
+  const [form, setForm] = useState({ name: "", description: "", days: "", price: "" });
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -20,9 +20,10 @@ const PlanForm = ({
         name: initialData.name || "",
         description: initialData.description || "",
         days: initialData.days ?? "",
+        price: initialData.price ?? "",
       });
     } else {
-      setForm({ name: "", description: "", days: "" });
+      setForm({ name: "", description: "", days: "", price: "" });
     }
     setErrors({});
   }, [initialData]);
@@ -30,10 +31,11 @@ const PlanForm = ({
   const validate = () => {
     const required = (label) => (v) => !v ? `${label} is required` : null;
     const positiveNumberRule = (label) => (v) => {
-      if (!v) return `${label} is required`;
+      // Allow 0 for price if it's not strictly required to be > 0, but usually we want some validation
+      if (v === undefined || v === null || v === "") return `${label} is required`;
       const num = Number(v);
       if (isNaN(num)) return `${label} must be a valid number`;
-      if (num <= 0) return `${label} must be greater than 0`;
+      if (num < 0) return `${label} cannot be negative`;
       return null;
     };
     const errs = validateForm({
@@ -43,6 +45,7 @@ const PlanForm = ({
         rules: [required("Description")],
       },
       days: { value: form.days, rules: [positiveNumberRule("Days")] },
+      price: { value: form.price, rules: [positiveNumberRule("Price")] },
     });
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -51,7 +54,11 @@ const PlanForm = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
-    await onSubmit({ ...form, days: Number(form.days) });
+    await onSubmit({ 
+      ...form, 
+      days: Number(form.days),
+      price: Number(form.price)
+    });
   };
 
   return (
@@ -90,25 +97,46 @@ const PlanForm = ({
         )}
       </div>
 
-      <div>
-        <label className="block mb-1 font-semibold text-gray-700">Days *</label>
-        <input
-          type="number"
-          value={form.days}
-          onChange={(e) => {
-            const value = e.target.value;
-            // Only allow positive numbers
-            if (value === "" || (!isNaN(value) && Number(value) > 0)) {
-              setForm((f) => ({ ...f, days: value }));
-            }
-          }}
-          className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
-          placeholder="e.g. 30"
-          min="1"
-        />
-        {errors.days && (
-          <p className="text-red-500 text-sm mt-1">{errors.days}</p>
-        )}
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block mb-1 font-semibold text-gray-700">Days *</label>
+          <input
+            type="number"
+            value={form.days}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === "" || (!isNaN(value) && Number(value) > 0)) {
+                setForm((f) => ({ ...f, days: value }));
+              }
+            }}
+            className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+            placeholder="e.g. 30"
+            min="1"
+          />
+          {errors.days && (
+            <p className="text-red-500 text-sm mt-1">{errors.days}</p>
+          )}
+        </div>
+
+        <div>
+          <label className="block mb-1 font-semibold text-gray-700">Price *</label>
+          <input
+            type="number"
+            value={form.price}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === "" || (!isNaN(value) && Number(value) >= 0)) {
+                setForm((f) => ({ ...f, price: value }));
+              }
+            }}
+            className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+            placeholder="e.g. 999"
+            min="0"
+          />
+          {errors.price && (
+            <p className="text-red-500 text-sm mt-1">{errors.price}</p>
+          )}
+        </div>
       </div>
 
       <div className="flex justify-end gap-3 mt-6">

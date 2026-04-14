@@ -281,7 +281,7 @@ const UserProfilePage = () => {
                 </div>
                 <div className="border-b md:border-r border-gray-200 p-6">
                   <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Plan Configuration</div>
-                  <div className="text-sm font-medium text-gray-800">{overview.user?.plan?.name || "-"}</div>
+                  <div className="text-sm font-medium text-gray-800">{overview.user?.plan?.name ? `${overview.user.plan.name} (₹${overview.user.plan.price || 0})` : "-"}</div>
                 </div>
                 <div className="border-b border-gray-200 p-6">
                   <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Gender & Age</div>
@@ -320,7 +320,7 @@ const UserProfilePage = () => {
                 <div className="p-6">
                   <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Body Measurements</div>
                   <div className="text-sm font-medium text-gray-800 flex flex-wrap gap-x-3 gap-y-1">
-                    <span>Arm: {overview.user?.Arm || "-"}</span>
+                    <span>Biceps: {overview.user?.Biceps || "-"}</span>
                     <span>Chest: {overview.user?.Chest || "-"}</span>
                     <span>Hip: {overview.user?.Hip || "-"}</span>
                     <span>Thigh: {overview.user?.Thigh || "-"}</span>
@@ -372,7 +372,7 @@ const UserProfilePage = () => {
                           Current Plan
                         </h4>
                         <p className="text-sm text-gray-600">
-                          {overview.user.plan.name}
+                          {overview.user.plan.name} (₹{overview.user.plan.price || 0})
                         </p>
                       </div>
                     </div>
@@ -594,7 +594,7 @@ const UserProfilePage = () => {
                     >
                       <div>
                         <div className="font-semibold text-gray-800 text-base">
-                          {h.plan?.name || "Plan"}
+                          {h.plan?.name ? `${h.plan.name} (₹${h.plan.price || 0})` : "Plan"}
                         </div>
                         <div className="text-sm text-gray-600">
                           {h.plan?.days ? `${h.plan.days} days` : ""}
@@ -650,6 +650,41 @@ const UserProfilePage = () => {
                 </div>
               ) : (
                 <div className="text-gray-500">No video answers available.</div>
+              )}
+            </div>
+
+            {/* ------------------ User Feedback ------------------ */}
+            <div className="p-6 mx-8 bg-white rounded-2xl shadow-lg border border-gray-200">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-800">User Feedback</h3>
+              </div>
+              {overview?.feedback ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                  {[
+                    { label: "App Experience", value: overview.feedback.appExperience },
+                    { label: "Doctor Consultant", value: overview.feedback.doctorCostultant },
+                    { label: "Product Quality", value: overview.feedback.product },
+                    { label: "Support", value: overview.feedback.support },
+                  ].map((item, idx) => (
+                    <div key={idx} className="bg-amber-50 p-4 rounded-xl border border-amber-100 flex flex-col items-center">
+                      <div className="text-xs font-bold text-[#134D41] uppercase tracking-wider mb-2">{item.label}</div>
+                      <div className="flex items-center gap-1">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <svg
+                            key={star}
+                            className={`w-5 h-5 ${star <= (item.value || 0) ? "text-yellow-500 fill-yellow-500" : "text-gray-300 fill-gray-300"}`}
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                          </svg>
+                        ))}
+                      </div>
+                      <div className="mt-2 text-lg font-bold text-gray-800">{item.value || 0}/5</div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-gray-500 italic">No feedback provided yet.</div>
               )}
             </div>
           </div>

@@ -1,7 +1,7 @@
 import axios from "axios";
 
-// export const API_BASE = "http://192.168.29.228:3002/api/v1";
-export const API_BASE = "http://69.62.73.194:4009/api/v1";
+export const API_BASE = "http://192.168.29.228:3002/api/v1";
+// export const API_BASE = "http://69.62.73.194:4009/api/v1";
 // export const API_BASE = "https://backend.fatendfit.com/api/v1";
 // Host base used to resolve file URLs coming from multer (e.g., uploads/..)
 export const API_HOST = API_BASE.replace(/\/?api\/?v1\/?$/, "").replace(
@@ -332,6 +332,7 @@ export const createPlanApi = async (payload) => {
     name: payload.name,
     description: payload.description,
     days: Number(payload.days),
+    price: Number(payload.price || 0),
   };
   const res = await axios.post(`${API_BASE}/admin/plan/create`, body, {
     headers: getAuthHeaders(),
@@ -345,6 +346,7 @@ export const updatePlanById = async (id, payload) => {
   if (typeof payload.description !== "undefined")
     body.description = payload.description;
   if (typeof payload.days !== "undefined") body.days = Number(payload.days);
+  if (typeof payload.price !== "undefined") body.price = Number(payload.price);
   const res = await axios.put(`${API_BASE}/admin/plan/update/${id}`, body, {
     headers: getAuthHeaders(),
   });
@@ -545,6 +547,9 @@ export const createVideoApi = async (payload) => {
     }
   }
 
+  if (typeof payload.requiredCorrectAnswer !== "undefined")
+    data.append("requiredCorrectAnswer", String(payload.requiredCorrectAnswer));
+
   const res = await axios.post(`${API_BASE}/admin/video/create`, data, {
     headers: { ...getAuthHeaders(), "Content-Type": "multipart/form-data" },
   });
@@ -628,6 +633,9 @@ export const updateVideoById = async (id, payload) => {
       data.append("category", payload.category);
     }
   }
+
+  if (typeof payload.requiredCorrectAnswer !== "undefined")
+    data.append("requiredCorrectAnswer", String(payload.requiredCorrectAnswer));
 
   const res = await axios.put(`${API_BASE}/admin/video/update/${id}`, data, {
     headers: { ...getAuthHeaders(), "Content-Type": "multipart/form-data" },

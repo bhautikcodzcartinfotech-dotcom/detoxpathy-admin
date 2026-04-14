@@ -221,7 +221,7 @@ const UserForm = ({
         <Dropdown
           label="Plan"
           options={plans.map((p) => ({
-            label: p.name,
+            label: `${p.name} (₹${p.price || 0})`,
             value: p._id,
             disabled: disabledPlanValues.includes(p._id),
           }))}

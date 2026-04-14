@@ -121,6 +121,7 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                       {video.category && (
                         <span>Category: {video.category.categoryTitle}</span>
                       )}
+                      <span>Required Answers: {video.requiredCorrectAnswer || 0}</span>
                     </div>
                   </div>
                 </div>
