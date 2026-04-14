@@ -30,7 +30,7 @@ const Navbar = () => {
   };
 
   return (
-    <header className="h-16 mx-18 bg-white rounded-xl flex items-center justify-between px-6 shadow-md sticky top-0 z-30 border-b border-gray-100">
+    <header className="h-16 w-full bg-white rounded-xl flex items-center justify-between px-6 shadow-md sticky top-0 z-30 border-b border-gray-100">
       {/* Brand / Title */}
       <h2 className="text-xl font-bold text-gray-800 tracking-wide relative group">
         Dashboard

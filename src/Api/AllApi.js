@@ -822,6 +822,8 @@ export const getBranchTime = async (branchId) => {
 export const getAppointmentsByBranch = async (branchId, params = {}) => {
   const queryParams = new URLSearchParams();
   if (params.date) queryParams.append('date', params.date);
+  if (params.startDate) queryParams.append('startDate', params.startDate);
+  if (params.endDate) queryParams.append('endDate', params.endDate);
   if (params.status) queryParams.append('status', params.status);
   if (params.type) queryParams.append('type', params.type);
 
@@ -966,6 +968,9 @@ export const getAllOrders = async (params = {}) => {
   if (params.start) queryParams.append("start", params.start);
   if (params.limit) queryParams.append("limit", params.limit);
   if (params.orderType !== undefined && params.orderType !== "") queryParams.append("orderType", params.orderType);
+  if (params.search) queryParams.append("search", params.search);
+  if (params.status) queryParams.append("status", params.status);
+  if (params.type) queryParams.append("type", params.type);
 
   const res = await axios.get(`${API_BASE}/admin/order/userOrders?${queryParams.toString()}`, {
     headers: getAuthHeaders(),
@@ -979,3 +984,35 @@ export const updateOrderStatus = async (id, orderStatus) => {
   });
   return res.data.data;
 };
+
+export const getOrderStats = async () => {
+  const res = await axios.get(`${API_BASE}/admin/order/stats`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const getOrderDetails = async (id) => {
+  const res = await axios.get(`${API_BASE}/admin/order/${id}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const generateSlots = async (branchId, date) => {
+  const res = await axios.post(`${API_BASE}/admin/branchTime/generate-slot`, {
+    branchId,
+    date
+  }, {
+    headers: getAuthHeaders()
+  });
+  return res.data.data;
+};
+
+export const rescheduleAppointment = async (appointmentId, payload) => {
+  const res = await axios.put(`${API_BASE}/admin/appointment/update/${appointmentId}`, payload, {
+    headers: getAuthHeaders()
+  });
+  return res.data;
+};
+

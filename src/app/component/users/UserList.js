@@ -274,33 +274,34 @@ const UserList = ({ users, loading, onEdit, onDelete, onBulkDelete, onSuggest })
                       {planStatus.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-center space-x-2">
-                    <ActionButton
-                      type="suggest"
-                      onClick={() => onSuggest(u)}
-                      disabled={isDeleted}
-                      title="Suggest Program"
-                    />
-                    <ActionButton
-                      type="edit"
-                      onClick={() => onEdit(u)}
-                      disabled={isDeleted}
-                    />
-                    <ActionButton
-                      type="delete"
-                      onClick={() => handleDeleteClick(u._id, u.name)}
-                      disabled={isDeleted}
-                    />
-                    <ActionButton
-                      type="info"
-                      onClick={() =>
-                        router.push(`/component/users/${u._id}/profile`)
-                      }
-                    />
-                    <ActionButton
-                      type="history"
-                      onClick={() => openHistory(u)}
-                    />
+                  <td className="px-6 py-4">
+                    <div className="flex items-center justify-center gap-2">
+                      <ActionButton
+                        type="suggest"
+                        onClick={() => onSuggest(u)}
+                        disabled={isDeleted}
+                        title="Suggest Program"
+                      />
+                      <ActionButton
+                        type="edit"
+                        onClick={() => onEdit(u)}
+                        disabled={isDeleted}
+                      />
+                      <ActionButton
+                        type="delete"
+                        onClick={() => handleDeleteClick(u._id, u.name)}
+                        disabled={isDeleted}
+                      />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          router.push(`/component/users/${u._id}/profile`);
+                        }}
+                        className="inline-flex items-center justify-center px-4 py-1.5 border border-transparent text-xs font-semibold rounded shadow-sm text-white bg-[#134D41] hover:opacity-90 transition-opacity"
+                      >
+                        View
+                      </button>
+                    </div>
                   </td>
                 </tr>
               );

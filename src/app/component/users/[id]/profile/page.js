@@ -240,95 +240,76 @@ const UserProfilePage = () => {
           <div className="text-gray-600">No user found.</div>
         ) : (
           <div className="space-y-8">
-            <div className="p-8 mx-8 bg-white rounded-2xl shadow-lg flex flex-col md:flex-row items-center gap-6">
-              {/* User Image */}
-              <div className="w-25 h-25 rounded-full overflow-hidden bg-amber-100 shadow">
-                {overview.user?.image ? (
-                  <img
-                    src={`${API_BASE}/${overview.user.image}`}
-                    alt={overview.user?.name}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <div className="flex items-center justify-center h-full text-2xl font-bold text-yellow-600">
-                    {overview.user?.name?.[0] || "U"}
+            <div className="mx-8 bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+              {/* Header */}
+              <div className="p-6 border-b border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="w-14 h-14 rounded-full overflow-hidden bg-[#e6f4f1] text-[#134d41] flex items-center justify-center font-bold text-xl shrink-0">
+                    {overview.user?.image ? (
+                      <img
+                        src={`${API_BASE}/${overview.user.image}`}
+                        alt={overview.user?.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      overview.user?.name?.[0] || "U"
+                    )}
                   </div>
-                )}
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-800">
+                      {overview.user?.name} {overview.user?.surname}
+                    </h2>
+                    <p className="text-sm text-gray-500 mt-1 font-medium tracking-wide">
+                      USR-{overview.user?._id?.slice(-6).toUpperCase() || "XXXXXX"} • {overview.user?.mobilePrefix} {overview.user?.mobileNumber} • {overview.user?.email || "No email"}
+                    </p>
+                  </div>
+                </div>
+                <div className="shrink-0 flex items-center gap-2">
+                  <span className={`px-4 py-1.5 rounded-full text-sm font-semibold flex items-center gap-2 ${
+                    getPlanStatus().status === 'Active' ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    {getPlanStatus().status} {overview.user?.plan ? `— Day ${overview.user?.planCurrentDay ?? 0}` : ''}
+                  </span>
+                </div>
               </div>
 
-              {/* User Info */}
-              <div className="flex-1 space-y-2">
-                <h2 className="text-3xl font-bold text-gray-800">
-                  {overview.user?.name} {overview.user?.surname}
-                </h2>
-                <p className="text-md text-gray-600">
-                  {overview.user?.gender} • {overview.user?.age} yrs
-                </p>
-                <p className="text-md text-gray-600">
-                  {overview.user?.city}, {overview.user?.state},{" "}
-                  {overview.user?.country}
-                </p>
-              </div>
+              {/* Grid Data */}
+              <div className="grid grid-cols-1 md:grid-cols-3">
+                <div className="border-b md:border-r border-gray-200 p-6">
+                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Branch</div>
+                  <div className="text-sm font-medium text-gray-800">{overview.user?.branch?.name || "-"}</div>
+                </div>
+                <div className="border-b md:border-r border-gray-200 p-6">
+                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Plan Configuration</div>
+                  <div className="text-sm font-medium text-gray-800">{overview.user?.plan?.name || "-"}</div>
+                </div>
+                <div className="border-b border-gray-200 p-6">
+                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Gender & Age</div>
+                  <div className="text-sm font-medium text-gray-800">{overview.user?.gender || "-"} • {overview.user?.age ? `${overview.user.age} yrs` : "-"}</div>
+                </div>
+                
+                <div className="border-b md:border-r border-gray-200 p-6">
+                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Location</div>
+                  <div className="text-sm font-medium text-gray-800">{overview.user?.city || "-"}, {overview.user?.state || "-"}, {overview.user?.country || "-"}</div>
+                </div>
+                <div className="border-b md:border-r border-gray-200 p-6">
+                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Physical Stats</div>
+                  <div className="text-sm font-medium text-gray-800">{overview.user?.height || "-"} cm • {overview.user?.weight || "-"} kg</div>
+                </div>
+                <div className="border-b border-gray-200 p-6">
+                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Language & Referrer</div>
+                  <div className="text-sm font-medium text-gray-800">{overview.user?.language || "-"} • {overview.user?.appReferer || "-"}</div>
+                </div>
 
-              {/* Quick Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-5 text-md">
-                <div className="p-5 rounded-xl bg-amber-100 shadow-sm">
-                  <div className="text-gray-500">Plan</div>
-                  <div className="font-semibold text-gray-800">
-                    {overview.user?.plan?.name || "-"}
+                <div className="border-b md:border-r md:border-b-0 border-gray-200 p-6">
+                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Engagements</div>
+                  <div className="text-sm font-medium text-gray-800">
+                    Trial: {formatYesNo(overview.user?.bookTrial)} | Meet Dr: {formatYesNo(overview.user?.meetDoctor)} | Order: {formatYesNo(overview.user?.order)}
                   </div>
                 </div>
-                <div className="p-5 rounded-xl bg-amber-100 shadow-sm">
-                  <div className="text-gray-500">Day</div>
-                  <div className="font-semibold text-gray-800">
-                    {overview.user?.planCurrentDay ?? 0}
-                  </div>
-                </div>
-                <div className="p-5 rounded-xl bg-amber-100 shadow-sm">
-                  <div className="text-gray-500">Branch</div>
-                  <div className="font-semibold text-gray-800">
-                    {overview.user?.branch?.name || "-"}
-                  </div>
-                </div>
-                <div className="p-5 rounded-xl bg-amber-100 shadow-sm">
-                  <div className="text-gray-500">Mobile</div>
-                  <div className="font-semibold text-gray-800">
-                    {overview.user?.mobilePrefix} {overview.user?.mobileNumber}
-                  </div>
-                </div>
-                <div className="p-5 rounded-xl bg-amber-100 shadow-sm">
-                  <div className="text-gray-500">Height / Weight</div>
-                  <div className="font-semibold text-gray-800">
-                    {overview.user?.height} cm / {overview.user?.weight} kg
-                  </div>
-                </div>
-                <div className="p-5 rounded-xl bg-amber-100 shadow-sm">
-                  <div className="text-gray-500">Language</div>
-                  <div className="font-semibold text-gray-800">
-                    {overview.user?.language || "-"}
-                  </div>
-                </div>
-                <div className="p-5 rounded-xl bg-amber-100 shadow-sm">
-                  <div className="text-gray-500">Trial Booked</div>
-                  <div className="font-semibold text-gray-800">
-                    {formatYesNo(overview.user?.bookTrial)}
-                  </div>
-                </div>
-                <div className="p-5 rounded-xl bg-amber-100 shadow-sm">
-                  <div className="text-gray-500">Order</div>
-                  <div className="font-semibold text-gray-800">
-                    {formatYesNo(overview.user?.order)}
-                  </div>
-                </div>
-                <div className="p-5 rounded-xl bg-amber-100 shadow-sm">
-                  <div className="text-gray-500">Meet Doctor</div>
-                  <div className="font-semibold text-gray-800">
-                    {formatYesNo(overview.user?.meetDoctor)}
-                  </div>
-                </div>
-                <div className="p-5 rounded-xl bg-amber-100 shadow-sm">
-                  <div className="text-gray-500">Medical Condition</div>
-                  <div className="font-semibold text-gray-800">
+                <div className="border-b md:border-r md:border-b-0 border-gray-200 p-6">
+                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Medical Condition</div>
+                  <div className="text-sm font-medium text-gray-800">
                     {Array.isArray(overview.user?.medicalDescription)
                       ? (overview.user.medicalDescription.length > 0 ? overview.user.medicalDescription.join(", ") : "-")
                       : (typeof overview.user?.medicalDescription === "string" && overview.user.medicalDescription.trim() !== ""
@@ -336,15 +317,9 @@ const UserProfilePage = () => {
                         : "-")}
                   </div>
                 </div>
-                <div className="p-5 rounded-xl bg-amber-100 shadow-sm">
-                  <div className="text-gray-500">App Referer</div>
-                  <div className="font-semibold text-gray-800">
-                    {overview.user?.appReferer || "-"}
-                  </div>
-                </div>
-                <div className="p-5 rounded-xl bg-amber-100 shadow-sm col-span-2 md:col-span-3">
-                  <div className="text-gray-500">Body Measurements</div>
-                  <div className="font-semibold text-gray-800 flex flex-wrap gap-x-6 gap-y-2 mt-1">
+                <div className="p-6">
+                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Body Measurements</div>
+                  <div className="text-sm font-medium text-gray-800 flex flex-wrap gap-x-3 gap-y-1">
                     <span>Arm: {overview.user?.Arm || "-"}</span>
                     <span>Chest: {overview.user?.Chest || "-"}</span>
                     <span>Hip: {overview.user?.Hip || "-"}</span>
@@ -564,63 +539,40 @@ const UserProfilePage = () => {
               </div>
             )}
 
-            {/* ------------------ Progress by Day ------------------ */}
-            <div className="p-8 mx-7 bg-white rounded-2xl shadow-lg">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-gray-800">
-                  Progress by Day
-                </h3>
-                <span className="text-sm text-gray-500">Latest first</span>
-              </div>
+            {/* ------------------ Program Progress ------------------ */}
+            <div className="mx-8 bg-white rounded-2xl shadow-sm border border-gray-200 p-6 overflow-hidden">
+              <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">
+                Program Progress
+              </h3>
 
-              {Array.isArray(overview.progress) && overview.progress.length ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-8">
-                  {overview.progress.map((d) => (
-                    <div
-                      key={d.day}
-                      className="rounded-2xl bg-white shadow-lg transition overflow-hidden"
-                    >
-                      {d.firstThumbnail ? (
-                        <img
-                          src={`${API_BASE}/${d.firstThumbnail.english}`}
-                          alt={`Day ${d.day}`}
-                          className="w-full h-50 bg-amber-100 object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-50 bg-amber-100" />
-                      )}
-                      <div className="p-4 space-y-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs text-gray-500">Day</span>
-                          <span className="text-sm font-semibold text-gray-800">
-                            {d.day}
-                          </span>
-                        </div>
-
-                        {/* progress bar */}
-                        <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-yellow-400"
-                            style={{ width: `${d.dayProgressPercent || 0}%` }}
-                          />
-                        </div>
-                        <div className="text-right text-xs text-gray-600">
-                          {d.dayProgressPercent || 0}%
-                        </div>
-
-                        {/* Button to open popup */}
-                        <Button
-                          className="w-full bg-yellow-400 hover:bg-yellow-500 text-black rounded py-2 mt-1 mb-3 shadow"
-                          onClick={() => handleDayClick(d)}
-                        >
-                          View Report
-                        </Button>
+              {overview?.user?.plan?.days ? (
+                <div className="flex flex-wrap gap-2">
+                  {Array.from({ length: overview.user.plan.days }).map((_, index) => {
+                    const dayNum = index + 1;
+                    const isCompleted = dayNum <= (overview.user.planCurrentDay || 0);
+                    const dayData = overview.progress?.find((p) => p.day === dayNum);
+                    
+                    return (
+                      <div
+                        key={dayNum}
+                        onClick={() => {
+                          if (dayData) handleDayClick(dayData);
+                        }}
+                        className={`w-12 h-12 flex items-center justify-center font-bold text-sm rounded ${
+                          dayData ? "cursor-pointer hover:opacity-90" : "cursor-default"
+                        } transition-colors`}
+                        style={{
+                          backgroundColor: isCompleted ? "#134D41" : "#E5E7EB",
+                          color: isCompleted ? "#FFFFFF" : "#9CA3AF"
+                        }}
+                      >
+                        {dayNum}
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               ) : (
-                <div className="text-gray-500">No progress yet.</div>
+                <div className="text-gray-500 text-sm">No program active or days not found.</div>
               )}
             </div>
 

@@ -20,6 +20,10 @@ const SearchComponent = ({
   onDateChange = () => {},
   planHistoryFilter = "",
   onPlanHistoryFilterChange = () => {},
+  // Language filter
+  languageOptions = [],
+  selectedLanguage = "",
+  onLanguageChange = () => {},
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -96,8 +100,8 @@ const SearchComponent = ({
       </div>
 
       {/* Additional Filters Grid */}
-      {(planOptions.length > 0 || planHistoryFilter !== undefined) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-4 pt-4 border-t border-gray-200">
+      {(planOptions.length > 0 || planHistoryFilter !== undefined || languageOptions.length > 0) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-200">
           {/* Plan Filter */}
           {planOptions.length > 0 && (
             <div>
@@ -126,6 +130,20 @@ const SearchComponent = ({
                 ]}
                 value={planHistoryFilter}
                 onChange={onPlanHistoryFilterChange}
+              />
+            </div>
+          )}
+
+          {/* Language Filter */}
+          {languageOptions.length > 0 && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Filter by Language
+              </label>
+              <Dropdown
+                options={[{ label: "All Languages", value: "" }, ...languageOptions]}
+                value={selectedLanguage}
+                onChange={onLanguageChange}
               />
             </div>
           )}

@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import RoleGuard from "@/components/RoleGuard";
 import { Header } from "@/utils/header";
 import toast from "react-hot-toast";
@@ -9,6 +10,8 @@ import {
   deleteAppointment,
   joinAppointmentCall,
   endAppointmentCall,
+  generateSlots,
+  rescheduleAppointment,
 } from "@/Api/AllApi";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -20,10 +23,36 @@ import {
   MdVideocam,
   MdCallEnd,
 } from "react-icons/md";
+import { 
+  Calendar, 
+  User, 
+  Clock, 
+  ChevronRight, 
+  Search, 
+  Filter, 
+  CheckCircle, 
+  Clock3, 
+  XOctagon, 
+  LayoutGrid
+} from "lucide-react";
 
 const AGORA_SCRIPT_SRC = "https://download.agora.io/sdk/release/AgoraRTC_N.js";
 
+const getTodayInKolkata = () => {
+  const d = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, '0'),
+    String(d.getDate()).padStart(2, '0')
+  ].join('-');
+};
+
+const getNowInKolkata = () =>
+  new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+
+
 const AppointmentPage = () => {
+  const router = useRouter();
   const { role, branches } = useAuth();
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState([]);
@@ -34,11 +63,21 @@ const AppointmentPage = () => {
   const [callLoadingId, setCallLoadingId] = useState(null);
   const [isCallModalOpen, setIsCallModalOpen] = useState(false);
   const [activeCallAppointment, setActiveCallAppointment] = useState(null);
-  const [callSession, setCallSession] = useState(null);
+  const [callSession, setCallSession] = useState(null); 
   const [callConnected, setCallConnected] = useState(false);
   const [remoteParticipantCount, setRemoteParticipantCount] = useState(0);
   const [callError, setCallError] = useState("");
   const [currentTimeMarker, setCurrentTimeMarker] = useState(Date.now());
+  const [searchTerm, setSearchTerm] = useState("");
+  const [rescheduleData, setRescheduleData] = useState({
+    isOpen: false,
+    appointment: null,
+    date: getTodayInKolkata(),
+    slots: [],
+    loadingSlots: false,
+    selectedSlot: null,
+    submitting: false
+  }); // Add searchTerm state
   const localVideoRef = useRef(null);
   const remoteVideoGridRef = useRef(null);
   const agoraSdkPromiseRef = useRef(null);
@@ -47,18 +86,13 @@ const AppointmentPage = () => {
     localAudioTrack: null,
     localVideoTrack: null,
   });
-  const getTodayInKolkata = () => {
-    const d = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
-    return [
-      d.getFullYear(),
-      String(d.getMonth() + 1).padStart(2, '0'),
-      String(d.getDate()).padStart(2, '0')
-    ].join('-');
-  };
+
 
   const [filterDate, setFilterDate] = useState(getTodayInKolkata());
-  const [filterStatus, setFilterStatus] = useState("1");
+  const [filterStatus, setFilterStatus] = useState(""); // Changed to empty string to show all by default
   const [filterType, setFilterType] = useState("");
+  const [viewMode, setViewMode] = useState("daily"); // "daily" or "weekly"
+  const [weekRange, setWeekRange] = useState({ start: "", end: "" });
 
   const daysMap = {
     1: "Monday",
@@ -92,8 +126,7 @@ const AppointmentPage = () => {
     };
   };
 
-  const getNowInKolkata = () =>
-    new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+
 
   const parseAppointmentDateTime = (date, time) => {
     if (!date || !time) {
@@ -305,12 +338,54 @@ const AppointmentPage = () => {
     }
   };
 
-  const fetchAppointments = async (branchId, date = filterDate, status = filterStatus, type = filterType) => {
+  const getWeekRange = () => {
+    const now = getNowInKolkata();
+    const day = now.getDay(); // 0 (Sun) to 6 (Sat)
+    
+    // We want Monday to Sunday
+    // If today is Sunday (0), we want back 6 days for Monday
+    // If today is Monday (1), we want 0 days for Monday
+    const diffToMonday = day === 0 ? 6 : day - 1;
+    
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - diffToMonday);
+    
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    
+    const formatDate = (d) => {
+      return [
+        d.getFullYear(),
+        String(d.getMonth() + 1).padStart(2, '0'),
+        String(d.getDate()).padStart(2, '0')
+      ].join('-');
+    };
+    
+    return {
+      start: formatDate(monday),
+      end: formatDate(sunday)
+    };
+  };
+
+  const fetchAppointments = async (
+    branchId, 
+    date = filterDate, 
+    status = filterStatus, 
+    type = filterType, 
+    range = weekRange, 
+    mode = viewMode) => {
     if (!branchId) return;
     try {
       setLoading(true);
       const params = {};
-      if (date) params.date = date;
+      
+      if (mode === "weekly" && range.start && range.end) {
+        params.startDate = range.start;
+        params.endDate = range.end;
+      } else if (date) {
+        params.date = date;
+      }
+
       if (status) params.status = status;
       if (type) params.type = type;
       const data = await getAppointmentsByBranch(branchId, params);
@@ -326,6 +401,72 @@ const AppointmentPage = () => {
     }
   };
 
+  // Fetch slots when date or branch changes in reschedule modal
+  useEffect(() => {
+    if (rescheduleData.isOpen && rescheduleData.appointment && rescheduleData.date) {
+      const fetchSlots = async () => {
+        try {
+          setRescheduleData(prev => ({ ...prev, loadingSlots: true, slots: [], selectedSlot: null }));
+          const data = await generateSlots(rescheduleData.appointment.branchId, rescheduleData.date);
+          setRescheduleData(prev => ({ ...prev, slots: data.slots || [], loadingSlots: false }));
+        } catch (err) {
+          toast.error("Failed to fetch available slots");
+          setRescheduleData(prev => ({ ...prev, loadingSlots: false }));
+        }
+      };
+      fetchSlots();
+    }
+  }, [rescheduleData.isOpen, rescheduleData.date]);
+
+  const handleOpenRescheduleModal = (appointment) => {
+    setRescheduleData({
+      isOpen: true,
+      appointment,
+      date: appointment.date,
+      slots: [],
+      loadingSlots: false,
+      selectedSlot: null,
+      submitting: false
+    });
+  };
+
+  const handleReschedule = async () => {
+    if (!rescheduleData.selectedSlot) {
+      toast.error("Please select a time slot");
+      return;
+    }
+
+    try {
+      setRescheduleData(prev => ({ ...prev, submitting: true }));
+      const payload = {
+        date: rescheduleData.date,
+        day: parseDateToDay(rescheduleData.date),
+        startTime: rescheduleData.selectedSlot.startTime,
+        endTime: rescheduleData.selectedSlot.endTime
+      };
+      
+      await rescheduleAppointment(rescheduleData.appointment._id, payload);
+      toast.success("Appointment rescheduled successfully");
+      
+      setRescheduleData(prev => ({ ...prev, isOpen: false }));
+      
+      // Refresh current list
+      fetchAppointments(selectedBranchId, filterDate, filterStatus, filterType);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to reschedule appointment");
+    } finally {
+      setRescheduleData(prev => ({ ...prev, submitting: false }));
+    }
+  };
+
+  const parseDateToDay = (dateString) => {
+    if (!dateString) return null;
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    const jsDay = date.getDay();
+    return jsDay === 0 ? '7' : String(jsDay);
+  };
+
   const openDeleteModal = (id) => {
     setAppointmentToDelete(id);
     setIsDeleteModalOpen(true);
@@ -336,13 +477,13 @@ const AppointmentPage = () => {
     try {
       setLoading(true);
       await deleteAppointment(appointmentToDelete);
-      toast.success("Appointment deleted successfully");
+      toast.success("Appointment cancelled successfully");
       setIsDeleteModalOpen(false);
       setAppointmentToDelete(null);
       fetchAppointments(selectedBranchId, filterDate, filterStatus, filterType);
     } catch (e) {
       console.error(e);
-      toast.error(e?.response?.data?.message || "Failed to delete appointment");
+      toast.error(e?.response?.data?.message || "Failed to cancel appointment");
       setLoading(false);
       setIsDeleteModalOpen(false);
       setAppointmentToDelete(null);
@@ -527,11 +668,11 @@ const AppointmentPage = () => {
 
   useEffect(() => {
     if (selectedBranchId) {
-      fetchAppointments(selectedBranchId, filterDate, filterStatus, filterType);
+      fetchAppointments(selectedBranchId, filterDate, filterStatus, filterType, weekRange, viewMode);
     } else {
         setLoading(false);
     }
-  }, [selectedBranchId, filterDate, filterStatus, filterType]);
+  }, [selectedBranchId, filterDate, filterStatus, filterType, weekRange, viewMode]);
 
   useEffect(() => {
     return () => {
@@ -547,229 +688,274 @@ const AppointmentPage = () => {
     return () => window.clearInterval(intervalId);
   }, []);
 
+  const getAppointmentFilterStatus = (appointment) => {
+    if ((appointment.status || 'scheduled') === 'cancelled') {
+        return 'cancelled';
+    }
+
+    if (Number(appointment.type) === 1 && appointment.call?.status === 'ended') {
+        return 'completed';
+    }
+
+    const currentDate = getTodayInKolkata();
+    const now = getNowInKolkata();
+    const currentMinutes = (now.getHours() * 60) + now.getMinutes();
+
+    if (appointment.date > currentDate) {
+        return 'upcoming';
+    }
+
+    if (appointment.date < currentDate) {
+        return 'completed';
+    }
+
+    const timeMatch = String(appointment.endTime).trim().match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/i);
+    if (!timeMatch) return 'upcoming';
+
+    let hours = Number(timeMatch[1]);
+    const minutes = Number(timeMatch[2]);
+    const period = timeMatch[3].toUpperCase();
+    if (period === 'AM') hours = (hours === 12 ? 0 : hours);
+    else hours = (hours === 12 ? 12 : hours + 12);
+
+    const appointmentEndMinutes = (hours * 60) + minutes;
+
+    return appointmentEndMinutes >= currentMinutes ? 'upcoming' : 'completed';
+  };
+
+  const filteredAppointments = appointments.filter((item) => {
+    const fullName = `${item.userId?.name} ${item.userId?.surname}`.toLowerCase();
+    const matchesSearch = fullName.includes(searchTerm.toLowerCase()) || 
+                          item._id.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesSearch;
+  });
+
+  const stats = {
+    total: appointments.length,
+    completed: appointments.filter(a => getAppointmentFilterStatus(a) === 'completed').length,
+    upcoming: appointments.filter(a => getAppointmentFilterStatus(a) === 'upcoming').length,
+    cancelled: appointments.filter(a => getAppointmentFilterStatus(a) === 'cancelled').length,
+  };
+
   return (
     <RoleGuard allow={["Admin", "subadmin"]}>
-      <div className="w-full h-full px-4 sm:px-6 lg:px-10 xl:px-18">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-          <div className="flex flex-col gap-1">
-             <Header size="3xl">Appointments</Header>
-             <p className="text-xs text-gray-400">View scheduled appointments for your branch</p>
+      <div className="w-full h-full px-4 sm:px-6 lg:px-8 bg-[#F8FAFC] min-h-screen pb-10">
+        <div className="flex flex-col gap-1 mb-8 pt-6">
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight">Appointments</h1>
+          <p className="text-sm text-gray-500 font-medium">All consultations across all patients. Manage, reassign, or cancel.</p>
+        </div>
+
+        {/* Stats Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          {[
+            { label: viewMode === "daily" ? "TODAY TOTAL" : "WEEKLY TOTAL", value: stats.total, color: "border-teal-600", icon: LayoutGrid, iconColor: "text-teal-600" },
+            { label: "COMPLETED", value: stats.completed, color: "border-green-500", icon: CheckCircle, iconColor: "text-green-500" },
+            { label: "UPCOMING", value: stats.upcoming, color: "border-orange-500", icon: Clock3, iconColor: "text-orange-500" },
+            { label: "CANCELLED", value: stats.cancelled, color: "border-red-500", icon: XOctagon, iconColor: "text-red-500" },
+          ].map((item, idx) => (
+            <div key={idx} className={`bg-white p-6 rounded-2xl border-t-4 ${item.color} shadow-sm transition-all hover:shadow-md hover:scale-[1.02]`}>
+              <div className="flex justify-between items-start mb-2">
+                <p className="text-xs font-black text-gray-400 tracking-widest">{item.label}</p>
+                <item.icon className={`w-4 h-4 ${item.iconColor}`} />
+              </div>
+              <p className="text-3xl font-black text-gray-900">{item.value.toLocaleString()}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Filters Bar */}
+        <div className="flex flex-wrap items-center gap-4 mb-6">
+          <div className="flex-1 min-w-[300px] relative">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by patient name or ID..."
+              className="w-full h-12 pl-11 pr-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white shadow-sm transition-all text-sm font-medium"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+
+          {role === "Admin" && (
+            <div className="h-12 flex items-center gap-2 bg-white px-4 rounded-xl border border-gray-200 shadow-sm min-w-[180px]">
+              <LayoutGrid className="w-4 h-4 text-gray-400" />
+              <select
+                className="text-sm font-bold text-gray-700 bg-transparent focus:outline-none cursor-pointer w-full"
+                value={selectedBranchId}
+                onChange={(e) => setSelectedBranchId(e.target.value)}
+              >
+                {allBranches.map((b) => (
+                  <option key={b._id} value={b._id}>
+                    {b.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+          
+          <div className="h-12 flex items-center gap-2 bg-white px-4 rounded-xl border border-gray-200 shadow-sm">
+            <Filter className="w-4 h-4 text-gray-400" />
+            <select
+              className="text-sm font-bold text-gray-700 bg-transparent focus:outline-none cursor-pointer"
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+            >
+              <option value="">All Status</option>
+              <option value="1">Upcoming</option>
+              <option value="2">Completed</option>
+              <option value="3">Cancelled</option>
+            </select>
+          </div>
+
+          <div className="flex items-center gap-1 bg-gray-100 p-1.5 rounded-xl shadow-inner">
+             <button 
+                onClick={() => {
+                  setViewMode("daily");
+                  setFilterDate(getTodayInKolkata());
+                }}
+                className={`px-5 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${viewMode === "daily" && filterDate === getTodayInKolkata() ? 'bg-white text-teal-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+             >
+                Today
+             </button>
+             <button 
+                onClick={() => {
+                  setWeekRange(getWeekRange());
+                  setViewMode("weekly");
+                }}
+                className={`px-5 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${viewMode === "weekly" ? 'bg-white text-teal-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+             >
+                This Week
+             </button>
           </div>
           
-          <div className="flex flex-wrap items-center gap-4">
-            {role === "Admin" && (
-                <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-gray-200 shadow-sm">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Branch</label>
-                <span className="p-1 text-sm font-semibold text-gray-700 whitespace-nowrap">
-                  {allBranches.find((b) => b._id === selectedBranchId)?.name || 'Loading...'}
-                </span>
-                </div>
-            )}
-            
-            <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-gray-200 shadow-sm">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Date</label>
-              <input
-                  type="date"
-                  value={filterDate}
-                  onChange={(e) => setFilterDate(e.target.value)}
-                  className="p-1 text-sm font-semibold text-gray-700 focus:outline-none bg-transparent"
-              />
-            </div>
-
-            <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-gray-200 shadow-sm">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Status</label>
-              <select
-                  value={filterStatus}
-                  onChange={(e) => setFilterStatus(e.target.value)}
-                  className="p-1 text-sm font-semibold text-gray-700 focus:outline-none bg-transparent"
-              >
-                  <option value="">All</option>
-                  <option value="1">Upcoming</option>
-                  <option value="2">Past</option>
-              </select>
-            </div>
-
-            <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-gray-200 shadow-sm">
-              <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Type</label>
-              <select
-                  value={filterType}
-                  onChange={(e) => setFilterType(e.target.value)}
-                  className="p-1 text-sm font-semibold text-gray-700 focus:outline-none bg-transparent"
-              >
-                  <option value="">All</option>
-                  <option value="1">Online</option>
-                  <option value="2">Offline</option>
-              </select>
-            </div>
+          <div className="h-12 flex items-center gap-2 bg-white px-4 rounded-xl border border-gray-200 shadow-sm">
+             <Calendar className="w-4 h-4 text-gray-400" />
+             <input
+                type="date"
+                value={filterDate}
+                onChange={(e) => {
+                  setFilterDate(e.target.value);
+                  setViewMode("daily");
+                }}
+                className="text-sm font-bold text-gray-700 bg-transparent focus:outline-none"
+             />
           </div>
         </div>
 
         {loading ? (
-          <div className="flex justify-center items-center h-64">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500"></div>
+          <div className="flex justify-center items-center h-64 bg-white rounded-3xl border border-gray-100 shadow-sm">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
           </div>
-        ) : appointments.length > 0 ? (
-          <div className="bg-white shadow-2xl rounded-[2rem] overflow-hidden border border-gray-100">
-            <div className="p-8 border-b border-gray-100 bg-gradient-to-br from-white to-blue-50/30">
-                <div className="flex items-center justify-between">
-                    <div>
-                        <h3 className="text-2xl font-black text-gray-900 tracking-tight">Scheduled Appointments</h3>
-                        <p className="text-sm text-gray-500 mt-1 font-medium italic">List of upcoming user bookings</p>
-                    </div>
-                    <div className="p-3 bg-blue-100 rounded-2xl text-blue-700">
-                        <MdCalendarToday size={24} />
-                    </div>
-                </div>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="bg-gray-50/50 text-gray-400 uppercase text-[10px] font-black tracking-[0.2em]">
-                  <tr>
-                    <th className="px-8 py-5">Date & Day</th>
-                    <th className="px-8 py-5 text-center">Time Slot</th>
-                    <th className="px-8 py-5 text-center">User / Type</th>
-                    <th className="px-8 py-5 text-center">Call</th>
-                    <th className="px-8 py-5 text-right whitespace-nowrap">Creation Date</th>
-                    <th className="px-8 py-5 text-center">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {appointments.map((item, idx) => {
-                    void currentTimeMarker;
-                    const callStatusMeta = getCallStatusMeta(item.call?.status);
-                    const isOnline = item.type === 1;
-                    const timeState = getAppointmentTimeState(item);
-                    const isCurrentCall = activeCallAppointment?._id === item._id;
-                    const canReceiveCall =
-                      isOnline &&
-                      timeState.isLiveWindow &&
-                      item.call?.status !== "ended" &&
-                      (!activeCallAppointment?._id || isCurrentCall);
-                    const canCutCall =
-                      isOnline &&
-                      timeState.isLiveWindow &&
-                      item.call?.status !== "ended";
+        ) : filteredAppointments.length > 0 ? (
+          <div className="overflow-x-auto bg-white rounded-[2rem] border border-gray-100 shadow-xl shadow-teal-900/5">
+            <table className="min-w-full">
+              <thead>
+                <tr className="border-b border-gray-50 bg-gray-50/30">
+                  <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">CON ID</th>
+                  <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">PATIENT</th>
+                  <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">DOCTOR</th>
+                  <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">DATE & TIME</th>
+                  <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">STATUS</th>
+                  <th className="px-6 py-5 text-center text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">ACTIONS</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {filteredAppointments.map((item, idx) => {
+                  const statusLabel = getAppointmentFilterStatus(item);
+                  const isOnline = item.type === 1;
+                  const timeState = getAppointmentTimeState(item);
+                  const isCurrentCall = activeCallAppointment?._id === item._id;
+                  const canReceiveCall =
+                    isOnline &&
+                    timeState.isLiveWindow &&
+                    item.call?.status !== "ended" &&
+                    (!activeCallAppointment?._id || isCurrentCall);
 
-                    return (
-                      <tr key={idx} className="hover:bg-blue-50/10 transition-all group">
-                        <td className="px-8 py-6">
-                          <div className="flex items-center gap-3">
-                            <div className="w-1.5 h-1.5 bg-blue-400 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.6)]"></div>
-                            <div className="flex flex-col">
-                              <span className="font-bold text-gray-700 text-lg">{item.date}</span>
-                              <span className="text-xs text-gray-400 font-medium">{daysMap[item.day] || `Day ${item.day}`}</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-8 py-6">
-                          <div className="flex items-center justify-center gap-2">
-                            <MdAccessTime className="text-gray-400" />
-                            <span className="px-4 py-2 bg-gray-100 rounded-xl text-xs font-black text-gray-500 border border-gray-200">
-                              {item.startTime}
+                  return (
+                    <tr key={item._id} className="group hover:bg-gray-50/80 transition-all duration-200">
+                      <td className="px-6 py-6 whitespace-nowrap text-[13px] font-black text-teal-600">
+                        CON-{item._id.slice(-6).toUpperCase()}
+                      </td>
+
+                      <td className="px-6 py-6 whitespace-nowrap text-[14px] font-bold text-gray-800">
+                        {item.userId?.name} {item.userId?.surname}
+                      </td>
+
+                      <td className="px-6 py-6 whitespace-nowrap text-[13px] font-black text-teal-700 uppercase tracking-tighter">
+                        Dr. Admin
+                      </td>
+
+                      <td className="px-6 py-6 whitespace-nowrap">
+                         <div className="flex flex-col">
+                            <span className="text-[13px] font-bold text-gray-800">
+                               {item.date === getTodayInKolkata() ? "Today" : item.date}
                             </span>
-                            <div className="w-4 h-0.5 bg-gray-200 rounded-full"></div>
-                            <span className="px-4 py-2 bg-gray-100 rounded-xl text-xs font-black text-gray-500 border border-gray-200">
-                              {item.endTime}
-                            </span>
-                          </div>
-                        </td>
-                        <td className="px-8 py-6">
-                          <div className="flex items-center justify-center gap-4">
-                            <div className="flex flex-col items-center">
-                              <span className="text-[10px] uppercase font-bold text-gray-300 tracking-tighter mb-1 mt-1">User</span>
-                              <div className="flex items-center gap-1 px-3 py-1 bg-purple-50 text-purple-600 rounded-lg text-xs font-bold border border-purple-100">
-                                <MdOutlinePersonOutline size={14} />
-                                <span className="truncate max-w-[150px]">{item.userId?.name} {item.userId?.surname}</span>
-                              </div>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                               <Clock className="w-3 h-3 text-gray-400" />
+                               <span className="text-[12px] font-medium text-gray-500 uppercase tracking-wide">
+                                  {item.startTime}
+                               </span>
                             </div>
-                            <div className="flex flex-col items-center">
-                              <span className="text-[10px] uppercase font-bold text-gray-300 tracking-tighter mb-1 mt-1">Type</span>
-                              <div className="flex items-center gap-1 px-3 py-1 bg-green-50 text-green-600 rounded-lg text-xs font-bold border border-green-100">
-                                <MdOutlineCategory size={14} />
-                                <span>{item.type === 1 ? "Online" : item.type === 2 ? "Offline" : item.type}</span>
-                              </div>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-8 py-6">
-                          {isOnline ? (
-                            <div className="flex flex-col items-center gap-2">
-                              <span className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-bold ${callStatusMeta.className}`}>
-                                {callStatusMeta.label}
-                              </span>
-                              <span className="text-[11px] font-medium text-gray-400">
-                                {item.agoraAppId ? "Agora ready" : "Agora app id missing"}
-                              </span>
-                              {!timeState.isLiveWindow && (
-                                <span className="text-[11px] font-medium text-amber-600">
-                                  {timeState.isBeforeWindow
-                                    ? "Call opens at appointment time"
-                                    : timeState.isAfterWindow
-                                    ? "Appointment time ended"
-                                    : ""}
-                                </span>
-                              )}
-                            </div>
-                          ) : (
-                            <div className="flex justify-center">
-                              <span className="inline-flex items-center rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-500 border border-gray-200">
-                                No call
-                              </span>
-                            </div>
+                         </div>
+                      </td>
+
+                      <td className="px-6 py-6 whitespace-nowrap">
+                         <span className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase shadow-sm ${
+                            statusLabel === 'completed' ? 'bg-green-100 text-green-700' :
+                            statusLabel === 'cancelled' ? 'bg-red-100 text-red-600' :
+                            'bg-orange-100 text-orange-600'
+                         }`}>
+                            {statusLabel}
+                         </span>
+                      </td>
+
+                      <td className="px-6 py-6">
+                        <div className="flex items-center justify-center gap-2">
+                          {isOnline && timeState.isLiveWindow && item.call?.status !== "ended" && (
+                             <button
+                                onClick={() => handleReceiveCall(item)}
+                                disabled={!canReceiveCall || callLoadingId === item._id}
+                                className="h-9 px-4 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-black shadow-lg shadow-teal-100 transition-all disabled:opacity-50 flex items-center gap-2"
+                             >
+                                <MdVideocam size={16} />
+                                {item.call?.status === "ongoing" ? "Rejoin" : "Join"}
+                             </button>
                           )}
-                        </td>
-                        <td className="px-8 py-6 text-right whitespace-nowrap">
-                          <span className="text-xs font-medium text-gray-300 italic">
-                            {new Date(item.createdAt).toLocaleDateString()}
-                          </span>
-                        </td>
-                        <td className="px-8 py-6">
-                          <div className="flex items-center justify-center gap-2">
-                            {isOnline && timeState.isLiveWindow && (
-                              <>
-                                <button
-                                  onClick={() => handleReceiveCall(item)}
-                                  disabled={!canReceiveCall || callLoadingId === item._id}
-                                  className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-4 py-2 text-xs font-black text-blue-700 border border-blue-100 transition-colors hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50"
-                                  title="Receive Video Call"
-                                >
-                                  <MdVideocam size={16} />
-                                  <span>{item.call?.status === "ongoing" ? "Rejoin" : "Receive"}</span>
-                                </button>
-                                <button
-                                  onClick={() => handleCutCall(item)}
-                                  disabled={!canCutCall || callLoadingId === item._id}
-                                  className="inline-flex items-center gap-2 rounded-full bg-rose-50 px-4 py-2 text-xs font-black text-rose-700 border border-rose-100 transition-colors hover:bg-rose-100 disabled:cursor-not-allowed disabled:opacity-50"
-                                  title="Cut Video Call"
-                                >
-                                  <MdCallEnd size={16} />
-                                  <span>Cut Call</span>
-                                </button>
-                              </>
-                            )}
-                            <button
-                              onClick={() => openDeleteModal(item._id)}
-                              className="p-2 text-red-500 bg-red-50 hover:bg-red-100 rounded-full transition-colors"
-                              title="Delete Appointment"
-                            >
-                              <MdDelete size={20} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                          <button
+                            className="h-9 px-4 bg-teal-50 text-teal-700 hover:bg-teal-100 rounded-xl text-xs font-bold transition-all"
+                            onClick={() => handleOpenRescheduleModal(item)}
+                          >
+                            Reschedule
+                          </button>
+                          <button
+                            className="h-9 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-bold shadow-sm transition-all"
+                            onClick={() => router.push(`/component/users/${item.userId?._id}/profile`)}
+                          >
+                            View
+                          </button>
+                          {statusLabel === 'upcoming' && (
+                             <button
+                               onClick={() => openDeleteModal(item._id)}
+                               className="h-9 px-4 bg-white border border-red-100 hover:bg-red-50 text-red-600 rounded-xl text-xs font-bold shadow-sm transition-all"
+                             >
+                               Cancel
+                             </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         ) : (
-          <div className="bg-white shadow-2xl rounded-[3rem] p-16 text-center border border-gray-100 flex flex-col items-center max-w-2xl mx-auto mt-10">
-            <div className="w-24 h-24 bg-blue-50 rounded-full flex items-center justify-center text-blue-500 mb-8 animate-pulse">
-                <MdCalendarToday size={48} />
+          <div className="bg-white rounded-3xl border border-gray-100 p-20 text-center shadow-sm">
+            <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
+               <Calendar className="w-10 h-10 text-gray-300" />
             </div>
-            <h3 className="text-3xl font-black text-gray-900 tracking-tight mb-4">No Appointments Found</h3>
-            <p className="text-gray-500 mb-10 max-w-sm text-lg leading-relaxed font-medium">It looks like there are no scheduled appointments for this branch right now.</p>
+            <h3 className="text-xl font-black text-gray-900 mb-2">No Appointments Found</h3>
+            <p className="text-gray-500 max-w-sm mx-auto font-medium">There are no scheduled consultations matching your current filters.</p>
           </div>
         )}
       </div>
@@ -781,8 +967,8 @@ const AppointmentPage = () => {
               <div className="flex flex-col gap-6 border-b border-slate-100 bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.16),_transparent_28%),linear-gradient(135deg,_#ffffff,_#eff6ff)] px-6 py-6 sm:px-8">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   <div>
-                    <p className="text-xs font-black uppercase tracking-[0.25em] text-sky-500">
-                      Admin Video Call
+                    <p className="text-xs font-black uppercase tracking-[0.25em] text-teal-600">
+                      Doctor Video Consultation
                     </p>
                     <h3 className="mt-2 text-2xl font-black text-slate-900">
                       {activeCallAppointment.userId?.name} {activeCallAppointment.userId?.surname}
@@ -792,8 +978,8 @@ const AppointmentPage = () => {
                     </p>
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
-                    <span className="inline-flex items-center rounded-full border border-sky-100 bg-sky-50 px-4 py-2 text-xs font-black text-sky-700">
-                      {callConnected ? "Admin connected" : "Connecting..."}
+                    <span className="inline-flex items-center rounded-full border border-teal-100 bg-teal-50 px-4 py-2 text-xs font-black text-teal-700">
+                      {callConnected ? "Connected" : "Connecting..."}
                     </span>
                     <span className="inline-flex items-center rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-500">
                       {remoteParticipantCount > 0
@@ -802,14 +988,6 @@ const AppointmentPage = () => {
                     </span>
                   </div>
                 </div>
-                {(callSession?.channelName || activeCallAppointment.call?.channelName) && (
-                  <div className="rounded-2xl border border-slate-200 bg-white/80 px-4 py-3 text-xs font-medium text-slate-500">
-                    Channel:{" "}
-                    <span className="font-black text-slate-700">
-                      {callSession?.channelName || activeCallAppointment.call?.channelName}
-                    </span>
-                  </div>
-                )}
                 {callError && (
                   <div className="rounded-2xl border border-rose-100 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700">
                     {callError}
@@ -821,10 +999,10 @@ const AppointmentPage = () => {
                 <div className="rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm">
                   <div className="mb-3 flex items-center justify-between">
                     <h4 className="text-sm font-black uppercase tracking-[0.2em] text-slate-500">
-                      Admin Camera
+                      Local Feed
                     </h4>
                     <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-700 border border-emerald-100">
-                      Live preview
+                      Live
                     </span>
                   </div>
                   <div
@@ -836,7 +1014,7 @@ const AppointmentPage = () => {
                 <div className="rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm">
                   <div className="mb-3 flex items-center justify-between">
                     <h4 className="text-sm font-black uppercase tracking-[0.2em] text-slate-500">
-                      User Camera
+                      Remote Participant
                     </h4>
                     <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-[11px] font-black text-amber-700 border border-amber-100">
                       {remoteParticipantCount > 0 ? "Connected" : "Waiting"}
@@ -848,7 +1026,7 @@ const AppointmentPage = () => {
                   />
                   {remoteParticipantCount === 0 && (
                     <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-500">
-                      The admin is ready. When the user joins the same Agora channel, their video will appear here.
+                      Your feed is live. Waiting for the patient to join the consultation.
                     </div>
                   )}
                 </div>
@@ -856,15 +1034,15 @@ const AppointmentPage = () => {
 
               <div className="flex flex-col gap-3 border-t border-slate-100 bg-white px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
                 <p className="text-sm font-medium text-slate-500">
-                  This modal stays open while the admin call is active.
+                  Total participants: {remoteParticipantCount + (callConnected ? 1 : 0)}
                 </p>
                 <button
                   onClick={() => handleCutCall(activeCallAppointment)}
                   disabled={callLoadingId === activeCallAppointment._id}
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-rose-600 px-6 py-3 text-sm font-black text-white transition-colors hover:bg-rose-700 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-rose-600 px-6 py-3 text-sm font-black text-white transition-colors hover:bg-rose-700 shadow-lg shadow-rose-200 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <MdCallEnd size={18} />
-                  <span>Cut Video Call</span>
+                  <span>End Consultation</span>
                 </button>
               </div>
             </div>
@@ -874,31 +1052,131 @@ const AppointmentPage = () => {
 
       {isDeleteModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-          <div className="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4">
-            <h3 className="text-xl font-black text-gray-900 mb-2">Delete Appointment</h3>
-            <p className="text-gray-500 font-medium mb-6">Are you sure you want to delete this appointment? This action cannot be undone.</p>
-            <div className="flex justify-end gap-3">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-sm w-full mx-4 border border-white/20">
+            <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mb-6">
+               <XOctagon className="w-8 h-8 text-red-500" />
+            </div>
+            <h3 className="text-2xl font-black text-gray-900 mb-2">Cancel Appointment</h3>
+            <p className="text-gray-500 font-medium mb-8">Are you sure you want to cancel this consultation? This action cannot be undone.</p>
+            <div className="flex gap-3">
               <button 
                 onClick={() => {
                   setIsDeleteModalOpen(false);
                   setAppointmentToDelete(null);
                 }}
-                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-colors"
+                className="flex-1 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-black rounded-2xl transition-all"
               >
-                Cancel
+                No, Keep it
               </button>
               <button 
                 onClick={confirmDelete}
-                className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-colors"
+                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-black rounded-2xl shadow-lg shadow-red-200 transition-all"
               >
-                Delete
+                Yes, Cancel
               </button>
             </div>
           </div>
         </div>
       )}
+
+      {/* Reschedule Modal */}
+      {rescheduleData.isOpen && (
+          <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+             <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl shadow-teal-900/20 overflow-hidden transform animate-in zoom-in-95 duration-300">
+                {/* Header */}
+                <div className="px-8 pt-8 pb-6 bg-gradient-to-br from-teal-50 to-white border-b border-teal-100/50">
+                   <div className="flex items-center justify-between mb-2">
+                     <h3 className="text-2xl font-black text-gray-900 tracking-tight">Reschedule</h3>
+                     <button 
+                        onClick={() => setRescheduleData(prev => ({ ...prev, isOpen: false }))}
+                        className="w-10 h-10 rounded-full bg-white border border-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 hover:shadow-md transition-all"
+                     >
+                        ×
+                     </button>
+                   </div>
+                   <p className="text-gray-500 text-sm font-medium">Select a new date and time for the appointment.</p>
+                </div>
+
+                <div className="p-8 space-y-6">
+                   {/* Date Selection */}
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-600 px-1">Choose Date</label>
+                      <div className="relative">
+                         <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                         <input 
+                            type="date"
+                            min={getTodayInKolkata()}
+                            value={rescheduleData.date}
+                            onChange={(e) => setRescheduleData(prev => ({ ...prev, date: e.target.value }))}
+                            className="w-full h-14 pl-12 pr-4 bg-gray-50 rounded-2xl border border-transparent focus:border-teal-500 focus:bg-white focus:outline-none text-sm font-bold text-gray-700 transition-all"
+                         />
+                      </div>
+                   </div>
+
+                   {/* Slot Selection */}
+                   <div className="space-y-3">
+                      <label className="text-[10px] font-black uppercase tracking-[0.2em] text-teal-600 px-1">Available Slots</label>
+                      
+                      <div className="grid grid-cols-2 gap-3 max-h-[240px] overflow-y-auto px-1 pb-2 scrollbar-hide">
+                         {rescheduleData.loadingSlots ? (
+                            <div className="col-span-2 py-12 flex flex-col items-center justify-center gap-4 bg-gray-50 rounded-3xl">
+                               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-teal-600"></div>
+                               <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">Finding Slots...</span>
+                            </div>
+                         ) : rescheduleData.slots.length > 0 ? (
+                            rescheduleData.slots.map((slot, idx) => (
+                               <button
+                                  key={idx}
+                                  onClick={() => setRescheduleData(prev => ({ ...prev, selectedSlot: slot }))}
+                                  className={`h-14 rounded-2xl border-2 flex flex-col items-center justify-center gap-0.5 transition-all ${
+                                    rescheduleData.selectedSlot === slot 
+                                      ? 'bg-teal-500 border-teal-500 text-white shadow-lg shadow-teal-500/30' 
+                                      : 'bg-white border-gray-100 text-gray-700 hover:border-teal-200 hover:shadow-md hover:scale-105'
+                                  }`}
+                               >
+                                  <span className="text-[13px] font-black">{slot.startTime}</span>
+                                  <span className={`text-[9px] font-black uppercase tracking-tighter opacity-60`}>To {slot.endTime}</span>
+                               </button>
+                            ))
+                         ) : (
+                            <div className="col-span-2 py-12 text-center bg-gray-50 rounded-3xl border-2 border-dashed border-gray-100">
+                               <p className="text-xs font-black text-gray-400 uppercase tracking-widest">No Slots Available</p>
+                               <p className="text-[10px] text-gray-300 mt-1">Try another date</p>
+                            </div>
+                         )}
+                      </div>
+                   </div>
+                </div>
+
+                {/* Footer */}
+                <div className="p-8 pt-0 flex gap-4">
+                   <button 
+                      onClick={() => setRescheduleData(prev => ({ ...prev, isOpen: false }))}
+                      className="flex-1 h-14 rounded-2xl border border-gray-200 text-gray-600 font-black uppercase tracking-widest text-xs hover:bg-gray-50 transition-all"
+                   >
+                      Cancel
+                   </button>
+                   <button 
+                      onClick={handleReschedule}
+                      disabled={!rescheduleData.selectedSlot || rescheduleData.submitting}
+                      className="flex-[2] h-14 rounded-2xl bg-teal-600 text-white font-black uppercase tracking-[0.15em] text-xs shadow-xl shadow-teal-600/30 hover:bg-teal-700 hover:scale-105 active:scale-95 disabled:opacity-50 disabled:scale-100 transition-all flex items-center justify-center gap-2"
+                   >
+                      {rescheduleData.submitting ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          <span>Wait...</span>
+                        </>
+                      ) : (
+                        <span>Confirm Slot</span>
+                      )}
+                   </button>
+                </div>
+             </div>
+          </div>
+        )}
     </RoleGuard>
   );
 };
 
 export default AppointmentPage;
+

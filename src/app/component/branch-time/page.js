@@ -141,102 +141,80 @@ const BranchTimePage = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500"></div>
           </div>
         ) : branchTimeData ? (
-          <div className="bg-white shadow-2xl rounded-[2rem] overflow-hidden border border-gray-100">
-            <div className="p-8 border-b border-gray-100 bg-gradient-to-br from-white to-orange-50/30">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-2xl font-black text-gray-900 tracking-tight">Active Schedule</h3>
-                  <p className="text-sm text-gray-500 mt-1 font-medium italic">Configure session durations and buffer periods</p>
-                </div>
-                <div className="p-3 bg-yellow-100 rounded-2xl text-yellow-700">
-                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="p-6 border-b border-gray-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 rounded-full overflow-hidden bg-[#e6f4f1] text-[#134d41] flex items-center justify-center font-bold text-xl shrink-0">
+                  <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                 </div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800">
+                    Active Schedule
+                  </h2>
+                  <p className="text-sm text-gray-500 mt-1 font-medium tracking-wide">
+                    Updated: {new Date(branchTimeData.updatedAt).toLocaleDateString()}
+                  </p>
+                </div>
               </div>
             </div>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left">
-                <thead className="bg-gray-50/50 text-gray-400 uppercase text-[10px] font-black tracking-[0.2em]">
-                  <tr>
-                    <th className="px-8 py-5">Day of Week</th>
-                    <th className="px-8 py-5 text-center">Window</th>
-                    <th className="px-8 py-5 text-center">Slot Config</th>
-                    <th className="px-8 py-5 text-right whitespace-nowrap">Last Updated</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-50">
-                  {branchTimeData.availability?.map((item, idx) => (
-                    <tr key={idx} className="hover:bg-yellow-50/10 transition-all group">
-                      <td className="px-8 py-6">
-                        <div className="flex items-center gap-3">
-                          <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full shadow-[0_0_8px_rgba(250,204,21,0.6)]"></div>
-                          <span className="font-bold text-gray-700 text-lg">{daysMap[item.day] || `Day ${item.day}`}</span>
-                        </div>
-                      </td>
-                      <td className="px-8 py-6">
-                        <div className="flex flex-col items-center justify-center gap-2">
-                          <div className="flex items-center gap-2">
-                            <span className="px-4 py-2 bg-gray-100 rounded-xl text-xs font-black text-gray-500 border border-gray-200 whitespace-nowrap">
-                              {item.startTime}
-                            </span>
-                            <div className="w-4 h-0.5 bg-gray-200 rounded-full"></div>
-                            <span className="px-4 py-2 bg-gray-100 rounded-xl text-xs font-black text-gray-500 border border-gray-200 whitespace-nowrap">
-                              {item.endTime}
-                            </span>
-                          </div>
-                          {(item.breakStartTime && item.breakEndTime) && (
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] uppercase font-bold text-gray-400">Break:</span>
-                              <span className="px-2 py-1 bg-orange-50 rounded-lg text-[10px] font-bold text-orange-600 border border-orange-100 whitespace-nowrap">
-                                {item.breakStartTime}
-                              </span>
-                              <div className="w-2 h-px bg-orange-200"></div>
-                              <span className="px-2 py-1 bg-orange-50 rounded-lg text-[10px] font-bold text-orange-600 border border-orange-100 whitespace-nowrap">
-                                {item.breakEndTime}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-8 py-6">
-                        <div className="flex items-center justify-center gap-4">
-                          <div className="flex flex-col items-center">
-                            <span className="text-[10px] uppercase font-bold text-gray-300 tracking-tighter mb-1">Duration</span>
-                            <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-lg text-sm font-bold border border-blue-100">
-                              {item.slotDuration}m
-                            </span>
-                          </div>
-                          <div className="flex flex-col items-center">
-                            <span className="text-[10px] uppercase font-bold text-gray-300 tracking-tighter mb-1">Buffer</span>
-                            <span className="px-3 py-1 bg-green-50 text-green-600 rounded-lg text-sm font-bold border border-green-100">
-                              {item.bufferTime}m
-                            </span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-8 py-6 text-right whitespace-nowrap">
-                        <span className="text-xs font-medium text-gray-300 italic">
-                          {new Date(branchTimeData.updatedAt).toLocaleDateString()}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+              {branchTimeData.availability?.map((item, idx) => (
+                <div key={idx} className="border-b md:border-r border-gray-200 p-6 flex flex-col gap-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-base font-bold text-[#134D41] uppercase tracking-wide">
+                      {daysMap[item.day] || `Day ${item.day}`}
+                    </span>
+                  </div>
+                  
+                  <div>
+                    <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Time Window</div>
+                    <div className="text-sm font-medium text-gray-800 bg-gray-50 p-2 rounded-lg border border-gray-100 inline-block">
+                      {item.startTime} — {item.endTime}
+                    </div>
+                  </div>
+
+                  {item.breakStartTime && item.breakEndTime ? (
+                    <div>
+                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Break Time</div>
+                      <div className="text-sm font-medium text-amber-600 bg-amber-50 p-2 rounded-lg border border-amber-100 inline-block">
+                        {item.breakStartTime} — {item.breakEndTime}
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Break Time</div>
+                      <div className="text-sm font-medium text-gray-400">None</div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-wrap gap-6 mt-1 border-t border-gray-100 pt-4">
+                    <div>
+                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Duration</div>
+                      <div className="text-sm font-bold text-gray-800">{item.slotDuration} mins</div>
+                    </div>
+                    <div>
+                      <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Buffer</div>
+                      <div className="text-sm font-bold text-gray-800">{item.bufferTime} mins</div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           </div>
         ) : (
-          <div className="bg-white shadow-2xl rounded-[3rem] p-16 text-center border border-gray-100 flex flex-col items-center max-w-2xl mx-auto mt-10">
-            <div className="w-24 h-24 bg-yellow-50 rounded-full flex items-center justify-center text-yellow-500 mb-8 animate-pulse">
-              <svg className="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-16 text-center max-w-2xl mx-auto mt-10">
+            <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center text-gray-400 mb-6 mx-auto">
+              <svg className="w-10 h-10" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477-4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
               </svg>
             </div>
-            <h3 className="text-3xl font-black text-gray-900 tracking-tight mb-4">No Configuration Found</h3>
-            <p className="text-gray-500 mb-10 max-w-sm text-lg leading-relaxed font-medium">It looks like the operational hours haven't been set for this branch yet.</p>
+            <h3 className="text-2xl font-bold text-gray-800 mb-3">No Configuration Found</h3>
+            <p className="text-gray-500 mb-8 max-w-sm mx-auto">It looks like the operational hours haven't been set for this branch yet.</p>
             {(role !== "Admin" || allBranches.find((b) => b._id === selectedBranchId)?.isMainBranch) && (
-              <Button onClick={() => setIsOpen(true)} className="px-10 py-4 text-lg">Initialize Schedule</Button>
+              <Button onClick={() => setIsOpen(true)}>Initialize Schedule</Button>
             )}
           </div>
         )}

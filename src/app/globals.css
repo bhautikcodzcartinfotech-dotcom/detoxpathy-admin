@@ -4,34 +4,34 @@
 :root {
    --background: #ffffff;
   --foreground: #171717;
-  --primary: #facc15;
+  --primary: #134D41;
   --secondary: #111827;
-  --yellow-light: #f7d647; 
-  --yellow-dark: #f1be3d;
+  --green-light: #1a6b59;
+  --green-dark: #0e3a30;
 
-  /* Yellow shades (Tailwind 50–900) */
-  --yellow-50: #fefce8;
-  --yellow-100: #fef9c3;
-  --yellow-200: #fef08a;
-  --yellow-300: #fde047;
-  --yellow-400: #facc15;
-  --yellow-500: #eaae08;
-  --yellow-600: #ca8a04;
-  --yellow-700: #a16207;
-  --yellow-800: #854d0e;
-  --yellow-900: #713f12;
+  /* Green shades (50–900) */
+  --yellow-50: #e8f5f2;
+  --yellow-100: #c3e8df;
+  --yellow-200: #8acfbf;
+  --yellow-300: #47b09a;
+  --yellow-400: #1a8a72;
+  --yellow-500: #134D41;
+  --yellow-600: #0f3d34;
+  --yellow-700: #0b2e27;
+  --yellow-800: #07201b;
+  --yellow-900: #04120f;
 
-  /* Amber shades (Tailwind 50–900) */
-  --amber-50: #fffbeb;
-  --amber-100: #fef3c7;
-  --amber-200: #fde68a;
-  --amber-300: #fcd34d;
-  --amber-400: #fbbf24;
-  --amber-500: #f59e0b;
-  --amber-600: #d97706;
-  --amber-700: #b45309;
-  --amber-800: #92400e;
-  --amber-900: #78350f;
+  /* Green accent shades (50–900) */
+  --amber-50: #ecf7f4;
+  --amber-100: #d0ede6;
+  --amber-200: #a1dbce;
+  --amber-300: #72c9b5;
+  --amber-400: #43b79d;
+  --amber-500: #27816c;
+  --amber-600: #1e6454;
+  --amber-700: #164b3f;
+  --amber-800: #0e322a;
+  --amber-900: #061915;
 
   --gray-50:  #f9fafb;
 --gray-100: #f3f4f6;

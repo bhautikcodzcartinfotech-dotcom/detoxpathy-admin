@@ -38,11 +38,19 @@ const ProgramForm = ({
     setErrors({});
   }, [initialValues]);
 
-  const validate = () => {
+  const validate = (overrideDuration) => {
     const errs = {};
     if (!form.name) errs.name = "Name is required";
     if (!form.description) errs.description = "Description is required";
-    if (!form.duration) errs.duration = "Duration is required";
+    
+    const dVal = overrideDuration !== undefined ? overrideDuration : form.duration;
+
+    if (!dVal) {
+      errs.duration = "Duration is required";
+    } else if (!/^\d+(-\d+)?\s+days$/i.test(dVal.trim())) {
+      errs.duration = "Duration must exactly follow the format '30-45 days' or '30 days'";
+    }
+
     if (!form.price) errs.price = "Price is required";
     else if (isNaN(form.price) || Number(form.price) < 0) errs.price = "Enter a valid positive number";
 
@@ -52,8 +60,19 @@ const ProgramForm = ({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!validate()) return;
-    onSubmit(form);
+    
+    // Auto-append " days" if missing
+    const currentDuration = form.duration.trim();
+    let finalDuration = currentDuration;
+    
+    if (currentDuration && /^\d+(-\d+)?$/.test(currentDuration)) {
+      finalDuration = `${currentDuration} days`;
+      setForm(f => ({ ...f, duration: finalDuration }));
+    }
+
+    if (!validate(finalDuration)) return;
+    
+    onSubmit({ ...form, duration: finalDuration });
   };
 
   return (

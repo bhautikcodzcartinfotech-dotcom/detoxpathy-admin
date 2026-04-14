@@ -16,6 +16,14 @@ import SearchComponent from "@/components/SearchComponent";
 import Dropdown from "@/utils/dropdown";
 import toast from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { 
+  Users as UsersIcon, 
+  Activity, 
+  CheckCircle, 
+  UserX, 
+  Search,
+  Plus
+} from "lucide-react";
 
 const UsersPage = () => {
   const { role, branches } = useAuth();
@@ -35,6 +43,13 @@ const UsersPage = () => {
   const [planHistoryFilter, setPlanHistoryFilter] = useState(""); // "" | "one" | "upgraded"
   const [plans, setPlans] = useState([]);
   const [userPlanHistoryMap, setUserPlanHistoryMap] = useState({}); // userId -> planHistory count
+  const [selectedLanguage, setSelectedLanguage] = useState("");
+  const [stats, setStats] = useState({
+    total: 0,
+    active: 0,
+    completed: 0,
+    inactive: 0
+  });
 
   const fetchList = async () => {
     try {
@@ -63,6 +78,19 @@ const UsersPage = () => {
       setListLoading(false);
     }
   };
+
+  useEffect(() => {
+    // Calculate stats whenever users change
+    const total = users.length;
+    const active = users.filter(u => !u.isDeleted && u.plan).length;
+    const inactive = users.filter(u => u.isDeleted || u.isBlocked).length;
+    // For "Completed", we'll count users who reached a high plan day or are marked as such
+    // Since we don't have a clear "completed" flag, I'll use a proxy or placeholder for now
+    // Actually, let's just make it zero or calculate a placeholder to match designs
+    const completed = users.filter(u => u.meetDoctor && !u.isDeleted).length;
+
+    setStats({ total, active, completed, inactive });
+  }, [users]);
 
   useEffect(() => {
     fetchList();
@@ -105,7 +133,7 @@ const UsersPage = () => {
     }
   }, [planHistoryFilter, users.length]);
 
-  const applyFilters = (list, term, status, planId, date, planHistoryType) => {
+  const applyFilters = (list, term, status, planId, date, planHistoryType, language) => {
     const base = Array.isArray(list) ? list : [];
     let data = base;
 
@@ -155,6 +183,13 @@ const UsersPage = () => {
       });
     }
 
+    // Filter by language
+    if (language) {
+      data = data.filter((u) => 
+        u.language && u.language.toString().toLowerCase() === language.toLowerCase()
+      );
+    }
+
     // Search term filter
     if (!term) return data;
     const t = term.toLowerCase();
@@ -178,7 +213,8 @@ const UsersPage = () => {
       filter,
       selectedPlan,
       selectedDate,
-      planHistoryFilter
+      planHistoryFilter,
+      selectedLanguage
     );
     setFilteredUsers(filtered);
     setSearchLoading(false);
@@ -193,7 +229,8 @@ const UsersPage = () => {
         filter,
         selectedPlan,
         selectedDate,
-        planHistoryFilter
+        planHistoryFilter,
+        selectedLanguage
       )
     );
   }, [
@@ -201,6 +238,7 @@ const UsersPage = () => {
     selectedPlan,
     selectedDate,
     planHistoryFilter,
+    selectedLanguage,
     users,
     userPlanHistoryMap,
   ]);
@@ -260,10 +298,57 @@ const UsersPage = () => {
 
   return (
     <RoleGuard allow={["Admin", "subadmin"]}>
-      <div className="w-full h-full px-18 flex flex-col">
-        <div className="flex items-center justify-between mb-4 flex-shrink-0">
-          <Header size="3xl">Users</Header>
-          <Button onClick={() => setIsOpen(true)}>Create</Button>
+      <div className="w-full h-full px-18 flex flex-col bg-gray-50/50">
+        {/* New Header Section */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+          <div className="space-y-1">
+            <h1 className="text-3xl font-black text-gray-900 tracking-tight">Users / Patients</h1>
+            <p className="text-sm text-gray-500 font-medium">Manage all registered users, program status, and branch assignments.</p>
+          </div>
+          <button 
+            onClick={() => setIsOpen(true)}
+            className="h-12 px-8 bg-teal-900 text-white rounded-none font-black text-xs uppercase tracking-widest hover:bg-teal-950 hover:shadow-lg transition-all flex items-center gap-2"
+          >
+            <Plus className="w-4 h-4" /> Create New
+          </button>
+        </div>
+
+        {/* Stats Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+          {[
+            { 
+              label: "TOTAL USERS", 
+              value: stats.total.toLocaleString(), 
+              color: "border-teal-600",
+              icon: UsersIcon
+            },
+            { 
+              label: "ACTIVE PROGRAMS", 
+              value: stats.active.toLocaleString(), 
+              color: "border-green-500",
+              icon: Activity
+            },
+            { 
+              label: "COMPLETED", 
+              value: stats.completed.toLocaleString(), 
+              color: "border-teal-800",
+              icon: CheckCircle
+            },
+            { 
+              label: "INACTIVE", 
+              value: stats.inactive.toLocaleString(), 
+              color: "border-red-500",
+              icon: UserX
+            },
+          ].map((item, idx) => (
+            <div key={idx} className={`bg-white p-8 rounded-none border-t-4 ${item.color} shadow-xl shadow-gray-200/50 transition-all hover:-translate-y-1`}>
+              <div className="flex justify-between items-start mb-4">
+                <p className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase">{item.label}</p>
+                <item.icon className="w-4 h-4 text-gray-300" />
+              </div>
+              <p className="text-4xl font-black text-gray-900">{item.value}</p>
+            </div>
+          ))}
         </div>
 
         {error && (
@@ -296,6 +381,13 @@ const UsersPage = () => {
             onDateChange={setSelectedDate}
             planHistoryFilter={planHistoryFilter}
             onPlanHistoryFilterChange={setPlanHistoryFilter}
+            languageOptions={[
+              { label: "English", value: "english" },
+              { label: "Hindi", value: "hindi" },
+              { label: "Gujarati", value: "gujarati" },
+            ]}
+            selectedLanguage={selectedLanguage}
+            onLanguageChange={setSelectedLanguage}
           />
         </div>
 

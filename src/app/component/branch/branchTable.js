@@ -158,12 +158,14 @@ const BranchTable = ({ items, loading, onEdit, onDelete }) => {
                     ? new Date(b.updatedAt).toLocaleDateString()
                     : "-"}
                 </td>
-                <td className="px-6 py-4 text-center space-x-2 whitespace-nowrap">
-                  <ActionButton type="edit" onClick={() => onEdit(b)} />
-                  <ActionButton
-                    type="delete"
-                    onClick={() => handleDeleteClick(b._id, b.name || "Branch")}
-                  />
+                <td className="px-6 py-4">
+                  <div className="flex items-center justify-center gap-2">
+                    <ActionButton type="edit" onClick={() => onEdit(b)} />
+                    <ActionButton
+                      type="delete"
+                      onClick={() => handleDeleteClick(b._id, b.name || "Branch")}
+                    />
+                  </div>
                 </td>
               </tr>
             ))}

@@ -108,7 +108,10 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                   </div>
                   <div>
                     <h3 className="text-lg font-bold text-gray-800">
-                      Video Details
+                      {getTextInLanguage(
+                        video.titleMultiLang || video.title,
+                        "english"
+                      ) || "Video Details"}
                     </h3>
                     <div className="flex items-center gap-4 text-sm text-gray-600">
                       <span>Type: {video.type}</span>

@@ -39,6 +39,7 @@ const QuestionForm = ({
     options: emptyOptions(),
     section: "first",
     videoId: selectedVideoId || "",
+    requiredPercentage: "",
   });
 
   const [errors, setErrors] = useState({});
@@ -84,14 +85,19 @@ const QuestionForm = ({
         section: editing.section || "first",
         videoId:
           editing.videoId?._id || editing.videoId || selectedVideoId || "",
+        requiredPercentage: editing.videoId?.requiredPercentage ?? "",
       });
     } else {
-      setForm((prev) => ({
-        ...prev,
-        videoId: selectedVideoId || prev.videoId,
-      }));
+      setForm((prev) => {
+        const matchingVideo = videos.find(v => v._id === (selectedVideoId || prev.videoId));
+        return {
+          ...prev,
+          videoId: selectedVideoId || prev.videoId,
+          requiredPercentage: matchingVideo?.requiredPercentage ?? prev.requiredPercentage,
+        };
+      });
     }
-  }, [editing, selectedVideoId]);
+  }, [editing, selectedVideoId, videos]);
 
   // ─── Validation ─────────────────────────────────────────────────────────────
   const validateForm = () => {
@@ -155,6 +161,7 @@ const QuestionForm = ({
         questionText_hindi: form.questionText_hindi,
         correctAnswer: form.correctAnswer,
         videoId: form.videoId,
+        requiredPercentage: form.requiredPercentage,
         ...optionFields,
       });
     }
@@ -232,15 +239,40 @@ const QuestionForm = ({
               </svg>
               Video Selection
             </h3>
-            <Dropdown
-              label="Select Video"
-              options={videoOptions}
-              value={form.videoId}
-              onChange={(value) => setForm((p) => ({ ...p, videoId: value }))}
-            />
-            {errors.videoId && (
-              <p className="text-amber-600 text-sm mt-1">{errors.videoId}</p>
-            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <Dropdown
+                  label="Select Video"
+                  options={videoOptions}
+                  value={form.videoId}
+                  onChange={(value) => {
+                    const selectedVideo = videos.find(v => v._id === value);
+                    setForm((p) => ({ 
+                      ...p, 
+                      videoId: value, 
+                      requiredPercentage: selectedVideo?.requiredPercentage ?? "" 
+                    }));
+                  }}
+                />
+                {errors.videoId && (
+                  <p className="text-amber-600 text-sm mt-1">{errors.videoId}</p>
+                )}
+              </div>
+              <div>
+                <label className="block mb-2 font-semibold text-gray-700 text-sm">
+                  Required Pass Percentage (%)
+                </label>
+                <input
+                  type="number"
+                  placeholder="e.g., 80"
+                  value={form.requiredPercentage}
+                  onChange={(e) => setForm(p => ({ ...p, requiredPercentage: e.target.value }))}
+                  className="w-full border border-yellow-300 rounded-lg px-4 py-[11px] focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent transition bg-white"
+                  min="0"
+                  max="100"
+                />
+              </div>
+            </div>
           </div>
         )}
 

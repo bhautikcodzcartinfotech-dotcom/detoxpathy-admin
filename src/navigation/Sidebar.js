@@ -28,22 +28,19 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const { role } = useAuth();
 
   const linkClasses = (path) =>
-    `flex items-center ${
-      isCollapsed ? "justify-center" : "gap-3 px-3"
-    } py-3 rounded-xl text-sm font-medium transition-all duration-300 ${
-      pathname === path
-        ? "bg-gradient-to-r from-yellow-400 to-amber-500 text-black shadow-lg transform scale-105"
-        : "text-gray-700 hover:bg-gradient-to-r hover:from-yellow-50 hover:to-amber-50 hover:text-black hover:shadow-md hover:transform hover:scale-105"
+    `flex items-center ${isCollapsed ? "justify-center" : "gap-3 px-3"
+    } py-3 rounded-xl text-sm font-medium transition-all duration-300 ${pathname === path
+      ? "bg-[#134D41] text-white shadow-lg transform scale-105"
+      : "text-gray-700 hover:bg-[#134D41]/10 hover:text-[#134D41] hover:shadow-md hover:transform hover:scale-105"
     }`;
 
   return (
     <aside
-      className={`${
-        isCollapsed ? "w-16" : "w-64"
-      } bg-white shadow-2xl border-r border-gray-200 flex flex-col h-screen transition-all duration-300 backdrop-blur-sm fixed left-0 top-0 z-10`}
+      className={`${isCollapsed ? "w-16" : "w-64"
+        } bg-white shadow-2xl border-r border-gray-200 flex flex-col h-screen overflow-hidden transition-all duration-300 backdrop-blur-sm fixed left-0 top-0 z-10`}
     >
       {/* Logo + Toggle */}
-      <div className="p-5 border-b border-gray-200 flex items-center justify-between bg-gradient-to-r from-gray-50 to-yellow-50">
+      <div className="p-5 border-b border-[#134D41]/20 flex items-center justify-between bg-[#134D41]">
         {!isCollapsed ? (
           <div className="flex items-center gap-3">
             <div className="relative group">
@@ -66,9 +63,8 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
         <button
           aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           onClick={() => setIsCollapsed((v) => !v)}
-          className={`p-2 rounded-lg hover:bg-yellow-100 text-gray-700 transition-all duration-200 hover:shadow-md hover:scale-105 ${
-            isCollapsed ? "mx-auto" : "ml-2"
-          }`}
+          className={`p-2 rounded-lg hover:bg-white/10 text-white transition-all duration-200 hover:shadow-md hover:scale-105 ${isCollapsed ? "mx-auto" : "ml-2"
+            }`}
         >
           {isCollapsed ? (
             <MdChevronRight size={20} />
@@ -80,9 +76,8 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
 
       {/* Navigation */}
       <nav
-        className={`flex-1 flex flex-col gap-6 ${
-          isCollapsed ? "px-2" : "px-4"
-        } py-5 transition-all duration-300`}
+        className={`flex-1 flex flex-col gap-6 ${isCollapsed ? "px-2" : "px-4"
+          } min-h-0 py-5 overflow-y-auto transition-all duration-300`}
       >
         {/* Section: Main */}
         <div>
