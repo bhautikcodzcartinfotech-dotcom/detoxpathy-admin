@@ -853,7 +853,7 @@ const AppointmentPage = () => {
                 <tr className="border-b border-gray-50 bg-gray-50/30">
                   <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">CON ID</th>
                   <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">PATIENT</th>
-                  <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">DOCTOR</th>
+                  <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">BRANCH</th>
                   <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">DATE & TIME</th>
                   <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">STATUS</th>
                   <th className="px-6 py-5 text-center text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">ACTIONS</th>
@@ -882,7 +882,7 @@ const AppointmentPage = () => {
                       </td>
 
                       <td className="px-6 py-6 whitespace-nowrap text-[13px] font-black text-teal-700 uppercase tracking-tighter">
-                        Dr. Admin
+                        {item.branchName || item.branchId?.name || "N/A"}
                       </td>
 
                       <td className="px-6 py-6 whitespace-nowrap">
