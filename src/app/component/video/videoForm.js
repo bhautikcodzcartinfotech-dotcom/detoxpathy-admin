@@ -311,7 +311,7 @@ const VideoForm = ({
   const typeOptions = [
     { label: "Day wise", value: 1 },
     { label: "Webinar/Live", value: 2 },
-    { label: "Testimonial", value: 3 },
+    // { label: "Testimonial", value: 3 },
     { label: "Categoywise Testimonial", value: 4 },
     { label: "Resume Plan", value: 5 },
     { label: "Trial Video", value: 6 },
