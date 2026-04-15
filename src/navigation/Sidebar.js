@@ -153,13 +153,13 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                 <MdShoppingCart size={20} />
                 {!isCollapsed && <span>Products</span>}
               </Link>
-              <Link
+              {/* <Link
                 href="/component/program"
                 className={linkClasses("/component/program")}
               >
                 <MdAssignment size={20} />
                 {!isCollapsed && <span>Programs</span>}
-              </Link>
+              </Link> */}
               <Link
                 href="/component/order"
                 className={linkClasses("/component/order")}

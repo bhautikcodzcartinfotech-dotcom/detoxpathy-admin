@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import {
-  getAllPrograms,
+  getAllPlans,
   getSuggestedProgram,
   suggestProgram,
   updateSuggestedProgram,
@@ -23,17 +23,17 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
     const fetchData = async () => {
       try {
         setLoading(true);
-        // 1. Get all programs
-        const allProgs = await getAllPrograms();
+        // 1. Get all plans
+        const allProgs = await getAllPlans();
         setPrograms(Array.isArray(allProgs) ? allProgs : []);
 
         // 2. Get current suggestions for this user
         try {
           const response = await getSuggestedProgram(user._id);
           const suggestion = response?.suggestion || response;
-          if (suggestion && suggestion.programs) {
+          if (suggestion && suggestion.plans) {
             setExistingSuggestion(suggestion);
-            const currentProgramId = suggestion.programs?._id || suggestion.programs || "";
+            const currentProgramId = suggestion.plans?._id || suggestion.plans || "";
             setSelectedProgramId(currentProgramId);
           }
         } catch (err) {
@@ -63,11 +63,11 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
     try {
       setSaving(true);
       if (existingSuggestion) {
-        await updateSuggestedProgram(user._id, { programId: selectedProgramId });
+        await updateSuggestedProgram(user._id, { planId: selectedProgramId });
         toast.success("Suggestion updated successfully!");
       } else {
-        await suggestProgram({ userId: user._id, programId: selectedProgramId });
-        toast.success("Program suggested successfully!");
+        await suggestProgram({ userId: user._id, planId: selectedProgramId });
+        toast.success("Plan suggested successfully!");
       }
       if (onSave) onSave();
     } catch (err) {
@@ -138,7 +138,7 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
                     </p>
                     <div className="flex items-center gap-3 mt-2">
                       <span className="text-[10px] bg-gray-100 px-2 py-0.5 rounded text-gray-600">
-                        {program.duration}
+                        {program.days} Days
                       </span>
                       <span className="text-[10px] bg-green-100 px-2 py-0.5 rounded text-green-700 font-bold">
                         ₹{program.price}

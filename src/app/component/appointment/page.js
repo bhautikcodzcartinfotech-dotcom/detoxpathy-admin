@@ -12,6 +12,9 @@ import {
   endAppointmentCall,
   generateSlots,
   rescheduleAppointment,
+  getAllPlans,
+  suggestProgram,
+  getSuggestedProgram,
 } from "@/Api/AllApi";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -77,7 +80,10 @@ const AppointmentPage = () => {
     loadingSlots: false,
     selectedSlot: null,
     submitting: false
-  }); // Add searchTerm state
+  });
+  const [allPlans, setAllPlans] = useState([]);
+  const [selectedPlanId, setSelectedPlanId] = useState("");
+  const [suggesting, setSuggesting] = useState(false); // Add searchTerm state
   const localVideoRef = useRef(null);
   const remoteVideoGridRef = useRef(null);
   const agoraSdkPromiseRef = useRef(null);
@@ -220,7 +226,9 @@ const AppointmentPage = () => {
   };
 
   const ensureRemoteTile = (uid) => {
+    
     if (!remoteVideoGridRef.current) {
+      console.warn('[AGORA DOM] ❌ remoteVideoGridRef missing');
       return null;
     }
 
@@ -234,7 +242,7 @@ const AppointmentPage = () => {
     const tile = document.createElement("div");
     tile.setAttribute("data-remote-uid", String(uid));
     tile.className =
-      "relative min-h-[220px] overflow-hidden rounded-[1.75rem] border border-slate-200 bg-slate-950 shadow-inner";
+      "relative h-full w-full overflow-hidden rounded-[2rem] bg-slate-900 border border-white/5 shadow-2xl";
 
     const body = document.createElement("div");
     body.setAttribute("data-remote-body", "true");
@@ -243,23 +251,28 @@ const AppointmentPage = () => {
 
     const label = document.createElement("div");
     label.className =
-      "pointer-events-none absolute left-4 top-4 rounded-full bg-black/60 px-3 py-1 text-xs font-semibold text-white";
-    label.textContent = "User";
+      "pointer-events-none absolute left-6 top-6 z-10 rounded-full bg-black/40 backdrop-blur-md px-4 py-1.5 text-xs font-black text-white border border-white/10";
+    label.textContent = `Patient Stream`;
     tile.appendChild(label);
 
     remoteVideoGridRef.current.appendChild(tile);
     return body;
   };
 
-  const ensureAgoraSdk = async () => {
+const ensureAgoraSdk = async () => {
     if (typeof window === "undefined") {
-      throw new Error("Agora video call only works in the browser");
+      const err = new Error("Agora video call only works in the browser");
+      console.error('[AGORA] ❌ Browser check failed:', err);
+      throw err;
     }
 
     // Check for Secure Context (HTTPS is required for getUserMedia on live servers)
     if (!window.isSecureContext && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
-      throw new Error("Camera and Microphone access requires a secure context (HTTPS). Please ensure your live server is using HTTPS.");
+      const err = new Error("Camera and Microphone access requires a secure context (HTTPS). Please ensure your live server is using HTTPS.");
+      console.error('[AGORA] ❌ Secure context failed:', err);
+      throw err;
     }
+
 
     if (window.AgoraRTC) {
       return window.AgoraRTC;
@@ -273,9 +286,12 @@ const AppointmentPage = () => {
       const script = document.createElement("script");
       script.src = AGORA_SCRIPT_SRC;
       script.async = true;
-      script.onload = () => resolve(window.AgoraRTC);
-      script.onerror = () =>
+      script.onload = () => {
+        resolve(window.AgoraRTC);
+      };
+      script.onerror = (err) => {
         reject(new Error("Failed to load Agora video SDK"));
+      };
       document.body.appendChild(script);
     });
 
@@ -333,6 +349,15 @@ const AppointmentPage = () => {
           setSelectedBranchId(defaultBranch ? defaultBranch._id : data[0]._id);
         }
       }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchAllPlans = async () => {
+    try {
+      const data = await getAllPlans();
+      setAllPlans(data || []);
     } catch (e) {
       console.error(e);
     }
@@ -523,12 +548,16 @@ const AppointmentPage = () => {
       // Check system requirements
       const checkResult = AgoraRTC.checkSystemRequirements();
       if (!checkResult) {
-        throw new Error("Your browser does not support the video calling feature. Please use a modern browser like Chrome or Firefox.");
+        const err = new Error("Your browser does not support the video calling feature. Please use a modern browser like Chrome or Firefox.");
+        console.error('[AGORA] ❌ System requirements failed');
+        throw err;
       }
 
       // Check if getUserMedia is available (it's often missing on HTTP)
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error("Your browser or connection is not secure enough to access the camera/microphone. Please use HTTPS.");
+        const err = new Error("Your browser or connection is not secure enough to access the camera/microphone. Please use HTTPS.");
+        console.error('[AGORA] ❌ getUserMedia unavailable');
+        throw err;
       }
 
       await cleanupAgoraSession();
@@ -536,21 +565,28 @@ const AppointmentPage = () => {
       const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
       agoraSessionRef.current.client = client;
 
+      // Enhanced user-published handler with logging
       client.on("user-published", async (user, mediaType) => {
-        await client.subscribe(user, mediaType);
+        
+        try {
+          await client.subscribe(user, mediaType);
 
-        if (mediaType === "video") {
-          const remoteBody = ensureRemoteTile(user.uid);
-          if (remoteBody) {
-            user.videoTrack.play(remoteBody, { fit: "cover" });
+          if (mediaType === "video") {
+            const remoteBody = ensureRemoteTile(user.uid);
+            if (remoteBody) {
+              user.videoTrack.play(remoteBody, { fit: "cover" });
+            } else {
+              console.warn('[AGORA] ⚠️ No remoteBody for uid:', user.uid);
+            }
+          } else if (mediaType === "audio") {
+            user.audioTrack.play();
           }
+        } catch (subError) {
+          console.error('[AGORA] ❌ Subscribe failed for uid:', user.uid, mediaType, subError);
         }
 
-        if (mediaType === "audio") {
-          user.audioTrack.play();
-        }
-
-        setRemoteParticipantCount(client.remoteUsers.length);
+        const remoteCount = client.remoteUsers.length;
+        setRemoteParticipantCount(remoteCount);
       });
 
       const handleRemoteUserExit = (user) => {
@@ -559,6 +595,7 @@ const AppointmentPage = () => {
       };
 
       client.on("user-left", handleRemoteUserExit);
+      
       client.on("user-unpublished", (user, mediaType) => {
         if (mediaType === "video") {
           removeRemoteTile(user?.uid);
@@ -570,27 +607,48 @@ const AppointmentPage = () => {
         AgoraRTC.createMicrophoneAudioTrack(),
         AgoraRTC.createCameraVideoTrack(),
       ]);
+      console.log('[AGORA]  Local tracks created:', {
+        audio: !!localAudioTrack,
+        video: !!localVideoTrack,
+        videoEnabled: localVideoTrack?.enabled,
+        muted: localVideoTrack?.muted
+      });
 
       agoraSessionRef.current.localAudioTrack = localAudioTrack;
       agoraSessionRef.current.localVideoTrack = localVideoTrack;
 
+      // Enhanced local video setup with better timing
       if (!localVideoRef.current) {
+        console.warn('[AGORA] ⚠️ localVideoRef not ready, waiting...');
         // Wait up to 1000ms for React to attach the ref
         for (let i = 0; i < 20; i++) {
           await new Promise((res) => setTimeout(res, 50));
-          if (localVideoRef.current) break;
+          if (localVideoRef.current) {
+            break;
+          }
         }
       }
 
       if (localVideoRef.current) {
         localVideoTrack.play(localVideoRef.current, { fit: "cover" });
       } else {
-        toast.error("Failed to render camera container");
+        console.error('[AGORA] ❌ localVideoRef still missing after wait');
+        toast.error("Failed to render camera container - check console");
       }
 
       const session = await joinAppointmentCall(appointment._id);
+      console.log('[AGORA] Backend session:', {
+        appId: session?.appId ? `${session.appId.slice(0,8)}...` : 'MISSING',
+        channelName: session?.channelName,
+        uid: session?.uid,
+        token: session?.token ? 'PRESENT' : 'MISSING',
+        callStatus: session?.call?.status
+      });
+
       if (!session?.appId || !session?.channelName) {
-        throw new Error("Missing Agora channel details");
+        const err = new Error("Missing Agora channel details from backend");
+        console.error('[AGORA] ❌ Backend missing session data:', session);
+        throw err;
       }
 
       await client.join(
@@ -613,9 +671,23 @@ const AppointmentPage = () => {
           : currentAppointment
       );
       updateAppointmentCallState(appointment._id, session.call || { status: "ongoing" });
+      
+      // Fetch existing suggestion
+      try {
+        const resp = await getSuggestedProgram(appointment.userId?._id);
+        const suggestion = resp?.suggestion || resp;
+        if (suggestion && suggestion.plans) {
+          setSelectedPlanId(suggestion.plans?._id || suggestion.plans);
+        } else {
+          setSelectedPlanId("");
+        }
+      } catch (e) {
+        setSelectedPlanId("");
+      }
+
       toast.success("Video call connected");
     } catch (error) {
-      console.error(error);
+      console.error('[AGORA]  FULL CALL ERROR:', error);
       setCallError(error?.response?.data?.message || error.message);
       toast.error(
         error?.response?.data?.message || error.message || "Failed to receive call"
@@ -662,8 +734,31 @@ const AppointmentPage = () => {
     }
   };
 
+  const handleSuggestProgram = async () => {
+    if (!selectedPlanId) {
+      toast.error("Please select a program to suggest");
+      return;
+    }
+
+    try {
+      setSuggesting(true);
+      await suggestProgram({
+        userId: activeCallAppointment.userId?._id,
+        planId: selectedPlanId,
+      });
+      toast.success("Program suggested successfully");
+      setSelectedPlanId("");
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || "Failed to suggest program");
+    } finally {
+      setSuggesting(false);
+    }
+  };
+
   useEffect(() => {
     fetchAllBranches();
+    fetchAllPlans();
   }, []);
 
   useEffect(() => {
@@ -918,7 +1013,7 @@ const AppointmentPage = () => {
                                 className="h-9 px-4 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-black shadow-lg shadow-teal-100 transition-all disabled:opacity-50 flex items-center gap-2"
                              >
                                 <MdVideocam size={16} />
-                                {item.call?.status === "ongoing" ? "Rejoin" : "Join"}
+                                Join
                              </button>
                           )}
                           <button
@@ -995,55 +1090,105 @@ const AppointmentPage = () => {
                 )}
               </div>
 
-              <div className="grid gap-6 bg-slate-100/70 p-6 sm:p-8 xl:grid-cols-[340px_minmax(0,1fr)]">
-                <div className="rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm">
-                  <div className="mb-3 flex items-center justify-between">
-                    <h4 className="text-sm font-black uppercase tracking-[0.2em] text-slate-500">
-                      Local Feed
-                    </h4>
-                    <span className="inline-flex items-center rounded-full bg-emerald-50 px-3 py-1 text-[11px] font-black text-emerald-700 border border-emerald-100">
-                      Live
-                    </span>
+              <div className="relative bg-slate-900 min-h-[500px] lg:h-[650px] overflow-hidden group">
+                {/* Main Remote Participant Area - Now Full Screen within modal */}
+                <div
+                  ref={remoteVideoGridRef}
+                  className={`h-full w-full grid gap-2 p-2 transition-all duration-500 bg-slate-950 ${
+                    remoteParticipantCount <= 1 ? "grid-cols-1" : 
+                    remoteParticipantCount === 2 ? "grid-cols-2" : 
+                    "grid-cols-2 lg:grid-cols-3"
+                  }`}
+                />
+
+                {/* Waiting State Overlay */}
+                {remoteParticipantCount === 0 && (
+                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-950/60 backdrop-blur-md text-center p-8">
+                    <div className="relative mb-8">
+                       <div className="absolute inset-0 bg-teal-500 rounded-full blur-2xl opacity-20 animate-pulse" />
+                       <div className="relative w-24 h-24 bg-teal-500/10 rounded-full border border-teal-500/30 flex items-center justify-center">
+                          <User className="w-10 h-10 text-teal-400" />
+                       </div>
+                    </div>
+                    <h4 className="text-2xl font-black text-white mb-2 tracking-tight">Waiting for Patient</h4>
+                    <p className="text-slate-400 max-w-sm text-sm font-medium leading-relaxed">
+                      Your consultation link is live. Please wait here while the patient ({activeCallAppointment.userId?.name}) joins the call.
+                    </p>
                   </div>
-                  <div
-                    ref={localVideoRef}
-                    className="h-[260px] w-full relative overflow-hidden rounded-[1.5rem] bg-slate-950"
-                  />
+                )}
+
+                {/* Local Feed - Now Picture in Picture (PiP) */}
+                <div className="absolute top-8 right-8 z-30 w-48 lg:w-72 aspect-video rounded-[1.5rem] border-2 border-white/20 bg-slate-800 shadow-2xl overflow-hidden transition-all duration-300 hover:scale-[1.02] active:scale-95 group/pip ring-1 ring-black/50">
+                  <div className="absolute top-3 left-3 z-[40] flex items-center gap-2 px-3 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/10 opacity-0 group-hover/pip:opacity-100 transition-opacity">
+                     <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                     <span className="text-[10px] font-black text-white uppercase tracking-widest">You (Doctor)</span>
+                  </div>
+                  <div ref={localVideoRef} className="h-full w-full" />
                 </div>
 
-                <div className="rounded-[1.75rem] border border-slate-200 bg-white p-4 shadow-sm">
-                  <div className="mb-3 flex items-center justify-between">
-                    <h4 className="text-sm font-black uppercase tracking-[0.2em] text-slate-500">
-                      Remote Participant
-                    </h4>
-                    <span className="inline-flex items-center rounded-full bg-amber-50 px-3 py-1 text-[11px] font-black text-amber-700 border border-amber-100">
-                      {remoteParticipantCount > 0 ? "Connected" : "Waiting"}
-                    </span>
+                {/* Patient Floating Badge */}
+                <div className="absolute bottom-8 left-8 z-30 flex items-center gap-4 p-4 rounded-3xl bg-black/40 backdrop-blur-xl border border-white/10 shadow-2xl transition-all duration-300 transform translate-y-4 opacity-0 group-hover:translate-y-0 group-hover:opacity-100">
+                  <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-400 to-teal-600 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-teal-500/20">
+                    {activeCallAppointment.userId?.name?.[0]}
                   </div>
-                  <div
-                    ref={remoteVideoGridRef}
-                    className="grid min-h-[320px] gap-4 rounded-[1.5rem] border border-dashed border-slate-200 bg-slate-50 p-4 lg:grid-cols-2"
-                  />
-                  {remoteParticipantCount === 0 && (
-                    <div className="mt-4 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-500">
-                      Your feed is live. Waiting for the patient to join the consultation.
+                  <div>
+                    <h5 className="text-base font-black text-white leading-tight">
+                      {activeCallAppointment.userId?.name} {activeCallAppointment.userId?.surname}
+                    </h5>
+                    <div className="flex items-center gap-2 mt-1">
+                       <span className={`w-2 h-2 rounded-full ${remoteParticipantCount > 0 ? 'bg-emerald-500' : 'bg-amber-500'} animate-pulse`} />
+                       <p className="text-[11px] text-teal-300 font-bold uppercase tracking-widest">
+                          {remoteParticipantCount > 0 ? "Live Consultation" : "Awaiting Connection"}
+                       </p>
                     </div>
-                  )}
+                  </div>
                 </div>
               </div>
 
               <div className="flex flex-col gap-3 border-t border-slate-100 bg-white px-6 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-8">
-                <p className="text-sm font-medium text-slate-500">
-                  Total participants: {remoteParticipantCount + (callConnected ? 1 : 0)}
-                </p>
-                <button
-                  onClick={() => handleCutCall(activeCallAppointment)}
-                  disabled={callLoadingId === activeCallAppointment._id}
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-rose-600 px-6 py-3 text-sm font-black text-white transition-colors hover:bg-rose-700 shadow-lg shadow-rose-200 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <MdCallEnd size={18} />
-                  <span>End Consultation</span>
-                </button>
+                <div className="flex flex-col lg:flex-row items-center gap-6">
+                  <div className="flex flex-col gap-1.5 w-full lg:w-auto">
+                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-1">Program Suggestion</label>
+                    <div className="flex items-center gap-2 bg-slate-50 border border-slate-200 p-1.5 rounded-2xl w-full">
+                      <div className="flex-1 flex items-center gap-2 px-3">
+                         <MdOutlineCategory className="text-teal-600 shrink-0" size={20} />
+                         <select
+                           className="bg-transparent text-sm font-bold text-slate-700 focus:outline-none w-full cursor-pointer"
+                           value={selectedPlanId}
+                           onChange={(e) => setSelectedPlanId(e.target.value)}
+                         >
+                           <option value="">Choose a program to suggest...</option>
+                           {allPlans.map((plan) => (
+                             <option key={plan._id} value={plan._id}>
+                               {plan.name} (₹{plan.price})
+                             </option>
+                           ))}
+                         </select>
+                      </div>
+                      <button
+                        onClick={handleSuggestProgram}
+                        disabled={!selectedPlanId || suggesting}
+                        className="h-10 px-6 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-black uppercase tracking-widest transition-all shadow-lg shadow-teal-100 disabled:opacity-50 disabled:shadow-none"
+                      >
+                        {suggesting ? "Wait..." : "Suggest"}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="w-[1px] h-12 bg-slate-100 hidden lg:block" />
+
+                  <div className="flex flex-col gap-1.5 w-full lg:w-auto">
+                    <label className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 px-1">End Call</label>
+                    <button
+                      onClick={() => handleCutCall(activeCallAppointment)}
+                      disabled={callLoadingId === activeCallAppointment._id}
+                      className="inline-flex items-center justify-center gap-3 rounded-2xl bg-rose-600 h-[54px] px-8 text-sm font-black text-white transition-all hover:bg-rose-700 hover:scale-[1.02] active:scale-95 shadow-lg shadow-rose-200 disabled:cursor-not-allowed disabled:opacity-50 w-full"
+                    >
+                      <MdCallEnd size={20} />
+                      <span>End Consultation</span>
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
