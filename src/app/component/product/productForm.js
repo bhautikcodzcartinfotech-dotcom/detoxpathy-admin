@@ -16,6 +16,7 @@ const ProductForm = ({
     description: "",
     basePrice: "",
     discountedPrice: "",
+    branchPrice: "",
     images: null, // FileList for new uploads
   });
   const [existingImages, setExistingImages] = useState([]); // For displaying existing images when editing
@@ -29,6 +30,7 @@ const ProductForm = ({
         description: initialValues.description || "",
         basePrice: initialValues.basePrice || "",
         discountedPrice: initialValues.discountedPrice || "",
+        branchPrice: initialValues.branchPrice || "",
         images: null,
       });
       setExistingImages(Array.isArray(initialValues.images) ? initialValues.images : []);
@@ -40,6 +42,7 @@ const ProductForm = ({
         description: "",
         basePrice: "",
         discountedPrice: "",
+        branchPrice: "",
         images: null,
       });
       setExistingImages([]);
@@ -70,6 +73,10 @@ const ProductForm = ({
         value: form.discountedPrice,
         rules: [required("Discounted price"), number("Discounted price"), positive("Discounted price")],
       },
+      branchPrice: {
+        value: form.branchPrice,
+        rules: [required("Branch price"), number("Branch price"), positive("Branch price")],
+      },
     });
 
     // Validate images - at least one image required (new upload or existing after removal)
@@ -98,6 +105,7 @@ const ProductForm = ({
     formData.append('description', form.description);
     formData.append('basePrice', form.basePrice);
     formData.append('discountedPrice', form.discountedPrice);
+    formData.append('branchPrice', form.branchPrice);
 
     // Add images to remove
     if (imagesToRemove.length > 0) {
@@ -196,6 +204,26 @@ const ProductForm = ({
             <p className="text-red-500 text-sm mt-1">{errors.discountedPrice}</p>
           )}
         </div>
+      </div>
+
+      <div>
+        <label className="block mb-1 font-semibold text-gray-700">
+          Branch Price
+        </label>
+        <input
+          type="number"
+          value={form.branchPrice}
+          onChange={(e) =>
+            setForm((f) => ({ ...f, branchPrice: e.target.value }))
+          }
+          className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+          placeholder="350"
+          min="0"
+          step="0.01"
+        />
+        {errors.branchPrice && (
+          <p className="text-red-500 text-sm mt-1">{errors.branchPrice}</p>
+        )}
       </div>
 
       <div>

@@ -22,6 +22,7 @@ const SubAdminForm = ({
     password: "",
     image: null,
     branchId: "", // <-- store selected branch id here
+    commission: 0,
   });
   const [formErrors, setFormErrors] = useState({});
   const [branches, setBranches] = useState([]);
@@ -41,6 +42,7 @@ const SubAdminForm = ({
               ? initialValues.branch[0]
               : initialValues.branch[0]?._id
             : "",
+        commission: initialValues.commission || 0,
       }));
       setFormErrors({});
     } else {
@@ -50,6 +52,7 @@ const SubAdminForm = ({
         password: "",
         image: null,
         branchId: "",
+        commission: 0,
       });
       setFormErrors({});
     }
@@ -82,6 +85,10 @@ const SubAdminForm = ({
         value: form.branchId,
         rules: [(v) => (!v ? "Branch is required." : null)],
       },
+      commission: {
+        value: form.commission,
+        rules: [(v) => (v < 0 ? "Commission cannot be negative." : null)],
+      },
     });
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -97,6 +104,7 @@ const SubAdminForm = ({
       password: "",
       image: null,
       branchId: "",
+      commission: 0,
     });
     setFormErrors({});
   };
@@ -167,6 +175,25 @@ const SubAdminForm = ({
         />
         {formErrors.branchId && (
           <p className="text-red-500 text-sm mt-1">{formErrors.branchId}</p>
+        )}
+      </div>
+
+      {/* Commission */}
+      <div>
+        <label className="block mb-1 font-semibold text-gray-700">
+          Commission (%)
+        </label>
+        <input
+          type="number"
+          value={form.commission}
+          onChange={(e) =>
+            setForm((f) => ({ ...f, commission: e.target.value }))
+          }
+          placeholder="Enter Commission Percentage"
+          className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+        />
+        {formErrors.commission && (
+          <p className="text-red-500 text-sm mt-1">{formErrors.commission}</p>
         )}
       </div>
 

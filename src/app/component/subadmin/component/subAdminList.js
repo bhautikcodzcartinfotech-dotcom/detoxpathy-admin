@@ -119,6 +119,9 @@ const SubAdminList = ({ subAdmins, onEdit, onDelete, loading = false }) => {
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Branches
               </th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                Commission (%)
+              </th>
               <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Actions
               </th>
@@ -162,6 +165,9 @@ const SubAdminList = ({ subAdmins, onEdit, onDelete, loading = false }) => {
                       ? sa.branch.map((b) => b.name).join(", ")
                       : "-"}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                    {sa.commission ?? 0}%
+                  </td>
 
                   {/* Actions */}
                   <td className="px-6 py-4 text-center space-x-2">
@@ -190,7 +196,7 @@ const SubAdminList = ({ subAdmins, onEdit, onDelete, loading = false }) => {
             ) : (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={6}
                   className="px-6 py-4 text-center text-gray-500 text-sm"
                 >
                   No Sub Admins

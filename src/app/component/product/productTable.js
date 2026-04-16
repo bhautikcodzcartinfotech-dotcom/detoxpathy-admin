@@ -97,6 +97,9 @@ const ProductTable = ({ items, loading, onEdit, onDelete }) => {
                 Discounted Price
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                Branch Price
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Images
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
@@ -134,17 +137,22 @@ const ProductTable = ({ items, loading, onEdit, onDelete }) => {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="font-medium text-blue-600">
+                    {formatPrice(product.branchPrice)}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">
                     {product.images && product.images.length > 0 ? (
                       <div className="flex items-center">
-                         <img
-                           src={`${API_BASE}${product.images[0]}`}
-                           alt={product.name}
-                           className="w-10 h-10 object-cover rounded-lg mr-2"
-                           onError={(e) => {
-                             e.target.style.display = 'none'; // hide broken image
-                           }}
-                         />
+                        <img
+                          src={`${API_BASE}${product.images[0]}`}
+                          alt={product.name}
+                          className="w-10 h-10 object-cover rounded-lg mr-2"
+                          onError={(e) => {
+                            e.target.style.display = 'none'; // hide broken image
+                          }}
+                        />
                         {product.images.length > 1 && (
                           <span className="text-xs text-gray-500">
                             +{product.images.length - 1} more

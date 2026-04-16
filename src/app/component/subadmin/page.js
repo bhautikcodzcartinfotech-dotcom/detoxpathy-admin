@@ -46,6 +46,7 @@ const SubAdminPage = () => {
           password: formData.password || undefined,
           branch: formData.branchId ? [formData.branchId] : undefined,
           image: formData.image || undefined,
+          commission: formData.commission,
         });
       } else {
         const payload = {
@@ -54,6 +55,7 @@ const SubAdminPage = () => {
           password: formData.password,
           branch: formData.branchId ? [formData.branchId] : [],
           image: formData.image || undefined,
+          commission: formData.commission,
         };
         await createSubAdminApi(payload);
       }

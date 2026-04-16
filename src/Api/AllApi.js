@@ -185,6 +185,9 @@ export const createSubAdminApi = async (payload) => {
   if (payload.image) {
     data.append("image", payload.image);
   }
+  if (typeof payload.commission !== "undefined") {
+    data.append("commission", payload.commission);
+  }
 
   const res = await axios.post(`${API_BASE}/admin/sub-admin`, data, {
     headers: { ...getAuthHeaders(), "Content-Type": "multipart/form-data" },
@@ -204,6 +207,9 @@ export const updateSubAdminById = async (id, payload) => {
     data.append("isDeleted", String(Boolean(payload.isDeleted)));
   }
   if (payload.image) data.append("image", payload.image);
+  if (typeof payload.commission !== "undefined") {
+    data.append("commission", payload.commission);
+  }
 
   const res = await axios.put(`${API_BASE}/admin/sub-admin/${id}`, data, {
     headers: { ...getAuthHeaders(), "Content-Type": "multipart/form-data" },
@@ -992,6 +998,14 @@ export const updateOrderStatus = async (id, orderStatus) => {
   });
   return res.data.data;
 };
+
+export const createOrder = async (payload) => {
+  const res = await axios.post(`${API_BASE}/admin/order/create`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
 
 export const getOrderStats = async () => {
   const res = await axios.get(`${API_BASE}/admin/order/stats`, {

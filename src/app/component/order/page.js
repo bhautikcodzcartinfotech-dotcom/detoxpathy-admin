@@ -3,10 +3,14 @@ import React, { useEffect, useState } from "react";
 import { getAllOrders, getOrderStats } from "@/Api/AllApi";
 import OrderTable from "./orderTable";
 import toast from "react-hot-toast";
+import OrderForm from "./orderForm";
+import Drawer from "@/utils/formanimation";
+import { Header, Button } from "@/utils/header";
 
 const OrderPage = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [stats, setStats] = useState({
     totalOrders: 0,
     pendingDispatch: 0,
@@ -66,11 +70,20 @@ const OrderPage = () => {
     setFilter(prev => ({ ...prev, [key]: value, start: 1 }));
   };
 
+  const handleCreateSuccess = () => {
+    setIsDrawerOpen(false);
+    fetchOrders();
+    fetchStats();
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-800">Orders & Shipping</h1>
-        <p className="text-gray-500 text-sm mt-1">All orders — online (company ships) and branch walk-in (branch stock). Assign couriers and track.</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <Header size="3xl">Orders & Shipping</Header>
+          <p className="text-gray-500 text-sm mt-1">All orders — online (company ships) and branch walk-in (branch stock). Assign couriers and track.</p>
+        </div>
+        <Button onClick={() => setIsDrawerOpen(true)}>Create Order</Button>
       </div>
 
       {/* Stats Cards */}
@@ -146,6 +159,17 @@ const OrderPage = () => {
           </button>
         </div>
       )}
+
+      <Drawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)}>
+        <div className="mb-6 text-center">
+          <h2 className="text-3xl font-bold text-yellow-600">Create New Order</h2>
+          <p className="text-gray-500 text-sm mt-1">Create an offline (Branch) order for a user.</p>
+        </div>
+        <OrderForm
+          onCancel={() => setIsDrawerOpen(false)}
+          onSuccess={handleCreateSuccess}
+        />
+      </Drawer>
     </div>
   );
 };
