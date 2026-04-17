@@ -267,7 +267,7 @@ const AppointmentPage = () => {
     const tile = document.createElement("div");
     tile.setAttribute("data-remote-uid", String(uid));
     tile.className =
-      "relative h-full w-full overflow-hidden rounded-[2rem] bg-slate-900 border border-white/5 shadow-2xl";
+      "relative h-full w-full overflow-hidden rounded-2xl sm:rounded-[2rem] bg-slate-900 border border-white/5 shadow-2xl";
 
     const body = document.createElement("div");
     body.setAttribute("data-remote-body", "true");
@@ -926,8 +926,8 @@ const AppointmentPage = () => {
         </div>
 
         {/* Filters Bar */}
-        <div className="flex flex-wrap items-center gap-3 sm:gap-4 mb-6">
-          <div className="flex-1 min-w-full sm:min-w-[300px] relative">
+        <div className="grid grid-cols-1 sm:flex sm:flex-wrap items-center gap-3 sm:gap-4 mb-8">
+          <div className="relative w-full sm:flex-1 sm:min-w-[300px]">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
             <input
               type="text"
@@ -938,69 +938,73 @@ const AppointmentPage = () => {
             />
           </div>
 
-          {role === "Admin" && (
-            <div className="h-12 flex items-center gap-2 bg-white px-4 rounded-xl border border-gray-200 shadow-sm flex-1 min-w-[140px] sm:min-w-[180px] sm:flex-none">
-              <LayoutGrid className="w-4 h-4 text-gray-400" />
+          <div className="flex flex-wrap gap-2 sm:gap-4 w-full sm:w-auto">
+            {role === "Admin" && (
+              <div className="h-12 flex items-center gap-2 bg-white px-4 rounded-xl border border-gray-200 shadow-sm flex-1 min-w-[140px] sm:flex-none">
+                <LayoutGrid className="w-4 h-4 text-gray-400" />
+                <select
+                  className="text-sm font-bold text-gray-700 bg-transparent focus:outline-none cursor-pointer w-full"
+                  value={selectedBranchId}
+                  onChange={(e) => setSelectedBranchId(e.target.value)}
+                >
+                  {allBranches.map((b) => (
+                    <option key={b._id} value={b._id}>
+                      {b.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            <div className="h-12 flex items-center gap-2 bg-white px-4 rounded-xl border border-gray-200 shadow-sm flex-1 min-w-[120px] sm:flex-none">
+              <Filter className="w-4 h-4 text-gray-400" />
               <select
                 className="text-sm font-bold text-gray-700 bg-transparent focus:outline-none cursor-pointer w-full"
-                value={selectedBranchId}
-                onChange={(e) => setSelectedBranchId(e.target.value)}
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
               >
-                {allBranches.map((b) => (
-                  <option key={b._id} value={b._id}>
-                    {b.name}
-                  </option>
-                ))}
+                <option value="">All Status</option>
+                <option value="1">Upcoming</option>
+                <option value="2">Completed</option>
+                <option value="3">Cancelled</option>
               </select>
             </div>
-          )}
-
-          <div className="h-12 flex items-center gap-2 bg-white px-4 rounded-xl border border-gray-200 shadow-sm flex-1 min-w-[120px] sm:flex-none">
-            <Filter className="w-4 h-4 text-gray-400" />
-            <select
-              className="text-sm font-bold text-gray-700 bg-transparent focus:outline-none cursor-pointer w-full"
-              value={filterStatus}
-              onChange={(e) => setFilterStatus(e.target.value)}
-            >
-              <option value="">All Status</option>
-              <option value="1">Upcoming</option>
-              <option value="2">Completed</option>
-              <option value="3">Cancelled</option>
-            </select>
           </div>
 
-          <div className="flex items-center gap-1 bg-gray-100 p-1.5 rounded-xl shadow-inner flex-1 sm:flex-none justify-center">
-            <button
-              onClick={() => {
-                setViewMode("daily");
-                setFilterDate(getTodayInKolkata());
-              }}
-              className={`flex-1 sm:flex-none px-4 sm:px-5 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${viewMode === "daily" && filterDate === getTodayInKolkata() ? 'bg-white text-teal-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              Today
-            </button>
-            <button
-              onClick={() => {
-                setWeekRange(getWeekRange());
-                setViewMode("weekly");
-              }}
-              className={`flex-1 sm:flex-none px-4 sm:px-5 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all ${viewMode === "weekly" ? 'bg-white text-teal-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-            >
-              Week
-            </button>
-          </div>
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-xl shadow-inner flex-1 sm:flex-none justify-center h-12">
+              <button
+                onClick={() => {
+                  setViewMode("daily");
+                  setFilterDate(getTodayInKolkata());
+                }}
+                className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all h-full ${viewMode === "daily" && filterDate === getTodayInKolkata() ? 'bg-white text-teal-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Today
+              </button>
+              <button
+                onClick={() => {
+                  setWeekRange(getWeekRange());
+                  setViewMode("weekly");
+                }}
+                className={`flex-1 sm:flex-none px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all h-full ${viewMode === "weekly" ? 'bg-white text-teal-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Week
+              </button>
+            </div>
 
-          <div className="h-12 flex items-center gap-2 bg-white px-4 rounded-xl border border-gray-200 shadow-sm flex-1 min-w-[140px] sm:flex-none">
-            <Calendar className="w-4 h-4 text-gray-400" />
-            <input
-              type="date"
-              value={filterDate}
-              onChange={(e) => {
-                setFilterDate(e.target.value);
-                setViewMode("daily");
-              }}
-              className="text-sm font-bold text-gray-700 bg-transparent focus:outline-none w-full"
-            />
+            <div className="h-12 flex items-center gap-2 bg-white px-4 rounded-xl border border-gray-200 shadow-sm flex-1 min-w-[140px] sm:flex-none px-1">
+              <Calendar className="w-4 h-4 text-gray-400" />
+              <input
+                type="date"
+                value={filterDate}
+                onChange={(e) => {
+                  setFilterDate(e.target.value);
+                  setViewMode("daily");
+                }}
+                className="text-sm font-bold text-gray-700 bg-transparent focus:outline-none w-full"
+              />
+            </div>
           </div>
         </div>
 
@@ -1009,106 +1013,138 @@ const AppointmentPage = () => {
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-teal-600"></div>
           </div>
         ) : filteredAppointments.length > 0 ? (
-          <div className="overflow-x-auto bg-white rounded-2xl sm:rounded-[2rem] border border-gray-100 shadow-xl shadow-teal-900/5">
-            <table className="min-w-full">
-              <thead>
-                <tr className="border-b border-gray-50 bg-gray-50/30">
-                  <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">CON ID</th>
-                  <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">PATIENT</th>
-                  <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">BRANCH</th>
-                  <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">DATE & TIME</th>
-                  <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">STATUS</th>
-                  <th className="px-6 py-5 text-center text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">ACTIONS</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {filteredAppointments.map((item, idx) => {
-                  const statusLabel = getAppointmentFilterStatus(item);
-                  const isOnline = item.type === 1;
-                  const timeState = getAppointmentTimeState(item);
-                  const isCurrentCall = activeCallAppointment?._id === item._id;
-                  const canReceiveCall =
-                    isOnline &&
-                    timeState.isLiveWindow &&
-                    item.call?.status !== "ended" &&
-                    (!activeCallAppointment?._id || isCurrentCall);
+          <div className="space-y-4">
+            {/* Desktop Table View */}
+            <div className="hidden lg:block overflow-x-auto bg-white rounded-[2rem] border border-gray-100 shadow-xl shadow-teal-900/5">
+              <table className="min-w-full">
+                <thead>
+                  <tr className="border-b border-gray-50 bg-gray-50/30">
+                    <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">CON ID</th>
+                    <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">PATIENT</th>
+                    <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">BRANCH</th>
+                    <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">DATE & TIME</th>
+                    <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">STATUS</th>
+                    <th className="px-6 py-5 text-center text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">ACTIONS</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {filteredAppointments.map((item) => {
+                    const statusLabel = getAppointmentFilterStatus(item);
+                    const isOnline = item.type === 1;
+                    const timeState = getAppointmentTimeState(item);
+                    const isCurrentCall = activeCallAppointment?._id === item._id;
+                    const canReceiveCall = isOnline && timeState.isLiveWindow && item.call?.status !== "ended" && (!activeCallAppointment?._id || isCurrentCall);
 
-                  return (
-                    <tr key={item._id} className="group hover:bg-gray-50/80 transition-all duration-200">
-                      <td className="px-6 py-6 whitespace-nowrap text-[13px] font-black text-teal-600">
-                        CON-{item._id.slice(-6).toUpperCase()}
-                      </td>
-
-                      <td className="px-6 py-6 whitespace-nowrap text-[14px] font-bold text-gray-800">
-                        {item.userId?.name} {item.userId?.surname}
-                      </td>
-
-                      <td className="px-6 py-6 whitespace-nowrap text-[13px] font-black text-teal-700 uppercase tracking-tighter">
-                        {item.branchName || item.branchId?.name || "N/A"}
-                      </td>
-
-                      <td className="px-6 py-6 whitespace-nowrap">
-                        <div className="flex flex-col">
-                          <span className="text-[13px] font-bold text-gray-800">
-                            {item.date === getTodayInKolkata() ? "Today" : item.date}
-                          </span>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <Clock className="w-3 h-3 text-gray-400" />
-                            <span className="text-[12px] font-medium text-gray-500 uppercase tracking-wide">
-                              {item.startTime}
-                            </span>
+                    return (
+                      <tr key={item._id} className="group hover:bg-gray-50/80 transition-all duration-200">
+                        <td className="px-6 py-6 whitespace-nowrap text-[13px] font-black text-teal-600">
+                          CON-{item._id.slice(-6).toUpperCase()}
+                        </td>
+                        <td className="px-6 py-6 whitespace-nowrap text-[14px] font-bold text-gray-800">
+                          {item.userId?.name} {item.userId?.surname}
+                        </td>
+                        <td className="px-6 py-6 whitespace-nowrap text-[13px] font-black text-teal-700 uppercase tracking-tighter">
+                          {item.branchName || item.branchId?.name || "N/A"}
+                        </td>
+                        <td className="px-6 py-6 whitespace-nowrap">
+                          <div className="flex flex-col">
+                            <span className="text-[13px] font-bold text-gray-800">{item.date === getTodayInKolkata() ? "Today" : item.date}</span>
+                            <div className="flex items-center gap-1.5 mt-0.5">
+                              <Clock className="w-3 h-3 text-gray-400" />
+                              <span className="text-[12px] font-medium text-gray-500 uppercase tracking-wide">{item.startTime}</span>
+                            </div>
                           </div>
-                        </div>
-                      </td>
+                        </td>
+                        <td className="px-6 py-6 whitespace-nowrap">
+                          <span className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase shadow-sm ${statusLabel === 'completed' ? 'bg-green-100 text-green-700' : statusLabel === 'cancelled' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'}`}>
+                            {statusLabel}
+                          </span>
+                        </td>
+                        <td className="px-6 py-6">
+                          <div className="flex items-center justify-center gap-2">
+                            {isOnline && timeState.isLiveWindow && item.call?.status !== "ended" && (
+                              <button
+                                onClick={() => handleReceiveCall(item)}
+                                disabled={!canReceiveCall || callLoadingId === item._id}
+                                className="h-9 px-4 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-black shadow-lg shadow-teal-100 transition-all disabled:opacity-50 flex items-center gap-2"
+                              >
+                                <MdVideocam size={16} /> Join
+                              </button>
+                            )}
+                            <button className="h-9 px-4 bg-teal-50 text-teal-700 hover:bg-teal-100 rounded-xl text-xs font-bold transition-all" onClick={() => handleOpenRescheduleModal(item)}>Reschedule</button>
+                            <button className="h-9 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-bold shadow-sm transition-all" onClick={() => router.push(`/component/users/${item.userId?._id}/profile`)}>View</button>
+                            {statusLabel === 'upcoming' && (
+                              <button onClick={() => openDeleteModal(item._id)} className="h-9 px-4 bg-white border border-red-100 hover:bg-red-50 text-red-600 rounded-xl text-xs font-bold shadow-sm transition-all">Cancel</button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
 
-                      <td className="px-6 py-6 whitespace-nowrap">
-                        <span className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase shadow-sm ${statusLabel === 'completed' ? 'bg-green-100 text-green-700' :
-                          statusLabel === 'cancelled' ? 'bg-red-100 text-red-600' :
-                            'bg-orange-100 text-orange-600'
-                          }`}>
-                          {statusLabel}
-                        </span>
-                      </td>
+            {/* Mobile Card View */}
+            <div className="lg:hidden grid grid-cols-1 gap-4">
+              {filteredAppointments.map((item) => {
+                const statusLabel = getAppointmentFilterStatus(item);
+                const isOnline = item.type === 1;
+                const timeState = getAppointmentTimeState(item);
+                const isCurrentCall = activeCallAppointment?._id === item._id;
+                const canReceiveCall = isOnline && timeState.isLiveWindow && item.call?.status !== "ended" && (!activeCallAppointment?._id || isCurrentCall);
 
-                      <td className="px-6 py-6">
-                        <div className="flex items-center justify-center gap-2">
-                          {isOnline && timeState.isLiveWindow && item.call?.status !== "ended" && (
-                            <button
-                              onClick={() => handleReceiveCall(item)}
-                              disabled={!canReceiveCall || callLoadingId === item._id}
-                              className="h-9 px-4 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-black shadow-lg shadow-teal-100 transition-all disabled:opacity-50 flex items-center gap-2"
-                            >
-                              <MdVideocam size={16} />
-                              Join
-                            </button>
-                          )}
-                          <button
-                            className="h-9 px-4 bg-teal-50 text-teal-700 hover:bg-teal-100 rounded-xl text-xs font-bold transition-all"
-                            onClick={() => handleOpenRescheduleModal(item)}
-                          >
-                            Reschedule
-                          </button>
-                          <button
-                            className="h-9 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-bold shadow-sm transition-all"
-                            onClick={() => router.push(`/component/users/${item.userId?._id}/profile`)}
-                          >
-                            View
-                          </button>
-                          {statusLabel === 'upcoming' && (
-                            <button
-                              onClick={() => openDeleteModal(item._id)}
-                              className="h-9 px-4 bg-white border border-red-100 hover:bg-red-50 text-red-600 rounded-xl text-xs font-bold shadow-sm transition-all"
-                            >
-                              Cancel
-                            </button>
-                          )}
+                return (
+                  <div key={item._id} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm transition-all active:scale-[0.98]">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className="flex flex-col">
+                        <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest mb-1">CON-{item._id.slice(-6).toUpperCase()}</p>
+                        <h4 className="text-lg font-black text-gray-900">{item.userId?.name} {item.userId?.surname}</h4>
+                        <p className="text-xs font-bold text-gray-400 flex items-center gap-1.5 mt-1">
+                          <MapPin size={12} /> {item.branchName || item.branchId?.name || "N/A"}
+                        </p>
+                      </div>
+                      <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${statusLabel === 'completed' ? 'bg-green-100 text-green-700' : statusLabel === 'cancelled' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'}`}>
+                        {statusLabel}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-6 mb-6 p-4 bg-gray-50 rounded-2xl">
+                        <div className="flex flex-col">
+                           <span className="text-[9px] font-black text-gray-400 uppercase mb-1">Date</span>
+                           <span className="text-xs font-bold text-gray-800">{item.date === getTodayInKolkata() ? "Today" : item.date}</span>
                         </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        <div className="w-px h-8 bg-gray-200" />
+                        <div className="flex flex-col">
+                           <span className="text-[9px] font-black text-gray-400 uppercase mb-1">Time</span>
+                           <span className="text-xs font-bold text-gray-800">{item.startTime}</span>
+                        </div>
+                        <div className="flex-1" />
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center ${isOnline ? 'bg-blue-50 text-blue-600' : 'bg-purple-50 text-purple-600'}`}>
+                           {isOnline ? <MdVideocam size={18} /> : <MdCalendarToday size={16} />}
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2">
+                       {isOnline && timeState.isLiveWindow && item.call?.status !== "ended" && (
+                         <button
+                           onClick={() => handleReceiveCall(item)}
+                           disabled={!canReceiveCall || callLoadingId === item._id}
+                           className="h-12 bg-teal-600 text-white rounded-xl text-xs font-black shadow-lg shadow-teal-100 flex items-center justify-center gap-2 col-span-2 mb-1"
+                         >
+                           <MdVideocam size={20} /> Join Live Call
+                         </button>
+                       )}
+                       <button className="h-11 bg-teal-50 text-teal-700 rounded-xl text-[11px] font-black uppercase" onClick={() => handleOpenRescheduleModal(item)}>Reschedule</button>
+                       <button className="h-11 bg-slate-100 text-slate-700 rounded-xl text-[11px] font-black uppercase" onClick={() => router.push(`/component/users/${item.userId?._id}/profile`)}>View Profile</button>
+                       {statusLabel === 'upcoming' && (
+                         <button onClick={() => openDeleteModal(item._id)} className="h-11 border border-red-100 text-red-600 rounded-xl text-[11px] font-black uppercase col-span-2 mt-1">Cancel Appointment</button>
+                       )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         ) : (
           <div className="bg-white rounded-3xl border border-gray-100 p-20 text-center shadow-sm">
@@ -1373,9 +1409,9 @@ const AppointmentPage = () => {
               </AnimatePresence>
 
               {/* Right Pane: Video Consultation (User's Style, Full Height) */}
-              <div className="flex flex-1 flex-col overflow-hidden bg-white">
+              <div className="flex flex-1 flex-col relative overflow-hidden bg-slate-950 lg:bg-white">
                 {/* Header (Restored Date/Time + User's gradient style) */}
-                <div className="flex flex-col gap-6 border-b border-slate-100 bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.16),_transparent_28%),linear-gradient(135deg,_#ffffff,_#eff6ff)] px-4 sm:px-10 py-6 sm:py-8 shrink-0">
+                <div className="lg:relative absolute top-0 left-0 right-0 z-20 flex flex-col gap-3 sm:gap-6 border-b border-slate-100 bg-white/80 lg:bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.16),_transparent_28%),linear-gradient(135deg,_#ffffff,_#eff6ff)] backdrop-blur-md lg:backdrop-blur-none px-4 sm:px-10 py-4 sm:py-8 shrink-0 transition-all">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                       <div className="flex flex-col sm:flex-row sm:items-center gap-x-2 gap-y-1 mb-1 sm:mb-2">
@@ -1412,7 +1448,7 @@ const AppointmentPage = () => {
                 </div>
 
                 {/* Video Workspace */}
-                <div className="relative bg-slate-950 flex-1 overflow-hidden group">
+                <div className="lg:relative absolute inset-0 z-0 bg-slate-950 flex-1 overflow-hidden group">
                   <div
                     ref={remoteVideoGridRef}
                     className={`h-full w-full grid gap-1.5 p-1.5 transition-all duration-500 ${remoteParticipantCount <= 1 ? "grid-cols-1" :
@@ -1437,14 +1473,14 @@ const AppointmentPage = () => {
                   )}
 
                   {/* PiP Local Feed */}
-                  <div className="absolute top-4 right-4 sm:top-10 sm:right-10 z-30 w-32 sm:w-56 lg:w-80 aspect-video rounded-2xl sm:rounded-[2.5rem] border-2 border-white/10 bg-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.6)] overflow-hidden group/pip hover:scale-[1.03] transition-transform duration-300">
+                  <div className="absolute top-[100px] right-2 sm:top-10 sm:right-10 z-30 w-28 sm:w-56 lg:w-80 aspect-video rounded-xl sm:rounded-[2.5rem] border-2 border-white/10 bg-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.6)] overflow-hidden group/pip hover:scale-[1.03] transition-transform duration-300">
                     <div ref={localVideoRef} className="h-full w-full" />
                   </div>
                 </div>
 
                 {/* Action Footer (User's style) */}
-                <div className="border-t border-slate-100 bg-white px-4 sm:px-10 py-6 sm:py-8 shrink-0">
-                  <div className="flex flex-col lg:flex-row items-center gap-8 justify-between">
+                <div className="lg:relative absolute bottom-0 left-0 right-0 z-20 border-t border-slate-100 bg-white/80 lg:bg-white backdrop-blur-md lg:backdrop-blur-none px-4 sm:px-10 py-4 sm:py-8 shrink-0 transition-all">
+                  <div className="flex flex-col lg:flex-row items-center gap-4 sm:gap-8 justify-between">
                     <div className="flex flex-col gap-2 w-full lg:max-w-xl">
                       <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 px-1">Prescription Suggestion</label>
                       <div className="relative">
@@ -1544,7 +1580,7 @@ const AppointmentPage = () => {
         {/* Reschedule Modal */}
         {rescheduleData.isOpen && (
           <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-            <div className="bg-white w-full max-w-md rounded-[2.5rem] shadow-2xl shadow-teal-900/20 overflow-hidden transform animate-in zoom-in-95 duration-300">
+            <div className="bg-white w-full max-w-md rounded-3xl shadow-2xl shadow-teal-900/20 overflow-hidden transform animate-in zoom-in-95 duration-300">
               {/* Header */}
               <div className="px-8 pt-8 pb-6 bg-gradient-to-br from-teal-50 to-white border-b border-teal-100/50">
                 <div className="flex items-center justify-between mb-2">
