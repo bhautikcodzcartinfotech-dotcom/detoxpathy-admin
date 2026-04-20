@@ -10,6 +10,7 @@ import {
 } from "@/Api/AllApi";
 import SubAdminForm from "./component/subAdminForm";
 import SubAdminList from "./component/subAdminList";
+import toast from "react-hot-toast";
 
 const SubAdminPage = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -47,6 +48,7 @@ const SubAdminPage = () => {
           branch: formData.branchId ? [formData.branchId] : undefined,
           image: formData.image || undefined,
           commission: formData.commission,
+          role: formData.role,
         });
       } else {
         const payload = {
@@ -56,14 +58,18 @@ const SubAdminPage = () => {
           branch: formData.branchId ? [formData.branchId] : [],
           image: formData.image || undefined,
           commission: formData.commission,
+          role: formData.role,
         };
         await createSubAdminApi(payload);
       }
       await fetchList();
+      toast.success(editing ? "Sub admin updated" : "Sub admin created");
       setIsOpen(false);
       setEditing(null);
     } catch (err) {
-      setError(err?.response?.data?.message || "Failed to create sub admin");
+      const msg = err?.response?.data?.message || "Failed to process request";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -80,8 +86,11 @@ const SubAdminPage = () => {
       setError("");
       await updateSubAdminById(id, { isDeleted: true });
       await fetchList();
+      toast.success("Sub admin deleted");
     } catch (err) {
-      setError(err?.response?.data?.message || "Failed to delete sub admin");
+      const msg = err?.response?.data?.message || "Failed to delete sub admin";
+      setError(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -106,6 +115,7 @@ const SubAdminPage = () => {
           loading={listLoading}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onUpdate={fetchList}
         />
 
         <Drawer isOpen={isOpen} onClose={() => setIsOpen(false)}>

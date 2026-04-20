@@ -18,6 +18,7 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isImpersonating, setIsImpersonating] = useState(false);
   const router = useRouter();
 
   // Initialize auth from localStorage immediately
@@ -46,6 +47,10 @@ export const AuthProvider = ({ children }) => {
           setToken(null);
           setUser(null);
         }
+
+        // Check if we are impersonating
+        const mainToken = localStorage.getItem("mainAdminToken");
+        setIsImpersonating(!!mainToken);
       } catch (error) {
         console.error("Auth init failed:", error);
         localStorage.removeItem("token");
@@ -82,9 +87,29 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
+    localStorage.removeItem("mainAdminToken");
+    localStorage.removeItem("mainAdminUser");
     setToken(null);
     setUser(null);
+    setIsImpersonating(false);
     router.push("/login");
+  };
+
+  const exitImpersonation = () => {
+    const mainToken = localStorage.getItem("mainAdminToken");
+    const mainUser = localStorage.getItem("mainAdminUser");
+    if (mainToken && mainUser) {
+      localStorage.setItem("token", mainToken);
+      localStorage.setItem("user", mainUser);
+      localStorage.removeItem("mainAdminToken");
+      localStorage.removeItem("mainAdminUser");
+      setToken(mainToken);
+      setUser(JSON.parse(mainUser));
+      setIsImpersonating(false);
+      router.push("/component/subadmin");
+      return true;
+    }
+    return false;
   };
 
   const isAuthenticated = () => {
@@ -96,7 +121,7 @@ export const AuthProvider = ({ children }) => {
     if (!adminType) return null;
     const key = String(adminType).toLowerCase().replace(/\s+/g, "");
     if (key === "admin") return "Admin";
-    if (key === "subadmin") return "subadmin";
+    if (key === "subadmin" || key === "subdoctor") return "subadmin";
     return adminType; // fallback to raw value
   };
 
@@ -107,14 +132,35 @@ export const AuthProvider = ({ children }) => {
       .filter(Boolean);
   };
 
+  const impersonate = async (email, password) => {
+    try {
+      const mainToken = localStorage.getItem("token");
+      const mainUser = localStorage.getItem("user");
+
+      const result = await login(email, password);
+      if (result.success) {
+        localStorage.setItem("mainAdminToken", mainToken);
+        localStorage.setItem("mainAdminUser", mainUser);
+        setIsImpersonating(true);
+        return { success: true };
+      }
+      return result;
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  };
+
   const value = {
     user,
     role: normalizeRole(user?.adminType),
     branches: normalizeBranchIds(user?.branch),
     token,
     loading,
+    isImpersonating,
     login,
     logout,
+    impersonate,
+    exitImpersonation,
     isAuthenticated,
   };
 

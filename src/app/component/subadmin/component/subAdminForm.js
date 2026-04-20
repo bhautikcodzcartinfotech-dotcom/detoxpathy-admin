@@ -23,6 +23,7 @@ const SubAdminForm = ({
     image: null,
     branchId: "", // <-- store selected branch id here
     commission: 0,
+    role: "doctor",
   });
   const [formErrors, setFormErrors] = useState({});
   const [branches, setBranches] = useState([]);
@@ -43,6 +44,7 @@ const SubAdminForm = ({
               : initialValues.branch[0]?._id
             : "",
         commission: initialValues.commission || 0,
+        role: initialValues.adminType === "Sub Doctor" ? "sub doctor" : "doctor",
       }));
       setFormErrors({});
     } else {
@@ -53,6 +55,7 @@ const SubAdminForm = ({
         image: null,
         branchId: "",
         commission: 0,
+        role: "doctor",
       });
       setFormErrors({});
     }
@@ -89,6 +92,10 @@ const SubAdminForm = ({
         value: form.commission,
         rules: [(v) => (v < 0 ? "Commission cannot be negative." : null)],
       },
+      role: {
+        value: form.role,
+        rules: [(v) => (!v ? "Role is required." : null)],
+      },
     });
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
@@ -105,6 +112,7 @@ const SubAdminForm = ({
       image: null,
       branchId: "",
       commission: 0,
+      role: "doctor",
     });
     setFormErrors({});
   };
@@ -162,6 +170,22 @@ const SubAdminForm = ({
         />
         {formErrors.password && (
           <p className="text-red-500 text-sm mt-1">{formErrors.password}</p>
+        )}
+      </div>
+
+      {/* Role dropdown */}
+      <div>
+        <Dropdown
+          label="Role"
+          options={[
+            { label: "Doctor", value: "doctor" },
+            { label: "Sub Doctor", value: "sub doctor" },
+          ]}
+          value={form.role}
+          onChange={(val) => setForm((f) => ({ ...f, role: val }))}
+        />
+        {formErrors.role && (
+          <p className="text-red-500 text-sm mt-1">{formErrors.role}</p>
         )}
       </div>
 

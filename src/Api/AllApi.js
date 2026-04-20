@@ -1,7 +1,7 @@
 import axios from "axios";
 
-// export const API_BASE = "http://192.168.29.228:3002/api/v1";
-export const API_BASE = "http://69.62.73.194:4009/api/v1";
+export const API_BASE = "http://192.168.29.228:3002/api/v1";
+// export const API_BASE = "http://69.62.73.194:4009/api/v1";
 // export const API_BASE = "https://backend.fatendfit.com/api/v1";
 // Host base used to resolve file URLs coming from multer (e.g., uploads/..)
 export const API_HOST = API_BASE.replace(/\/?api\/?v1\/?$/, "").replace(
@@ -188,6 +188,9 @@ export const createSubAdminApi = async (payload) => {
   if (typeof payload.commission !== "undefined") {
     data.append("commission", payload.commission);
   }
+  if (payload.role) {
+    data.append("role", payload.role);
+  }
 
   const res = await axios.post(`${API_BASE}/admin/sub-admin`, data, {
     headers: { ...getAuthHeaders(), "Content-Type": "multipart/form-data" },
@@ -209,6 +212,9 @@ export const updateSubAdminById = async (id, payload) => {
   if (payload.image) data.append("image", payload.image);
   if (typeof payload.commission !== "undefined") {
     data.append("commission", payload.commission);
+  }
+  if (payload.role) {
+    data.append("role", payload.role);
   }
 
   const res = await axios.put(`${API_BASE}/admin/sub-admin/${id}`, data, {
@@ -833,6 +839,29 @@ export const getBranchTime = async (branchId) => {
   return res.data.data;
 };
 
+/* -------------------- LEAVE APIs -------------------- */
+export const addDoctorLeave = async (doctorId, payload) => {
+  const res = await axios.post(
+    `${API_BASE}/admin/sub-admin/${doctorId}/leave`,
+    payload,
+    {
+      headers: getAuthHeaders(),
+    }
+  );
+  return res.data.data;
+};
+
+export const deleteDoctorLeave = async (doctorId, leaveId) => {
+  const res = await axios.delete(
+    `${API_BASE}/admin/sub-admin/${doctorId}/leave/${leaveId}`,
+    {
+      headers: getAuthHeaders(),
+    }
+  );
+  return res.data;
+};
+
+
 export const getAppointmentsByBranch = async (branchId, params = {}) => {
   const queryParams = new URLSearchParams();
   if (params.date) queryParams.append('date', params.date);
@@ -847,6 +876,13 @@ export const getAppointmentsByBranch = async (branchId, params = {}) => {
   }
 
   const res = await axios.get(url, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const getAvailableDoctorsForAppointment = async (appointmentId) => {
+  const res = await axios.get(`${API_BASE}/admin/appointment/available-doctors/${appointmentId}`, {
     headers: getAuthHeaders(),
   });
   return res.data.data;
@@ -1036,5 +1072,101 @@ export const rescheduleAppointment = async (appointmentId, payload) => {
     headers: getAuthHeaders()
   });
   return res.data;
+};
+
+/* -------------------- STAFF APIs -------------------- */
+export const addStaff = async (payload) => {
+  const res = await axios.post(`${API_BASE}/admin/staff/add`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const getStaff = async (branchId) => {
+  const res = await axios.get(`${API_BASE}/admin/staff/get?branchId=${branchId}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const updateStaff = async (payload) => {
+  const res = await axios.put(`${API_BASE}/admin/staff/update`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const deleteStaff = async (staffId) => {
+  const res = await axios.delete(`${API_BASE}/admin/staff/delete`, {
+    data: { staffId },
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const addStaffLeave = async (payload) => {
+  const res = await axios.post(`${API_BASE}/admin/staff/leave/add`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const deleteStaffLeave = async (staffId, leaveId) => {
+  const res = await axios.delete(`${API_BASE}/admin/staff/leave/delete`, {
+    data: { staffId, leaveId },
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+/* -------------------- STOCK APIs -------------------- */
+export const getMasterStock = async () => {
+  const res = await axios.get(`${API_BASE}/admin/stock/master`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const getBranchStocks = async () => {
+  const res = await axios.get(`${API_BASE}/admin/stock/branch`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const getStocks = async (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.branchId) queryParams.append('branchId', params.branchId);
+
+  const res = await axios.get(`${API_BASE}/admin/stock/get?${queryParams.toString()}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const addOrUpdateStock = async (payload) => {
+  const res = await axios.post(`${API_BASE}/admin/stock/addOrUpdate`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const deleteStock = async (id) => {
+  const res = await axios.delete(`${API_BASE}/admin/stock/delete/${id}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+export const getStockHistory = async (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.branchId) queryParams.append('branchId', params.branchId);
+  if (params.productId) queryParams.append('productId', params.productId);
+  if (params.planId) queryParams.append('planId', params.planId);
+
+  const res = await axios.get(`${API_BASE}/admin/stock/history?${queryParams.toString()}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
 };
 

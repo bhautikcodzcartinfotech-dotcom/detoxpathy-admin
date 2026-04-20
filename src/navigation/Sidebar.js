@@ -16,16 +16,17 @@ import {
   MdShoppingCart,
   MdAccessTime,
   MdCalendarMonth,
+  MdGroups,
 } from "react-icons/md";
 import { MdChevronLeft, MdChevronRight } from "react-icons/md";
-import { FiMessageCircle } from "react-icons/fi";
+import { FiMessageCircle, FiLogOut } from "react-icons/fi";
 
 import { useAuth } from "../contexts/AuthContext";
 import Image from "next/image";
 
 const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const pathname = usePathname();
-  const { role } = useAuth();
+  const { role, isImpersonating, exitImpersonation } = useAuth();
 
   const linkClasses = (path) =>
     `flex items-center ${isCollapsed ? "justify-center" : "gap-3 px-3"
@@ -167,6 +168,13 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                 <MdShoppingCart size={20} />
                 {!isCollapsed && <span>Orders</span>}
               </Link>
+              <Link
+                href="/component/stock"
+                className={linkClasses("/component/stock")}
+              >
+                <MdAssignment size={20} />
+                {!isCollapsed && <span>Stock Management</span>}
+              </Link>
             </>
           )}
         </div>
@@ -213,6 +221,15 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                 >
                   <MdPerson size={20} />
                   {!isCollapsed && <span>SubAdmin</span>}
+                </Link>
+              )}
+              {(role === "Admin" || role === "subadmin") && (
+                <Link
+                  href="/component/staff"
+                  className={linkClasses("/component/staff")}
+                >
+                  <MdGroups size={20} />
+                  {!isCollapsed && <span>Staff</span>}
                 </Link>
               )}
             </div>
@@ -264,6 +281,19 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
               <MdHistory size={20} />
               {!isCollapsed && <span>Logs</span>}
             </Link>
+          </div>
+        )}
+
+        {/* Section: Exit Impersonation */}
+        {isImpersonating && (
+          <div className="mt-auto pt-5 border-t border-red-200">
+            <button
+              onClick={exitImpersonation}
+              className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3 px-3"} py-3 rounded-xl text-sm font-semibold transition-all duration-300 bg-red-500 text-white shadow-lg hover:bg-red-600 hover:shadow-xl transform hover:scale-105 w-full`}
+            >
+              <FiLogOut size={20} />
+              {!isCollapsed && <span>Exit Sub-Admin</span>}
+            </button>
           </div>
         )}
       </nav>

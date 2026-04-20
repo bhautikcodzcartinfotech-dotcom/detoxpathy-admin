@@ -19,6 +19,7 @@ import {
   getSuggestedProgram,
   getUserOverview,
   getUserVideoAnswers,
+  getAvailableDoctorsForAppointment,
 } from "@/Api/AllApi";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -95,6 +96,7 @@ const AppointmentPage = () => {
     date: getTodayInKolkata(),
     slots: [],
     loadingSlots: false,
+    loadingSlots: false,
     selectedSlot: null,
     submitting: false
   });
@@ -109,6 +111,7 @@ const AppointmentPage = () => {
   const [userOverviewData, setUserOverviewData] = useState(null);
   const [userVideoAnswers, setUserVideoAnswers] = useState([]);
   const [loadingUserOverview, setLoadingUserOverview] = useState(false);
+  const [doctorUpdateLoadingId, setDoctorUpdateLoadingId] = useState(null);
   const localVideoRef = useRef(null);
   const remoteVideoGridRef = useRef(null);
   const agoraSdkPromiseRef = useRef(null);
@@ -494,10 +497,8 @@ const AppointmentPage = () => {
         startTime: rescheduleData.selectedSlot.startTime,
         endTime: rescheduleData.selectedSlot.endTime
       };
-
       await rescheduleAppointment(rescheduleData.appointment._id, payload);
       toast.success("Appointment rescheduled successfully");
-
       setRescheduleData(prev => ({ ...prev, isOpen: false }));
 
       // Refresh current list
@@ -507,6 +508,144 @@ const AppointmentPage = () => {
     } finally {
       setRescheduleData(prev => ({ ...prev, submitting: false }));
     }
+  };
+
+  const InlineDoctorDropdown = ({ item }) => {
+    const [doctors, setDoctors] = useState([]);
+    const [fetching, setFetching] = useState(false);
+    const [isOpen, setIsOpen] = useState(false);
+    const [coords, setCoords] = useState({ top: 0, left: 0, width: 0 });
+    const dropdownRef = useRef(null);
+    
+    useEffect(() => {
+      const handleClickOutside = (event) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+          setIsOpen(false);
+        }
+      };
+      document.addEventListener("mousedown", handleClickOutside);
+      // Also close on scroll to prevent floating dropdown
+      window.addEventListener("scroll", () => setIsOpen(false), true);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+        window.removeEventListener("scroll", () => setIsOpen(false), true);
+      };
+    }, []);
+
+    const handleToggle = async (e) => {
+      if (isOpen) {
+        setIsOpen(false);
+        return;
+      }
+      
+      const rect = dropdownRef.current.getBoundingClientRect();
+      setCoords({
+        top: rect.bottom,
+        left: rect.left,
+        width: Math.max(rect.width, 200)
+      });
+
+      setIsOpen(true);
+      if (doctors.length === 0) {
+        try {
+          setFetching(true);
+          const data = await getAvailableDoctorsForAppointment(item._id);
+          setDoctors(data || []);
+        } catch (err) {
+          toast.error("Failed to load available doctors");
+        } finally {
+          setFetching(false);
+        }
+      }
+    };
+
+    const handleChange = async (doctorId) => {
+      setIsOpen(false);
+      if (!doctorId || doctorId === item.doctor?._id) return;
+      try {
+        setDoctorUpdateLoadingId(item._id);
+        await rescheduleAppointment(item._id, {
+          date: item.date,
+          day: item.day,
+          startTime: item.startTime,
+          endTime: item.endTime,
+          doctorId
+        });
+        toast.success("Doctor reassigned successfully");
+        fetchAppointments(selectedBranchId, filterDate, filterStatus, filterType);
+      } catch (err) {
+        toast.error(err?.response?.data?.message || "Failed to reassign doctor");
+      } finally {
+        setDoctorUpdateLoadingId(null);
+      }
+    };
+
+    const isUpdating = doctorUpdateLoadingId === item._id;
+
+    return (
+      <div className="relative inline-block" ref={dropdownRef}>
+        <div 
+          onClick={!isUpdating ? handleToggle : undefined}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-xl border transition-all cursor-pointer shadow-sm min-w-[140px] ${
+            isOpen 
+              ? 'bg-white border-blue-400 ring-2 ring-blue-500/10' 
+              : 'bg-blue-50/50 border-blue-100/50 hover:border-blue-300'
+          } ${isUpdating ? 'opacity-50 cursor-wait' : ''}`}
+        >
+          <User size={12} className={isOpen ? "text-blue-600" : "text-blue-500"} />
+          <span className="text-[12px] font-black text-blue-600 flex-1 truncate">
+            {item.doctor?.username || "Select Doctor"}
+          </span>
+          {isUpdating ? (
+            <div className="size-2.5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+          ) : (
+            <motion.div animate={{ rotate: isOpen ? 180 : 0 }}>
+               <ChevronRight size={10} className="text-blue-400 rotate-90" />
+            </motion.div>
+          )}
+        </div>
+
+        <AnimatePresence mode="wait">
+          {isOpen && (
+            <motion.div 
+              style={{ top: coords.top + 8, left: coords.left, width: coords.width }}
+              initial={{ opacity: 0, scale: 0.95, y: -5 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -5 }}
+              className="fixed bg-white rounded-2xl border border-gray-100 shadow-[0_30px_90px_rgba(0,0,0,0.2)] z-[9999] overflow-hidden p-1.5"
+            >
+              <div className="max-h-[260px] overflow-y-auto scrollbar-hide py-1">
+                {fetching ? (
+                  <div className="flex flex-col items-center justify-center py-6 gap-2">
+                    <div className="w-5 h-5 border-2 border-blue-600 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-[9px] font-black text-blue-600 uppercase tracking-widest">Checking Availability...</span>
+                  </div>
+                ) : doctors.length > 0 ? (
+                  doctors.map((d) => (
+                    <div
+                      key={d._id}
+                      onClick={() => handleChange(d._id)}
+                      className={`px-4 py-3 rounded-xl cursor-pointer transition-all flex items-center justify-between group/opt ${
+                        item.doctor?._id === d._id ? 'bg-blue-50/50' : 'hover:bg-gray-50'
+                      }`}
+                    >
+                      <span className={`text-[12px] font-black truncate ${item.doctor?._id === d._id ? 'text-blue-600' : 'text-gray-700'}`}>
+                        {d.username}
+                      </span>
+                      {item.doctor?._id === d._id && <CheckCircle size={14} className="text-blue-500 shrink-0" />}
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-4 text-center">
+                    <span className="text-[10px] font-bold text-gray-400">No candidates available</span>
+                  </div>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    );
   };
 
   const parseDateToDay = (dateString) => {
@@ -1022,6 +1161,7 @@ const AppointmentPage = () => {
                     <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">CON ID</th>
                     <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">PATIENT</th>
                     <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">BRANCH</th>
+                    <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">DOCTOR</th>
                     <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">DATE & TIME</th>
                     <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">STATUS</th>
                     <th className="px-6 py-5 text-center text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">ACTIONS</th>
@@ -1045,6 +1185,18 @@ const AppointmentPage = () => {
                         </td>
                         <td className="px-6 py-6 whitespace-nowrap text-[13px] font-black text-teal-700 uppercase tracking-tighter">
                           {item.branchName || item.branchId?.name || "N/A"}
+                        </td>
+                        <td className="px-6 py-6 whitespace-nowrap">
+                          {statusLabel === 'upcoming' ? (
+                             <InlineDoctorDropdown item={item} />
+                          ) : (
+                            <div className="flex items-center gap-2 bg-gray-50/80 w-fit px-3 py-1.5 rounded-xl border border-gray-100/50 opacity-60">
+                              <User size={12} className="text-gray-400" />
+                              <span className="text-[12px] font-black text-gray-500">
+                                {item.doctor?.username || "Not Assigned"}
+                              </span>
+                            </div>
+                          )}
                         </td>
                         <td className="px-6 py-6 whitespace-nowrap">
                           <div className="flex flex-col">
@@ -1103,6 +1255,15 @@ const AppointmentPage = () => {
                         <p className="text-xs font-bold text-gray-400 flex items-center gap-1.5 mt-1">
                           <MapPin size={12} /> {item.branchName || item.branchId?.name || "N/A"}
                         </p>
+                         <div className="mt-2">
+                           {statusLabel === 'upcoming' ? (
+                             <InlineDoctorDropdown item={item} />
+                           ) : (
+                             <p className="text-[10px] font-black text-gray-400 flex items-center gap-1.5 opacity-60">
+                               <User size={12} /> {item.doctor?.username || "Not Assigned"}
+                             </p>
+                           )}
+                         </div>
                       </div>
                       <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${statusLabel === 'completed' ? 'bg-green-100 text-green-700' : statusLabel === 'cancelled' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'}`}>
                         {statusLabel}
@@ -1501,7 +1662,7 @@ const AppointmentPage = () => {
                                disabled={!selectedPlanId || suggesting}
                                className="h-10 sm:h-12 w-full sm:w-auto px-4 sm:px-8 bg-teal-600 hover:bg-teal-700 text-white rounded-xl sm:rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-widest shadow-xl shadow-teal-100 transition-all disabled:opacity-50 active:scale-95 whitespace-nowrap"
                              >
-                               {suggesting ? "Wait..." : "Update Suggestion"}
+                               {suggesting ? "Wait..." : "Suggest"}
                              </button>
                         </div>
 
