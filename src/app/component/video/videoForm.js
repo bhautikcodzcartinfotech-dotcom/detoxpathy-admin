@@ -43,7 +43,7 @@ const VideoForm = ({
     // Other fields
     type: 1, // 1..5
     day: "",
-    category: [],
+    category: "",
     requiredCorrectAnswer: "",
   });
   const [errors, setErrors] = useState({});
@@ -130,9 +130,10 @@ const VideoForm = ({
         // Other fields
         type: initialValues.type ?? 1,
         day: initialValues.type === 1 ? initialValues.day ?? "" : "",
-        category: Array.isArray(initialValues.category)
-          ? initialValues.category
-          : [],
+        category:
+          typeof initialValues.category === "string"
+            ? initialValues.category
+            : initialValues.category?._id ?? "",
         requiredCorrectAnswer: initialValues.requiredCorrectAnswer ?? "",
       }));
       setErrors({});
@@ -161,7 +162,7 @@ const VideoForm = ({
         description_hindi: "",
         type: 1,
         day: "",
-        category: [],
+        category: "",
         requiredCorrectAnswer: "",
       });
       setErrors({});
@@ -179,6 +180,21 @@ const VideoForm = ({
     };
     loadCats();
   }, []);
+
+  const categoryTypeByVideoType = {
+    2: 2,
+    4: 1,
+  };
+
+  const shouldShowCategory = [2, 4].includes(Number(form.type));
+  const selectedCategoryType = categoryTypeByVideoType[Number(form.type)];
+
+  const filteredCategories = useMemo(() => {
+    if (!selectedCategoryType) return [];
+    return categories.filter(
+      (category) => Number(category.type) === selectedCategoryType
+    );
+  }, [categories, selectedCategoryType]);
 
   const validate = () => {
     const required = (label) => (v) =>
@@ -273,7 +289,7 @@ const VideoForm = ({
         rules: isUpdate ? [numberRule("Day")] : [required("Day"), numberRule("Day")],
       },
       category: {
-        value: typeNum === 4 ? (form.category?.length ? "ok" : "") : "ok",
+        value: [2, 4].includes(typeNum) ? (form.category ? "ok" : "") : "ok",
         rules: isUpdate ? [] : [required("Category")],
       },
       requiredCorrectAnswer: {
@@ -310,7 +326,7 @@ const VideoForm = ({
 
   const typeOptions = [
     { label: "Day wise", value: 1 },
-    { label: "Webinar/Live", value: 2 },
+    { label: "Session Categories", value: 2 },
     // { label: "Testimonial", value: 3 },
     { label: "Categoywise Testimonial", value: 4 },
     { label: "Resume Plan", value: 5 },
@@ -517,10 +533,34 @@ const VideoForm = ({
         <Dropdown
           options={typeOptions}
           value={form.type}
-          onChange={(v) => setForm((f) => ({ ...f, type: v, day: "" }))}
+          onChange={(v) =>
+            setForm((f) => ({
+              ...f,
+              type: v,
+              day: "",
+              category: [2, 4].includes(Number(v)) ? "" : "",
+            }))
+          }
           disabled={Boolean(initialValues)}
         />
       </div>
+
+      {shouldShowCategory && (
+        <div>
+          <Dropdown
+            label="Category"
+            options={filteredCategories.map((c) => ({
+              label: c.categoryTitle,
+              value: c._id,
+            }))}
+            value={form.category}
+            onChange={(val) => setForm((f) => ({ ...f, category: val }))}
+          />
+          {errors.category && (
+            <p className="text-amber-600 text-sm mt-1">{errors.category}</p>
+          )}
+        </div>
+      )}
 
       {Number(form.type) === 1 && (
         <div>
@@ -557,24 +597,6 @@ const VideoForm = ({
           </p>
         )}
       </div>
-
-      {Number(form.type) === 4 && (
-        <div>
-          <Dropdown
-            label="Category"
-            options={categories.map((c) => ({
-              label: c.categoryTitle,
-              value: c._id,
-            }))}
-            value={form.category}
-            onChange={(val) => setForm((f) => ({ ...f, category: val }))}
-            placeholder="Select category"
-          />
-          {errors.category && (
-            <p className="text-amber-600 text-sm mt-1">{errors.category}</p>
-          )}
-        </div>
-      )}
 
       {/* Multi-language Description Section */}
       <MultiLanguageInput

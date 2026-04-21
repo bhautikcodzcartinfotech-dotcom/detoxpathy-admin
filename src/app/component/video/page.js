@@ -140,7 +140,7 @@ const VideoPage = () => {
           filterOptions={[
             { label: "All Videos", value: "all" },
             { label: "Day Wise", value: "1" },
-            { label: "Webinar/Live", value: "2" },
+            { label: "Session Categories", value: "2" },
             // { label: "Testimonial", value: "3" },
             { label: "Category Testimonial", value: "4" },
             { label: "Resume Plan", value: "5" },

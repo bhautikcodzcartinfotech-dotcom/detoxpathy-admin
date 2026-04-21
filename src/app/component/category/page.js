@@ -84,7 +84,7 @@ const CategoryPage = () => {
     <RoleGuard allow={["Admin"]}>
       <div className="w-full h-full px-18">
         <div className="flex items-center justify-between mb-4">
-          <Header size="3xl">Testimonial Categories</Header>
+          <Header size="3xl"> Categories</Header>
           <Button onClick={() => setIsOpen(true)}>Create</Button>
         </div>
 

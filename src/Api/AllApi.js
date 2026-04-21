@@ -551,7 +551,7 @@ export const createVideoApi = async (payload) => {
     data.append("type", String(payload.type));
   if (payload.type === 1 && typeof payload.day !== "undefined")
     data.append("day", String(payload.day));
-  if (payload.type === 4) {
+  if (payload.type === 2 || payload.type === 4) {
     if (Array.isArray(payload.category)) {
       payload.category.forEach((c) => data.append("category", c));
     } else if (payload.category) {
@@ -638,7 +638,7 @@ export const updateVideoById = async (id, payload) => {
     data.append("type", String(payload.type));
   if (payload.type === 1 && typeof payload.day !== "undefined")
     data.append("day", String(payload.day));
-  if (payload.type === 4) {
+  if (payload.type === 2 || payload.type === 4) {
     if (Array.isArray(payload.category)) {
       payload.category.forEach((c) => data.append("category", c));
     } else if (payload.category) {
@@ -742,7 +742,9 @@ export const getAllCategoriesApi = async () => {
 export const createCategoryApi = async (payload) => {
   const res = await axios.post(
     `${API_BASE}/admin/category/create`,
-    { categoryTitle: payload.categoryTitle },
+    { categoryTitle: payload.categoryTitle,
+      type: payload.type
+     },
     { headers: getAuthHeaders() }
   );
   return res.data.data;
@@ -751,7 +753,9 @@ export const createCategoryApi = async (payload) => {
 export const updateCategoryById = async (id, payload) => {
   const res = await axios.put(
     `${API_BASE}/admin/category/update/${id}`,
-    { categoryTitle: payload.categoryTitle },
+    { categoryTitle: payload.categoryTitle,
+      type: payload.type
+     },
     { headers: getAuthHeaders() }
   );
   return res.data.data;
@@ -763,6 +767,85 @@ export const deleteCategoryById = async (id) => {
   });
   return res.data;
 };
+
+/* -------------------- MEDICINE APIs -------------------- */
+export const getMedicinesApi = async (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.search) queryParams.append("search", params.search);
+  if (params.limit) queryParams.append("limit", String(params.limit));
+
+  const query = queryParams.toString();
+  const res = await axios.get(
+    `${API_BASE}/admin/medicine/get${query ? `?${query}` : ""}`,
+    {
+      headers: getAuthHeaders(),
+    }
+  );
+  return res.data.data;
+};
+
+export const createMedicineApi = async (payload) => {
+  const res = await axios.post(`${API_BASE}/admin/medicine/create`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+/* -------------------- CONSULTATION APIs -------------------- */
+
+export const submitConsultationForm = async (payload) => {
+  const res = await axios.post(`${API_BASE}/admin/consultation/create`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const downloadConsultationPdfApi = async (consultationId) => {
+  const res = await axios.get(
+    `${API_BASE}/admin/consultation/download-pdf/${consultationId}`,
+    {
+      headers: getAuthHeaders(),
+      responseType: "blob",
+    }
+  );
+
+  const disposition = res.headers["content-disposition"] || "";
+  const fileNameMatch = disposition.match(/filename="?([^"]+)"?/i);
+  const fileName = fileNameMatch?.[1] || `Consultation_${consultationId}.pdf`;
+
+  const blobUrl = window.URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
+  const link = document.createElement("a");
+  link.href = blobUrl;
+  link.download = fileName;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.URL.revokeObjectURL(blobUrl);
+};
+
+/* -------------------- PATIENT HISTORY APIs -------------------- */
+
+export const getPatientHistoriesApi = async (params = {}) => {
+  const queryParams = new URLSearchParams();
+  if (params.userId) queryParams.append("userId", params.userId);
+  if (params.search) queryParams.append("search", params.search);
+  if (params.limit) queryParams.append("limit", String(params.limit));
+
+  const query = queryParams.toString();
+  const res = await axios.get(
+    `${API_BASE}/admin/patientHistory/get${query ? `?${query}` : ""}`,
+    { headers: getAuthHeaders() }
+  );
+  return res.data.data;
+};
+
+export const createPatientHistoryApi = async (payload) => {
+  const res = await axios.post(`${API_BASE}/admin/patientHistory/create`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
 
 /* -------------------- USER PLAN MANAGEMENT APIs -------------------- */
 export const holdUserPlan = async (userId) => {

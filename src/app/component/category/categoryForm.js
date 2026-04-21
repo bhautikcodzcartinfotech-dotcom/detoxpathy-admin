@@ -10,15 +10,15 @@ const CategoryForm = ({
   initialValues = null,
   submitLabel = "Create",
 }) => {
-  const [form, setForm] = useState({ categoryTitle: "" });
+  const [form, setForm] = useState({ categoryTitle: "", type: "" });
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
     if (initialValues) {
-      setForm({ categoryTitle: initialValues.categoryTitle || "" });
+      setForm({ categoryTitle: initialValues.categoryTitle || "", type: initialValues.type || "" });
       setErrors({});
     } else {
-      setForm({ categoryTitle: "" });
+      setForm({ categoryTitle: "", type: "" });
       setErrors({});
     }
   }, [initialValues]);
@@ -30,6 +30,11 @@ const CategoryForm = ({
         value: form.categoryTitle,
         rules: [required("Category title")],
       },
+      type: {
+      value: form.type,
+      rules: [required("Type")],
+    },
+      
     });
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -38,7 +43,13 @@ const CategoryForm = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
-    await onSubmit(form);
+    const payload = {
+      ...form,
+      type: Number(form.type),
+    };
+
+    console.log('Payload : ', payload);
+    await onSubmit(payload);
   };
 
   return (
@@ -58,6 +69,26 @@ const CategoryForm = ({
         />
         {errors.categoryTitle && (
           <p className="text-red-500 text-sm mt-1">{errors.categoryTitle}</p>
+        )}
+      </div>
+
+      <div>
+        <label className="block mb-1 font-semibold text-gray-700">
+          Type
+        </label>
+        <select
+          value={form.type}
+          onChange={(e) =>
+            setForm((f) => ({ ...f, type: e.target.value }))
+          }
+          className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+        >
+          <option value="">Select Type</option>
+          <option value="1">Testimonial</option>
+          <option value="2">Session</option>
+        </select>
+        {errors.type && (
+          <p className="text-red-500 text-sm mt-1">{errors.type}</p>
         )}
       </div>
 
