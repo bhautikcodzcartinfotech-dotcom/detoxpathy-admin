@@ -70,11 +70,12 @@ const UserProfilePage = () => {
     }, 200);
   };
 
-  // day select ke time answers bhi attach karo
   const handleDayClick = (dayObj) => {
     const report =
       overview?.dailyReports?.find((r) => r.day === dayObj.day) || {};
-    setSelectedDay({ ...dayObj, answers: report.answers || [] });
+    const checklist = 
+      overview?.dailyChecklist?.find((c) => c.day === dayObj.day) || null;
+    setSelectedDay({ ...dayObj, answers: report.answers || [], checklist });
   };
 
   // Plan management functions
@@ -550,20 +551,25 @@ const UserProfilePage = () => {
                   {Array.from({ length: overview.user.plan.days }).map((_, index) => {
                     const dayNum = index + 1;
                     const isCompleted = dayNum <= (overview.user.planCurrentDay || 0);
-                    const dayData = overview.progress?.find((p) => p.day === dayNum);
+                    const videoDayData = overview.progress?.find((p) => p.day === dayNum);
+                    const reportData = overview.dailyReports?.find((r) => r.day === dayNum);
+                    const checklistData = overview.dailyChecklist?.find((c) => c.day === dayNum);
+                    
+                    const hasData = videoDayData || reportData || checklistData;
                     
                     return (
                       <div
                         key={dayNum}
                         onClick={() => {
-                          if (dayData) handleDayClick(dayData);
+                          if (hasData) handleDayClick({ day: dayNum });
                         }}
                         className={`w-12 h-12 flex items-center justify-center font-bold text-sm rounded ${
-                          dayData ? "cursor-pointer hover:opacity-90" : "cursor-default"
-                        } transition-colors`}
+                          hasData ? "cursor-pointer hover:opacity-90 ring-2 ring-transparent hover:ring-yellow-400" : "cursor-default"
+                        } transition-all`}
                         style={{
                           backgroundColor: isCompleted ? "#134D41" : "#E5E7EB",
-                          color: isCompleted ? "#FFFFFF" : "#9CA3AF"
+                          color: isCompleted ? "#FFFFFF" : "#9CA3AF",
+                          opacity: hasData ? 1 : 0.6
                         }}
                       >
                         {dayNum}
@@ -709,24 +715,73 @@ const UserProfilePage = () => {
                 Day {selectedDay.day} - Detailed Report
               </h2>
 
+              {/* Daily Checklist Data */}
+              {selectedDay.checklist && (
+                <div className="mb-6 p-5 rounded-2xl bg-blue-50 border border-blue-100 shadow-sm">
+                  <h3 className="text-lg font-bold text-blue-700 mb-4 flex items-center gap-2">
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+                    </svg>
+                    Daily Checklist
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    {[
+                      { label: "Water Intake", value: `${selectedDay.checklist.waterIntake} glasses`, icon: "💧" },
+                      { label: "Exercise", value: `${selectedDay.checklist.exerciseMinutes} mins`, icon: "🏃" },
+                      { label: "Green Juice", value: `${selectedDay.checklist.greenJuice} glasses`, icon: "🥤" },
+                      { label: "Pranayama", value: `${selectedDay.checklist.pranayamaMinutes} mins`, icon: "🧘" },
+                      { label: "Sleep", value: `${selectedDay.checklist.sleepHours} hours`, icon: "🌙" },
+                      { label: "Weight", value: `${selectedDay.checklist.todayWeight} kg`, icon: "⚖️" },
+                    ].map((item, idx) => (
+                      <div key={idx} className="bg-white p-3 rounded-xl border border-blue-50 flex items-center justify-between shadow-sm">
+                        <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
+                          <span>{item.icon}</span>
+                          {item.label}
+                        </div>
+                        <div className="text-sm font-bold text-gray-800">
+                          {item.value}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Diet Mistake - Full Width Row */}
+                  <div className="bg-white p-4 rounded-xl border border-red-50 shadow-sm">
+                    <div className="flex items-center gap-2 text-sm font-bold text-red-500 uppercase tracking-wider mb-2">
+                       <span>⚠️</span> Diet Mistake
+                    </div>
+                    <div className="text-sm text-red-600 font-medium leading-relaxed">
+                      {selectedDay.checklist.dietMistake || "No mistakes reported for this day."}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Daily Question Reports */}
+              <h3 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">
+                <svg className="w-5 h-5 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                Questions Report
+              </h3>
               {selectedDay.answers && selectedDay.answers.length ? (
                 <div className="space-y-4">
                   {selectedDay.answers.map((a, i) => (
                     <div
                       key={i}
-                      className="p-4 rounded-xl bg-yellow-50 shadow hover:bg-yellow-100 transition"
+                      className="p-4 rounded-xl bg-yellow-50 shadow-sm border border-yellow-100 hover:bg-yellow-100 transition"
                     >
-                      <div className="text-gray-700 font-medium">
-                        {a.question}
+                      <div className="text-gray-700 font-medium text-sm">
+                        Q: {a.question}
                       </div>
-                      <div className="mt-1 text-gray-900 font-semibold">
-                        {a.givenAnswer || "-"}
+                      <div className="mt-1 text-gray-900 font-bold">
+                        A: {a.givenAnswer || "-"}
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-gray-500">No answers for this day.</div>
+                <div className="text-gray-500 text-sm italic">No answers for this day.</div>
               )}
             </div>
           </div>

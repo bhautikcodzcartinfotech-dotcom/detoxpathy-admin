@@ -56,6 +56,7 @@ import {
   Target,
   BarChart4,
 } from "lucide-react";
+import ConsultationForm from "./ConsultationForm";
 
 const AGORA_SCRIPT_SRC = "https://download.agora.io/sdk/release/AgoraRTC_N.js";
 
@@ -96,7 +97,6 @@ const AppointmentPage = () => {
     date: getTodayInKolkata(),
     slots: [],
     loadingSlots: false,
-    loadingSlots: false,
     selectedSlot: null,
     submitting: false
   });
@@ -112,6 +112,7 @@ const AppointmentPage = () => {
   const [userVideoAnswers, setUserVideoAnswers] = useState([]);
   const [loadingUserOverview, setLoadingUserOverview] = useState(false);
   const [doctorUpdateLoadingId, setDoctorUpdateLoadingId] = useState(null);
+  const [showConsultationForm, setShowConsultationForm] = useState(false);
   const localVideoRef = useRef(null);
   const remoteVideoGridRef = useRef(null);
   const agoraSdkPromiseRef = useRef(null);
@@ -947,6 +948,7 @@ const AppointmentPage = () => {
   const toggleUserProfile = async () => {
     if (!showUserProfile && activeCallAppointment?.userId?._id) {
       try {
+        setShowConsultationForm(false);
         setLoadingUserOverview(true);
         const [overview, videoAns] = await Promise.all([
           getUserOverview(activeCallAppointment.userId._id),
@@ -964,6 +966,15 @@ const AppointmentPage = () => {
       }
     } else {
       setShowUserProfile(false);
+    }
+  };
+
+  const toggleConsultationForm = () => {
+    if (!showConsultationForm) {
+      setShowUserProfile(false);
+      setShowConsultationForm(true);
+    } else {
+      setShowConsultationForm(false);
     }
   };
 
@@ -1322,7 +1333,7 @@ const AppointmentPage = () => {
               initial={{ opacity: 0, x: 200 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 200 }}
-              className={`relative flex h-full flex-col lg:flex-row overflow-hidden bg-white shadow-[-20px_0_60px_rgba(0,0,0,0.1)] transition-all duration-500 ${showUserProfile ? 'w-full' : 'w-full lg:w-[70vw]'}`}
+              className={`relative flex h-full flex-col lg:flex-row overflow-hidden bg-white shadow-[-20px_0_60px_rgba(0,0,0,0.1)] transition-all duration-500 ${(showUserProfile || showConsultationForm) ? 'w-full' : 'w-full lg:w-[70vw]'}`}
             >
               {/* Left Pane: Full Patient Dashboard (Matches Main Profile Page) */}
               <AnimatePresence>
@@ -1430,33 +1441,99 @@ const AppointmentPage = () => {
                           <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
                             <h6 className="text-[10px] font-black uppercase tracking-widest text-teal-600 mb-4 items-center flex gap-2"><Target size={14} /> Program Progress</h6>
                             <div className="flex flex-wrap gap-2 mb-6">
-                              {[...Array(user?.plan?.days || 15)].map((_, i) => (
-                                <button
-                                  key={i}
-                                  onClick={() => setSelectedProgressDay(i + 1)}
-                                  className={`w-10 h-10 rounded-xl flex flex-col items-center justify-center transition-all hover:scale-110 active:scale-95 ${(i + 1) < (user?.planCurrentDay || 1) ? 'bg-teal-900 text-white shadow-md' :
-                                    (i + 1) === (user?.planCurrentDay || 1) ? 'bg-teal-500 text-white ring-4 ring-teal-100 shadow-lg' :
-                                      selectedProgressDay === (i + 1) ? 'bg-white border-2 border-teal-500 text-teal-600' :
-                                        'bg-slate-50 text-slate-400 hover:bg-slate-100'
-                                    }`}
-                                >
-                                  <span className="text-[9px] font-black opacity-60 leading-none mb-0.5">DAY</span>
-                                  <span className="text-[13px] font-black leading-none">{i + 1}</span>
-                                </button>
-                              ))}
+                              {[...Array(user?.plan?.days || 15)].map((_, i) => {
+                                const dayNum = i + 1;
+                                const videoDayData = userOverviewData.progress?.find((p) => p.day === dayNum);
+                                const reportData = userOverviewData.dailyReports?.find((r) => r.day === dayNum);
+                                const checklistData = userOverviewData.dailyChecklist?.find((c) => c.day === dayNum);
+                                const hasData = videoDayData || reportData || checklistData;
+
+                                return (
+                                  <button
+                                    key={i}
+                                    onClick={() => setSelectedProgressDay(dayNum)}
+                                    className={`w-10 h-10 rounded-xl flex flex-col items-center justify-center transition-all hover:scale-110 active:scale-95 ${
+                                      dayNum < (user?.planCurrentDay || 1) ? 'bg-teal-900 text-white shadow-md' :
+                                      dayNum === (user?.planCurrentDay || 1) ? 'bg-teal-500 text-white ring-4 ring-teal-100 shadow-lg' :
+                                      selectedProgressDay === dayNum ? 'bg-white border-2 border-teal-500 text-teal-600' :
+                                      'bg-slate-50 text-slate-400 hover:bg-slate-100'
+                                    } ${hasData ? 'ring-1 ring-teal-200' : ''}`}
+                                  >
+                                    <span className="text-[9px] font-black opacity-60 leading-none mb-0.5">DAY</span>
+                                    <span className="text-[13px] font-black leading-none">{dayNum}</span>
+                                  </button>
+                                );
+                              })}
                             </div>
 
                             {/* Selected Day Context */}
                             {selectedProgressDay && (
                               <div className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100">
-                                <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center justify-between mb-4">
                                   <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Details for Day {selectedProgressDay}</p>
                                   {selectedProgressDay === user?.planCurrentDay && (
                                     <span className="px-2 py-0.5 bg-teal-500 text-white text-[8px] font-black rounded-lg uppercase">Today</span>
                                   )}
                                 </div>
+
+                                {/* Daily Checklist Snippet */}
+                                {(() => {
+                                  const checklist = userOverviewData.dailyChecklist?.find(c => c.day === selectedProgressDay);
+                                  if (!checklist) return null;
+                                  return (
+                                    <div className="mb-8 space-y-4">
+                                      <div className="flex items-center gap-3">
+                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] whitespace-nowrap">Daily Vitals</span>
+                                        <div className="h-px flex-1 bg-gradient-to-r from-slate-200 to-transparent" />
+                                      </div>
+                                      <div className="grid grid-cols-2 gap-3">
+                                        {[
+                                          { label: "Water", val: checklist.waterIntake, unit: "Liters", icon: "💧", color: "text-blue-500", bg: "bg-blue-50" },
+                                          { label: "Exercise", val: checklist.exerciseMinutes, unit: "Min", icon: "🏃", color: "text-orange-500", bg: "bg-orange-50" },
+                                          { label: "Green Juice", val: checklist.greenJuice, unit: "Times", icon: "🥤", color: "text-emerald-500", bg: "bg-emerald-50" },
+                                          { label: "Pranayama", val: checklist.pranayamaMinutes, unit: "Min", icon: "🧘", color: "text-indigo-500", bg: "bg-indigo-50" },
+                                          { label: "Sleep", val: checklist.sleepHours, unit: "Hrs", icon: "🌙", color: "text-purple-500", bg: "bg-purple-50" },
+                                          { label: "Weight", val: checklist.todayWeight, unit: "Kg", icon: "⚖️", color: "text-slate-600", bg: "bg-slate-100" },
+                                        ].map((item, idx) => (
+                                          <div key={idx} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm transition-all hover:border-slate-200">
+                                            <div className="flex items-center gap-2 mb-1.5">
+                                              <div className={`w-5 h-5 rounded-lg ${item.bg} flex items-center justify-center text-[10px]`}>
+                                                {item.icon}
+                                              </div>
+                                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{item.label}</span>
+                                            </div>
+                                            <div className="flex items-baseline gap-1">
+                                              <span className={`text-sm font-black ${item.color}`}>{item.val}</span>
+                                              <span className="text-[8px] font-bold text-slate-300 uppercase">{item.unit}</span>
+                                            </div>
+                                          </div>
+                                        ))}
+                                      </div>
+                                      {checklist.dietMistake && (
+                                        <div className="bg-rose-50/50 p-4 rounded-2xl border border-rose-100/50">
+                                          <div className="flex items-center gap-2 mb-2">
+                                            <div className="w-5 h-5 bg-rose-100 rounded-lg flex items-center justify-center text-[10px]">⚠️</div>
+                                            <span className="text-[10px] font-black text-rose-500 uppercase tracking-wider">Diet Mistake
+
+</span>
+                                          </div>
+                                          <p className="text-[12px] font-black text-slate-700 leading-relaxed italic">
+                                            "{checklist.dietMistake}"
+                                          </p>
+                                        </div>
+                                      )}
+                                    </div>
+                                  );
+                                })()} 
+
+                                {/* Daily Report Questions */}
                                 {userOverviewData.dailyReports?.find(r => r.day === selectedProgressDay) ? (
                                   <div className="space-y-3">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <div className="h-px flex-1 bg-slate-200" />
+                                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Report Questions</span>
+                                      <div className="h-px flex-1 bg-slate-200" />
+                                    </div>
                                     {userOverviewData.dailyReports.find(r => r.day === selectedProgressDay).answers.map((ans, idx) => (
                                       <div key={idx} className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
                                         <p className="text-[10px] font-bold text-slate-400 mb-1">{ans.question}</p>
@@ -1464,8 +1541,8 @@ const AppointmentPage = () => {
                                       </div>
                                     ))}
                                   </div>
-                                ) : (
-                                  <p className="text-[10px] font-bold text-slate-400 italic">No report submitted for this day.</p>
+                                ) : !userOverviewData.dailyChecklist?.find(c => c.day === selectedProgressDay) && (
+                                  <p className="text-[10px] font-bold text-slate-400 italic">No report or checklist submitted for this day.</p>
                                 )}
                               </div>
                             )}
@@ -1567,6 +1644,24 @@ const AppointmentPage = () => {
                     })()}
                   </motion.div>
                 )}
+                {showConsultationForm && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -20 }}
+                    transition={{ type: "spring", damping: 30, stiffness: 200 }}
+                    className="flex flex-col border-r border-slate-100 bg-white lg:bg-slate-50/30 overflow-hidden absolute inset-0 z-50 lg:relative lg:inset-auto lg:z-0 lg:w-[45%] h-full"
+                  >
+                     <ConsultationForm 
+                       appointment={activeCallAppointment} 
+                       onClose={() => setShowConsultationForm(false)} 
+                       onSaveSuccess={() => {
+                         setShowConsultationForm(false);
+                         fetchAppointments(selectedBranchId, filterDate, filterStatus, filterType);
+                       }}
+                     />
+                  </motion.div>
+                )}
               </AnimatePresence>
 
               {/* Right Pane: Video Consultation (User's Style, Full Height) */}
@@ -1603,6 +1698,14 @@ const AppointmentPage = () => {
                           <MdOutlinePersonOutline className="size-3.5 sm:size-[18px]" />
                         )}
                         <span>{showUserProfile ? "Hide Profile" : "Profile"}</span>
+                      </button>
+
+                      <button
+                        onClick={toggleConsultationForm}
+                        className={`inline-flex items-center gap-1.5 rounded-full px-3 sm:px-6 py-1.5 sm:py-2.5 text-[9px] sm:text-xs font-black uppercase tracking-widest transition-all ${showConsultationForm ? 'bg-teal-600 text-white shadow-lg' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm'}`}
+                      >
+                        <ClipboardList className="size-3.5 sm:size-[18px]" />
+                        <span>{showConsultationForm ? "Hide form" : "Consultation"}</span>
                       </button>
                     </div>
                   </div>
