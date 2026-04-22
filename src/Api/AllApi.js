@@ -748,7 +748,7 @@ export const createCategoryApi = async (payload) => {
     { headers: getAuthHeaders() }
   );
   return res.data.data;
-};
+}; 
 
 export const updateCategoryById = async (id, payload) => {
   const res = await axios.put(
