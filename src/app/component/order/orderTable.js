@@ -42,7 +42,7 @@ const OrderTable = ({ items, loading, onRefresh }) => {
       toast.success("Order status updated!");
       if (onRefresh) onRefresh();
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to update status");
+      toast.error(err?.response?.data?.error || err?.response?.data?.message || "Failed to update status");
     } finally {
       setUpdatingId(null);
     }
@@ -55,6 +55,7 @@ const OrderTable = ({ items, loading, onRefresh }) => {
           <tr className="border-b border-gray-100">
             <th className="px-4 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">ORD ID</th>
             <th className="px-4 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">USER</th>
+            <th className="px-4 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">BRANCH</th>
             <th className="px-4 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">PRODUCT</th>
             <th className="px-4 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">AMOUNT</th>
             <th className="px-4 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">TYPE</th>
@@ -75,11 +76,15 @@ const OrderTable = ({ items, loading, onRefresh }) => {
               <td className="px-4 py-5 whitespace-nowrap text-[13px] font-medium text-gray-700">
                 {order.user ? `${order.user.name} ${order.user.surname || ""}` : (order.shippingAddress?.name || "N/A")}
               </td>
+              
+              <td className="px-4 py-5 whitespace-nowrap text-[13px] text-gray-500">
+                <span className="font-medium text-teal-700">{order.branch?.name || "N/A"}</span>
+              </td>
 
               <td className="px-4 py-5 text-[13px] text-gray-600">
                 <div className="max-w-[150px] truncate">
-                  {order.program ? order.program.name : (order.products?.[0]?.name || "N/A")}
-                  {order.products?.length > 1 && ` +${order.products.length - 1} more`}
+                  {order.plan ? order.plan.name : (order.products?.[0]?.name || "N/A")}
+                  {order.products?.length > (order.plan ? 0 : 1) && ` +${order.products.length - (order.plan ? 0 : 1)} more`}
                 </div>
               </td>
 

@@ -38,7 +38,7 @@ const OrderDetailsPage = () => {
       toast.success("Order status updated");
       fetchDetails();
     } catch (err) {
-      toast.error("Failed to update status");
+      toast.error(err?.response?.data?.error || err?.response?.data?.message || "Failed to update status");
     } finally {
       setUpdating(false);
     }
@@ -82,7 +82,11 @@ const OrderDetailsPage = () => {
               {STATUS_LABELS[order.orderStatus]}
             </span>
           </h1>
-          <p className="text-sm text-gray-500 mt-1">Placed on {new Date(order.createdAt).toLocaleString()}</p>
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-sm text-gray-500">Placed on {new Date(order.createdAt).toLocaleString()}</p>
+            <span className="text-gray-300">|</span>
+            <p className="text-sm font-bold text-teal-600">Branch: {order.branch?.name || "N/A"}</p>
+          </div>
         </div>
       </div>
 
@@ -99,15 +103,15 @@ const OrderDetailsPage = () => {
               </h2>
             </div>
             <div className="p-6 space-y-4">
-              {order.program && (
+              {order.plan && (
                 <div className="flex items-center gap-4 p-4 bg-purple-50/50 rounded-xl border border-purple-100">
-                  <div className="w-16 h-16 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600 font-bold">PRG</div>
+                  <div className="w-16 h-16 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600 font-bold">PLAN</div>
                   <div className="flex-1">
-                    <h3 className="font-bold text-gray-800">{order.program.name}</h3>
-                    <p className="text-xs text-gray-500 line-clamp-1">{order.program.description}</p>
+                    <h3 className="font-bold text-gray-800">{order.plan.name}</h3>
+                    <p className="text-xs text-gray-500 line-clamp-1">{order.plan.description}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-teal-600">₹{order.program.price}</p>
+                    <p className="font-bold text-teal-600">₹{order.plan.price}</p>
                     <p className="text-[10px] text-gray-400">Qty: 1</p>
                   </div>
                 </div>

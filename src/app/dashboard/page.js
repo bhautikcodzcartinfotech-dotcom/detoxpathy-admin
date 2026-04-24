@@ -27,9 +27,11 @@ import { getDashboardStats, createSubAdminApi, getAllBranches } from "@/Api/AllA
 import Loader from "@/utils/loader";
 import Dropdown from "@/utils/dropdown";
 import toast from "react-hot-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const DashboardPage = () => {
   const router = useRouter();
+  const { role, user } = useAuth();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -135,7 +137,7 @@ const DashboardPage = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">
-            {getGreeting()}, <span className="text-teal-700">Admin</span> 👋
+            {getGreeting()}, <span className="text-teal-700">{user?.name || (role === "Admin" ? "Admin" : "Sub Admin")}</span> 👋
           </h1>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
             Here's Detoxpathy's overview for today — {getTodayFormatted()}
@@ -208,7 +210,7 @@ const DashboardPage = () => {
           <div key={i} className={`bg-white p-6 rounded-none border-t-4 ${stat.color} shadow-xl hover:scale-[1.02] transition-all relative overflow-hidden group`}>
             <div className="relative z-10 flex flex-col justify-between h-full">
               <div>
-                <p className="text-[10px] font-black text-gray-400 tracking-[0.2em] mb-4 uppercase">{stat.title}</p>
+                <p className="text-[10px] font-black text-gray-400 mb-4 uppercase">{stat.title}</p>
                 <h3 className="text-3xl font-black text-gray-900 mb-2">{stat.value.toLocaleString()}</h3>
               </div>
               <p className={`text-[10px] ${stat.subColor || 'text-gray-500'} font-bold`}>{stat.sub}</p>
@@ -348,29 +350,35 @@ const DashboardPage = () => {
         {/* Quick Actions */}
         <div className="lg:col-span-4 xl:col-span-4 flex flex-col gap-4">
            <div className="bg-white p-6 rounded-none shadow-lg border border-gray-100 flex-1 flex flex-col h-full">
-              <h2 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] mb-6">Quick Actions</h2>
+              <h2 className="text-[10px] font-black text-gray-400 uppercase mb-6">Quick Actions</h2>
               <div className="flex flex-col gap-4 flex-1 justify-center">
-                 <button 
-                  onClick={() => setIsAddDoctorModalOpen(true)}
-                  className="w-full h-14 bg-teal-900 text-white rounded-none font-black text-xs uppercase tracking-widest hover:bg-teal-950 hover:shadow-lg hover:-translate-y-1 transition-all flex items-center justify-center gap-2"
-                 >
-                    <PlusCircle className="w-4 h-4" /> Add Doctor
-                 </button>
+                 {role === "Admin" && (
+                   <button 
+                    onClick={() => setIsAddDoctorModalOpen(true)}
+                    className="w-full h-14 bg-teal-900 text-white rounded-none font-black text-xs uppercase tracking-widest hover:bg-teal-950 hover:shadow-lg hover:-translate-y-1 transition-all flex items-center justify-center gap-2"
+                   >
+                      <PlusCircle className="w-4 h-4" /> Add Doctor
+                   </button>
+                 )}
                  <button 
                   onClick={() => router.push('/component/users')}
                   className="w-full h-14 bg-white border-2 border-gray-100 text-gray-900 rounded-none font-black text-xs uppercase tracking-widest hover:bg-gray-50 hover:border-teal-100 transition-all flex items-center justify-center gap-2"
                  >
                     <UserPlus className="w-4 h-4 text-teal-600" /> Add User
                  </button>
-                 <button 
-                  onClick={() => router.push('/component/video')}
-                  className="w-full h-14 bg-white border-2 border-gray-100 text-gray-900 rounded-none font-black text-xs uppercase tracking-widest hover:bg-gray-50 hover:border-teal-100 transition-all flex items-center justify-center gap-2"
-                 >
-                    <Video className="w-4 h-4 text-teal-600" /> Upload Video
-                 </button>
-                 <button className="w-full h-14 bg-orange-500 text-white rounded-none font-black text-xs uppercase tracking-widest hover:bg-orange-600 hover:shadow-lg hover:-translate-y-1 transition-all flex items-center justify-center gap-2">
-                    Trigger Payout
-                 </button>
+                 {role === "Admin" && (
+                   <button 
+                    onClick={() => router.push('/component/video')}
+                    className="w-full h-14 bg-white border-2 border-gray-100 text-gray-900 rounded-none font-black text-xs uppercase tracking-widest hover:bg-gray-50 hover:border-teal-100 transition-all flex items-center justify-center gap-2"
+                   >
+                      <Video className="w-4 h-4 text-teal-600" /> Upload Video
+                   </button>
+                 )}
+                 {role === "Admin" && (
+                   <button className="w-full h-14 bg-orange-500 text-white rounded-none font-black text-xs uppercase tracking-widest hover:bg-orange-600 hover:shadow-lg hover:-translate-y-1 transition-all flex items-center justify-center gap-2">
+                      Trigger Payout
+                   </button>
+                 )}
               </div>
            </div>
         </div>
@@ -379,11 +387,11 @@ const DashboardPage = () => {
       {/* Add Doctor Modal */}
       {isAddDoctorModalOpen && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
-          <div className="bg-white w-full max-w-xl rounded-none shadow-2xl overflow-hidden transform animate-in zoom-in-95 duration-300">
+          <div className="bg-white w-full max-w-xl rounded-xl shadow-2xl overflow-hidden transform animate-in zoom-in-95 duration-300">
             <div className="p-8 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
               <div className="space-y-1">
                 <h3 className="text-xl font-black text-gray-900 tracking-tight uppercase">Add New Doctor</h3>
-                <p className="text-[10px] font-black text-teal-600 uppercase tracking-widest">Create a sub-admin account</p>
+                <p className="text-[10px] font-black text-teal-600 uppercase">Create a sub-admin account</p>
               </div>
             </div>
 
@@ -391,7 +399,7 @@ const DashboardPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Username */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 px-1">Full Name</label>
+                  <label className="text-[10px] font-black uppercase  text-gray-400 px-1">Full Name</label>
                   <div className="relative">
                     <UserPlus className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input 
@@ -407,7 +415,7 @@ const DashboardPage = () => {
 
                 {/* Email */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 px-1">Email Address</label>
+                  <label className="text-[10px] font-black uppercase text-gray-400 px-1">Email Address</label>
                   <div className="relative">
                     <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input 
@@ -423,7 +431,7 @@ const DashboardPage = () => {
 
                 {/* Password */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 px-1">Password</label>
+                  <label className="text-[10px] font-black uppercase text-gray-400 px-1">Password</label>
                   <div className="relative">
                     <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input 
@@ -439,7 +447,7 @@ const DashboardPage = () => {
 
                 {/* Branch Select */}
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 px-1">Assign Branch</label>
+                  <label className="text-[10px] font-black uppercase text-gray-400 px-1">Assign Branch</label>
                   <div className="relative">
                     <ShieldCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <select 
@@ -459,7 +467,7 @@ const DashboardPage = () => {
 
               {/* Profile Image */}
               <div className="space-y-2">
-                <label className="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 px-1">Profile Photo (Optional)</label>
+                <label className="text-[10px] font-black uppercase text-gray-400 px-1">Profile Photo (Optional)</label>
                 <div className="relative">
                   <Camera className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input 

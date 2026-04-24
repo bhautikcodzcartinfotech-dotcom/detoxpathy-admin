@@ -427,10 +427,11 @@ const AppointmentPage = () => {
     status = filterStatus,
     type = filterType,
     range = weekRange,
-    mode = viewMode) => {
+    mode = viewMode,
+    silent = false) => {
     if (!branchId) return;
     try {
-      setLoading(true);
+      if (!silent) setLoading(true);
       const params = {};
 
       if (mode === "weekly" && range.start && range.end) {
@@ -451,9 +452,23 @@ const AppointmentPage = () => {
         toast.error(e?.response?.data?.message || "Failed to load appointments");
       }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   };
+
+  // Polling for new appointments every 10 seconds
+  useEffect(() => {
+    if (!selectedBranchId) return;
+
+    const interval = setInterval(() => {
+      // Only poll if not in an active call and not currently initial-loading
+      if (!activeCallAppointment && !loading) {
+        fetchAppointments(selectedBranchId, filterDate, filterStatus, filterType, weekRange, viewMode, true);
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [selectedBranchId, filterDate, filterStatus, filterType, weekRange, viewMode, activeCallAppointment, loading]);
 
   // Fetch slots when date or branch changes in reschedule modal
   useEffect(() => {
@@ -1005,19 +1020,28 @@ const AppointmentPage = () => {
       return 'cancelled';
     }
 
-    if (Number(appointment.type) === 1 && appointment.call?.status === 'ended') {
-      return 'completed';
-    }
-
     const currentDate = getTodayInKolkata();
     const now = getNowInKolkata();
     const currentMinutes = (now.getHours() * 60) + now.getMinutes();
+    const isOnline = Number(appointment.type) === 1;
+
+    if (isOnline && appointment.call?.status === 'ended') {
+      if (appointment.call.adminJoined && appointment.call.userJoined) {
+        return 'completed';
+      }
+      return 'missed';
+    }
 
     if (appointment.date > currentDate) {
       return 'upcoming';
     }
 
     if (appointment.date < currentDate) {
+      if (isOnline) {
+        if (!(appointment.call?.adminJoined && appointment.call?.userJoined)) {
+          return 'missed';
+        }
+      }
       return 'completed';
     }
 
@@ -1032,7 +1056,17 @@ const AppointmentPage = () => {
 
     const appointmentEndMinutes = (hours * 60) + minutes;
 
-    return appointmentEndMinutes >= currentMinutes ? 'upcoming' : 'completed';
+    if (appointmentEndMinutes >= currentMinutes) {
+      return 'upcoming';
+    }
+
+    if (isOnline) {
+      if (!(appointment.call?.adminJoined && appointment.call?.userJoined)) {
+        return 'missed';
+      }
+    }
+
+    return 'completed';
   };
 
   const filteredAppointments = appointments.filter((item) => {
@@ -1046,6 +1080,7 @@ const AppointmentPage = () => {
     total: appointments.length,
     completed: appointments.filter(a => getAppointmentFilterStatus(a) === 'completed').length,
     upcoming: appointments.filter(a => getAppointmentFilterStatus(a) === 'upcoming').length,
+    missed: appointments.filter(a => getAppointmentFilterStatus(a) === 'missed').length,
     cancelled: appointments.filter(a => getAppointmentFilterStatus(a) === 'cancelled').length,
   };
 
@@ -1063,6 +1098,7 @@ const AppointmentPage = () => {
             { label: viewMode === "daily" ? "TODAY TOTAL" : "WEEKLY TOTAL", value: stats.total, color: "border-teal-600", icon: LayoutGrid, iconColor: "text-teal-600" },
             { label: "COMPLETED", value: stats.completed, color: "border-green-500", icon: CheckCircle, iconColor: "text-green-500" },
             { label: "UPCOMING", value: stats.upcoming, color: "border-orange-500", icon: Clock3, iconColor: "text-orange-500" },
+            { label: "MISSED", value: stats.missed, color: "border-gray-400", icon: XOctagon, iconColor: "text-gray-400" },
             { label: "CANCELLED", value: stats.cancelled, color: "border-red-500", icon: XOctagon, iconColor: "text-red-500" },
           ].map((item, idx) => (
             <div key={idx} className={`bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl border-t-4 ${item.color} shadow-sm transition-all hover:shadow-md hover:scale-[1.02]`}>
@@ -1116,6 +1152,7 @@ const AppointmentPage = () => {
                 <option value="">All Status</option>
                 <option value="1">Upcoming</option>
                 <option value="2">Completed</option>
+                <option value="4">Missed</option>
                 <option value="3">Cancelled</option>
               </select>
             </div>
@@ -1175,6 +1212,8 @@ const AppointmentPage = () => {
                     <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">DOCTOR</th>
                     <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">DATE & TIME</th>
                     <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">STATUS</th>
+                    <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">ADMIN JOIN</th>
+                    <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">USER JOIN</th>
                     <th className="px-6 py-5 text-center text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">ACTIONS</th>
                   </tr>
                 </thead>
@@ -1198,16 +1237,7 @@ const AppointmentPage = () => {
                           {item.branchName || item.branchId?.name || "N/A"}
                         </td>
                         <td className="px-6 py-6 whitespace-nowrap">
-                          {statusLabel === 'upcoming' ? (
-                             <InlineDoctorDropdown item={item} />
-                          ) : (
-                            <div className="flex items-center gap-2 bg-gray-50/80 w-fit px-3 py-1.5 rounded-xl border border-gray-100/50 opacity-60">
-                              <User size={12} className="text-gray-400" />
-                              <span className="text-[12px] font-black text-gray-500">
-                                {item.doctor?.username || "Not Assigned"}
-                              </span>
-                            </div>
-                          )}
+                          <InlineDoctorDropdown item={item} />
                         </td>
                         <td className="px-6 py-6 whitespace-nowrap">
                           <div className="flex flex-col">
@@ -1219,9 +1249,28 @@ const AppointmentPage = () => {
                           </div>
                         </td>
                         <td className="px-6 py-6 whitespace-nowrap">
-                          <span className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase shadow-sm ${statusLabel === 'completed' ? 'bg-green-100 text-green-700' : statusLabel === 'cancelled' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'}`}>
+                          <span className={`px-4 py-1.5 rounded-full text-[10px] font-black tracking-widest uppercase shadow-sm ${
+                            statusLabel === 'completed' ? 'bg-green-100 text-green-700' : 
+                            statusLabel === 'cancelled' ? 'bg-red-100 text-red-600' : 
+                            statusLabel === 'missed' ? 'bg-gray-100 text-gray-600' :
+                            'bg-orange-100 text-orange-600'
+                          }`}>
                             {statusLabel}
                           </span>
+                        </td>
+                        <td className="px-6 py-6 whitespace-nowrap">
+                          {Number(item.type) === 1 ? (
+                            <span className={`px-3 py-1 rounded-lg text-[10px] font-bold border ${item.call?.adminJoined ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                              {item.call?.adminJoined ? 'JOINED' : 'NOT JOINED'}
+                            </span>
+                          ) : <span className="text-gray-300 text-[10px] font-bold">OFFLINE</span>}
+                        </td>
+                        <td className="px-6 py-6 whitespace-nowrap">
+                          {Number(item.type) === 1 ? (
+                            <span className={`px-3 py-1 rounded-lg text-[10px] font-bold border ${item.call?.userJoined ? 'bg-green-50 text-green-600 border-green-100' : 'bg-red-50 text-red-600 border-red-100'}`}>
+                              {item.call?.userJoined ? 'JOINED' : 'NOT JOINED'}
+                            </span>
+                          ) : <span className="text-gray-300 text-[10px] font-bold">OFFLINE</span>}
                         </td>
                         <td className="px-6 py-6">
                           <div className="flex items-center justify-center gap-2">
@@ -1267,19 +1316,35 @@ const AppointmentPage = () => {
                           <MapPin size={12} /> {item.branchName || item.branchId?.name || "N/A"}
                         </p>
                          <div className="mt-2">
-                           {statusLabel === 'upcoming' ? (
-                             <InlineDoctorDropdown item={item} />
-                           ) : (
-                             <p className="text-[10px] font-black text-gray-400 flex items-center gap-1.5 opacity-60">
-                               <User size={12} /> {item.doctor?.username || "Not Assigned"}
-                             </p>
-                           )}
+                           <InlineDoctorDropdown item={item} />
                          </div>
                       </div>
-                      <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${statusLabel === 'completed' ? 'bg-green-100 text-green-700' : statusLabel === 'cancelled' ? 'bg-red-100 text-red-600' : 'bg-orange-100 text-orange-600'}`}>
+                      <span className={`px-3 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                        statusLabel === 'completed' ? 'bg-green-100 text-green-700' : 
+                        statusLabel === 'cancelled' ? 'bg-red-100 text-red-600' : 
+                        statusLabel === 'missed' ? 'bg-gray-100 text-gray-600' :
+                        'bg-orange-100 text-orange-600'
+                      }`}>
                         {statusLabel}
                       </span>
                     </div>
+
+                    {Number(item.type) === 1 && (
+                      <div className="mb-4 flex gap-2">
+                        <div className={`flex-1 flex flex-col items-center p-2 rounded-xl border ${item.call?.adminJoined ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
+                          <span className="text-[8px] font-black text-gray-400 uppercase mb-1">Admin Joined</span>
+                          <span className={`text-[10px] font-bold ${item.call?.adminJoined ? 'text-green-600' : 'text-red-600'}`}>
+                            {item.call?.adminJoined ? 'YES' : 'NO'}
+                          </span>
+                        </div>
+                        <div className={`flex-1 flex flex-col items-center p-2 rounded-xl border ${item.call?.userJoined ? 'bg-green-50 border-green-100' : 'bg-red-50 border-red-100'}`}>
+                          <span className="text-[8px] font-black text-gray-400 uppercase mb-1">User Joined</span>
+                          <span className={`text-[10px] font-bold ${item.call?.userJoined ? 'text-green-600' : 'text-red-600'}`}>
+                            {item.call?.userJoined ? 'YES' : 'NO'}
+                          </span>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="flex items-center gap-6 mb-6 p-4 bg-gray-50 rounded-2xl">
                         <div className="flex flex-col">
@@ -1399,8 +1464,8 @@ const AppointmentPage = () => {
                                 <p className="text-xs font-bold text-slate-700">{user?.plan?.name || "No Active Plan"} (₹{user?.plan?.price || 0})</p>
                               </div>
                               <div>
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Gender & Age</p>
-                                <p className="text-xs font-bold text-slate-700">{user?.gender || "-"} • {user?.age || "-"} yrs</p>
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Gender & DOB</p>
+                                <p className="text-xs font-bold text-slate-700">{user?.gender || "-"} • {user?.dob || "-"}</p>
                               </div>
 
                               <div>

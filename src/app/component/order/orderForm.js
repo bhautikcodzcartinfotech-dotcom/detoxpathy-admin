@@ -73,7 +73,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
       toast.success("Order created successfully!");
       onSuccess();
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to create order");
+      toast.error(err?.response?.data?.error || err?.response?.data?.message || "Failed to create order");
     } finally {
       setLoading(false);
     }

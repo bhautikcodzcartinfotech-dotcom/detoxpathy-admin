@@ -285,8 +285,8 @@ const UserProfilePage = () => {
                   <div className="text-sm font-medium text-gray-800">{overview.user?.plan?.name ? `${overview.user.plan.name} (₹${overview.user.plan.price || 0})` : "-"}</div>
                 </div>
                 <div className="border-b border-gray-200 p-6">
-                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Gender & Age</div>
-                  <div className="text-sm font-medium text-gray-800">{overview.user?.gender || "-"} • {overview.user?.age ? `${overview.user.age} yrs` : "-"}</div>
+                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Gender & DOB</div>
+                  <div className="text-sm font-medium text-gray-800">{overview.user?.gender || "-"} • {overview.user?.dob || "-"}</div>
                 </div>
                 
                 <div className="border-b md:border-r border-gray-200 p-6">
@@ -726,9 +726,9 @@ const UserProfilePage = () => {
                   </h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                     {[
-                      { label: "Water Intake", value: `${selectedDay.checklist.waterIntake} glasses`, icon: "💧" },
+                      { label: "Water Intake", value: `${selectedDay.checklist.waterIntake} Liter`, icon: "💧" },
                       { label: "Exercise", value: `${selectedDay.checklist.exerciseMinutes} mins`, icon: "🏃" },
-                      { label: "Green Juice", value: `${selectedDay.checklist.greenJuice} glasses`, icon: "🥤" },
+                      { label: "Green Juice", value: `${selectedDay.checklist.greenJuice} Times`, icon: "🥤" },
                       { label: "Pranayama", value: `${selectedDay.checklist.pranayamaMinutes} mins`, icon: "🧘" },
                       { label: "Sleep", value: `${selectedDay.checklist.sleepHours} hours`, icon: "🌙" },
                       { label: "Weight", value: `${selectedDay.checklist.todayWeight} kg`, icon: "⚖️" },
