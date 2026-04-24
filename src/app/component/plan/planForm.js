@@ -11,7 +11,7 @@ const PlanForm = ({
   loading = false,
   title = "Plan",
 }) => {
-  const [form, setForm] = useState({ name: "", description: "", days: "", price: "" });
+  const [form, setForm] = useState({ name: "", description: "", days: "", price: "", bulkDiscount: "" });
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -21,9 +21,10 @@ const PlanForm = ({
         description: initialData.description || "",
         days: initialData.days ?? "",
         price: initialData.price ?? "",
+        bulkDiscount: initialData.bulkDiscount ?? "",
       });
     } else {
-      setForm({ name: "", description: "", days: "", price: "" });
+      setForm({ name: "", description: "", days: "", price: "", bulkDiscount: "" });
     }
     setErrors({});
   }, [initialData]);
@@ -46,6 +47,7 @@ const PlanForm = ({
       },
       days: { value: form.days, rules: [positiveNumberRule("Days")] },
       price: { value: form.price, rules: [positiveNumberRule("Price")] },
+      bulkDiscount: { value: form.bulkDiscount, rules: [positiveNumberRule("Bulk Discount")] },
     });
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -57,7 +59,8 @@ const PlanForm = ({
     await onSubmit({ 
       ...form, 
       days: Number(form.days),
-      price: Number(form.price)
+      price: Number(form.price),
+      bulkDiscount: Number(form.bulkDiscount)
     });
   };
 
@@ -91,13 +94,14 @@ const PlanForm = ({
           }
           className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
           rows={3}
+          placeholder="Plan description"
         />
         {errors.description && (
           <p className="text-red-500 text-sm mt-1">{errors.description}</p>
         )}
       </div>
 
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <label className="block mb-1 font-semibold text-gray-700">Days *</label>
           <input
@@ -137,6 +141,26 @@ const PlanForm = ({
             <p className="text-red-500 text-sm mt-1">{errors.price}</p>
           )}
         </div>
+      </div>
+
+      <div>
+        <label className="block mb-1 font-semibold text-gray-700">Bulk Discount (%) *</label>
+        <input
+          type="number"
+          value={form.bulkDiscount}
+          onChange={(e) => {
+            const value = e.target.value;
+            if (value === "" || (!isNaN(value) && Number(value) >= 0)) {
+              setForm((f) => ({ ...f, bulkDiscount: value }));
+            }
+          }}
+          className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+          placeholder="e.g. 10"
+          min="0"
+        />
+        {errors.bulkDiscount && (
+          <p className="text-red-500 text-sm mt-1">{errors.bulkDiscount}</p>
+        )}
       </div>
 
       <div className="flex justify-end gap-3 mt-6">

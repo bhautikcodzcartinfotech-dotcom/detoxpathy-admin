@@ -346,6 +346,7 @@ export const createPlanApi = async (payload) => {
     description: payload.description,
     days: Number(payload.days),
     price: Number(payload.price || 0),
+    bulkDiscount: Number(payload.bulkDiscount || 0),
   };
   const res = await axios.post(`${API_BASE}/admin/plan/create`, body, {
     headers: getAuthHeaders(),
@@ -360,6 +361,7 @@ export const updatePlanById = async (id, payload) => {
     body.description = payload.description;
   if (typeof payload.days !== "undefined") body.days = Number(payload.days);
   if (typeof payload.price !== "undefined") body.price = Number(payload.price);
+  if (typeof payload.bulkDiscount !== "undefined") body.bulkDiscount = Number(payload.bulkDiscount);
   const res = await axios.put(`${API_BASE}/admin/plan/update/${id}`, body, {
     headers: getAuthHeaders(),
   });
@@ -1119,6 +1121,13 @@ export const updateOrderStatus = async (id, orderStatus) => {
   return res.data.data;
 };
 
+export const bulkUpdateOrderStatusApi = async (ids, orderStatus) => {
+  const res = await axios.put(`${API_BASE}/admin/order/bulk-update`, { ids, orderStatus }, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
 export const createOrder = async (payload) => {
   const res = await axios.post(`${API_BASE}/admin/order/create`, payload, {
     headers: getAuthHeaders(),
@@ -1139,6 +1148,29 @@ export const getOrderDetails = async (id) => {
     headers: getAuthHeaders(),
   });
   return res.data.data;
+};
+
+export const downloadOrderInvoiceApi = async (id) => {
+  try {
+    const response = await axios.get(
+      `${API_BASE}/admin/order/download-invoice/${id}`,
+      {
+        headers: getAuthHeaders(),
+        responseType: "blob",
+      }
+    );
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `Invoice-${id.slice(-6).toUpperCase()}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } catch (err) {
+    console.error("Download error:", err);
+    throw err;
+  }
 };
 
 export const generateSlots = async (branchId, date) => {

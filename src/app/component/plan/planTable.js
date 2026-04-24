@@ -61,6 +61,9 @@ const PlanTable = ({ plans, onEdit, onDelete }) => {
                 Price
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                Bulk Discount (%)
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Days
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
@@ -82,6 +85,9 @@ const PlanTable = ({ plans, onEdit, onDelete }) => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-gray-700">
                   ₹{p.price || 0}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                  {p.bulkDiscount || 0}%
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-gray-700">
                   {p.days}

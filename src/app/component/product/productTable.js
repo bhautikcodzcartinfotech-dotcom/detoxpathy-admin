@@ -97,7 +97,7 @@ const ProductTable = ({ items, loading, onEdit, onDelete }) => {
                 Discounted Price
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                Branch Price
+                Bulk Discount (%)
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Images
@@ -138,7 +138,7 @@ const ProductTable = ({ items, loading, onEdit, onDelete }) => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="font-medium text-blue-600">
-                    {formatPrice(product.branchPrice)}
+                    {product.bulkDiscount}%
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">

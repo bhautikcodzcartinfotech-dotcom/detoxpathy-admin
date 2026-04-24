@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { getAllOrders, getOrderStats } from "@/Api/AllApi";
+import { getAllOrders, getOrderStats, bulkUpdateOrderStatusApi } from "@/Api/AllApi";
 import OrderTable from "./orderTable";
 import toast from "react-hot-toast";
 import OrderForm from "./orderForm";
@@ -11,6 +11,10 @@ const OrderPage = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState([]);
+  const [isBulkUpdating, setIsBulkUpdating] = useState(false);
+  const [bulkStatus, setBulkStatus] = useState("");
+
   const [stats, setStats] = useState({
     totalOrders: 0,
     pendingDispatch: 0,
@@ -40,6 +44,7 @@ const OrderPage = () => {
       if (data.pagination) {
         setPagination(data.pagination);
       }
+      setSelectedIds([]); // Clear selection on fetch/filter change
     } catch (err) {
       toast.error("Failed to load orders");
       console.error(err);
@@ -68,6 +73,50 @@ const OrderPage = () => {
 
   const handleFilterChange = (key, value) => {
     setFilter(prev => ({ ...prev, [key]: value, start: 1 }));
+  };
+
+  const handleToggleSelection = (id) => {
+    setSelectedIds(prev => 
+      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+    );
+  };
+
+  const handleSelectAll = () => {
+    if (selectedIds.length === orders.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(orders.map(o => o._id));
+    }
+  };
+
+  const handleBulkUpdate = async () => {
+    if (!bulkStatus) return toast.error("Please select a status");
+    if (selectedIds.length === 0) return toast.error("No orders selected");
+
+    try {
+      setIsBulkUpdating(true);
+      const res = await bulkUpdateOrderStatusApi(selectedIds, Number(bulkStatus));
+      
+      if (res.success > 0 && res.failed === 0) {
+        toast.success(`Successfully updated all ${res.success} orders!`);
+      } else if (res.success === 0 && res.failed > 0) {
+        // All failed - show unique errors
+        const uniqueErrors = [...new Set(res.errors?.map(e => e.split(': ').slice(1).join(': ') || e))];
+        const errorMsg = uniqueErrors[0] || "Stock not available or update failed";
+        toast.error(`${res.failed} orders failed: ${errorMsg}`);
+      } else if (res.success > 0 && res.failed > 0) {
+        // Mixed results
+        toast.success(`${res.success} updated, ${res.failed} failed.`);
+      }
+      setSelectedIds([]);
+      setBulkStatus("");
+      fetchOrders();
+      fetchStats();
+    } catch (err) {
+      toast.error(err?.response?.data?.error || "Bulk update failed");
+    } finally {
+      setIsBulkUpdating(false);
+    }
   };
 
   const handleCreateSuccess = () => {
@@ -101,42 +150,90 @@ const OrderPage = () => {
         ))}
       </div>
 
-      {/* Filters Bar */}
-      <div className="flex flex-wrap items-center gap-4 mb-6">
-        <div className="flex-1 min-w-[300px]">
-          <input
-            type="text"
-            placeholder="Search by ORD-ID, user, product..."
-            className="w-full h-11 px-4 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-yellow-400 bg-white"
-            value={filter.search}
-            onChange={(e) => handleFilterChange("search", e.target.value)}
-          />
-        </div>
-        
-        <select 
-          className="h-11 px-4 rounded-lg border border-gray-200 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-          value={filter.type}
-          onChange={(e) => handleFilterChange("type", e.target.value)}
-        >
-          <option value="">All Types</option>
-          <option value="1">Online</option>
-          <option value="2">Branch</option>
-        </select>
+      {/* Filters & Bulk Actions */}
+      <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm space-y-4">
+        <div className="flex flex-wrap items-center gap-4">
+          <div className="flex-1 min-w-[300px]">
+            <input
+              type="text"
+              placeholder="Search by ORD-ID, user, product..."
+              className="w-full h-11 px-4 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-yellow-400 bg-gray-50"
+              value={filter.search}
+              onChange={(e) => handleFilterChange("search", e.target.value)}
+            />
+          </div>
+          
+          <select 
+            className="h-11 px-4 rounded-lg border border-gray-200 bg-gray-50 text-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-400 font-medium"
+            value={filter.type}
+            onChange={(e) => handleFilterChange("type", e.target.value)}
+          >
+            <option value="">All Types</option>
+            <option value="1">Online</option>
+            <option value="2">Branch</option>
+          </select>
 
-        <select 
-          className="h-11 px-4 rounded-lg border border-gray-200 bg-white text-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-          value={filter.status}
-          onChange={(e) => handleFilterChange("status", e.target.value)}
-        >
-          <option value="">All Status</option>
-          <option value="1">Pending</option>
-          <option value="2">Packed</option>
-          <option value="4">In Transit</option>
-          <option value="5">Delivered</option>
-        </select>
+          <select 
+            className="h-11 px-4 rounded-lg border border-gray-200 bg-gray-50 text-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-400 font-medium"
+            value={filter.status}
+            onChange={(e) => handleFilterChange("status", e.target.value)}
+          >
+            <option value="">All Status</option>
+            <option value="1">Pending</option>
+            <option value="2">Packed</option>
+            <option value="3">Processing</option>
+            <option value="4">In Transit</option>
+            <option value="5">Delivered</option>
+            <option value="6">Cancelled</option>
+          </select>
+        </div>
+
+        {/* Bulk Action Bar */}
+        {selectedIds.length > 0 && (
+          <div className="flex items-center gap-4 p-3 bg-teal-50 border border-teal-100 rounded-lg animate-in fade-in slide-in-from-top-2">
+            <span className="text-sm font-bold text-teal-800 ml-2">
+              {selectedIds.length} orders selected
+            </span>
+            <div className="flex items-center gap-2 ml-auto">
+              <select 
+                className="h-9 px-3 rounded-lg border border-teal-200 bg-white text-sm font-bold text-teal-700 focus:outline-none"
+                value={bulkStatus}
+                onChange={(e) => setBulkStatus(e.target.value)}
+              >
+                <option value="">-- Change Status --</option>
+                <option value="1">Pending</option>
+                <option value="2">Packed</option>
+                <option value="3">Processing</option>
+                <option value="4">In Transit</option>
+                <option value="5">Delivered</option>
+                <option value="6">Cancelled</option>
+              </select>
+              <button
+                onClick={handleBulkUpdate}
+                disabled={isBulkUpdating || !bulkStatus}
+                className="h-9 px-4 bg-teal-600 text-white text-sm font-bold rounded-lg hover:bg-teal-700 transition disabled:opacity-50"
+              >
+                {isBulkUpdating ? "Updating..." : "Apply Bulk Update"}
+              </button>
+              <button 
+                onClick={() => setSelectedIds([])}
+                className="text-sm font-bold text-gray-500 hover:text-gray-700 px-2"
+              >
+                Clear
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
-      <OrderTable items={orders} loading={loading} onRefresh={() => { fetchOrders(); fetchStats(); }} />
+      <OrderTable 
+        items={orders} 
+        loading={loading} 
+        onRefresh={() => { fetchOrders(); fetchStats(); }} 
+        selectedIds={selectedIds}
+        onToggleSelection={handleToggleSelection}
+        onSelectAll={handleSelectAll}
+      />
 
       {pagination.totalPages > 1 && (
         <div className="mt-8 flex justify-center items-center gap-4">

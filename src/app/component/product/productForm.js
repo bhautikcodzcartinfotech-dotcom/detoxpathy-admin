@@ -16,7 +16,7 @@ const ProductForm = ({
     description: "",
     basePrice: "",
     discountedPrice: "",
-    branchPrice: "",
+    bulkDiscount: "",
     images: null, // FileList for new uploads
   });
   const [existingImages, setExistingImages] = useState([]); // For displaying existing images when editing
@@ -30,7 +30,7 @@ const ProductForm = ({
         description: initialValues.description || "",
         basePrice: initialValues.basePrice || "",
         discountedPrice: initialValues.discountedPrice || "",
-        branchPrice: initialValues.branchPrice || "",
+        bulkDiscount: initialValues.bulkDiscount || "",
         images: null,
       });
       setExistingImages(Array.isArray(initialValues.images) ? initialValues.images : []);
@@ -42,7 +42,7 @@ const ProductForm = ({
         description: "",
         basePrice: "",
         discountedPrice: "",
-        branchPrice: "",
+        bulkDiscount: "",
         images: null,
       });
       setExistingImages([]);
@@ -71,11 +71,11 @@ const ProductForm = ({
       },
       discountedPrice: {
         value: form.discountedPrice,
-        rules: [required("Discounted price"), number("Discounted price"), positive("Discounted price")],
+        rules: [number("Discounted price")],
       },
-      branchPrice: {
-        value: form.branchPrice,
-        rules: [required("Branch price"), number("Branch price"), positive("Branch price")],
+      bulkDiscount: {
+        value: form.bulkDiscount,
+        rules: [required("Bulk Discount"), number("Bulk Discount"), positive("Bulk Discount")],
       },
     });
 
@@ -105,7 +105,7 @@ const ProductForm = ({
     formData.append('description', form.description);
     formData.append('basePrice', form.basePrice);
     formData.append('discountedPrice', form.discountedPrice);
-    formData.append('branchPrice', form.branchPrice);
+    formData.append('bulkDiscount', form.bulkDiscount);
 
     // Add images to remove
     if (imagesToRemove.length > 0) {
@@ -208,21 +208,21 @@ const ProductForm = ({
 
       <div>
         <label className="block mb-1 font-semibold text-gray-700">
-          Branch Price
+          Bulk Discount (%)
         </label>
         <input
           type="number"
-          value={form.branchPrice}
+          value={form.bulkDiscount}
           onChange={(e) =>
-            setForm((f) => ({ ...f, branchPrice: e.target.value }))
+            setForm((f) => ({ ...f, bulkDiscount: e.target.value }))
           }
           className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
-          placeholder="350"
+          placeholder="10"
           min="0"
           step="0.01"
         />
-        {errors.branchPrice && (
-          <p className="text-red-500 text-sm mt-1">{errors.branchPrice}</p>
+        {errors.bulkDiscount && (
+          <p className="text-red-500 text-sm mt-1">{errors.bulkDiscount}</p>
         )}
       </div>
 

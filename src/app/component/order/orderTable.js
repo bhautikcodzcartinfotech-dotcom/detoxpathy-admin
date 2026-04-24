@@ -22,7 +22,7 @@ const STATUS_COLORS = {
   6: "bg-red-100 text-red-700",
 };
 
-const OrderTable = ({ items, loading, onRefresh }) => {
+const OrderTable = ({ items, loading, onRefresh, selectedIds = [], onToggleSelection, onSelectAll }) => {
   const [updatingId, setUpdatingId] = useState(null);
 
   if (loading) return <div className="p-10 flex justify-center"><Loader /></div>;
@@ -34,6 +34,8 @@ const OrderTable = ({ items, loading, onRefresh }) => {
       </div>
     );
   }
+
+  const allSelected = items.length > 0 && items.every(item => selectedIds.includes(item._id));
 
   const handleStatusChange = async (orderId, newStatus) => {
     try {
@@ -53,6 +55,14 @@ const OrderTable = ({ items, loading, onRefresh }) => {
       <table className="min-w-full">
         <thead>
           <tr className="border-b border-gray-100">
+            <th className="px-4 py-4 text-left">
+              <input 
+                type="checkbox" 
+                checked={allSelected}
+                onChange={onSelectAll}
+                className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
+              />
+            </th>
             <th className="px-4 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">ORD ID</th>
             <th className="px-4 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">USER</th>
             <th className="px-4 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">BRANCH</th>
@@ -68,7 +78,15 @@ const OrderTable = ({ items, loading, onRefresh }) => {
         </thead>
         <tbody className="divide-y divide-gray-50">
           {items.map((order) => (
-            <tr key={order._id} className="hover:bg-gray-50/50 transition-all duration-200">
+            <tr key={order._id} className={`hover:bg-gray-50/50 transition-all duration-200 ${selectedIds.includes(order._id) ? 'bg-teal-50/30' : ''}`}>
+              <td className="px-4 py-5">
+                <input 
+                  type="checkbox" 
+                  checked={selectedIds.includes(order._id)}
+                  onChange={() => onToggleSelection(order._id)}
+                  className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
+                />
+              </td>
               <td className="px-4 py-5 whitespace-nowrap text-[13px] font-semibold text-teal-600">
                 ORD-{order._id.slice(-6).toUpperCase()}
               </td>
@@ -83,8 +101,8 @@ const OrderTable = ({ items, loading, onRefresh }) => {
 
               <td className="px-4 py-5 text-[13px] text-gray-600">
                 <div className="max-w-[150px] truncate">
-                  {order.plan ? order.plan.name : (order.products?.[0]?.name || "N/A")}
-                  {order.products?.length > (order.plan ? 0 : 1) && ` +${order.products.length - (order.plan ? 0 : 1)} more`}
+                  {order.plans?.length > 0 ? order.plans[0].name : (order.products?.[0]?.name || "N/A")}
+                  {(order.plans?.length + order.products?.length) > 1 && ` +${(order.plans?.length || 0) + (order.products?.length || 0) - 1} more`}
                 </div>
               </td>
 

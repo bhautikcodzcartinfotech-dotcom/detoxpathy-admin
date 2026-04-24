@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getOrderDetails, updateOrderStatus, API_BASE } from "@/Api/AllApi";
+import { getOrderDetails, updateOrderStatus, downloadOrderInvoiceApi, API_BASE } from "@/Api/AllApi";
 import Loader from "@/utils/loader";
 import toast from "react-hot-toast";
 import { ChevronLeft, Package, User, MapPin, Truck, CreditCard, ExternalLink } from "lucide-react";
@@ -103,9 +103,23 @@ const OrderDetailsPage = () => {
               </h2>
             </div>
             <div className="p-6 space-y-4">
-              {order.plan && (
+              {order.plans?.map((planItem, idx) => (
+                <div key={`plan-${idx}`} className="flex items-center gap-4 p-4 bg-purple-50/50 rounded-xl border border-purple-100">
+                  <div className="w-16 h-16 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600 font-bold text-xs">PLAN</div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-gray-800">{planItem.name}</h3>
+                    <p className="text-xs text-gray-500 line-clamp-1">{planItem.description}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-bold text-teal-600">₹{planItem.price}</p>
+                    <p className="text-[10px] text-gray-400">Qty: 1</p>
+                  </div>
+                </div>
+              ))}
+              {/* Fallback for legacy single plan orders */}
+              {order.plan && !order.plans?.length && (
                 <div className="flex items-center gap-4 p-4 bg-purple-50/50 rounded-xl border border-purple-100">
-                  <div className="w-16 h-16 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600 font-bold">PLAN</div>
+                  <div className="w-16 h-16 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600 font-bold text-xs">PLAN</div>
                   <div className="flex-1">
                     <h3 className="font-bold text-gray-800">{order.plan.name}</h3>
                     <p className="text-xs text-gray-500 line-clamp-1">{order.plan.description}</p>
@@ -242,7 +256,10 @@ const OrderDetailsPage = () => {
               </div>
             </div>
 
-            <button className="w-full py-2.5 border border-teal-600 text-teal-600 rounded-xl text-sm font-bold hover:bg-teal-50 transition">
+            <button 
+              onClick={() => downloadOrderInvoiceApi(order._id)}
+              className="w-full py-2.5 border border-teal-600 text-teal-600 rounded-xl text-sm font-bold hover:bg-teal-50 transition"
+            >
               Print Invoice
             </button>
           </div>
