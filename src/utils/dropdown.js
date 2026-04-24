@@ -10,6 +10,8 @@ const Dropdown = ({
   disabled = false,
   showCheckbox = false,
   disabledValues = [], // Array of values that should be disabled
+  labelClassName = "text-gray-700",
+  placeholder = "",
 }) => {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -30,7 +32,7 @@ const Dropdown = ({
   return (
     <div className="relative w-full" ref={dropdownRef}>
       {label && (
-        <label className="block mb-1 font-semibold text-gray-700">
+        <label className={`block mb-1 font-semibold ${labelClassName}`}>
           {label}
         </label>
       )}
@@ -46,7 +48,7 @@ const Dropdown = ({
         }`}
       >
         <span className={`${value ? "text-gray-900" : "text-gray-400"}`}>
-          {selected ? selected.label : `Select ${label || "Option"}`}
+          {selected ? selected.label : (placeholder || `Select ${label || "Option"}`)}
         </span>
         <svg
           className={`w-5 h-5 transition-transform duration-200 ${

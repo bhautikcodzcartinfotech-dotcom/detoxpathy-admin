@@ -290,7 +290,9 @@ const QuestionPage = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
                   <Dropdown
-                    label="Select Video"
+                    label="Choose Video"
+                    labelClassName="text-xl text-slate-800 mb-2"
+                    placeholder="Choose Video"
                     options={videoOptions}
                     value={selectedVideoId}
                     onChange={setSelectedVideoId}
@@ -299,6 +301,7 @@ const QuestionPage = () => {
                 <div>
                   <Dropdown
                     label="Display Language"
+                    labelClassName="text-xl text-slate-800 mb-2"
                     options={languageOptions}
                     value={selectedLanguage}
                     onChange={setSelectedLanguage}
