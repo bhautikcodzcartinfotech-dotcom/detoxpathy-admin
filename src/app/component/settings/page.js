@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from "react";
 import RoleGuard from "@/components/RoleGuard";
 import { Header } from "@/utils/header";
-import { getSetting, updateSettingById, listVideos } from "@/Api/AllApi";
+import { getSetting, updateSettingById, listVideos, generateUrl, API_HOST } from "@/Api/AllApi";
 import toast from "react-hot-toast";
 import Loader from "@/utils/loader";
 import RichTextEditor from "@/components/RichTextEditor";
@@ -10,6 +10,7 @@ import RichTextEditor from "@/components/RichTextEditor";
 const SettingsPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [settings, setSettings] = useState(null);
   const [formData, setFormData] = useState({});
   const [trialVideos, setTrialVideos] = useState([]);
@@ -23,7 +24,7 @@ const SettingsPage = () => {
       ? normalizedPath.slice(8) 
       : normalizedPath;
     const encodedPath = encodeURIComponent(filePath);
-    return `/api/v1/uploads/${encodedPath}`;
+    return `${API_HOST}/api/v1/uploads/${encodedPath}`;
   };
 
   // Fetch settings
@@ -80,8 +81,20 @@ const SettingsPage = () => {
   // Update settings
   const handleUpdate = async () => {
     try {
+      // Validation: Testimonial Description and Image cannot both be present
+      if (formData.testimonialDescription && formData.testimonialImage) {
+        toast.error("Please provide either a Testimonial Description or an Image, not both.");
+        return;
+      }
+
       setSaving(true);
-      await updateSettingById(settings._id, formData);
+      
+      // Filter out internal MongoDB fields before sending to API
+      const { _id, createdAt, updatedAt, __v, ...updateData } = formData;
+      
+      console.log("Updating settings with data:", updateData);
+      await updateSettingById(settings._id, updateData);
+      
       setSettings({ ...settings, ...formData });
       toast.success("Settings updated successfully!");
     } catch (error) {
@@ -95,6 +108,41 @@ const SettingsPage = () => {
   // Handle input changes
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Handle image upload
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    try {
+      setIsUploadingImage(true);
+      const uploadData = new FormData();
+      uploadData.append("image", file);
+
+      const response = await generateUrl(uploadData);
+      console.log("Upload response:", response);
+      
+      // Handle response structure (it might be a string or an object with data property)
+      // Normalize backslashes to forward slashes for cross-platform compatibility
+      let fileUrl = typeof response === 'string' ? response : response.data;
+      if (fileUrl && typeof fileUrl === 'string') {
+        fileUrl = fileUrl.replace(/\\/g, '/');
+      }
+      
+      if (fileUrl) {
+        console.log("Setting testimonialImage to:", fileUrl);
+        handleInputChange("testimonialImage", fileUrl);
+        toast.success("Image uploaded successfully!");
+      } else {
+        throw new Error("Invalid response from server");
+      }
+    } catch (error) {
+      console.error("Failed to upload image:", error);
+      toast.error("Failed to upload image");
+    } finally {
+      setIsUploadingImage(false);
+    }
   };
 
   if (loading) {
@@ -383,6 +431,165 @@ const SettingsPage = () => {
                   rows={6}
                   showPreviewButton={false}
                 />
+              </div>
+
+              {/* Appointment Description */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Appointment Description
+                </label>
+                <textarea
+                  value={formData.appoinmentDescription || ""}
+                  onChange={(e) => handleInputChange("appoinmentDescription", e.target.value)}
+                  placeholder="Enter appointment description..."
+                  rows={4}
+                  className="w-full px-4 py-3 rounded-xl border border-amber-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none resize-none"
+                />
+              </div>
+
+            </div>
+          </div>
+
+          {/* Testimonial Management */}
+          <div className="bg-gradient-to-br from-white to-yellow-50 rounded-2xl shadow-lg border border-yellow-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
+              <svg
+                className="w-6 h-6 text-yellow-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                />
+              </svg>
+              Testimonial Management
+            </h3>
+            <div className="space-y-8">
+              {/* Testimonial Description */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Testimonial Description
+                </label>
+                <textarea
+                  value={formData.testimonialDescription || ""}
+                  onChange={(e) =>
+                    handleInputChange("testimonialDescription", e.target.value)
+                  }
+                  placeholder="Enter testimonial description..."
+                  rows={4}
+                  className="w-full px-4 py-3 rounded-xl border border-amber-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none resize-none"
+                />
+              </div>
+
+              {/* Testimonial Image Upload */}
+              <div className="space-y-4">
+                <label className="block text-sm font-medium text-gray-700">
+                  Testimonial Image
+                </label>
+                <div className="flex items-start gap-6">
+                  {/* Preview */}
+                  <div className="relative group">
+                    <div className="w-32 h-32 rounded-2xl bg-amber-100 border-2 border-dashed border-amber-300 flex items-center justify-center overflow-hidden transition-all group-hover:border-amber-400">
+                      {formData.testimonialImage ? (
+                        <img
+                          src={getVideoUrl(formData.testimonialImage)}
+                          alt="Testimonial"
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <svg
+                          className="w-12 h-12 text-amber-300"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                          />
+                        </svg>
+                      )}
+                    </div>
+                    {formData.testimonialImage && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleInputChange("testimonialImage", "")
+                        }
+                        className="absolute -top-2 -right-2 bg-red-500 text-white p-1.5 rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <svg
+                          className="w-4 h-4"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M6 18L18 6M6 6l18 18"
+                          />
+                        </svg>
+                      </button>
+                    )}
+                  </div>
+
+                  {/* Upload Button */}
+                  <div className="flex-1">
+                    <div className="relative">
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        id="testimonial-image-upload"
+                        disabled={isUploadingImage}
+                      />
+                      <label
+                        htmlFor="testimonial-image-upload"
+                        className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl border-2 border-dashed border-amber-300 bg-amber-50/30 text-amber-700 font-medium cursor-pointer hover:bg-amber-50 hover:border-amber-400 transition-all ${
+                          isUploadingImage ? "opacity-50 cursor-not-allowed" : ""
+                        }`}
+                      >
+                        {isUploadingImage ? (
+                          <>
+                            <div className="w-5 h-5 border-2 border-amber-600 border-t-transparent rounded-full animate-spin"></div>
+                            Uploading...
+                          </>
+                        ) : (
+                          <>
+                            <svg
+                              className="w-5 h-5"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                              />
+                            </svg>
+                            {formData.testimonialImage
+                              ? "Change Image"
+                              : "Upload Image"}
+                          </>
+                        )}
+                      </label>
+                    </div>
+                    <p className="mt-2 text-xs text-gray-500">
+                      Recommended: Square image, max 2MB (JPG, PNG)
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
