@@ -77,6 +77,7 @@ export default function RootLayout({ children }) {
         <link rel="shortcut icon" href="/favicon.ico" sizes="any" />
         <link rel="apple-touch-icon" href="/favicon.ico" sizes="180x180" />
         <meta name="theme-color" content="#fbbf24" />
+        <script src="https://checkout.razorpay.com/v1/checkout.js" async></script>
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable}`}>
         <AuthProvider>

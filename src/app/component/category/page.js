@@ -9,6 +9,7 @@ import {
   createCategoryApi,
   updateCategoryById,
   deleteCategoryById,
+  reorderCategoriesApi,
 } from "@/Api/AllApi";
 import CategoryForm from "./categoryForm";
 import CategoryTable from "./categoryTable";
@@ -37,6 +38,32 @@ const CategoryPage = () => {
   useEffect(() => {
     fetchList();
   }, []);
+
+  const handleReorder = async (reorderedItems, type) => {
+    try {
+      const newIndexData = reorderedItems.map((item, index) => ({
+        _id: item._id,
+        index: index
+      }));
+
+      await reorderCategoriesApi(newIndexData);
+      
+      setItems(prev => {
+        const otherTypeItems = prev.filter(item => item.type !== type);
+        const updatedReorderedItems = reorderedItems.map((item, index) => ({
+          ...item,
+          index: index
+        }));
+        return [...otherTypeItems, ...updatedReorderedItems].sort((a, b) => a.index - b.index);
+      });
+      
+      toast.success("Order updated successfully!");
+    } catch (err) {
+      console.error("Failed to reorder:", err);
+      toast.error("Failed to update order");
+      fetchList(); // Reset to server state on error
+    }
+  };
 
   const handleSubmit = async (formData) => {
     try {
@@ -99,6 +126,7 @@ const CategoryPage = () => {
           loading={listLoading}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          onReorder={handleReorder}
         />
 
         <Drawer isOpen={isOpen} onClose={() => setIsOpen(false)}>

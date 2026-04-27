@@ -17,8 +17,8 @@ const SearchComponent = ({
   selectedPlan = "",
   onPlanChange = () => {},
   selectedDate = "",
-  onDateChange = () => {},
-  planHistoryFilter = "",
+  onDateChange = null,
+  planHistoryFilter = null,
   onPlanHistoryFilterChange = () => {},
   // Language filter
   languageOptions = [],
@@ -100,7 +100,7 @@ const SearchComponent = ({
       </div>
 
       {/* Additional Filters Grid */}
-      {(planOptions.length > 0 || planHistoryFilter !== undefined || languageOptions.length > 0) && (
+      {(planOptions.length > 0 || (planHistoryFilter !== null && planHistoryFilter !== undefined) || languageOptions.length > 0 || onDateChange) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-200">
           {/* Plan Filter */}
           {planOptions.length > 0 && (
@@ -117,7 +117,7 @@ const SearchComponent = ({
           )}
 
           {/* Plan History Filter */}
-          {planHistoryFilter !== undefined && (
+          {planHistoryFilter !== null && planHistoryFilter !== undefined && (
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Plan History

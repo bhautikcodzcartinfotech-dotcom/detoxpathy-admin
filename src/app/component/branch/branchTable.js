@@ -108,8 +108,22 @@ const BranchTable = ({ items, loading, onEdit, onDelete }) => {
                 key={b._id}
                 className="hover:bg-yellow-50 transition-all duration-200"
               >
-                <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-800">
-                  {b.name}
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-gray-800">{b.name}</span>
+                    <div className="flex gap-1 mt-1">
+                      {b.isMainBranch && (
+                        <span className="px-2 py-0.5 text-[10px] bg-blue-100 text-blue-700 rounded-full font-bold uppercase">
+                          Main
+                        </span>
+                      )}
+                      {b.isStateHeadBranch && (
+                        <span className="px-2 py-0.5 text-[10px] bg-purple-100 text-purple-700 rounded-full font-bold uppercase">
+                          State Head
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </td>
                 <td className="px-6 py-4 text-gray-700 align-top">
                   {expanded[b._id] ? (
@@ -182,8 +196,20 @@ const BranchTable = ({ items, loading, onEdit, onDelete }) => {
           >
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="text-base font-semibold text-gray-900">
+                <div className="text-base font-semibold text-gray-900 flex items-center gap-2">
                   {b.name}
+                  <div className="flex gap-1">
+                    {b.isMainBranch && (
+                      <span className="px-1.5 py-0.5 text-[8px] bg-blue-100 text-blue-700 rounded-full font-bold uppercase">
+                        M
+                      </span>
+                    )}
+                    {b.isStateHeadBranch && (
+                      <span className="px-1.5 py-0.5 text-[8px] bg-purple-100 text-purple-700 rounded-full font-bold uppercase">
+                        SH
+                      </span>
+                    )}
+                  </div>
                 </div>
                 <div className="text-sm text-gray-700 mt-1 whitespace-pre-wrap break-words">
                   {normalizeAddress(b.address)}

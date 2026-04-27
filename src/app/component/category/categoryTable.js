@@ -5,7 +5,10 @@ import NotFoundCard from "@/components/NotFoundCard";
 import { ActionButton } from "@/utils/actionbutton";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 
-const CategoryTable = ({ items, loading, onEdit, onDelete }) => {
+import { Reorder } from "framer-motion";
+import { GripVertical } from "lucide-react";
+
+const CategoryTable = ({ items, loading, onEdit, onDelete, onReorder }) => {
   const [deleteDialog, setDeleteDialog] = useState({
     isOpen: false,
     itemId: null,
@@ -69,9 +72,20 @@ const CategoryTable = ({ items, loading, onEdit, onDelete }) => {
               </tr>
             </thead>
 
-            <tbody className="divide-y divide-gray-200">
+            <Reorder.Group
+              as="tbody"
+              axis="y"
+              values={data}
+              onReorder={(newOrder) => onReorder(newOrder, data[0]?.type)}
+              className="divide-y divide-gray-200"
+            >
               {data.map((c) => (
-                <tr key={c._id} className="hover:bg-yellow-50">
+                <Reorder.Item
+                  as="tr"
+                  key={c._id}
+                  value={c}
+                  className="hover:bg-yellow-50 bg-white cursor-grab active:cursor-grabbing"
+                >
                   <td className="px-6 py-4 font-semibold text-gray-800">
                     {c.categoryTitle}
                   </td>
@@ -84,9 +98,9 @@ const CategoryTable = ({ items, loading, onEdit, onDelete }) => {
                       }
                     />
                   </td>
-                </tr>
+                </Reorder.Item>
               ))}
-            </tbody>
+            </Reorder.Group>
           </table>
         </div>
       )}

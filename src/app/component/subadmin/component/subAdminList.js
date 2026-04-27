@@ -8,7 +8,6 @@ import NotFoundCard from "@/components/NotFoundCard";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import toast from "react-hot-toast";
 import { FiLogIn, FiChevronDown, FiChevronUp, FiCalendar } from "react-icons/fi";
-import { motion, AnimatePresence } from "framer-motion";
 import LeaveManagementModal from "./LeaveManagementModal";
 
 const SubAdminList = ({ subAdmins, onEdit, onDelete, onUpdate, loading = false }) => {
@@ -198,69 +197,51 @@ const SubAdminList = ({ subAdmins, onEdit, onDelete, onUpdate, loading = false }
                       </td>
                     </tr>
 
-                    <AnimatePresence initial={false}>
-                      {isExpanded && matchedSubDoctors.length > 0 && (
-                        <tr className="border-l-4 border-yellow-400 overflow-hidden">
-                          <td colSpan={7} className="p-0 border-none">
-                            <motion.div
-                              initial={{ height: 0, opacity: 0 }}
-                              animate={{ height: "auto", opacity: 1 }}
-                              exit={{ height: 0, opacity: 0 }}
-                              transition={{ duration: 0.3, ease: "easeInOut" }}
-                              className="overflow-hidden bg-gray-100/50"
+                    {isExpanded && matchedSubDoctors.length > 0 && (
+                      matchedSubDoctors.map((sd) => (
+                        <tr key={sd._id} className="bg-gray-50/50 hover:bg-yellow-50 transition-all duration-200 border-l-4 border-yellow-400">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {sd.image ? (
+                              <img src={`${API_BASE}/${sd.image}`} alt="avatar" className="w-10 h-10 rounded-full object-cover border" />
+                            ) : (
+                              <div className="w-10 h-10 rounded-full bg-gray-200" />
+                            )}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-800 uppercase text-xs">{sd.username}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-700 text-sm">{sd.email}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-700 text-sm">
+                            {Array.isArray(sd.branch) && sd.branch.length ? sd.branch.map((b) => b.name).join(", ") : "-"}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-700 font-medium">
+                            <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold">SUB DOCTOR</span>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-700 text-sm">{sd.commission ?? 0}%</td>
+                          <td className="px-6 py-4 text-center space-x-2 whitespace-nowrap">
+                            <ActionButton type="edit" onClick={() => onEdit(sd)} />
+                            <ActionButton type="delete" onClick={() => handleDeleteClick(sd._id, sd.username || "Sub Doctor")} />
+                            <button
+                              onClick={() => handleLoginAsSubAdmin(sd)}
+                              disabled={loginLoading === sd._id}
+                              className="bg-gradient-to-tr from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white rounded-full w-10 h-10 inline-flex items-center justify-center shadow-lg hover:shadow-xl transition-transform duration-300 transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                              title="Login as this sub doctor"
                             >
-                              <table className="min-w-full divide-y divide-gray-200">
-                                <tbody>
-                                  {matchedSubDoctors.map((sd) => (
-                                    <tr key={sd._id} className="hover:bg-gray-200/50 transition-all duration-200">
-                                      <td className="px-6 py-4 whitespace-nowrap">
-                                        {sd.image ? (
-                                          <img src={`${API_BASE}/${sd.image}`} alt="avatar" className="w-9 h-9 rounded-full object-cover border" />
-                                        ) : (
-                                          <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-gray-400 text-[10px] font-bold">
-                                            {sd.username?.charAt(0)}
-                                          </div>
-                                        )}
-                                      </td>
-                                      <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-700 uppercase text-xs">{sd.username}</td>
-                                      <td className="px-6 py-4 whitespace-nowrap text-gray-600 text-sm">{sd.email}</td>
-                                      <td className="px-6 py-4 whitespace-nowrap text-gray-600 text-sm">
-                                        {Array.isArray(sd.branch) && sd.branch.length ? sd.branch.map((b) => b.name).join(", ") : "-"}
-                                      </td>
-                                      <td className="px-6 py-4 whitespace-nowrap text-gray-600 italic text-[10px] font-semibold">SUB DOCTOR</td>
-                                      <td className="px-6 py-4 whitespace-nowrap text-gray-600 text-sm">{sd.commission ?? 0}%</td>
-                                      <td className="px-6 py-4 text-center space-x-2 whitespace-nowrap">
-                                        <ActionButton type="edit" onClick={() => onEdit(sd)} />
-                                        <ActionButton type="delete" onClick={() => handleDeleteClick(sd._id, sd.username || "Sub Doctor")} />
-                                        <button
-                                          onClick={() => handleLoginAsSubAdmin(sd)}
-                                          disabled={loginLoading === sd._id}
-                                          className="bg-gradient-to-tr from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white rounded-full w-10 h-10 inline-flex items-center justify-center shadow-lg hover:shadow-xl transition-transform duration-300 transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                                          title="Login as this sub doctor"
-                                        >
-                                          {loginLoading === sd._id ? (
-                                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                          ) : (
-                                            <FiLogIn size={20} />
-                                          )}
-                                        </button>
-                                        <button
-                                          onClick={() => openLeaveModal(sd)}
-                                          className="bg-gradient-to-tr from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-white rounded-full w-10 h-10 inline-flex items-center justify-center shadow-lg hover:shadow-xl transition-transform duration-300 transform hover:-translate-y-1"
-                                          title="Manage Leaves"
-                                        >
-                                          <FiCalendar size={20} />
-                                        </button>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </motion.div>
+                              {loginLoading === sd._id ? (
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                              ) : (
+                                <FiLogIn size={20} />
+                              )}
+                            </button>
+                            <button
+                              onClick={() => openLeaveModal(sd)}
+                              className="bg-gradient-to-tr from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-white rounded-full w-10 h-10 inline-flex items-center justify-center shadow-lg hover:shadow-xl transition-transform duration-300 transform hover:-translate-y-1"
+                              title="Manage Leaves"
+                            >
+                              <FiCalendar size={20} />
+                            </button>
                           </td>
                         </tr>
-                      )}
-                    </AnimatePresence>
+                      ))
+                    )}
                   </React.Fragment>
                 );
               })

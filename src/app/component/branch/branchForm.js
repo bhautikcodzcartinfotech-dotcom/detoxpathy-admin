@@ -22,6 +22,7 @@ const BranchForm = ({
     mobilePrefix: "+91",
     mobileNumber: "",
     isMainBranch: false,
+    isStateHeadBranch: false,
   });
   const [errors, setErrors] = useState({});
 
@@ -39,6 +40,7 @@ const BranchForm = ({
         mobilePrefix: initialValues.mobilePrefix ?? "+91",
         mobileNumber: initialValues.mobileNumber ?? "",
         isMainBranch: initialValues.isMainBranch ?? false,
+        isStateHeadBranch: initialValues.isStateHeadBranch ?? false,
       });
       setErrors({});
     } else {
@@ -54,6 +56,7 @@ const BranchForm = ({
         mobilePrefix: "+91",
         mobileNumber: "",
         isMainBranch: false,
+        isStateHeadBranch: false,
       });
       setErrors({});
     }
@@ -312,16 +315,30 @@ const BranchForm = ({
         </div>
       </div>
 
-      <div className="flex items-center gap-3">
-        <label className="block mb-1 font-semibold text-gray-700">
-          Main Branch
-        </label>
-        <input
-          type="checkbox"
-          checked={form.isMainBranch}
-          onChange={(e) => setForm((f) => ({ ...f, isMainBranch: e.target.checked }))}
-          className="w-5 h-5 text-yellow-500 rounded border-gray-300 focus:ring-yellow-500 focus:ring-2"
-        />
+      <div className="flex items-center gap-6">
+        <div className="flex items-center gap-3">
+          <label className="block mb-1 font-semibold text-gray-700">
+            Main Branch
+          </label>
+          <input
+            type="checkbox"
+            checked={form.isMainBranch}
+            onChange={(e) => setForm((f) => ({ ...f, isMainBranch: e.target.checked }))}
+            className="w-5 h-5 text-yellow-500 rounded border-gray-300 focus:ring-yellow-500 focus:ring-2"
+          />
+        </div>
+
+        <div className="flex items-center gap-3">
+          <label className="block mb-1 font-semibold text-gray-700">
+            State Head Branch
+          </label>
+          <input
+            type="checkbox"
+            checked={form.isStateHeadBranch}
+            onChange={(e) => setForm((f) => ({ ...f, isStateHeadBranch: e.target.checked }))}
+            className="w-5 h-5 text-yellow-500 rounded border-gray-300 focus:ring-yellow-500 focus:ring-2"
+          />
+        </div>
       </div>
 
       <div className="flex justify-end gap-3 mt-6">

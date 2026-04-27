@@ -1,8 +1,8 @@
 import axios from "axios";
 
-// export const API_BASE = "http://192.168.29.228:3002/api/v1";
+export const API_BASE = "http://192.168.29.228:3002/api/v1";
 // export const API_BASE = "http://69.62.73.194:4009/api/v1";
-export const API_BASE = "https://admin.detoxpathy.com/api/v1";
+// export const API_BASE = "https://admin.detoxpathy.com/api/v1";
 // export const API_BASE = "https://backend.fatendfit.com/api/v1";
 // Host base used to resolve file URLs coming from multer (e.g., uploads/..)
 export const API_HOST = API_BASE.replace(/\/?api\/?v1\/?$/, "").replace(
@@ -247,6 +247,7 @@ export const createBranchApi = async (payload) => {
       mobilePrefix: payload.mobilePrefix,
       mobileNumber: payload.mobileNumber,
       isMainBranch: payload.isMainBranch,
+      isStateHeadBranch: payload.isStateHeadBranch,
     },
     { headers: getAuthHeaders() }
   );
@@ -267,6 +268,7 @@ export const updateBranchById = async (id, payload) => {
     "mobilePrefix",
     "mobileNumber",
     "isMainBranch",
+    "isStateHeadBranch",
   ];
   keys.forEach((k) => {
     if (typeof payload[k] !== "undefined") body[k] = payload[k];
@@ -285,9 +287,10 @@ export const deleteBranchById = async (id) => {
 };
 
 /* -------------------- USER APIs -------------------- */
-export const getAllUsers = async () => {
+export const getAllUsers = async (params = {}) => {
   const res = await axios.get(`${API_BASE}/admin/user/get`, {
     headers: getAuthHeaders(),
+    params
   });
   return res.data.data;
 };
@@ -768,6 +771,15 @@ export const deleteCategoryById = async (id) => {
   const res = await axios.delete(`${API_BASE}/admin/category/${id}`, {
     headers: getAuthHeaders(),
   });
+  return res.data;
+};
+
+export const reorderCategoriesApi = async (categories) => {
+  const res = await axios.put(
+    `${API_BASE}/admin/category/reorder`,
+    { categories },
+    { headers: getAuthHeaders() }
+  );
   return res.data;
 };
 
@@ -1274,15 +1286,43 @@ export const deleteStock = async (id) => {
   return res.data;
 };
 
-export const getStockHistory = async (params = {}) => {
-  const queryParams = new URLSearchParams();
-  if (params.branchId) queryParams.append('branchId', params.branchId);
-  if (params.productId) queryParams.append('productId', params.productId);
-  if (params.planId) queryParams.append('planId', params.planId);
-
-  const res = await axios.get(`${API_BASE}/admin/stock/history?${queryParams.toString()}`, {
+export const getStockHistory = async (params) => {
+  const res = await axios.get(`${API_BASE}/admin/stock/history`, {
+    params,
     headers: getAuthHeaders(),
   });
   return res.data.data;
 };
+
+export const deleteStockHistory = async (ids) => {
+  const res = await axios.delete(`${API_BASE}/admin/stock/history`, {
+    data: { ids },
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+export const addStockFromDocument = async (file) => {
+  const data = new FormData();
+  data.append("document", file);
+  const res = await axios.post(`${API_BASE}/admin/stock/add-from-document`, data, {
+    headers: { ...getAuthHeaders(), "Content-Type": "multipart/form-data" },
+  });
+  return res.data.data;
+};
+
+export const createCompanyOrder = async (data) => {
+  const res = await axios.post(`${API_BASE}/admin/order/company-order`, data, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const verifyCompanyOrderPaymentApi = async (data) => {
+  const res = await axios.post(`${API_BASE}/admin/order/verify-payment`, data, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
 

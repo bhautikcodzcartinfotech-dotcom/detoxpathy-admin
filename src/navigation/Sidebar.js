@@ -161,20 +161,6 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                 <MdAssignment size={20} />
                 {!isCollapsed && <span>Programs</span>}
               </Link> */}
-              <Link
-                href="/component/order"
-                className={linkClasses("/component/order")}
-              >
-                <MdShoppingCart size={20} />
-                {!isCollapsed && <span>Orders</span>}
-              </Link>
-              <Link
-                href="/component/stock"
-                className={linkClasses("/component/stock")}
-              >
-                <MdAssignment size={20} />
-                {!isCollapsed && <span>Stock Management</span>}
-              </Link>
             </>
           )}
         </div>
@@ -195,6 +181,22 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                 <MdPeople size={20} />
                 {!isCollapsed && <span>Users</span>}
               </Link>
+              <Link
+                href="/component/order"
+                className={linkClasses("/component/order")}
+              >
+                <MdShoppingCart size={20} />
+                {!isCollapsed && <span>Orders</span>}
+              </Link>
+              {role === "Admin" && (
+                <Link
+                  href="/component/stock"
+                  className={linkClasses("/component/stock")}
+                >
+                  <MdAssignment size={20} />
+                  {!isCollapsed && <span>Stock Management</span>}
+                </Link>
+              )}
               {role === "subadmin" && (
                 <>
                   <Link
@@ -220,7 +222,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                   className={linkClasses("/component/subadmin")}
                 >
                   <MdPerson size={20} />
-                  {!isCollapsed && <span>SubAdmin</span>}
+                  {!isCollapsed && <span>Doctors</span>}
                 </Link>
               )}
               {(role === "Admin" || role === "subadmin") && (

@@ -373,6 +373,73 @@ const SettingsPage = () => {
             </div>
           </div>
 
+          {/* Social Media Links */}
+          <div className="bg-gradient-to-br from-white to-amber-50 rounded-2xl shadow-lg border border-amber-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
+              <svg
+                className="w-6 h-6 text-amber-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.828a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"
+                />
+              </svg>
+              Social Media Links
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Instagram */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Instagram Link
+                </label>
+                <input
+                  type="url"
+                  value={formData.instagramLink || ""}
+                  onChange={(e) =>
+                    handleInputChange("instagramLink", e.target.value)
+                  }
+                  placeholder="https://instagram.com/..."
+                  className="w-full px-4 py-3 rounded-xl border border-amber-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none"
+                />
+              </div>
+              {/* YouTube */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  YouTube Link
+                </label>
+                <input
+                  type="url"
+                  value={formData.youTubeLink || ""}
+                  onChange={(e) =>
+                    handleInputChange("youTubeLink", e.target.value)
+                  }
+                  placeholder="https://youtube.com/..."
+                  className="w-full px-4 py-3 rounded-xl border border-amber-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none"
+                />
+              </div>
+              {/* Facebook */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Facebook Link
+                </label>
+                <input
+                  type="url"
+                  value={formData.facebookLink || ""}
+                  onChange={(e) =>
+                    handleInputChange("facebookLink", e.target.value)
+                  }
+                  placeholder="https://facebook.com/..."
+                  className="w-full px-4 py-3 rounded-xl border border-amber-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
 
           {/* HTML Content */}
           <div className="bg-gradient-to-br from-white to-amber-50 rounded-2xl shadow-lg border border-amber-200 p-6">

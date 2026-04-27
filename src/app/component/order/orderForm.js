@@ -111,7 +111,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
   const totalAmount = selectedProducts.reduce((sum, p) => sum + (p.price * p.quantity), 0) + selectedPlans.reduce((sum, p) => sum + p.price, 0);
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-h-[80vh] overflow-y-auto px-1">
+    <form onSubmit={handleSubmit} className="space-y-6 px-1">
       {/* User Selection */}
       <Dropdown
         label="Select User"
@@ -295,15 +295,17 @@ const OrderForm = ({ onCancel, onSuccess }) => {
         </div>
       </div>
 
-      <div className="flex justify-end gap-3 pt-4 border-t sticky bottom-0 bg-white">
+      <div className="flex justify-end gap-3 pt-6 border-t mt-8">
         <button
           type="button"
           onClick={onCancel}
-          className="px-6 py-2 bg-gray-200 hover:bg-gray-300 rounded-xl transition font-semibold"
+          className="px-8 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl transition font-bold text-gray-600 uppercase tracking-widest text-[10px]"
         >
           Cancel
         </button>
-        <TimeButton loading={loading}>Create Order</TimeButton>
+        <TimeButton loading={loading}>
+          <span className="uppercase tracking-widest text-[10px] font-black">Create Order</span>
+        </TimeButton>
       </div>
     </form>
   );
