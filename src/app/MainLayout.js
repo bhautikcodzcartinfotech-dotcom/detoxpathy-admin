@@ -6,13 +6,19 @@ import { useAuth } from "../contexts/AuthContext";
 import Sidebar from "../navigation/Sidebar";
 import Navbar from "../navigation/Navbar";
 import AuthGuard from "../components/AuthGuard";
+import EmergencyAlertModal from "../components/EmergencyAlertModal";
+import { useRouter } from "next/navigation";
 import Loader from "@/utils/loader";
-import { trackPanelOpen, trackPanelClose, API_BASE } from "@/Api/AllApi";
+import { trackPanelOpen, trackPanelClose, API_BASE, API_HOST } from "@/Api/AllApi";
+import { io } from "socket.io-client";
+import toast from "react-hot-toast";
 
 export default function MainLayout({ children }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { isAuthenticated, loading } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
+  const [emergencyModal, setEmergencyModal] = useState({ isOpen: false, data: null });
 
   // Track panel open/close with refresh detection
   useEffect(() => {
@@ -100,6 +106,50 @@ export default function MainLayout({ children }) {
     }
   }, [isAuthenticated, loading]);
 
+  // Socket Connection for Real-time Pop-ups
+  useEffect(() => {
+    if (isAuthenticated() && !loading) {
+      const token = localStorage.getItem("token");
+      const socket = io(API_HOST, {
+        auth: { token },
+        transports: ["websocket"]
+      });
+
+      socket.on("connect", () => {
+        console.log("Connected to notification socket");
+      });
+
+      socket.on("new_popup", (data) => {
+        console.log("New pop-up received:", data);
+        const isEmergency = data.type === 'emergency';
+        
+        if (isEmergency) {
+          setEmergencyModal({ isOpen: true, data });
+        } else {
+          toast.success(data.message, {
+            duration: 6000,
+            position: "top-right",
+            style: {
+              background: "#4CAF50",
+              color: "#fff",
+              fontWeight: "bold",
+              padding: "16px",
+            },
+            icon: '🔔'
+          });
+        }
+      });
+
+      socket.on("connect_error", (err) => {
+        console.error("Socket connection error:", err.message);
+      });
+
+      return () => {
+        socket.disconnect();
+      };
+    }
+  }, [isAuthenticated, loading]);
+
   const hideLayout = [
     "/login",
     "/register",
@@ -137,6 +187,16 @@ export default function MainLayout({ children }) {
           <main className="p-4 flex-1">{children}</main>
         </div>
       </div>
+      
+      <EmergencyAlertModal
+        isOpen={emergencyModal.isOpen}
+        data={emergencyModal.data}
+        onClose={() => setEmergencyModal({ ...emergencyModal, isOpen: false })}
+        onViewUser={(userId) => {
+          setEmergencyModal({ ...emergencyModal, isOpen: false });
+          router.push(`/component/users/${userId}/profile`);
+        }}
+      />
     </AuthGuard>
   );
 }

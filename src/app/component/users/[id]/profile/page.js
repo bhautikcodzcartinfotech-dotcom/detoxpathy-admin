@@ -10,6 +10,7 @@ import {
   holdUserPlan,
   resumeUserPlan,
   getUserVideoAnswers,
+  downloadConsultationPdfApi,
 } from "@/Api/AllApi";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import toast from "react-hot-toast";
@@ -656,6 +657,51 @@ const UserProfilePage = () => {
                 </div>
               ) : (
                 <div className="text-gray-500">No video answers available.</div>
+              )}
+            </div>
+
+            {/* ------------------ Consultations ------------------ */}
+            <div className="p-6 mx-8 bg-white rounded-2xl shadow-lg border border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-gray-800">Consultations</h3>
+              </div>
+              {overview.consultations && overview.consultations.length > 0 ? (
+                <div className="space-y-4">
+                  {overview.consultations.map((c) => (
+                    <div
+                      key={c._id}
+                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl border border-teal-100 bg-teal-50/30 hover:bg-teal-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-800">
+                            {c.isFirstConsultation ? "First Consultation" : "Follow-up Consultation"}
+                          </div>
+                          <div className="text-sm text-gray-500 flex flex-wrap gap-x-3">
+                            <span>📅 {c.appointmentId?.date || new Date(c.createdAt).toLocaleDateString()}</span>
+                            <span>⏰ {c.appointmentId?.startTime || "N/A"} - {c.appointmentId?.endTime || "N/A"}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => downloadConsultationPdfApi(c._id)}
+                        className="w-full sm:w-auto px-4 py-2 bg-white border border-teal-200 text-teal-600 rounded-lg text-sm font-bold hover:bg-teal-600 hover:text-white transition-all flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Download PDF
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-gray-500 italic">No consultations recorded yet.</div>
               )}
             </div>
 

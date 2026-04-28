@@ -568,6 +568,8 @@ export const createVideoApi = async (payload) => {
   if (typeof payload.requiredCorrectAnswer !== "undefined")
     data.append("requiredCorrectAnswer", String(payload.requiredCorrectAnswer));
 
+  if (payload.plan) data.append("plan", payload.plan);
+
   const res = await axios.post(`${API_BASE}/admin/video/create`, data, {
     headers: { ...getAuthHeaders(), "Content-Type": "multipart/form-data" },
   });
@@ -654,6 +656,8 @@ export const updateVideoById = async (id, payload) => {
 
   if (typeof payload.requiredCorrectAnswer !== "undefined")
     data.append("requiredCorrectAnswer", String(payload.requiredCorrectAnswer));
+
+  if (payload.plan) data.append("plan", payload.plan);
 
   const res = await axios.put(`${API_BASE}/admin/video/update/${id}`, data, {
     headers: { ...getAuthHeaders(), "Content-Type": "multipart/form-data" },
@@ -748,20 +752,22 @@ export const getAllCategoriesApi = async () => {
 export const createCategoryApi = async (payload) => {
   const res = await axios.post(
     `${API_BASE}/admin/category/create`,
-    { categoryTitle: payload.categoryTitle,
+    {
+      categoryTitle: payload.categoryTitle,
       type: payload.type
-     },
+    },
     { headers: getAuthHeaders() }
   );
   return res.data.data;
-}; 
+};
 
 export const updateCategoryById = async (id, payload) => {
   const res = await axios.put(
     `${API_BASE}/admin/category/update/${id}`,
-    { categoryTitle: payload.categoryTitle,
+    {
+      categoryTitle: payload.categoryTitle,
       type: payload.type
-     },
+    },
     { headers: getAuthHeaders() }
   );
   return res.data.data;
@@ -1325,4 +1331,107 @@ export const verifyCompanyOrderPaymentApi = async (data) => {
   return res.data.data;
 };
 
+/* -------------------- APP REFERENCE APIs -------------------- */
+export const getAllAppReferences = async () => {
+  const res = await axios.get(`${API_BASE}/admin/appReferance/get`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
 
+export const addAppReference = async (payload) => {
+  const res = await axios.post(`${API_BASE}/admin/appReferance/add`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const updateAppReference = async (id, payload) => {
+  const res = await axios.put(`${API_BASE}/admin/appReferance/update/${id}`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const deleteAppReference = async (id) => {
+  const res = await axios.delete(`${API_BASE}/admin/appReferance/delete/${id}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/* -------------------- CONTACT CATEGORY APIs -------------------- */
+export const getAllContactCategories = async () => {
+  const res = await axios.get(`${API_BASE}/admin/contactCategory/getAll`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const createContactCategory = async (payload) => {
+  const res = await axios.post(`${API_BASE}/admin/contactCategory/add`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const updateContactCategory = async (id, payload) => {
+  const res = await axios.put(`${API_BASE}/admin/contactCategory/update/${id}`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const deleteContactCategory = async (id) => {
+  const res = await axios.delete(`${API_BASE}/admin/contactCategory/delete/${id}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/* -------------------- CONTACT APIs -------------------- */
+export const getAllContacts = async () => {
+  const res = await axios.get(`${API_BASE}/admin/contact/getAll`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const createContact = async (payload) => {
+  const data = new FormData();
+  data.append("name", payload.name);
+  data.append("mobileNo", payload.mobileNo);
+  data.append("categoryId", payload.categoryId);
+  data.append("description", payload.description);
+  if (payload.image) {
+    data.append("image", payload.image);
+  }
+
+  const res = await axios.post(`${API_BASE}/admin/contact/add`, data, {
+    headers: { ...getAuthHeaders(), "Content-Type": "multipart/form-data" },
+  });
+  return res.data.data;
+};
+
+export const updateContact = async (id, payload) => {
+  const data = new FormData();
+  if (payload.name) data.append("name", payload.name);
+  if (payload.mobileNo) data.append("mobileNo", payload.mobileNo);
+  if (payload.categoryId) data.append("categoryId", payload.categoryId);
+  if (payload.description) data.append("description", payload.description);
+  if (payload.image) {
+    data.append("image", payload.image);
+  }
+
+  const res = await axios.put(`${API_BASE}/admin/contact/update/${id}`, data, {
+    headers: { ...getAuthHeaders(), "Content-Type": "multipart/form-data" },
+  });
+  return res.data.data;
+};
+
+export const deleteContact = async (id) => {
+  const res = await axios.delete(`${API_BASE}/admin/contact/delete/${id}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};

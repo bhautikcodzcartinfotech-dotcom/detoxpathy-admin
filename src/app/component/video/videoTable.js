@@ -114,12 +114,27 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                       ) || "Video Details"}
                     </h3>
                     <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span>Type: {video.type}</span>
+                      <span>
+                        Type:{" "}
+                        {{
+                          1: "Day wise",
+                          2: "Session Categories",
+                          3: "Testimonial",
+                          4: "Categorywise Testimonial",
+                          5: "Resume Plan",
+                          6: "Trial Video",
+                          7: "Body Detoxification",
+                          8: "Instruction",
+                        }[video.type] || video.type}
+                      </span>
                       <span>Day: {video.day ?? "N/A"}</span>
                       <span>Duration: {video.videoSec || 0}s</span>
                       <span>Size: {video.videoSize || 0} MB</span>
                       {video.category && (
                         <span>Category: {video.category.categoryTitle}</span>
+                      )}
+                      {video.plan && (
+                        <span>Plan: {video.plan.name}</span>
                       )}
                       <span>Required Answers: {video.requiredCorrectAnswer || 0}</span>
                     </div>

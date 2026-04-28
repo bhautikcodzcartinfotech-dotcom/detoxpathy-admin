@@ -253,6 +253,20 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
             {!isCollapsed && <span>Supports</span>}
           </Link>
           <Link
+            href="/component/contact-category"
+            className={linkClasses("/component/contact-category")}
+          >
+            <MdCategory size={20} />
+            {!isCollapsed && <span>Contact Categories</span>}
+          </Link>
+          <Link
+            href="/component/contact"
+            className={linkClasses("/component/contact")}
+          >
+            <MdPeople size={20} />
+            {!isCollapsed && <span>Contacts</span>}
+          </Link>
+          <Link
             href="/component/message"
             className={linkClasses("/component/message")}
           >
@@ -275,6 +289,13 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
             >
               <MdSettings size={20} />
               {!isCollapsed && <span>App Settings</span>}
+            </Link>
+            <Link
+              href="/component/app-reference"
+              className={linkClasses("/component/app-reference")}
+            >
+              <MdAssignment size={20} />
+              {!isCollapsed && <span>App References</span>}
             </Link>
             <Link
               href="/component/logs"

@@ -77,8 +77,8 @@ const VideoPage = () => {
       const errorData = err?.response?.data;
       const errorStr = errorData?.error || errorData?.message || "Failed to save video";
       
-      if (errorData?.error === 'A video with type 6 already exists.' || errorStr.includes('type 6')) {
-        toast.error("Trial Video is already found");
+      if (errorStr.includes('already exists') && (errorStr.includes('type 6') || errorStr.includes('type 7') || errorStr.includes('type 8'))) {
+        toast.error(errorStr);
       } else {
         setError(errorStr);
         toast.error(errorStr);
@@ -146,6 +146,7 @@ const VideoPage = () => {
             { label: "Resume Plan", value: "5" },
             { label: "Trial Video", value: "6" },
             { label: "Body Detoxification", value: "7" },
+            { label: "Instruction", value: "8" },
           ]}
           filterValue={typeFilter}
           filterLabel="Type"

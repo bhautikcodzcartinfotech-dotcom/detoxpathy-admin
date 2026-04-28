@@ -218,12 +218,10 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess }) => {
 
             const consultation = await submitConsultationForm({
                 ...formData,
-                currentMedicine: normalizedCurrentMedicine
+                currentMedicine: normalizedCurrentMedicine,
+                appointmentId: appointment._id,
+                userId: appointment.userId._id
             });
-
-            if (consultation?._id) {
-                await downloadConsultationPdfApi(consultation._id);
-            }
 
             toast.success("Consultation saved successfully!");
             if (onSaveSuccess) onSaveSuccess(consultation);

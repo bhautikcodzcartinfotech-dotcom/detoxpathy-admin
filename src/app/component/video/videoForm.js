@@ -4,7 +4,7 @@ import TimeButton from "@/utils/timebutton";
 import toast from "react-hot-toast";
 import { validateForm } from "@/utils/validation";
 import Dropdown from "@/utils/dropdown";
-import { getAllCategoriesApi } from "@/Api/AllApi";
+import { getAllCategoriesApi, getAllPlans } from "@/Api/AllApi";
 import MultiLanguageInput from "@/components/MultiLanguageInput";
 
 const VideoForm = ({
@@ -41,13 +41,15 @@ const VideoForm = ({
     description_gujarati: "",
     description_hindi: "",
     // Other fields
-    type: 1, // 1..5
+    type: 1,
     day: "",
     category: "",
+    plan: "",
     requiredCorrectAnswer: "",
   });
   const [errors, setErrors] = useState({});
   const [categories, setCategories] = useState([]);
+  const [plans, setPlans] = useState([]);
 
   useEffect(() => {
     if (initialValues) {
@@ -134,6 +136,10 @@ const VideoForm = ({
           typeof initialValues.category === "string"
             ? initialValues.category
             : initialValues.category?._id ?? "",
+        plan:
+          typeof initialValues.plan === "string"
+            ? initialValues.plan
+            : initialValues.plan?._id ?? "",
         requiredCorrectAnswer: initialValues.requiredCorrectAnswer ?? "",
       }));
       setErrors({});
@@ -163,6 +169,7 @@ const VideoForm = ({
         type: 1,
         day: "",
         category: "",
+        plan: "",
         requiredCorrectAnswer: "",
       });
       setErrors({});
@@ -181,12 +188,25 @@ const VideoForm = ({
     loadCats();
   }, []);
 
+  useEffect(() => {
+    const loadPlans = async () => {
+      try {
+        const list = await getAllPlans();
+        setPlans(Array.isArray(list) ? list : []);
+      } catch (e) {
+        setPlans([]);
+      }
+    };
+    loadPlans();
+  }, []);
+
   const categoryTypeByVideoType = {
     2: 2,
     4: 1,
   };
 
   const shouldShowCategory = [2, 4].includes(Number(form.type));
+  const shouldShowPlan = Number(form.type) === 8;
   const selectedCategoryType = categoryTypeByVideoType[Number(form.type)];
 
   const filteredCategories = useMemo(() => {
@@ -212,7 +232,6 @@ const VideoForm = ({
     const typeNum = Number(form.type);
 
     let errs = validateForm({
-      // Multi-language title validation
       title_english: {
         value: form.title_english,
         rules: isUpdate ? [] : [required("English Title")],
@@ -225,8 +244,6 @@ const VideoForm = ({
         value: form.title_hindi,
         rules: isUpdate ? [] : [required("Hindi Title")],
       },
-
-      // Video validation
       video_english_url: {
         value: videoTypeNum === 2 ? form.video_english_url : "ok",
         rules: isUpdate ? [] : [required("English Video URL")],
@@ -255,8 +272,6 @@ const VideoForm = ({
         value: videoTypeNum === 2 ? form.videoSecond : "ok",
         rules: isUpdate ? [numberRule("Video seconds")] : [required("Video seconds"), numberRule("Video seconds")],
       },
-
-      // Thumbnail validation
       thumbnail_english_url: {
         value: thumbTypeNum === 2 ? form.thumbnail_english_url : "ok",
         rules: isUpdate ? [] : [required("English Thumbnail URL")],
@@ -281,8 +296,6 @@ const VideoForm = ({
         value: thumbTypeNum === 1 ? form.thumbnail_hindi : "ok",
         rules: isUpdate ? [] : [required("Hindi Thumbnail file")],
       },
-
-      // Other validations
       type: { value: typeNum, rules: [required("Type")] },
       day: {
         value: typeNum === 1 ? form.day : "ok",
@@ -292,18 +305,19 @@ const VideoForm = ({
         value: [2, 4].includes(typeNum) ? (form.category ? "ok" : "") : "ok",
         rules: isUpdate ? [] : [required("Category")],
       },
+      plan: {
+        value: typeNum === 8 ? (form.plan ? "ok" : "") : "ok",
+        rules: [required("Plan")],
+      },
       requiredCorrectAnswer: {
         value: form.requiredCorrectAnswer,
         rules: isUpdate ? [numberRule("Required Correct Answer")] : [required("Required Correct Answer"), numberRule("Required Correct Answer")],
       },
     });
-    // Allow day 0 as valid; remove previous restriction
 
     setErrors(errs);
     if (Object.keys(errs).length) {
-      // help debugging which field is blocking submit
       const firstKey = Object.keys(errs)[0];
-      console.warn("Video form validation errors:", errs);
       toast.error(errs[firstKey]);
       return false;
     }
@@ -312,14 +326,12 @@ const VideoForm = ({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // quick signal that handler is wired
-    // remove later if noisy
-    console.log("videoForm.handleSubmit invoked");
     if (!validate()) return;
     await onSubmit({
       ...form,
       videoSecond: form.videoSecond ? Number(form.videoSecond) : undefined,
       day: form.day ? Number(form.day) : undefined,
+      plan: Number(form.type) === 8 ? form.plan : undefined,
       requiredCorrectAnswer: form.requiredCorrectAnswer ? Number(form.requiredCorrectAnswer) : 0,
     });
   };
@@ -327,11 +339,11 @@ const VideoForm = ({
   const typeOptions = [
     { label: "Day wise", value: 1 },
     { label: "Session Categories", value: 2 },
-    // { label: "Testimonial", value: 3 },
     { label: "Categoywise Testimonial", value: 4 },
     { label: "Resume Plan", value: 5 },
     { label: "Trial Video", value: 6 },
     { label: "Body Detoxification", value: 7 },
+    { label: "Instruction", value: 8 },
   ];
 
   const videoTypeOptions = [
@@ -346,7 +358,6 @@ const VideoForm = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      {/* Multi-language Title Section */}
       <MultiLanguageInput
         label="Video Title"
         icon="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2h3a1 1 0 110 2h-1v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6H4a1 1 0 110-2h3zM9 6v10h6V6H9z"
@@ -405,7 +416,6 @@ const VideoForm = ({
         />
       </div>
 
-      {/* Multi-language Video Section - match title UI */}
       {Number(form.videoType) === 1 ? (
         <MultiLanguageInput
           key="video-files"
@@ -449,35 +459,21 @@ const VideoForm = ({
             }}
             errors={errors}
             type="text"
-            placeholder={{
-              english: "https://...",
-              gujarati: "https://...",
-              hindi: "https://...",
-            }}
           />
           <div className="max-w-xs">
-            <label className="block mb-1 font-semibold text-gray-700">
-              Video Duration (Seconds)
-            </label>
+            <label className="block mb-1 font-semibold text-gray-700">Video Duration (Seconds)</label>
             <input
               type="text"
               value={form.videoSecond || ""}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, videoSecond: e.target.value }))
-              }
+              onChange={(e) => setForm((f) => ({ ...f, videoSecond: e.target.value }))}
               className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
               placeholder="120"
             />
-            {errors.videoSecond && (
-              <p className="text-amber-600 text-sm mt-1">
-                {errors.videoSecond}
-              </p>
-            )}
+            {errors.videoSecond && <p className="text-amber-600 text-sm mt-1">{errors.videoSecond}</p>}
           </div>
         </>
       )}
 
-      {/* Multi-language Thumbnail Section - match title UI */}
       {Number(form.thumbnailType) === 1 ? (
         <MultiLanguageInput
           key="thumbnail-files"
@@ -520,11 +516,6 @@ const VideoForm = ({
           }}
           errors={errors}
           type="text"
-          placeholder={{
-            english: "https://...",
-            gujarati: "https://...",
-            hindi: "https://...",
-          }}
         />
       )}
 
@@ -538,7 +529,8 @@ const VideoForm = ({
               ...f,
               type: v,
               day: "",
-              category: [2, 4].includes(Number(v)) ? "" : "",
+              category: "",
+              plan: "",
             }))
           }
           disabled={Boolean(initialValues)}
@@ -556,9 +548,22 @@ const VideoForm = ({
             value={form.category}
             onChange={(val) => setForm((f) => ({ ...f, category: val }))}
           />
-          {errors.category && (
-            <p className="text-amber-600 text-sm mt-1">{errors.category}</p>
-          )}
+          {errors.category && <p className="text-amber-600 text-sm mt-1">{errors.category}</p>}
+        </div>
+      )}
+
+      {shouldShowPlan && (
+        <div>
+          <Dropdown
+            label="Plan"
+            options={plans.map((p) => ({
+              label: p.name,
+              value: p._id,
+            }))}
+            value={form.plan}
+            onChange={(val) => setForm((f) => ({ ...f, plan: val }))}
+          />
+          {errors.plan && <p className="text-amber-600 text-sm mt-1">{errors.plan}</p>}
         </div>
       )}
 
@@ -572,33 +577,22 @@ const VideoForm = ({
             className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
             placeholder="1"
           />
-          {errors.day && (
-            <p className="text-amber-600 text-sm mt-1">{errors.day}</p>
-          )}
+          {errors.day && <p className="text-amber-600 text-sm mt-1">{errors.day}</p>}
         </div>
       )}
 
       <div>
-        <label className="block mb-1 font-semibold text-gray-700">
-          Required Correct Answer Count
-        </label>
+        <label className="block mb-1 font-semibold text-gray-700">Required Correct Answer Count</label>
         <input
           type="text"
           value={form.requiredCorrectAnswer}
-          onChange={(e) =>
-            setForm((f) => ({ ...f, requiredCorrectAnswer: e.target.value }))
-          }
+          onChange={(e) => setForm((f) => ({ ...f, requiredCorrectAnswer: e.target.value }))}
           className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
           placeholder="e.g. 8"
         />
-        {errors.requiredCorrectAnswer && (
-          <p className="text-amber-600 text-sm mt-1">
-            {errors.requiredCorrectAnswer}
-          </p>
-        )}
+        {errors.requiredCorrectAnswer && <p className="text-amber-600 text-sm mt-1">{errors.requiredCorrectAnswer}</p>}
       </div>
 
-      {/* Multi-language Description Section */}
       <MultiLanguageInput
         label="Video Description"
         icon="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
@@ -618,7 +612,6 @@ const VideoForm = ({
         errors={errors}
         type="textarea"
         rows={3}
-        sectionClassName="from-amber-50 to-yellow-50 border-amber-200"
       />
 
       <div className="flex justify-end gap-3 mt-6">
