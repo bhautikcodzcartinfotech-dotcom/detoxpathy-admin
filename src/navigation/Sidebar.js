@@ -17,7 +17,9 @@ import {
   MdAccessTime,
   MdCalendarMonth,
   MdGroups,
+  MdFeedback,
 } from "react-icons/md";
+
 import { MdChevronLeft, MdChevronRight } from "react-icons/md";
 import { FiMessageCircle, FiLogOut } from "react-icons/fi";
 
@@ -273,6 +275,14 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
             <FiMessageCircle size={20} />
             {!isCollapsed && <span>Quick Replies</span>}
           </Link>
+          <Link
+            href="/component/feedback"
+            className={linkClasses("/component/feedback")}
+          >
+            <MdFeedback size={20} />
+            {!isCollapsed && <span>Feedbacks</span>}
+          </Link>
+
         </div>
 
         {/* Section: Settings (Admin only) */}
