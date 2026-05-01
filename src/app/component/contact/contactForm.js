@@ -67,9 +67,6 @@ const ContactForm = ({
       },
     });
 
-    if (!initialValues && !form.image) {
-      errs.image = "Image is required.";
-    }
 
     setErrors(errs);
     return Object.keys(errs).length === 0;

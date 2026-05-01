@@ -7,7 +7,6 @@ const StockForm = ({ initialValues, products, plans, branches, onSubmit, onCance
     planId: "",
     branchId: "null", // Default to Master
     available: 0,
-    sold: 0,
     isIncrement: true,
     type: "product", // Helper for selection
   });
@@ -19,7 +18,6 @@ const StockForm = ({ initialValues, products, plans, branches, onSubmit, onCance
         planId: initialValues.planId?._id || "",
         branchId: initialValues.branchId?._id || "null",
         available: initialValues.available || 0,
-        sold: initialValues.sold || 0,
         isIncrement: false,
         type: initialValues.planId ? "plan" : "product",
       });
@@ -27,7 +25,6 @@ const StockForm = ({ initialValues, products, plans, branches, onSubmit, onCance
        setFormData(prev => ({
          ...prev,
          available: 0,
-         sold: 0,
          isIncrement: true
        }));
     }
@@ -108,24 +105,15 @@ const StockForm = ({ initialValues, products, plans, branches, onSubmit, onCance
 
       <div className="border-t pt-4 mt-4">
         <p className="text-xs font-semibold text-gray-400 uppercase mb-4">Stock Levels</p>
-        <div className="grid grid-cols-2 gap-4">
+        <div className="">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Sold</label>
-            <input
-              type="number"
-              name="sold"
-              value={formData.sold}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-[#134D41]/20 focus:border-[#134D41] outline-none transition-all"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Available</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Available Quantity</label>
             <input
               type="number"
               name="available"
               value={formData.available}
               onChange={handleChange}
+              placeholder="Enter quantity"
               className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-[#134D41]/20 focus:border-[#134D41] outline-none transition-all"
             />
           </div>

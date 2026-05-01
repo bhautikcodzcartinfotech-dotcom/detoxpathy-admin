@@ -46,6 +46,7 @@ const CommandTable = ({
   commands,
   onEdit,
   onDelete,
+  onApprove,
   currentRole,
   currentAdminId,
 }) => {
@@ -107,6 +108,9 @@ const CommandTable = ({
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Description / Audio
               </th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                Status
+              </th>
               <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Actions
               </th>
@@ -150,7 +154,30 @@ const CommandTable = ({
                       </audio>
                     )}
                   </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${
+                        cmd.isApproved
+                          ? "bg-green-100 text-green-800"
+                          : "bg-red-100 text-red-800"
+                      }`}
+                    >
+                      {cmd.isApproved ? "Approved" : "Pending"}
+                    </span>
+                  </td>
                   <td className="px-6 py-4 text-center space-x-2">
+                    {currentRole === "Admin" && !cmd.isApproved && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onApprove(cmd._id);
+                        }}
+                        className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors title='Approve'"
+                        title="Approve"
+                      >
+                        Approve
+                      </button>
+                    )}
                     <ActionButton
                       type="edit"
                       disabled={!canModify}

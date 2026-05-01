@@ -70,6 +70,7 @@ import {
 
 import Loader from "../../../utils/loader";
 import Dropdown from "../../../utils/dropdown";
+import TransferAppointmentModal from "./TransferAppointmentModal";
 
 // This will be replaced with customerCareId from chat data
 
@@ -100,6 +101,7 @@ export default function ChatPage() {
   const [allBranches, setAllBranches] = useState([]);
   const [branchIdToName, setBranchIdToName] = useState({});
   const [selectedBranchId, setSelectedBranchId] = useState("");
+  const [showTransferModal, setShowTransferModal] = useState(false);
 
   const messagesEndRef = useRef(null);
   const [users, setUsers] = useState([]);
@@ -323,7 +325,7 @@ export default function ChatPage() {
   useEffect(() => {
     const fetchCommands = async () => {
       try {
-        const data = await getCommands(); // call your existing function
+        const data = await getCommands({ approvedOnly: true }); // call your existing function
         setCommands(data); // set the commands in state
       } catch (err) {
         console.error("Failed to fetch commands:", err);
@@ -793,26 +795,23 @@ export default function ChatPage() {
                         console.log("User clicked:", user.name);
                         setSelectedUser(user);
                         // Generate chat ID using user's customerCareId
-                        const newChatId = `${user.id}_${
-                          user.customerCareId || "admin"
-                        }`;
+                        const newChatId = `${user.id}_${user.customerCareId || "admin"
+                          }`;
                         console.log("Setting chat ID:", newChatId);
                         setChatId(newChatId);
                       }}
-                      className={`group flex items-center gap-5 p-5 cursor-pointer rounded-2xl mx-2 transition-all duration-300 hover:scale-[1.02] ${
-                        selectedUser?.id === user.id
+                      className={`group flex items-center gap-5 p-5 cursor-pointer rounded-2xl mx-2 transition-all duration-300 hover:scale-[1.02] ${selectedUser?.id === user.id
                           ? "bg-gradient-to-r from-yellow-400 to-amber-300 text-black shadow-xl transform scale-[1.02]"
                           : "bg-white/60 hover:bg-white/80 hover:shadow-lg"
-                      }`}
+                        }`}
                     >
                       {/* Avatar with online indicator */}
                       <div className="relative">
                         <div
-                          className={`w-16 h-16 rounded-2xl flex items-center justify-center font-bold text-white text-xl shadow-lg ${
-                            selectedUser?.id === user.id
+                          className={`w-16 h-16 rounded-2xl flex items-center justify-center font-bold text-white text-xl shadow-lg ${selectedUser?.id === user.id
                               ? "bg-black/20"
                               : "bg-gradient-to-br from-yellow-400 to-amber-300"
-                          }`}
+                            }`}
                         >
                           {user.name[0].toUpperCase()}
                         </div>
@@ -822,29 +821,27 @@ export default function ChatPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <p
-                            className={`text-base font-semibold truncate ${
-                              selectedUser?.id === user.id
+                            className={`text-base font-semibold truncate ${selectedUser?.id === user.id
                                 ? "text-black"
                                 : "text-gray-800"
-                            }`}
+                              }`}
                           >
                             {user.name}
                           </p>
                           <span
-                            className={`text-xs ${
-                              selectedUser?.id === user.id
+                            className={`text-xs ${selectedUser?.id === user.id
                                 ? "text-gray-700"
                                 : "text-gray-500"
-                            }`}
+                              }`}
                           >
                             {user.updatedAt
                               ? new Date(user.updatedAt).toLocaleTimeString(
-                                  [],
-                                  {
-                                    hour: "2-digit",
-                                    minute: "2-digit",
-                                  }
-                                )
+                                [],
+                                {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                }
+                              )
                               : ""}
                           </span>
                         </div>
@@ -859,19 +856,18 @@ export default function ChatPage() {
                           </div>
                         )}
                         <p
-                          className={`text-sm truncate ${
-                            selectedUser?.id === user.id
+                          className={`text-sm truncate ${selectedUser?.id === user.id
                               ? "text-gray-700"
                               : "text-gray-500"
-                          }`}
+                            }`}
                         >
                           {user.lastMessage?.type === "voice"
                             ? "🎤 Voice message"
                             : user.lastMessage?.type === "image"
-                            ? "📷 Image"
-                            : user.lastMessage?.type === "video"
-                            ? "🎥 Video"
-                            : user.lastMessage?.text || "No messages"}
+                              ? "📷 Image"
+                              : user.lastMessage?.type === "video"
+                                ? "🎥 Video"
+                                : user.lastMessage?.text || "No messages"}
                         </p>
                       </div>
 
@@ -912,6 +908,12 @@ export default function ChatPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  <button 
+                    onClick={() => setShowTransferModal(true)}
+                    className="px-4 py-2 bg-gradient-to-r from-yellow-400 to-amber-300 text-black font-semibold rounded-xl hover:from-yellow-500 hover:to-amber-400 transition-all shadow-md text-sm whitespace-nowrap"
+                  >
+                    Transfer Appointment
+                  </button>
                   <button className="p-3 rounded-full hover:bg-gray-100 transition-colors">
                     <BsThreeDotsVertical className="text-gray-600" size={20} />
                   </button>
@@ -942,23 +944,21 @@ export default function ChatPage() {
                     {messages.map((msg) => (
                       <div
                         key={msg.id}
-                        className={`flex ${
-                          msg.senderId === selectedUser?.customerCareId
+                        className={`flex ${msg.senderId === selectedUser?.customerCareId
                             ? "justify-end"
                             : "justify-start"
-                        }`}
+                          }`}
                       >
                         <div
-                          className={`group relative max-w-[75%] transition-all duration-300 ${
-                            msg.senderId === selectedUser?.customerCareId
+                          className={`group relative max-w-[75%] transition-all duration-300 ${msg.senderId === selectedUser?.customerCareId
                               ? "bg-gradient-to-r from-yellow-400 to-amber-300 text-black"
                               : "bg-white/80 backdrop-blur-sm text-gray-800"
-                          } rounded-3xl shadow-lg hover:shadow-xl`}
+                            } rounded-3xl shadow-lg hover:shadow-xl`}
                         >
                           {/* Message Content */}
                           <div className="p-4">
                             {msg.type === "voice" &&
-                            (msg.audioUrl || msg.mediaUrl) ? (
+                              (msg.audioUrl || msg.mediaUrl) ? (
                               <div className="flex items-center gap-3">
                                 <button
                                   onClick={() => toggleAudioPlayback(msg.id)}
@@ -1071,11 +1071,10 @@ export default function ChatPage() {
 
                           {/* Message Footer */}
                           <div
-                            className={`flex items-center justify-between px-4 pb-2 text-xs ${
-                              msg.senderId === selectedUser?.customerCareId
+                            className={`flex items-center justify-between px-4 pb-2 text-xs ${msg.senderId === selectedUser?.customerCareId
                                 ? "text-gray-700"
                                 : "text-gray-500"
-                            }`}
+                              }`}
                           >
                             <span>
                               {new Date(msg.createdAt).toLocaleTimeString([], {
@@ -1188,11 +1187,10 @@ export default function ChatPage() {
                     onClick={
                       recording ? stopVoiceRecording : startVoiceRecording
                     }
-                    className={`p-4 rounded-2xl transition-all duration-300 ${
-                      recording
+                    className={`p-4 rounded-2xl transition-all duration-300 ${recording
                         ? "bg-red-500 text-white animate-pulse shadow-lg"
                         : "bg-white/80 hover:bg-red-50 text-gray-600 hover:text-red-600 shadow-lg hover:shadow-xl"
-                    }`}
+                      }`}
                   >
                     {recording ? (
                       <IoMdPause size={24} />
@@ -1256,13 +1254,12 @@ export default function ChatPage() {
                       (!audioBlob && !newMessage.trim()) ||
                       isUploading
                     }
-                    className={`p-4 rounded-2xl text-black transition-all duration-300 shadow-lg hover:shadow-xl ${
-                      audioBlob
+                    className={`p-4 rounded-2xl text-black transition-all duration-300 shadow-lg hover:shadow-xl ${audioBlob
                         ? "bg-gradient-to-r from-yellow-400 to-amber-300 hover:from-yellow-500 hover:to-amber-400"
                         : newMessage.trim()
-                        ? "bg-gradient-to-r from-yellow-400 to-amber-300 hover:from-yellow-500 hover:to-amber-400"
-                        : "bg-gray-300 cursor-not-allowed"
-                    }`}
+                          ? "bg-gradient-to-r from-yellow-400 to-amber-300 hover:from-yellow-500 hover:to-amber-400"
+                          : "bg-gray-300 cursor-not-allowed"
+                      }`}
                   >
                     {isSending ? (
                       <div className="w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
@@ -1294,6 +1291,12 @@ export default function ChatPage() {
           )}
         </div>
       </div>
+      <TransferAppointmentModal 
+        isOpen={showTransferModal}
+        onClose={() => setShowTransferModal(false)}
+        selectedUser={selectedUser}
+        allBranches={allBranches}
+      />
     </div>
   );
 }

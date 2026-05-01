@@ -74,7 +74,7 @@ const UserProfilePage = () => {
   const handleDayClick = (dayObj) => {
     const report =
       overview?.dailyReports?.find((r) => r.day === dayObj.day) || {};
-    const checklist = 
+    const checklist =
       overview?.dailyChecklist?.find((c) => c.day === dayObj.day) || null;
     setSelectedDay({ ...dayObj, answers: report.answers || [], checklist });
   };
@@ -267,9 +267,8 @@ const UserProfilePage = () => {
                   </div>
                 </div>
                 <div className="shrink-0 flex items-center gap-2">
-                  <span className={`px-4 py-1.5 rounded-full text-sm font-semibold flex items-center gap-2 ${
-                    getPlanStatus().status === 'Active' ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-600'
-                  }`}>
+                  <span className={`px-4 py-1.5 rounded-full text-sm font-semibold flex items-center gap-2 ${getPlanStatus().status === 'Active' ? 'bg-blue-50 text-blue-600' : 'bg-gray-100 text-gray-600'
+                    }`}>
                     {getPlanStatus().status} {overview.user?.plan ? `— Day ${overview.user?.planCurrentDay ?? 0}` : ''}
                   </span>
                 </div>
@@ -289,7 +288,7 @@ const UserProfilePage = () => {
                   <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Gender & DOB</div>
                   <div className="text-sm font-medium text-gray-800">{overview.user?.gender || "-"} • {overview.user?.dob || "-"}</div>
                 </div>
-                
+
                 <div className="border-b md:border-r border-gray-200 p-6">
                   <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Location</div>
                   <div className="text-sm font-medium text-gray-800">{overview.user?.city || "-"}, {overview.user?.state || "-"}, {overview.user?.country || "-"}</div>
@@ -555,18 +554,17 @@ const UserProfilePage = () => {
                     const videoDayData = overview.progress?.find((p) => p.day === dayNum);
                     const reportData = overview.dailyReports?.find((r) => r.day === dayNum);
                     const checklistData = overview.dailyChecklist?.find((c) => c.day === dayNum);
-                    
+
                     const hasData = videoDayData || reportData || checklistData;
-                    
+
                     return (
                       <div
                         key={dayNum}
                         onClick={() => {
                           if (hasData) handleDayClick({ day: dayNum });
                         }}
-                        className={`w-12 h-12 flex items-center justify-center font-bold text-sm rounded ${
-                          hasData ? "cursor-pointer hover:opacity-90 ring-2 ring-transparent hover:ring-yellow-400" : "cursor-default"
-                        } transition-all`}
+                        className={`w-12 h-12 flex items-center justify-center font-bold text-sm rounded ${hasData ? "cursor-pointer hover:opacity-90 ring-2 ring-transparent hover:ring-yellow-400" : "cursor-default"
+                          } transition-all`}
                         style={{
                           backgroundColor: isCompleted ? "#134D41" : "#E5E7EB",
                           color: isCompleted ? "#FFFFFF" : "#9CA3AF",
@@ -794,7 +792,7 @@ const UserProfilePage = () => {
                   {/* Diet Mistake - Full Width Row */}
                   <div className="bg-white p-4 rounded-xl border border-red-50 shadow-sm">
                     <div className="flex items-center gap-2 text-sm font-bold text-red-500 uppercase tracking-wider mb-2">
-                       <span>⚠️</span> Diet Mistake
+                      <span>⚠️</span> Diet Mistake
                     </div>
                     <div className="text-sm text-red-600 font-medium leading-relaxed">
                       {selectedDay.checklist.dietMistake || "No mistakes reported for this day."}

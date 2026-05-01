@@ -23,6 +23,7 @@ const BranchForm = ({
     mobileNumber: "",
     isMainBranch: false,
     isStateHeadBranch: false,
+    gstin: "",
   });
   const [errors, setErrors] = useState({});
 
@@ -41,6 +42,7 @@ const BranchForm = ({
         mobileNumber: initialValues.mobileNumber ?? "",
         isMainBranch: initialValues.isMainBranch ?? false,
         isStateHeadBranch: initialValues.isStateHeadBranch ?? false,
+        gstin: initialValues.gstin ?? "",
       });
       setErrors({});
     } else {
@@ -57,6 +59,7 @@ const BranchForm = ({
         mobileNumber: "",
         isMainBranch: false,
         isStateHeadBranch: false,
+        gstin: "",
       });
       setErrors({});
     }
@@ -162,6 +165,19 @@ const BranchForm = ({
             placeholder="demo@gmail.com"
           />
         </div>
+      </div>
+
+      <div>
+        <label className="block mb-1 font-semibold text-gray-700">
+          GSTIN
+        </label>
+        <input
+          type="text"
+          value={form.gstin}
+          onChange={(e) => setForm((f) => ({ ...f, gstin: e.target.value }))}
+          className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+          placeholder="GSTIN"
+        />
       </div>
 
       <div>

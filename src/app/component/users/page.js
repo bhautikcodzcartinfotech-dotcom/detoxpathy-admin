@@ -16,11 +16,11 @@ import SearchComponent from "@/components/SearchComponent";
 import Dropdown from "@/utils/dropdown";
 import toast from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { 
-  Users as UsersIcon, 
-  Activity, 
-  CheckCircle, 
-  UserX, 
+import {
+  Users as UsersIcon,
+  Activity,
+  CheckCircle,
+  UserX,
   Search,
   Plus
 } from "lucide-react";
@@ -185,7 +185,7 @@ const UsersPage = () => {
 
     // Filter by language
     if (language) {
-      data = data.filter((u) => 
+      data = data.filter((u) =>
         u.language && u.language.toString().toLowerCase() === language.toLowerCase()
       );
     }
@@ -196,7 +196,6 @@ const UsersPage = () => {
     return data.filter(
       (user) =>
         (user.name || "").toLowerCase().includes(t) ||
-        String(user.patientId || "").includes(t) ||
         String(user.mobileNumber || "").includes(t) ||
         `${user.mobilePrefix || ""}${user.mobileNumber || ""}`.includes(t) ||
         (user.branch?.name || "").toLowerCase().includes(t) ||
@@ -269,7 +268,7 @@ const UsersPage = () => {
     setEditing(item);
     setIsOpen(true);
   };
-  
+
   const handleSuggest = (item) => {
     setSuggestionUser(item);
     setIsSuggestOpen(true);
@@ -305,38 +304,40 @@ const UsersPage = () => {
             <h1 className="text-3xl font-black text-gray-900 tracking-tight">Users / Patients</h1>
             <p className="text-sm text-gray-500 font-medium">Manage all registered users, program status, and branch assignments.</p>
           </div>
-          <button 
-            onClick={() => setIsOpen(true)}
-            className="h-12 px-8 bg-teal-900 text-white rounded-none font-black text-xs uppercase tracking-widest hover:bg-teal-950 hover:shadow-lg transition-all flex items-center gap-2"
-          >
-            <Plus className="w-4 h-4" /> Create New
-          </button>
+          {role === "Admin" && (
+            <button
+              onClick={() => setIsOpen(true)}
+              className="h-12 px-8 bg-teal-900 text-white rounded-none font-black text-xs uppercase tracking-widest hover:bg-teal-950 hover:shadow-lg transition-all flex items-center gap-2"
+            >
+              <Plus className="w-4 h-4" /> Create New
+            </button>
+          )}
         </div>
 
         {/* Stats Section */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {[
-            { 
-              label: "TOTAL USERS", 
-              value: stats.total.toLocaleString(), 
+            {
+              label: "TOTAL USERS",
+              value: stats.total.toLocaleString(),
               color: "border-teal-600",
               icon: UsersIcon
             },
-            { 
-              label: "ACTIVE PROGRAMS", 
-              value: stats.active.toLocaleString(), 
+            {
+              label: "ACTIVE PROGRAMS",
+              value: stats.active.toLocaleString(),
               color: "border-green-500",
               icon: Activity
             },
-            { 
-              label: "COMPLETED", 
-              value: stats.completed.toLocaleString(), 
+            {
+              label: "COMPLETED",
+              value: stats.completed.toLocaleString(),
               color: "border-teal-800",
               icon: CheckCircle
             },
-            { 
-              label: "INACTIVE", 
-              value: stats.inactive.toLocaleString(), 
+            {
+              label: "INACTIVE",
+              value: stats.inactive.toLocaleString(),
               color: "border-red-500",
               icon: UserX
             },
@@ -362,15 +363,15 @@ const UsersPage = () => {
             onSearch={handleSearch}
             onFilterChange={setFilter}
             searchLoading={searchLoading}
-            searchPlaceholder="Search by name, patient ID, mobile, or branch..."
+            searchPlaceholder="Search by name, mobile, or branch..."
             filterOptions={
               role === "subadmin"
                 ? [] // No filter options for subadmin
                 : [
-                    { label: "All Users", value: "all" },
-                    { label: "Active", value: "active" },
-                    { label: "Inactive", value: "inactive" },
-                  ]
+                  { label: "All Users", value: "all" },
+                  { label: "Active", value: "active" },
+                  { label: "Inactive", value: "inactive" },
+                ]
             }
             filterValue={filter}
             filterLabel="Status"

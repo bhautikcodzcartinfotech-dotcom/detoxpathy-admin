@@ -6,6 +6,7 @@ import {
   createCommand,
   updateCommand,
   deleteCommand,
+  approveCommand,
 } from "../../../Api/AllApi";
 
 import CommandTable from "./commandTable";
@@ -62,6 +63,17 @@ const CommandPage = () => {
     }
   };
 
+  const handleApprove = async (id) => {
+    try {
+      await approveCommand(id);
+      toast.success("Command approved!");
+      fetchCommands();
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to approve command");
+    }
+  };
+
   useEffect(() => {
     fetchCommands();
   }, []);
@@ -111,6 +123,7 @@ const CommandPage = () => {
             }
             await handleDelete(id);
           }}
+          onApprove={handleApprove}
         />
       )}
 

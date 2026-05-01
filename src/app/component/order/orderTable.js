@@ -1,7 +1,8 @@
 "use client";
 import React, { useState } from "react";
 import Loader from "@/utils/loader";
-import { API_BASE, updateOrderStatus } from "@/Api/AllApi";
+import { API_BASE, updateOrderStatus, getAuthHeaders } from "@/Api/AllApi";
+import axios from "axios";
 import toast from "react-hot-toast";
 
 const STATUS_LABELS = {
@@ -144,7 +145,7 @@ const OrderTable = ({ items, loading, onRefresh, selectedIds = [], onToggleSelec
                 </div>
               </td>
 
-              <td className="px-4 py-5 whitespace-nowrap text-right">
+              <td className="px-4 py-5 whitespace-nowrap text-right flex items-center justify-end gap-2">
                 <button
                   className="px-4 py-1.5 border border-gray-200 rounded-lg text-[12px] font-bold text-gray-600 hover:bg-gray-50 transition shadow-sm"
                   onClick={() => window.location.href = `/order/${order._id}`}

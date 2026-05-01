@@ -20,6 +20,7 @@ const UserForm = ({
     mobileNumber: "",
     branchId: "",
     planId: "",
+    gstin: "",
   });
   const [errors, setErrors] = useState({});
   const [branches, setBranches] = useState([]);
@@ -52,6 +53,7 @@ const UserForm = ({
         mobileNumber: initialValues.mobileNumber || "",
         branchId: initialValues.branch?._id || initialValues.branch || "",
         planId: initialValues.plan?._id || initialValues.plan || "",
+        gstin: initialValues.gstin || "",
       });
       setErrors({});
 
@@ -81,6 +83,7 @@ const UserForm = ({
             ? myBranches[0]
             : "",
         planId: "",
+        gstin: "",
       });
       setErrors({});
       setPlanHistory([]);
@@ -238,6 +241,18 @@ const UserForm = ({
             Previously assigned plans are disabled. Select a new plan to update.
           </p>
         )}
+      </div>
+      
+      {/* GSTIN */}
+      <div>
+        <label className="block mb-1 font-semibold text-gray-700">GSTIN (Optional)</label>
+        <input
+          type="text"
+          value={form.gstin}
+          onChange={(e) => setForm((f) => ({ ...f, gstin: e.target.value }))}
+          className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+          placeholder="Enter GSTIN"
+        />
       </div>
 
       {/* Buttons */}

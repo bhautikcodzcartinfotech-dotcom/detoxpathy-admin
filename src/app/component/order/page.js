@@ -4,6 +4,7 @@ import {
   getAllOrders, 
   getOrderStats, 
   bulkUpdateOrderStatusApi,
+  bulkDownloadInvoicesApi,
   createCompanyOrder,
   verifyCompanyOrderPaymentApi,
   getAllUsers,
@@ -218,6 +219,19 @@ const OrderPage = () => {
     }
   };
 
+  const handleBulkDownload = async () => {
+    if (selectedIds.length === 0) return toast.error("No orders selected");
+    try {
+      setLoading(true);
+      await bulkDownloadInvoicesApi(selectedIds);
+      toast.success("Downloading invoices...");
+    } catch (err) {
+      toast.error("Failed to download invoices");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCreateSuccess = () => {
     setIsDrawerOpen(false);
     fetchOrders();
@@ -324,6 +338,13 @@ const OrderPage = () => {
                   className="h-9 px-4 bg-teal-600 text-white text-sm font-bold rounded-lg hover:bg-teal-700 transition disabled:opacity-50"
                 >
                   {isBulkUpdating ? "Updating..." : "Apply Bulk Update"}
+                </button>
+                <button
+                  onClick={handleBulkDownload}
+                  disabled={loading || selectedIds.length === 0}
+                  className="h-9 px-4 bg-[#134D41] text-white text-sm font-bold rounded-lg hover:bg-[#0d362e] transition disabled:opacity-50"
+                >
+                  Download Selected
                 </button>
                 <button 
                   onClick={() => setSelectedIds([])}

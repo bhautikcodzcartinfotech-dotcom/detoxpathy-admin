@@ -112,7 +112,6 @@ export default function MainLayout({ children }) {
       const token = localStorage.getItem("token");
       const socket = io(API_HOST, {
         auth: { token },
-        transports: ["websocket"]
       });
 
       socket.on("connect", () => {

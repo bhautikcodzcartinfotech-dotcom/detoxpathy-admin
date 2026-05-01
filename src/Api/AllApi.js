@@ -11,7 +11,7 @@ export const API_HOST = API_BASE.replace(/\/?api\/?v1\/?$/, "").replace(
 );
 
 // Get auth headers from localStorage token
-const getAuthHeaders = () => {
+export const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
   return { Authorization: `Bearer ${token}` };
 };
@@ -109,9 +109,10 @@ export const generateUrl = async (formData) => {
 };
 
 /* -------------------- COMMAND APIs -------------------- */
-export const getCommands = async () => {
+export const getCommands = async (params = {}) => {
   const res = await axios.get(`${API_BASE}/admin/command/get-command`, {
     headers: getAuthHeaders(),
+    params
   });
   return res.data.data;
 };
@@ -165,6 +166,17 @@ export const updateCommand = async (id, formData) => {
   );
 
   return res.data.data;
+};
+
+export const approveCommand = async (id) => {
+  const res = await axios.put(
+    `${API_BASE}/admin/command/approve-command/${id}`,
+    {},
+    {
+      headers: getAuthHeaders(),
+    }
+  );
+  return res.data;
 };
 
 /* -------------------- SUB ADMIN APIs -------------------- */
@@ -248,6 +260,7 @@ export const createBranchApi = async (payload) => {
       mobileNumber: payload.mobileNumber,
       isMainBranch: payload.isMainBranch,
       isStateHeadBranch: payload.isStateHeadBranch,
+      gstin: payload.gstin,
     },
     { headers: getAuthHeaders() }
   );
@@ -269,6 +282,7 @@ export const updateBranchById = async (id, payload) => {
     "mobileNumber",
     "isMainBranch",
     "isStateHeadBranch",
+    "gstin",
   ];
   keys.forEach((k) => {
     if (typeof payload[k] !== "undefined") body[k] = payload[k];
@@ -311,6 +325,7 @@ export const createUserApi = async (payload) => {
       mobileNumber: payload.mobileNumber,
       branchId: payload.branchId,
       planId: payload.planId,
+      gstin: payload.gstin,
     },
     { headers: getAuthHeaders() }
   );
@@ -329,6 +344,7 @@ export const updateUserById = async (id, payload) => {
   if (typeof payload.planId !== "undefined") body.planId = payload.planId;
   if (typeof payload.isDeleted !== "undefined")
     body.isDeleted = payload.isDeleted;
+  if (typeof payload.gstin !== "undefined") body.gstin = payload.gstin;
 
   const res = await axios.put(`${API_BASE}/admin/user/update/${id}`, body, {
     headers: getAuthHeaders(),
@@ -973,6 +989,7 @@ export const getAppointmentsByBranch = async (branchId, params = {}) => {
   if (params.endDate) queryParams.append('endDate', params.endDate);
   if (params.status) queryParams.append('status', params.status);
   if (params.type) queryParams.append('type', params.type);
+  if (params.userId) queryParams.append('userId', params.userId);
 
   let url = `${API_BASE}/admin/appointment/get/${branchId}`;
   if (queryParams.toString()) {
@@ -1191,6 +1208,30 @@ export const downloadOrderInvoiceApi = async (id) => {
   }
 };
 
+export const bulkDownloadInvoicesApi = async (ids) => {
+  try {
+    const response = await axios.post(
+      `${API_BASE}/admin/order/bulk-download-invoices`,
+      { ids },
+      {
+        headers: getAuthHeaders(),
+        responseType: "blob",
+      }
+    );
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `Order_Manifest_${new Date().getTime()}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+  } catch (err) {
+    console.error("Bulk download error:", err);
+    throw err;
+  }
+};
+
 export const generateSlots = async (branchId, date) => {
   const res = await axios.post(`${API_BASE}/admin/branchTime/generate-slot`, {
     branchId,
@@ -1206,6 +1247,34 @@ export const rescheduleAppointment = async (appointmentId, payload) => {
     headers: getAuthHeaders()
   });
   return res.data;
+};
+
+export const requestTransferAppointment = async (appointmentId, payload) => {
+  const res = await axios.post(`${API_BASE}/admin/appointment/transfer/request/${appointmentId}`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+export const acceptTransferAppointment = async (appointmentId) => {
+  const res = await axios.post(`${API_BASE}/admin/appointment/transfer/accept/${appointmentId}`, {}, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+export const rejectTransferAppointment = async (appointmentId) => {
+  const res = await axios.post(`${API_BASE}/admin/appointment/transfer/reject/${appointmentId}`, {}, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+export const getTransferRequests = async () => {
+  const res = await axios.get(`${API_BASE}/admin/appointment/transfer/requests`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
 };
 
 /* -------------------- STAFF APIs -------------------- */
@@ -1450,3 +1519,56 @@ export const bulkApproveFeedbacks = async (ids, isApproved = true) => {
   });
   return res.data;
 };
+
+/* -------------------- PARTY APIs -------------------- */
+export const getAllParties = async (type) => {
+  const res = await axios.get(`${API_BASE}/admin/party/get-all`, {
+    params: { type },
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const createParty = async (payload) => {
+  const res = await axios.post(`${API_BASE}/admin/party/create`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const updateParty = async (id, payload) => {
+  const res = await axios.put(`${API_BASE}/admin/party/update/${id}`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const deleteParty = async (id) => {
+  const res = await axios.delete(`${API_BASE}/admin/party/delete/${id}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/* -------------------- PURCHASE APIs -------------------- */
+export const createPurchase = async (payload) => {
+  const res = await axios.post(`${API_BASE}/admin/purchase/create`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const getAllPurchases = async () => {
+  const res = await axios.get(`${API_BASE}/admin/purchase/get-all`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const getPurchaseById = async (id) => {
+  const res = await axios.get(`${API_BASE}/admin/purchase/get/${id}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+

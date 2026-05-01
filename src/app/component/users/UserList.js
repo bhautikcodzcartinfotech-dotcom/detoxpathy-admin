@@ -185,14 +185,15 @@ const UserList = ({ users, loading, onEdit, onDelete, onBulkDelete, onSuggest })
                   ariaLabel="Select all"
                 />
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
-                Patient ID
-              </th>
+
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Name
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Mobile
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                GSTIN
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Branch
@@ -252,14 +253,15 @@ const UserList = ({ users, loading, onEdit, onDelete, onBulkDelete, onSuggest })
                       disabled={isDeleted}
                     />
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-700 font-mono">
-                    {u.patientId || "-"}
-                  </td>
+
                   <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-800">
                     {u.name}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-gray-700">
                     {u.mobilePrefix} {u.mobileNumber}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                    {u.gstin || "-"}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-gray-700">
                     {u.branch?.name || u.branch || "-"}
@@ -344,7 +346,7 @@ const UserList = ({ users, loading, onEdit, onDelete, onBulkDelete, onSuggest })
                   Plan History
                 </h3>
                 <p className="text-sm text-gray-600">
-                  {historyUser?.name} • {historyUser?.patientId}
+                  {historyUser?.name}
                 </p>
               </div>
               <button

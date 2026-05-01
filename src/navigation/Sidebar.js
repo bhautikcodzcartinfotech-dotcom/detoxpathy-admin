@@ -18,6 +18,11 @@ import {
   MdCalendarMonth,
   MdGroups,
   MdFeedback,
+  MdAccountBalance,
+  MdInventory,
+  MdReceipt,
+  MdTransferWithinAStation,
+  MdSummarize
 } from "react-icons/md";
 
 import { MdChevronLeft, MdChevronRight } from "react-icons/md";
@@ -237,6 +242,52 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                 </Link>
               )}
             </div>
+
+            {/* Section: GST & Inventory */}
+            {role === "Admin" && (
+              <div>
+                {!isCollapsed && (
+                  <h2 className="text-xs font-semibold text-gray-400 uppercase mb-2">
+                    GST & Inventory
+                  </h2>
+                )}
+                <Link
+                  href="/component/party"
+                  className={linkClasses("/component/party")}
+                >
+                  <MdPeople size={20} />
+                  {!isCollapsed && <span>Party Master</span>}
+                </Link>
+                <Link
+                  href="/component/inventory/purchase-entry"
+                  className={linkClasses("/component/inventory/purchase-entry")}
+                >
+                  <MdInventory size={20} />
+                  {!isCollapsed && <span>Purchase Entry</span>}
+                </Link>
+                <Link
+                  href="/component/inventory/stock-transfer"
+                  className={linkClasses("/component/inventory/stock-transfer")}
+                >
+                  <MdTransferWithinAStation size={20} />
+                  {!isCollapsed && <span>Stock Transfer</span>}
+                </Link>
+                <Link
+                  href="/component/accounting"
+                  className={linkClasses("/component/accounting")}
+                >
+                  <MdAccountBalance size={20} />
+                  {!isCollapsed && <span>Accounting</span>}
+                </Link>
+                <Link
+                  href="/component/gst-reports"
+                  className={linkClasses("/component/gst-reports")}
+                >
+                  <MdReceipt size={20} />
+                  {!isCollapsed && <span>GST Reports</span>}
+                </Link>
+              </div>
+            )}
           </>
         )}
 
@@ -286,27 +337,31 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
         </div>
 
         {/* Section: Settings (Admin only) */}
-        {role === "Admin" && (
+        {(role === "Admin" || role === "subadmin") && (
           <div>
             {!isCollapsed && (
               <h2 className="text-xs font-semibold text-gray-400 uppercase mb-2">
                 Settings
               </h2>
             )}
-            <Link
-              href="/component/settings"
-              className={linkClasses("/component/settings")}
-            >
-              <MdSettings size={20} />
-              {!isCollapsed && <span>App Settings</span>}
-            </Link>
-            <Link
-              href="/component/app-reference"
-              className={linkClasses("/component/app-reference")}
-            >
-              <MdAssignment size={20} />
-              {!isCollapsed && <span>App References</span>}
-            </Link>
+            {role === "Admin" && (
+              <>
+                <Link
+                  href="/component/settings"
+                  className={linkClasses("/component/settings")}
+                >
+                  <MdSettings size={20} />
+                  {!isCollapsed && <span>App Settings</span>}
+                </Link>
+                <Link
+                  href="/component/app-reference"
+                  className={linkClasses("/component/app-reference")}
+                >
+                  <MdAssignment size={20} />
+                  {!isCollapsed && <span>App References</span>}
+                </Link>
+              </>
+            )}
             <Link
               href="/component/logs"
               className={linkClasses("/component/logs")}

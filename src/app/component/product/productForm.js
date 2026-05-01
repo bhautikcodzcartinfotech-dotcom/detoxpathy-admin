@@ -17,6 +17,9 @@ const ProductForm = ({
     basePrice: "",
     discountedPrice: "",
     bulkDiscount: "",
+    hsnCode: "",
+    gstPercentage: "",
+    unit: "",
     images: null, // FileList for new uploads
   });
   const [existingImages, setExistingImages] = useState([]); // For displaying existing images when editing
@@ -31,6 +34,9 @@ const ProductForm = ({
         basePrice: initialValues.basePrice || "",
         discountedPrice: initialValues.discountedPrice || "",
         bulkDiscount: initialValues.bulkDiscount || "",
+        hsnCode: initialValues.hsnCode || "",
+        gstPercentage: initialValues.gstPercentage || "",
+        unit: initialValues.unit || "",
         images: null,
       });
       setExistingImages(Array.isArray(initialValues.images) ? initialValues.images : []);
@@ -43,6 +49,9 @@ const ProductForm = ({
         basePrice: "",
         discountedPrice: "",
         bulkDiscount: "",
+        hsnCode: "",
+        gstPercentage: "",
+        unit: "",
         images: null,
       });
       setExistingImages([]);
@@ -106,6 +115,9 @@ const ProductForm = ({
     formData.append('basePrice', form.basePrice);
     formData.append('discountedPrice', form.discountedPrice);
     formData.append('bulkDiscount', form.bulkDiscount);
+    formData.append('hsnCode', form.hsnCode);
+    formData.append('gstPercentage', form.gstPercentage);
+    formData.append('unit', form.unit);
 
     // Add images to remove
     if (imagesToRemove.length > 0) {
@@ -204,6 +216,56 @@ const ProductForm = ({
             <p className="text-red-500 text-sm mt-1">{errors.discountedPrice}</p>
           )}
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block mb-1 font-semibold text-gray-700">
+            HSN Code
+          </label>
+          <input
+            type="text"
+            value={form.hsnCode}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, hsnCode: e.target.value }))
+            }
+            className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+            placeholder="HSN Code"
+          />
+        </div>
+
+        <div>
+          <label className="block mb-1 font-semibold text-gray-700">
+            GST %
+          </label>
+          <input
+            type="number"
+            value={form.gstPercentage}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, gstPercentage: e.target.value }))
+            }
+            className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+            placeholder="18"
+          />
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label className="block mb-1 font-semibold text-gray-700">
+            Unit
+          </label>
+          <input
+            type="text"
+            value={form.unit}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, unit: e.target.value }))
+            }
+            className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+            placeholder="Pcs, Kg, etc."
+          />
+        </div>
+
       </div>
 
       <div>
