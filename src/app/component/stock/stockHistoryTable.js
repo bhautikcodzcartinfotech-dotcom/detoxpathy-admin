@@ -126,7 +126,7 @@ const StockHistoryTable = ({ history, loading, currentPage, totalPages, onPageCh
                     {item.newAvailable?.toLocaleString() || 0}
                   </td>
                   <td className="py-4">
-                    {item.document && item.document !== "manual" ? (
+                    {item.document && item.document !== "manual" && item.document !== "purchase" ? (
                       <a 
                         href={`${API_BASE}/uploads/${item.document}`} 
                         target="_blank" 
@@ -138,7 +138,7 @@ const StockHistoryTable = ({ history, loading, currentPage, totalPages, onPageCh
                       </a>
                     ) : (
                       <span className="text-[10px] text-gray-400 uppercase tracking-tighter">
-                        {item.document === "manual" ? "Manual" : "-"}
+                        {item.document === "manual" ? "Manual" : item.document === "purchase" ? "Purchase" : "-"}
                       </span>
                     )}
                   </td>

@@ -83,7 +83,7 @@ const PartyPage = () => {
               setEditingParty(null);
               setIsDrawerOpen(true);
             }}
-            className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition shadow-sm"
+            className="bg-yellow-400 hover:bg-yellow-500 text-white px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition shadow-sm"
           >
             <FiPlus size={20} /> Add Supplier
           </button>
