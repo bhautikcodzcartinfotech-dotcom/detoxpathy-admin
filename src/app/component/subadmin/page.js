@@ -100,10 +100,15 @@ const SubAdminPage = () => {
 
   return (
     <RoleGuard allow={["Admin"]}>
-      <div className="w-full h-full px-18">
-        <div className="flex items-center justify-between mb-4">
-          <Header size="3xl">Doctors</Header>
-          <Button onClick={() => setIsOpen(true)}>Create</Button>
+      <div className="w-full h-full px-6 py-6">
+        <div className="flex items-center justify-between mb-8">
+          <div className="space-y-1">
+            <Header size="4xl">Doctors & Sub-Admins</Header>
+            <p className="text-sm font-bold text-gray-400 uppercase tracking-[0.2em]">Manage branch doctors and administrative access</p>
+          </div>
+          <Button onClick={() => setIsOpen(true)}>
+            Add New Doctor
+          </Button>
         </div>
 
         {error && (

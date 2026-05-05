@@ -5,6 +5,7 @@ import { validateForm } from "@/utils/validation";
 import { getAllBranches, getAllPlans, getUserOverview } from "@/Api/AllApi";
 import { useAuth } from "@/contexts/AuthContext";
 import Dropdown from "@/utils/dropdown";
+import { Button } from "@/utils/header";
 
 const UserForm = ({
   onSubmit,
@@ -257,13 +258,12 @@ const UserForm = ({
 
       {/* Buttons */}
       <div className="flex justify-end gap-3 mt-6">
-        <button
-          type="button"
+        <Button
+          variant="secondary"
           onClick={onCancel}
-          className="px-5 py-2 bg-gray-200 hover:bg-gray-300 rounded-xl transition font-semibold"
         >
           Cancel
-        </button>
+        </Button>
         <TimeButton loading={loading}>{submitLabel}</TimeButton>
       </div>
     </form>

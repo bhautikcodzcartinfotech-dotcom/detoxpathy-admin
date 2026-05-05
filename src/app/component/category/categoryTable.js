@@ -50,8 +50,11 @@ const CategoryTable = ({ items, loading, onEdit, onDelete, onReorder }) => {
   }
 
   const renderTable = (data, title) => (
-    <div className="mb-6">
-      <h2 className="text-lg font-bold py-2">{title}</h2>
+    <div className="mb-10">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="w-1 h-6 bg-yellow-500 rounded-full"></div>
+        <h2 className="text-sm font-black text-[#134D41] uppercase tracking-[0.2em]">{title}</h2>
+      </div>
 
       {data.length === 0 ? (
         <NotFoundCard
@@ -60,13 +63,13 @@ const CategoryTable = ({ items, loading, onEdit, onDelete, onReorder }) => {
         />
       ) : (
         <div className="overflow-x-auto shadow-md rounded-2xl border border-gray-200 bg-white">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gradient-to-r from-yellow-400 to-amber-300">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
+          <table className="min-w-full">
+            <thead>
+              <tr className="bg-gradient-to-r from-yellow-400 to-amber-300">
+                <th className="px-8 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Title
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700 uppercase">
+                <th className="px-8 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
@@ -77,26 +80,35 @@ const CategoryTable = ({ items, loading, onEdit, onDelete, onReorder }) => {
               axis="y"
               values={data}
               onReorder={(newOrder) => onReorder(newOrder, data[0]?.type)}
-              className="divide-y divide-gray-200"
+              className="divide-y divide-gray-50"
             >
               {data.map((c) => (
                 <Reorder.Item
                   as="tr"
                   key={c._id}
                   value={c}
-                  className="hover:bg-yellow-50 bg-white cursor-grab active:cursor-grabbing"
+                  className="hover:bg-teal-50/30 bg-white transition-colors duration-200"
                 >
-                  <td className="px-6 py-4 font-semibold text-gray-800">
-                    {c.categoryTitle}
+                  <td className="px-8 py-5">
+                    <div className="flex items-center gap-4">
+                      <div className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-teal-600 transition-colors">
+                        <GripVertical size={18} />
+                      </div>
+                      <span className="font-bold text-gray-800 tracking-tight text-[15px]">
+                        {c.categoryTitle}
+                      </span>
+                    </div>
                   </td>
-                  <td className="px-6 py-4 text-center space-x-2">
-                    <ActionButton type="edit" onClick={() => onEdit(c)} />
-                    <ActionButton
-                      type="delete"
-                      onClick={() =>
-                        handleDeleteClick(c._id, c.categoryTitle)
-                      }
-                    />
+                  <td className="px-8 py-5">
+                    <div className="flex items-center justify-end gap-3">
+                      <ActionButton type="edit" onClick={() => onEdit(c)} />
+                      <ActionButton
+                        type="delete"
+                        onClick={() =>
+                          handleDeleteClick(c._id, c.categoryTitle)
+                        }
+                      />
+                    </div>
                   </td>
                 </Reorder.Item>
               ))}

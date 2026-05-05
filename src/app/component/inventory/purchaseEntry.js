@@ -174,14 +174,14 @@ const PurchaseEntry = () => {
 
           <div className="overflow-x-auto border rounded-xl">
             <table className="w-full">
-              <thead className="bg-gray-50 border-b">
-                <tr>
-                  <th className="p-4 text-sm font-bold text-gray-600 text-left">Product</th>
-                  <th className="p-4 text-sm font-bold text-gray-600 text-center w-24">Qty</th>
-                  <th className="p-4 text-sm font-bold text-gray-600 text-right w-32">Rate</th>
-                  <th className="p-4 text-sm font-bold text-gray-600 text-center w-24">GST %</th>
-                  <th className="p-4 text-sm font-bold text-gray-600 text-right w-32">Total</th>
-                  <th className="p-4 text-sm font-bold text-gray-600 w-16"></th>
+              <thead className="bg-gradient-to-r from-yellow-400 to-amber-300">
+                <tr className="text-[11px] uppercase tracking-widest text-gray-700">
+                  <th className="px-4 py-3 font-black text-left">Product</th>
+                  <th className="px-4 py-3 font-black text-center w-24">Qty</th>
+                  <th className="px-4 py-3 font-black text-right w-32">Rate</th>
+                  <th className="px-4 py-3 font-black text-center w-24">GST %</th>
+                  <th className="px-4 py-3 font-black text-right w-32">Total</th>
+                  <th className="px-4 py-3 font-black w-16"></th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -260,7 +260,7 @@ const PurchaseEntry = () => {
             <button
               type="submit"
               disabled={loading}
-              className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 px-8 py-3 rounded-xl font-bold flex items-center gap-2 transition disabled:opacity-50"
+              className="bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-white px-10 py-3 rounded-xl font-black text-sm flex items-center gap-2 transition-all shadow-lg shadow-yellow-200/50 active:scale-95 disabled:opacity-50"
             >
               <FiSave size={20} /> {loading ? "Saving..." : "Save Purchase Entry"}
             </button>
@@ -272,14 +272,14 @@ const PurchaseEntry = () => {
         <h2 className="text-xl font-bold mb-6 text-gray-800">Recent Purchase Entries</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
-            <thead className="bg-gray-50 uppercase text-[11px] font-bold text-gray-500">
-              <tr>
-                <th className="p-3">Date</th>
-                <th className="p-3">Invoice No</th>
-                <th className="p-3">Supplier</th>
-                <th className="p-3">GSTIN</th>
-                <th className="p-3">Items</th>
-                <th className="p-3 text-right">Grand Total</th>
+            <thead className="bg-gradient-to-r from-yellow-400 to-amber-300">
+              <tr className="text-[11px] uppercase tracking-widest text-gray-700">
+                <th className="px-4 py-3 font-black">Date</th>
+                <th className="px-4 py-3 font-black">Invoice No</th>
+                <th className="px-4 py-3 font-black">Supplier</th>
+                <th className="px-4 py-3 font-black">GSTIN</th>
+                <th className="px-4 py-3 font-black">Items</th>
+                <th className="px-4 py-3 font-black text-right">Grand Total</th>
               </tr>
             </thead>
             <tbody className="divide-y">

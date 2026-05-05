@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { FiFileText, FiTrendingUp, FiPieChart, FiBarChart2 } from "react-icons/fi";
 import axios from "axios";
 import { API_BASE, getAuthHeaders } from "@/Api/AllApi";
+import Dropdown from "@/utils/dropdown";
 
 const AccountingPage = () => {
   const [activeTab, setActiveTab] = useState("ledger");
@@ -77,17 +78,20 @@ const AccountingPage = () => {
             {activeTab === 'ledger' && Array.isArray(data) && (
               <div className="space-y-4">
                 <div className="flex items-center gap-4 mb-4">
-                  <label className="text-sm font-semibold text-gray-600">Filter by Account:</label>
-                  <select
-                    value={selectedAccountId}
-                    onChange={(e) => setSelectedAccountId(e.target.value)}
-                    className="border border-gray-200 rounded-xl p-2 text-sm outline-none focus:ring-2 focus:ring-yellow-400"
-                  >
-                    <option value="">All Transactions</option>
-                    {accounts.map(acc => (
-                      <option key={acc._id} value={acc._id}>{acc.name} ({acc.type})</option>
-                    ))}
-                  </select>
+                  <div className="w-64">
+                    <Dropdown
+                      label="Filter by Account"
+                      options={[
+                        { label: "All Transactions", value: "" },
+                        ...accounts.map(acc => ({
+                          label: `${acc.name} (${acc.type})`,
+                          value: acc._id
+                        }))
+                      ]}
+                      value={selectedAccountId}
+                      onChange={setSelectedAccountId}
+                    />
+                  </div>
                 </div>
                 <table className="w-full text-left text-sm">
                   <thead className="bg-gray-50 uppercase text-xs text-gray-500 font-bold">

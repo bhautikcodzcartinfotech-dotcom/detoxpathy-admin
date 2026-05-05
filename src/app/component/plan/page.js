@@ -71,16 +71,19 @@ const PlanPage = () => {
   };
 
   return (
-    <div className="px-18 py-6">
-      <div className="flex justify-between items-center mb-6">
-        <Header size="3xl">Plan List</Header>
+    <div className="w-full h-full px-8 lg:px-12 py-6 bg-gray-50/50">
+      <div className="flex items-center justify-between mb-8">
+        <div className="space-y-1">
+          <Header size="4xl">Membership Plans</Header>
+          <p className="text-sm font-bold text-gray-400 uppercase tracking-[0.2em]">Define program durations, pricing, and benefits</p>
+        </div>
         <Button
           onClick={() => {
             setEditingPlan(null);
             setDrawerOpen(true);
           }}
         >
-          + Create
+          Create New Plan
         </Button>
       </div>
 

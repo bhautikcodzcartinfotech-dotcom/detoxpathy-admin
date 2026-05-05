@@ -143,7 +143,7 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto space-y-6 pr-1 custom-scrollbar">
+      <div className="flex-1 space-y-6 pr-1">
         
         {/* Program Selection */}
         <section>

@@ -1,54 +1,50 @@
 // components/ui/ActionButton.jsx
 "use client";
 
-import { FiEdit, FiTrash2, FiClock, FiInfo, FiPlusCircle } from "react-icons/fi";
+import { FiEdit, FiTrash2, FiClock, FiInfo, FiPlusCircle, FiEye, FiLogIn, FiCalendar, FiChevronUp, FiChevronDown } from "react-icons/fi";
 
-export const ActionButton = ({ type = "edit", onClick, disabled = false }) => {
-  const isEdit = type === "edit";
-  const isDelete = type === "delete";
-  const isHistory = type === "history";
-  const isInfo = type === "info";
-  const isSuggest = type === "suggest";
+export const ActionButton = ({ type = "edit", onClick, disabled = false, title = "" }) => {
+  const Icon = {
+    edit: FiEdit,
+    delete: FiTrash2,
+    history: FiClock,
+    info: FiInfo,
+    suggest: FiPlusCircle,
+    view: FiEye,
+    login: FiLogIn,
+    calendar: FiCalendar,
+    chevronUp: FiChevronUp,
+    chevronDown: FiChevronDown
+  }[type] || FiEdit;
 
-  const Icon = isEdit
-    ? FiEdit
-    : isDelete
-    ? FiTrash2
-    : isHistory
-    ? FiClock
-    : isInfo
-    ? FiInfo
-    : isSuggest
-    ? FiPlusCircle
-    : FiEdit;
-
-  // Colors: gradient using theme yellow/red
-  const bgGradient = isEdit
-    ? "bg-gradient-to-tr from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600"
-    : isDelete
-    ? "bg-gradient-to-tr from-red-300 to-red-600 hover:from-red-600 hover:to-red-700"
-    : isHistory
-    ? "bg-gradient-to-tr from-blue-400 to-blue-600 hover:from-blue-500 hover:to-blue-700"
-    : isInfo
-    ? "bg-gradient-to-tr from-green-400 to-green-600 hover:from-green-500 hover:to-green-700"
-    : isSuggest
-    ? "bg-gradient-to-tr from-purple-400 to-indigo-600 hover:from-purple-500 hover:to-indigo-700"
-    : "bg-gradient-to-tr from-yellow-400 to-yellow-500 hover:from-yellow-500 hover:to-yellow-600";
+  const styles = {
+    edit: "bg-amber-50 text-amber-600 hover:bg-[#134D41] hover:text-white shadow-amber-900/5 hover:shadow-teal-900/20",
+    delete: "bg-red-50 text-red-600 hover:bg-red-600 hover:text-white shadow-red-900/5 hover:shadow-red-900/20",
+    history: "bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white shadow-blue-900/5 hover:shadow-blue-900/20",
+    info: "bg-teal-50 text-teal-600 hover:bg-[#134D41] hover:text-white shadow-teal-900/5 hover:shadow-teal-900/20",
+    suggest: "bg-purple-50 text-purple-600 hover:bg-purple-600 hover:text-white shadow-purple-900/5 hover:shadow-purple-900/20",
+    view: "bg-gray-50 text-gray-600 hover:bg-gray-900 hover:text-white shadow-gray-900/5 hover:shadow-gray-900/20",
+    login: "bg-green-50 text-green-600 hover:bg-green-600 hover:text-white shadow-green-900/5 hover:shadow-green-900/20",
+    calendar: "bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white shadow-indigo-900/5 hover:shadow-indigo-900/20",
+    chevronUp: "bg-gray-50 text-gray-600 hover:bg-gray-200 shadow-sm",
+    chevronDown: "bg-gray-50 text-gray-600 hover:bg-gray-200 shadow-sm"
+  }[type] || "bg-gray-50 text-gray-600";
 
   return (
     <button
-      onClick={disabled ? undefined : onClick}
-      aria-disabled={disabled}
-      className={`${bgGradient} text-white rounded-full 
-                 w-10 h-10 inline-flex items-center justify-center 
-                 shadow-lg hover:shadow-xl 
-                 transition-transform duration-300 transform ${
-                   disabled
-                     ? "opacity-50 cursor-not-allowed"
-                     : "hover:-translate-y-1"
-                 }`}
+      onClick={disabled ? undefined : (e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      title={title}
+      className={`
+        w-9 h-9 flex items-center justify-center rounded-2xl
+        transition-all duration-300 shadow-sm hover:shadow-xl
+        transform hover:-translate-y-1 active:translate-y-0
+        ${disabled ? "opacity-40 cursor-not-allowed grayscale" : styles}
+      `}
     >
-      <Icon size={24} />
+      <Icon size={16} strokeWidth={2.5} />
     </button>
   );
 };

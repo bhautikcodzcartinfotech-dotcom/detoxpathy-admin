@@ -94,10 +94,15 @@ const ProductPage = () => {
 
   return (
     <RoleGuard allow={["Admin"]}>
-      <div className="w-full h-full px-18">
-        <div className="flex items-center justify-between mb-4">
-          <Header size="3xl">Products</Header>
-          <Button onClick={() => setIsOpen(true)}>Create Product</Button>
+      <div className="w-full h-full px-8 lg:px-12 py-6 bg-gray-50/50">
+        <div className="flex items-center justify-between mb-8">
+          <div className="space-y-1">
+            <Header size="4xl">Inventory Products</Header>
+            <p className="text-sm font-bold text-gray-400 uppercase tracking-[0.2em]">Manage catalog, stock levels, and distribution</p>
+          </div>
+          <Button onClick={() => setIsOpen(true)}>
+            Create New Product
+          </Button>
         </div>
 
         {error && (

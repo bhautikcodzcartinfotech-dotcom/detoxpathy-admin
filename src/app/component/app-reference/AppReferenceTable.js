@@ -53,11 +53,11 @@ const AppReferenceTable = ({ items, loading, onEdit, onDelete }) => {
         <div className="overflow-x-auto shadow-md rounded-2xl border border-gray-200 bg-white">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gradient-to-r from-yellow-400 to-amber-300">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase">
+              <tr className="text-[11px] font-black text-gray-700 uppercase tracking-widest">
+                <th className="px-6 py-4 text-left">
                   Name
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700 uppercase">
+                <th className="px-6 py-4 text-center">
                   Actions
                 </th>
               </tr>
@@ -68,12 +68,14 @@ const AppReferenceTable = ({ items, loading, onEdit, onDelete }) => {
                   <td className="px-6 py-4 font-semibold text-gray-800">
                     {item.name}
                   </td>
-                  <td className="px-6 py-4 text-center space-x-2">
-                    <ActionButton type="edit" onClick={() => onEdit(item)} />
-                    <ActionButton
-                      type="delete"
-                      onClick={() => handleDeleteClick(item._id, item.name)}
-                    />
+                  <td className="px-6 py-4">
+                    <div className="flex justify-center gap-2">
+                      <ActionButton type="edit" onClick={() => onEdit(item)} />
+                      <ActionButton
+                        type="delete"
+                        onClick={() => handleDeleteClick(item._id, item.name)}
+                      />
+                    </div>
                   </td>
                 </tr>
               ))}

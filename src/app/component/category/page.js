@@ -111,11 +111,16 @@ const CategoryPage = () => {
 
   return (
     <RoleGuard allow={["Admin", "subadmin"]}>
-      <div className="w-full h-full px-18">
-        <div className="flex items-center justify-between mb-4">
-          <Header size="3xl"> Categories</Header>
+      <div className="w-full h-full px-8 lg:px-12 py-6">
+        <div className="flex items-center justify-between mb-8">
+          <div className="space-y-1">
+            <Header size="4xl">Categories</Header>
+            <p className="text-sm font-bold text-gray-400 uppercase tracking-[0.2em]">Manage your session and testimonial tags</p>
+          </div>
           {(role === "Admin" || (role === "subadmin" && permissions?.includes("manage category"))) && (
-            <Button onClick={() => setIsOpen(true)}>Create</Button>
+            <Button onClick={() => setIsOpen(true)}>
+              Create New Category
+            </Button>
           )}
         </div>
 

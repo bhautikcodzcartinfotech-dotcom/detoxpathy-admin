@@ -26,6 +26,7 @@ import {
 import { getDashboardStats, createSubAdminApi, getAllBranches } from "@/Api/AllApi";
 import Loader from "@/utils/loader";
 import Dropdown from "@/utils/dropdown";
+import { Button } from "@/utils/header";
 import toast from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -353,31 +354,37 @@ const DashboardPage = () => {
               <h2 className="text-[10px] font-black text-gray-400 uppercase mb-6">Quick Actions</h2>
               <div className="flex flex-col gap-4 flex-1 justify-center">
                  {role === "Admin" && (
-                   <button 
+                   <Button 
                     onClick={() => setIsAddDoctorModalOpen(true)}
-                    className="w-full h-14 bg-teal-900 text-white rounded-none font-black text-xs uppercase tracking-widest hover:bg-teal-950 hover:shadow-lg hover:-translate-y-1 transition-all flex items-center justify-center gap-2"
+                    variant="primary"
+                    className="w-full h-14"
                    >
                       <PlusCircle className="w-4 h-4" /> Add Doctor
-                   </button>
+                   </Button>
                  )}
-                 <button 
+                 <Button 
                   onClick={() => router.push('/component/users')}
-                  className="w-full h-14 bg-white border-2 border-gray-100 text-gray-900 rounded-none font-black text-xs uppercase tracking-widest hover:bg-gray-50 hover:border-teal-100 transition-all flex items-center justify-center gap-2"
+                  variant="secondary"
+                  className="w-full h-14"
                  >
                     <UserPlus className="w-4 h-4 text-teal-600" /> Add User
-                 </button>
+                 </Button>
                  {role === "Admin" && (
-                   <button 
+                   <Button 
                     onClick={() => router.push('/component/video')}
-                    className="w-full h-14 bg-white border-2 border-gray-100 text-gray-900 rounded-none font-black text-xs uppercase tracking-widest hover:bg-gray-50 hover:border-teal-100 transition-all flex items-center justify-center gap-2"
+                    variant="secondary"
+                    className="w-full h-14"
                    >
                       <Video className="w-4 h-4 text-teal-600" /> Upload Video
-                   </button>
+                   </Button>
                  )}
                  {role === "Admin" && (
-                   <button className="w-full h-14 bg-orange-500 text-white rounded-none font-black text-xs uppercase tracking-widest hover:bg-orange-600 hover:shadow-lg hover:-translate-y-1 transition-all flex items-center justify-center gap-2">
+                   <Button 
+                    variant="primary"
+                    className="w-full h-14 text-white"
+                   >
                       Trigger Payout
-                   </button>
+                   </Button>
                  )}
               </div>
            </div>
@@ -480,24 +487,25 @@ const DashboardPage = () => {
               </div>
 
               <div className="pt-4 flex gap-4">
-                <button 
-                  type="button"
+                <Button 
+                  variant="secondary"
                   onClick={() => setIsAddDoctorModalOpen(false)}
-                  className="flex-1 h-14 bg-gray-100 text-gray-600 font-black text-xs uppercase tracking-widest hover:bg-gray-200 transition-all rounded-none"
+                  className="flex-1 h-14"
                 >
                   Cancel
-                </button>
-                <button 
+                </Button>
+                <Button 
                   type="submit"
                   disabled={formLoading}
-                  className="flex-[2] h-14 bg-teal-900 text-white font-black text-xs uppercase tracking-widest hover:bg-teal-950 shadow-xl shadow-teal-900/20 disabled:opacity-50 transition-all rounded-none flex items-center justify-center gap-2"
+                  variant="primary"
+                  className="flex-[2] h-14"
                 >
                   {formLoading ? (
                     <div className="w-4 h-4 border-2 border-white/30 border-t-white animate-spin rounded-full" />
                   ) : (
                     "Create Account"
                   )}
-                </button>
+                </Button>
               </div>
             </form>
           </div>

@@ -1,8 +1,9 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import RoleGuard from "@/components/RoleGuard";
-import { Header } from "@/utils/header";
+import { Header, Button } from "@/utils/header";
 import Drawer from "@/utils/formanimation";
+import { ActionButton } from "@/utils/actionbutton";
 import { listSubAdmins, updateSubAdminPermissions } from "@/Api/AllApi";
 import TimeButton from "@/utils/timebutton";
 import toast from "react-hot-toast";
@@ -84,7 +85,7 @@ const PermissionPage = () => {
 
   return (
     <RoleGuard allow={["Admin"]}>
-      <div className="w-full h-full px-18">
+      <div className="w-full h-full px-6 py-4">
         <div className="flex items-center justify-between mb-4">
           <Header size="3xl">Manage Permissions</Header>
         </div>
@@ -97,12 +98,12 @@ const PermissionPage = () => {
 
         <div className="bg-white rounded-xl shadow overflow-hidden">
           <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-gray-100 text-gray-700">
-                <th className="p-4 font-semibold">Name</th>
-                <th className="p-4 font-semibold">Email</th>
-                <th className="p-4 font-semibold">Role</th>
-                <th className="p-4 font-semibold">Actions</th>
+            <thead className="bg-gradient-to-r from-yellow-400 to-amber-300">
+              <tr className="text-[11px] font-black text-gray-700 uppercase tracking-widest">
+                <th className="px-6 py-4">Name</th>
+                <th className="px-6 py-4">Email</th>
+                <th className="px-6 py-4 text-center">Role</th>
+                <th className="px-6 py-4 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -120,13 +121,14 @@ const PermissionPage = () => {
                     <td className="p-4">{admin.username}</td>
                     <td className="p-4">{admin.email}</td>
                     <td className="p-4 capitalize">{admin.adminType}</td>
-                    <td className="p-4">
-                      <button
-                        onClick={() => handleEdit(admin)}
-                        className="px-4 py-2 bg-yellow-100 text-yellow-700 rounded hover:bg-yellow-200 transition"
-                      >
-                        Edit Permissions
-                      </button>
+                    <td className="px-6 py-4 text-center">
+                      <div className="flex justify-center">
+                        <ActionButton
+                          type="edit"
+                          onClick={() => handleEdit(admin)}
+                          title="Edit Permissions"
+                        />
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -175,13 +177,12 @@ const PermissionPage = () => {
             </div>
 
             <div className="flex justify-end gap-3 mt-8">
-              <button
-                type="button"
+              <Button
+                variant="secondary"
                 onClick={() => setIsOpen(false)}
-                className="px-5 py-2 bg-gray-200 hover:bg-gray-300 rounded-xl transition font-semibold"
               >
                 Cancel
-              </button>
+              </Button>
               <TimeButton loading={saveLoading}>Save Permissions</TimeButton>
             </div>
           </form>

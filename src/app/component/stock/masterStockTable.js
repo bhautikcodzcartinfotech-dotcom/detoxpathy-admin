@@ -17,12 +17,12 @@ const MasterStockTable = ({ stocks, loading, onEdit }) => {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left">
-        <thead>
-          <tr className="text-[10px] uppercase tracking-wider text-gray-400 border-b border-gray-50">
-            <th className="pb-3 font-medium">Product / Plan</th>
-            <th className="pb-3 font-medium text-center">Available</th>
-            <th className="pb-3 font-medium text-center">Sold</th>
-            <th className="pb-3 font-medium text-center">Total</th>
+        <thead className="bg-gradient-to-r from-yellow-400 to-amber-300">
+          <tr className="text-[10px] uppercase tracking-widest text-gray-700">
+            <th className="px-4 py-3 font-black">Product / Plan</th>
+            <th className="px-4 py-3 font-black text-center">Available</th>
+            <th className="px-4 py-3 font-black text-center">Sold</th>
+            <th className="px-4 py-3 font-black text-center">Total</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">

@@ -297,20 +297,16 @@ const UsersPage = () => {
 
   return (
     <RoleGuard allow={["Admin", "subadmin"]}>
-      <div className="w-full h-full px-18 flex flex-col bg-gray-50/50">
-        {/* New Header Section */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+      <div className="w-full h-full px-8 lg:px-12 py-6 bg-gray-50/50">
+        <div className="flex items-center justify-between mb-8">
           <div className="space-y-1">
-            <h1 className="text-3xl font-black text-gray-900 tracking-tight">Users / Patients</h1>
-            <p className="text-sm text-gray-500 font-medium">Manage all registered users, program status, and branch assignments.</p>
+            <Header size="4xl">Users & Patients</Header>
+            <p className="text-sm font-bold text-gray-400 uppercase tracking-[0.2em]">Manage all registered users and program assignments</p>
           </div>
           {(role === "Admin" || (role === "subadmin" && permissions?.includes("create user"))) && (
-            <button
-              onClick={() => setIsOpen(true)}
-              className="h-12 px-8 bg-teal-900 text-white rounded-none font-black text-xs uppercase tracking-widest hover:bg-teal-950 hover:shadow-lg transition-all flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" /> Create New
-            </button>
+            <Button onClick={() => setIsOpen(true)}>
+              Add New Patient
+            </Button>
           )}
         </div>
 

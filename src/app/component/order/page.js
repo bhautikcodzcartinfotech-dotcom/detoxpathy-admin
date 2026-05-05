@@ -18,6 +18,7 @@ import OrderForm from "./orderForm";
 import CompanyOrderForm from "../stock/companyOrderForm";
 import Drawer from "@/utils/formanimation";
 import { Header, Button } from "@/utils/header";
+import Dropdown from "@/utils/dropdown";
 import { useAuth } from "@/contexts/AuthContext";
 import RoleGuard from "@/components/RoleGuard";
 
@@ -240,22 +241,27 @@ const OrderPage = () => {
 
   return (
     <RoleGuard allow={["Admin", "subadmin"]}>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <div>
-            <Header size="3xl">Orders & Shipping</Header>
-            <p className="text-gray-500 text-sm mt-1">All orders — online (company ships) and branch walk-in (branch stock). Assign couriers and track.</p>
+      <div className="w-full h-full px-8 lg:px-12 py-6">
+        <div className="flex items-center justify-between mb-8">
+          <div className="space-y-1">
+            <Header size="4xl">Orders & Shipping</Header>
+            <p className="text-sm font-bold text-gray-400 uppercase tracking-[0.2em]">Track sales, dispatch status, and fulfillment</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             {role === 'subadmin' && (
-              <button 
+              <Button 
                 onClick={() => setIsCompanyOrderDrawerOpen(true)}
-                className="bg-[#134D41] text-white font-black text-xs uppercase tracking-widest px-6 py-3 rounded-xl shadow-lg shadow-emerald-100 hover:bg-[#0d362e] transition-all active:scale-95 flex items-center gap-2"
+                variant="secondary"
               >
                 Company Order
-              </button>
+              </Button>
             )}
-            <Button onClick={() => setIsDrawerOpen(true)}>Create Order</Button>
+            <Button 
+              onClick={() => setIsDrawerOpen(true)}
+              variant="primary"
+            >
+              Create New Order
+            </Button>
           </div>
         </div>
 
@@ -281,35 +287,41 @@ const OrderPage = () => {
               <input
                 type="text"
                 placeholder="Search by ORD-ID, user, product..."
-                className="w-full h-11 px-4 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-yellow-400 bg-gray-50"
+                className="w-full h-11 px-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] bg-gray-50 transition-all"
                 value={filter.search}
                 onChange={(e) => handleFilterChange("search", e.target.value)}
               />
             </div>
-            
-            <select 
-              className="h-11 px-4 rounded-lg border border-gray-200 bg-gray-50 text-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-400 font-medium"
-              value={filter.type}
-              onChange={(e) => handleFilterChange("type", e.target.value)}
-            >
-              <option value="">All Types</option>
-              <option value="1">Online</option>
-              <option value="2">Branch</option>
-            </select>
 
-            <select 
-              className="h-11 px-4 rounded-lg border border-gray-200 bg-gray-50 text-gray-600 focus:outline-none focus:ring-2 focus:ring-yellow-400 font-medium"
-              value={filter.status}
-              onChange={(e) => handleFilterChange("status", e.target.value)}
-            >
-              <option value="">All Status</option>
-              <option value="1">Pending</option>
-              <option value="2">Packed</option>
-              <option value="3">Processing</option>
-              <option value="4">In Transit</option>
-              <option value="5">Delivered</option>
-              <option value="6">Cancelled</option>
-            </select>
+            <div className="w-48">
+              <Dropdown
+                label="Type"
+                options={[
+                  { label: "All Types", value: "" },
+                  { label: "Online", value: "1" },
+                  { label: "Branch", value: "2" },
+                ]}
+                value={filter.type}
+                onChange={(val) => handleFilterChange("type", val)}
+              />
+            </div>
+
+            <div className="w-48">
+              <Dropdown
+                label="Status"
+                options={[
+                  { label: "All Status", value: "" },
+                  { label: "Pending", value: "1" },
+                  { label: "Packed", value: "2" },
+                  { label: "Processing", value: "3" },
+                  { label: "In Transit", value: "4" },
+                  { label: "Delivered", value: "5" },
+                  { label: "Cancelled", value: "6" },
+                ]}
+                value={filter.status}
+                onChange={(val) => handleFilterChange("status", val)}
+              />
+            </div>
           </div>
 
           {/* Bulk Action Bar */}
@@ -319,39 +331,44 @@ const OrderPage = () => {
                 {selectedIds.length} orders selected
               </span>
               <div className="flex items-center gap-2 ml-auto">
-                <select 
-                  className="h-9 px-3 rounded-lg border border-teal-200 bg-white text-sm font-bold text-teal-700 focus:outline-none"
-                  value={bulkStatus}
-                  onChange={(e) => setBulkStatus(e.target.value)}
-                >
-                  <option value="">-- Change Status --</option>
-                  <option value="1">Pending</option>
-                  <option value="2">Packed</option>
-                  <option value="3">Processing</option>
-                  <option value="4">In Transit</option>
-                  <option value="5">Delivered</option>
-                  <option value="6">Cancelled</option>
-                </select>
-                <button
+                <div className="w-48">
+                  <Dropdown
+                    options={[
+                      { label: "-- Change Status --", value: "" },
+                      { label: "Pending", value: "1" },
+                      { label: "Packed", value: "2" },
+                      { label: "Processing", value: "3" },
+                      { label: "In Transit", value: "4" },
+                      { label: "Delivered", value: "5" },
+                      { label: "Cancelled", value: "6" },
+                    ]}
+                    value={bulkStatus}
+                    onChange={(val) => setBulkStatus(val)}
+                  />
+                </div>
+                <Button
                   onClick={handleBulkUpdate}
                   disabled={isBulkUpdating || !bulkStatus}
-                  className="h-9 px-4 bg-teal-600 text-white text-sm font-bold rounded-lg hover:bg-teal-700 transition disabled:opacity-50"
+                  variant="primary"
+                  className="h-11 px-4 text-xs"
                 >
                   {isBulkUpdating ? "Updating..." : "Apply Bulk Update"}
-                </button>
-                <button
+                </Button>
+                <Button
                   onClick={handleBulkDownload}
                   disabled={loading || selectedIds.length === 0}
-                  className="h-9 px-4 bg-[#134D41] text-white text-sm font-bold rounded-lg hover:bg-[#0d362e] transition disabled:opacity-50"
+                  variant="primary"
+                  className="h-9 px-4 text-xs"
                 >
                   Download Selected
-                </button>
-                <button 
+                </Button>
+                <Button 
+                  variant="secondary"
                   onClick={() => setSelectedIds([])}
-                  className="text-sm font-bold text-gray-500 hover:text-gray-700 px-2"
+                  className="h-9 px-4 text-xs border-none"
                 >
                   Clear
-                </button>
+                </Button>
               </div>
             </div>
           )}
@@ -368,23 +385,23 @@ const OrderPage = () => {
 
         {pagination.totalPages > 1 && (
           <div className="mt-8 flex justify-center items-center gap-4">
-            <button
+            <Button
+              variant="secondary"
               disabled={pagination.page === 1 || loading}
               onClick={() => handlePageChange(pagination.page - 1)}
-              className="px-4 py-2 rounded-xl bg-white border border-gray-200 text-gray-700 font-semibold disabled:opacity-50 hover:bg-gray-50 transition shadow-sm"
             >
               Previous
-            </button>
+            </Button>
             <span className="text-sm font-bold text-gray-700">
               Page {pagination.page} of {pagination.totalPages}
             </span>
-            <button
+            <Button
+              variant="secondary"
               disabled={pagination.page === pagination.totalPages || loading}
               onClick={() => handlePageChange(pagination.page + 1)}
-              className="px-4 py-2 rounded-xl bg-white border border-gray-200 text-gray-700 font-semibold disabled:opacity-50 hover:bg-gray-50 transition shadow-sm"
             >
               Next
-            </button>
+            </Button>
           </div>
         )}
 

@@ -23,6 +23,7 @@ import BranchStockTable from "./branchStockTable";
 import StockHistoryTable from "./stockHistoryTable";
 import StockForm from "./stockForm";
 import CompanyOrderForm from "./companyOrderForm";
+import Dropdown from "@/utils/dropdown";
 
 const StockManagementPage = () => {
   const { role, permissions } = useAuth();
@@ -178,7 +179,7 @@ const StockManagementPage = () => {
 
   return (
     <RoleGuard allow={["Admin", "subadmin"]}>
-      <div className="w-full h-full px-6 py-4 pb-20">
+      <div className="w-full h-full px-6 py-6 pb-20">
         <div className="mb-8">
           <Header size="3xl">Stock Management</Header>
           <p className="text-gray-500 mt-1">
@@ -194,13 +195,13 @@ const StockManagementPage = () => {
               <div className="flex items-center gap-4">
                 {(role === "Admin" || (role === "subadmin" && permissions?.includes("manage inventory"))) && (
                   <>
-                    <label className="text-[#134D41] hover:text-[#0d362e] font-black text-xs uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 hover:bg-emerald-100">
+                    <label className="bg-amber-50 text-amber-700 hover:bg-amber-100 font-black text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer px-3 py-2 rounded-xl border border-amber-200 shadow-sm">
                       <input type="file" className="hidden" accept=".pdf" onChange={handleFileUpload} disabled={loading} />
                       <span>+ Upload PDF</span>
                     </label>
                     <button 
                       onClick={handleAddProduct}
-                      className="text-[#134D41] hover:text-[#0d362e] font-black text-xs uppercase tracking-widest flex items-center gap-1 transition-colors"
+                      className="bg-gradient-to-r from-yellow-400 to-amber-500 text-white font-black text-[10px] uppercase tracking-widest flex items-center gap-1.5 px-4 py-2 rounded-xl shadow-lg shadow-yellow-200 transition-all hover:from-yellow-500 hover:to-amber-600 active:scale-95"
                     >
                       + Add Product
                     </button>
@@ -219,18 +220,14 @@ const StockManagementPage = () => {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-gray-800">Branch Stock Levels</h3>
-              <select
-                value={selectedBranchId}
-                onChange={(e) => setSelectedBranchId(e.target.value)}
-                className="border border-green-500 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/20 bg-white min-w-[200px]"
-              >
-                <option value="">Select Branch</option>
-                {Array.isArray(branches) && branches.map((branch) => (
-                  <option key={branch._id} value={branch._id}>
-                    {branch.name}
-                  </option>
-                ))}
-              </select>
+              <div className="w-64">
+                <Dropdown
+                  options={[{ label: "Select Branch", value: "" }, ...branches.map((b) => ({ label: b.name, value: b._id }))]}
+                  value={selectedBranchId}
+                  onChange={setSelectedBranchId}
+                  placeholder="Select Branch"
+                />
+              </div>
             </div>
             <BranchStockTable 
               stocks={filteredBranchStocks} 
@@ -257,8 +254,8 @@ const StockManagementPage = () => {
 
         <Drawer isOpen={isDrawerOpen} onClose={() => setIsDrawerOpen(false)}>
           <div className="p-6">
-            <h2 className="text-2xl font-bold text-[#134D41] mb-6 text-center">
-              {editingStock ? "Update Stock" : "Add Stock"}
+            <h2 className="text-3xl font-black text-amber-600 mb-8 text-center uppercase tracking-tight">
+              {editingStock ? "Update Stock" : "Add Stock Record"}
             </h2>
             <StockForm
               initialValues={editingStock}

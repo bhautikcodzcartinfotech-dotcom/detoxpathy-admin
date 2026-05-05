@@ -82,7 +82,7 @@ const AppReferencePage = () => {
 
   return (
     <RoleGuard allow={["Admin"]}>
-      <div className="w-full h-full px-18">
+      <div className="w-full h-full px-6 py-4">
         <div className="flex items-center justify-between mb-4">
           <Header size="3xl"> App References</Header>
           <Button onClick={() => setIsOpen(true)}>Create</Button>

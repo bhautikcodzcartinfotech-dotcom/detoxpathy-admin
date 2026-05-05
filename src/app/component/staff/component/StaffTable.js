@@ -74,13 +74,11 @@ const StaffTable = ({ items, loading, onEdit, onDelete, onManageLeave, role, per
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     <div className="flex justify-center gap-2">
                       {(role === "Admin" || (role === "subadmin" && permissions?.includes("add staff"))) && (
-                        <button
+                        <ActionButton
+                          type="calendar"
                           onClick={() => onManageLeave(item)}
-                          className="p-2 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-full transition-all"
                           title="Manage Leaves"
-                        >
-                          <Calendar size={18} />
-                        </button>
+                        />
                       )}
                       {(role === "Admin" || (role === "subadmin" && permissions?.includes("edit staff"))) && (
                         <ActionButton type="edit" onClick={() => onEdit(item)} />

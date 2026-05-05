@@ -5,6 +5,8 @@ import axios from "axios";
 import { API_BASE, getAuthHeaders } from "@/Api/AllApi";
 import { toast } from "react-hot-toast";
 
+import { Header, Button } from "@/utils/header";
+
 const GstReportsPage = () => {
   const [summary, setSummary] = useState(null);
   const [dates, setDates] = useState({ start: "", end: "" });
@@ -55,7 +57,13 @@ const GstReportsPage = () => {
   };
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="w-full h-full px-6 py-6 space-y-8 bg-gray-50/50">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div className="space-y-1">
+          <Header size="4xl">GST Reports</Header>
+          <p className="text-sm font-bold text-gray-400 uppercase tracking-[0.2em]">Compliance, reconciliation, and GSTR summaries</p>
+        </div>
+      </div>
       {/* Search and Action Bar */}
       <div className="flex flex-col md:flex-row gap-4 items-end bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <div className="flex-1">
@@ -75,18 +83,19 @@ const GstReportsPage = () => {
             />
           </div>
         </div>
-        <button 
+        <Button 
           onClick={fetchSummary}
-          className="bg-gray-100 text-gray-700 px-6 py-2 rounded-xl font-bold text-sm hover:bg-gray-200 transition"
+          variant="secondary"
         >
           View Summary
-        </button>
-        <button 
+        </Button>
+        <Button 
           onClick={downloadGstr1}
-          className="bg-[#134D41] text-white px-6 py-2 rounded-xl font-bold text-sm flex items-center gap-2 hover:opacity-90 transition"
+          variant="primary"
+          icon={FiDownload}
         >
-          <FiDownload /> GSTR-1 Export (B2B, B2C, HSN)
-        </button>
+          GSTR-1 Export (B2B, B2C, HSN)
+        </Button>
       </div>
 
       {loading ? (
@@ -121,25 +130,27 @@ const GstReportsPage = () => {
 
           {/* Simple Tables */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-               <h3 className="font-bold text-gray-800 mb-4 text-sm uppercase tracking-wider flex items-center gap-2">
-                 <FiArrowUp className="text-green-500" /> Recent Outward Supplies
-               </h3>
+            <div className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-xl shadow-gray-200/50">
+               <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between bg-amber-50/30">
+                 <h3 className="font-black text-amber-800 text-[10px] uppercase tracking-widest flex items-center gap-2">
+                   <FiArrowUp className="text-amber-500" /> Recent Outward Supplies
+                 </h3>
+               </div>
                <div className="overflow-x-auto">
-                 <table className="w-full text-left text-xs">
-                   <thead>
-                     <tr className="text-gray-400 border-b">
-                       <th className="pb-2 font-bold">INV #</th>
-                       <th className="pb-2 font-bold">CUSTOMER</th>
-                       <th className="pb-2 text-right font-bold">GST</th>
+                 <table className="w-full text-left">
+                   <thead className="bg-gray-50/50">
+                     <tr className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                       <th className="px-6 py-4">INV #</th>
+                       <th className="px-6 py-4">Customer</th>
+                       <th className="px-6 py-4 text-right">GST Amount</th>
                      </tr>
                    </thead>
                    <tbody className="divide-y divide-gray-50">
                      {summary.recentSales?.map((s, i) => (
-                       <tr key={i}>
-                         <td className="py-3 text-gray-400">#{s.id.slice(-6).toUpperCase()}</td>
-                         <td className="py-3 font-medium">{s.customer}</td>
-                         <td className="py-3 text-right font-bold text-blue-600">₹{s.gst.toLocaleString()}</td>
+                       <tr key={i} className="hover:bg-amber-50/10 transition-colors">
+                         <td className="px-6 py-4 text-gray-400 font-mono text-xs">#{s.id.slice(-6).toUpperCase()}</td>
+                         <td className="px-6 py-4 font-bold text-gray-700 text-sm">{s.customer}</td>
+                         <td className="px-6 py-4 text-right font-black text-blue-600 text-sm">₹{s.gst.toLocaleString()}</td>
                        </tr>
                      ))}
                    </tbody>
@@ -147,25 +158,27 @@ const GstReportsPage = () => {
                </div>
             </div>
 
-            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-               <h3 className="font-bold text-gray-800 mb-4 text-sm uppercase tracking-wider flex items-center gap-2">
-                 <FiArrowDown className="text-red-500" /> Recent Inward Supplies
-               </h3>
+            <div className="bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-xl shadow-gray-200/50">
+               <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between bg-amber-50/30">
+                 <h3 className="font-black text-amber-800 text-[10px] uppercase tracking-widest flex items-center gap-2">
+                   <FiArrowDown className="text-red-500" /> Recent Inward Supplies
+                 </h3>
+               </div>
                <div className="overflow-x-auto">
-                 <table className="w-full text-left text-xs">
-                   <thead>
-                     <tr className="text-gray-400 border-b">
-                       <th className="pb-2 font-bold">INV #</th>
-                       <th className="pb-2 font-bold">SUPPLIER</th>
-                       <th className="pb-2 text-right font-bold">GST</th>
+                 <table className="w-full text-left">
+                   <thead className="bg-gray-50/50">
+                     <tr className="text-[10px] font-black text-gray-500 uppercase tracking-widest">
+                       <th className="px-6 py-4">INV #</th>
+                       <th className="px-6 py-4">Supplier</th>
+                       <th className="px-6 py-4 text-right">GST Amount</th>
                      </tr>
                    </thead>
                    <tbody className="divide-y divide-gray-50">
                      {summary.recentPurchases?.map((p, i) => (
-                       <tr key={i}>
-                         <td className="py-3 text-gray-400">#{p.id.slice(-6).toUpperCase()}</td>
-                         <td className="py-3 font-medium">{p.supplier}</td>
-                         <td className="py-3 text-right font-bold text-purple-600">₹{p.gst.toLocaleString()}</td>
+                       <tr key={i} className="hover:bg-amber-50/10 transition-colors">
+                         <td className="px-6 py-4 text-gray-400 font-mono text-xs">#{p.id.slice(-6).toUpperCase()}</td>
+                         <td className="px-6 py-4 font-bold text-gray-700 text-sm">{p.supplier}</td>
+                         <td className="px-6 py-4 text-right font-black text-purple-600 text-sm">₹{p.gst.toLocaleString()}</td>
                        </tr>
                      ))}
                    </tbody>

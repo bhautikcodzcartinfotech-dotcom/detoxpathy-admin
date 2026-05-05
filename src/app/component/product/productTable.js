@@ -81,7 +81,7 @@ const ProductTable = ({ items, loading, onEdit, onDelete }) => {
   return (
     <>
       <div className="overflow-x-auto shadow-md rounded-2xl border border-gray-200 bg-white">
-        <table className="min-w-full divide-y divide-gray-200">
+        <table className="min-w-full table-auto divide-y divide-gray-200">
           <thead className="bg-gradient-to-r from-yellow-400 to-amber-300">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">

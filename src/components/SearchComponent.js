@@ -73,11 +73,11 @@ const SearchComponent = ({
               value={searchTerm}
               onChange={handleInputChange}
               placeholder={searchPlaceholder}
-              className="w-full pl-10 pr-4 py-3 text-sm border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-200 focus:border-yellow-500 transition-all duration-300 shadow-sm bg-gray-50 focus:bg-white"
+              className="w-full pl-10 pr-4 py-3 text-sm border border-gray-200 rounded-xl focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition-all duration-300 shadow-sm bg-gray-50 focus:bg-white"
             />
             {loading && (
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                <div className="w-4 h-4 border-2 border-yellow-400 border-t-transparent rounded-full animate-spin"></div>
+                <div className="w-4 h-4 border-2 border-[#134D41] border-t-transparent rounded-full animate-spin"></div>
               </div>
             )}
           </div>
@@ -159,12 +159,12 @@ const SearchComponent = ({
                   type="date"
                   value={selectedDate}
                   onChange={(e) => onDateChange(e.target.value)}
-                  className="flex-1 border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition text-sm"
+                  className="flex-1 border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition text-sm"
                 />
                 {selectedDate && (
                   <button
                     onClick={() => onDateChange("")}
-                    className="px-4 py-3 bg-gray-200 hover:bg-gray-300 rounded-xl text-sm font-semibold text-gray-700 transition whitespace-nowrap"
+                    className="px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-semibold text-gray-700 transition whitespace-nowrap"
                   >
                     Clear Date
                   </button>
@@ -177,12 +177,12 @@ const SearchComponent = ({
 
       {/* Search Results Indicator */}
       {searchTerm && (
-        <div className="mt-4 p-3 bg-gradient-to-r from-yellow-50 to-amber-50 rounded-lg border border-yellow-200">
+        <div className="mt-4 p-3 bg-emerald-50 rounded-lg border border-emerald-100">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse"></div>
+            <div className="w-2 h-2 bg-[#134D41] rounded-full animate-pulse"></div>
             <span className="text-sm text-gray-700">
               <span className="font-medium">Searching for:</span>{" "}
-              <span className="px-2 py-1 bg-yellow-200 text-yellow-800 rounded-md font-medium">
+              <span className="px-2 py-1 bg-white text-[#134D41] border border-emerald-100 rounded-md font-bold">
                 "{searchTerm}"
               </span>
             </span>

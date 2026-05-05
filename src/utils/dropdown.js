@@ -10,7 +10,7 @@ const Dropdown = ({
   disabled = false,
   showCheckbox = false,
   showSearch = false,
-  disabledValues = [], // Array of values that should be disabled
+  disabledValues = [],
   labelClassName = "text-gray-700",
   placeholder = "",
 }) => {
@@ -18,7 +18,6 @@ const Dropdown = ({
   const [searchTerm, setSearchTerm] = useState("");
   const dropdownRef = useRef(null);
 
-  // Close dropdown if clicked outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -29,7 +28,6 @@ const Dropdown = ({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  // Reset search when closed
   useEffect(() => {
     if (!open) setSearchTerm("");
   }, [open]);
@@ -45,7 +43,7 @@ const Dropdown = ({
   return (
     <div className="relative w-full" ref={dropdownRef}>
       {label && (
-        <label className={`block mb-1 font-semibold ${labelClassName}`}>
+        <label className={`block mb-1.5 font-bold text-sm tracking-wide ${labelClassName}`}>
           {label}
         </label>
       )}
@@ -54,35 +52,38 @@ const Dropdown = ({
           if (disabled) return;
           setOpen((prev) => !prev);
         }}
-        className={`w-full border border-yellow-400 rounded-xl p-3 flex justify-between items-center bg-white focus-within:ring-2 focus-within:ring-yellow-400 transition ${
+        className={`w-full border rounded-xl p-3 flex justify-between items-center bg-white transition-all duration-300 ${
+          open 
+            ? "border-amber-500 ring-4 ring-amber-500/5 shadow-lg" 
+            : "border-gray-200 hover:border-amber-500/50 shadow-sm"
+        } ${
           disabled
-            ? "opacity-60 cursor-not-allowed bg-gray-100"
+            ? "opacity-50 cursor-not-allowed bg-gray-50 border-gray-100"
             : "cursor-pointer"
         }`}
       >
-        <span className={`truncate mr-2 ${value ? "text-gray-900" : "text-gray-400"}`}>
+        <span className={`truncate mr-2 font-medium text-sm ${value ? "text-gray-900" : "text-gray-400"}`}>
           {selected ? selected.label : (placeholder || `Select ${label || "Option"}`)}
         </span>
         <svg
-          className={`w-5 h-5 flex-shrink-0 transition-transform duration-200 ${
-            open ? "rotate-180" : "rotate-0"
+          className={`w-4 h-4 flex-shrink-0 text-gray-400 transition-transform duration-300 ${
+            open ? "rotate-180 text-amber-600" : "rotate-0"
           }`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
-          xmlns="http://www.w3.org/2000/svg"
         >
           <path
             strokeLinecap="round"
             strokeLinejoin="round"
-            strokeWidth={2}
+            strokeWidth={2.5}
             d="M19 9l-7 7-7-7"
           />
         </svg>
       </div>
 
       {open && !disabled && (
-        <div className="absolute z-[999] w-full mt-2 bg-white border border-emerald-100 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 flex flex-col max-h-[320px]">
+        <div className="absolute z-[999] w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300 flex flex-col max-h-[320px]">
           {showSearch && (
             <div className="p-3 border-b border-gray-50 sticky top-0 bg-white/80 backdrop-blur-md z-10">
               <div className="relative">
@@ -91,7 +92,7 @@ const Dropdown = ({
                   placeholder="Search..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 bg-gray-50/50 transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-100 rounded-xl focus:outline-none focus:ring-4 focus:ring-amber-500/5 focus:border-amber-500 bg-gray-50/50 transition-all"
                   autoFocus
                 />
                 <svg
@@ -125,10 +126,10 @@ const Dropdown = ({
                     }}
                     className={`px-4 py-3 transition-all flex items-center justify-between border-l-4 ${
                       isOptionDisabled
-                        ? "opacity-40 cursor-not-allowed bg-gray-50 border-transparent"
+                        ? "opacity-30 cursor-not-allowed bg-gray-50 border-transparent"
                         : isSelected
-                        ? "bg-emerald-50 border-emerald-500 text-emerald-900 font-bold"
-                        : "hover:bg-gray-50 border-transparent hover:border-emerald-200 cursor-pointer text-gray-700"
+                        ? "bg-amber-50 border-amber-500 text-amber-700 font-bold"
+                        : "hover:bg-gray-50 border-transparent hover:border-gray-200 cursor-pointer text-gray-600"
                     }`}
                   >
                     <span className="flex items-center gap-3">
@@ -145,7 +146,7 @@ const Dropdown = ({
                       </span>
                     </span>
                     {!showCheckbox && isSelected && (
-                      <div className="bg-emerald-500 text-white p-1 rounded-full shadow-sm animate-in zoom-in duration-300">
+                      <div className="bg-amber-500 text-white p-1 rounded-full shadow-sm animate-in zoom-in duration-300">
                         <svg
                           className="w-3 h-3"
                           fill="none"

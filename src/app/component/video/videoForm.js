@@ -466,10 +466,10 @@ const VideoForm = ({
               type="text"
               value={form.videoSecond || ""}
               onChange={(e) => setForm((f) => ({ ...f, videoSecond: e.target.value }))}
-              className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+              className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition bg-gray-50"
               placeholder="120"
             />
-            {errors.videoSecond && <p className="text-amber-600 text-sm mt-1">{errors.videoSecond}</p>}
+            {errors.videoSecond && <p className="text-red-500 text-sm mt-1">{errors.videoSecond}</p>}
           </div>
         </>
       )}
@@ -548,7 +548,7 @@ const VideoForm = ({
             value={form.category}
             onChange={(val) => setForm((f) => ({ ...f, category: val }))}
           />
-          {errors.category && <p className="text-amber-600 text-sm mt-1">{errors.category}</p>}
+          {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
         </div>
       )}
 
@@ -563,7 +563,7 @@ const VideoForm = ({
             value={form.plan}
             onChange={(val) => setForm((f) => ({ ...f, plan: val }))}
           />
-          {errors.plan && <p className="text-amber-600 text-sm mt-1">{errors.plan}</p>}
+          {errors.plan && <p className="text-red-500 text-sm mt-1">{errors.plan}</p>}
         </div>
       )}
 
@@ -574,10 +574,10 @@ const VideoForm = ({
             type="text"
             value={form.day}
             onChange={(e) => setForm((f) => ({ ...f, day: e.target.value }))}
-            className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+            className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition bg-gray-50"
             placeholder="1"
           />
-          {errors.day && <p className="text-amber-600 text-sm mt-1">{errors.day}</p>}
+          {errors.day && <p className="text-red-500 text-sm mt-1">{errors.day}</p>}
         </div>
       )}
 
@@ -587,10 +587,10 @@ const VideoForm = ({
           type="text"
           value={form.requiredCorrectAnswer}
           onChange={(e) => setForm((f) => ({ ...f, requiredCorrectAnswer: e.target.value }))}
-          className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+          className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition bg-gray-50"
           placeholder="e.g. 8"
         />
-        {errors.requiredCorrectAnswer && <p className="text-amber-600 text-sm mt-1">{errors.requiredCorrectAnswer}</p>}
+        {errors.requiredCorrectAnswer && <p className="text-red-500 text-sm mt-1">{errors.requiredCorrectAnswer}</p>}
       </div>
 
       <MultiLanguageInput
@@ -614,15 +614,15 @@ const VideoForm = ({
         rows={3}
       />
 
-      <div className="flex justify-end gap-3 mt-6">
+      <div className="flex justify-end gap-3 mt-8 pt-4 border-t border-gray-100">
         <button
           type="button"
           onClick={onCancel}
-          className="px-5 py-2 bg-gray-200 hover:bg-gray-300 rounded-xl transition font-semibold"
+          className="px-8 py-3 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl transition-all duration-300 font-black text-xs uppercase tracking-widest"
         >
           Cancel
         </button>
-        <TimeButton loading={loading} type="submit">
+        <TimeButton loading={loading} type="submit" className="px-8 py-3">
           {submitLabel}
         </TimeButton>
       </div>

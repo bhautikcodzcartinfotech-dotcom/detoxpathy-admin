@@ -121,11 +121,16 @@ const VideoPage = () => {
 
   return (
     <RoleGuard allow={["Admin", "subadmin"]}>
-      <div className="w-full h-full px-18">
-        <div className="flex items-center justify-between mb-4">
-          <Header size="3xl">Videos</Header>
+      <div className="w-full h-full px-8 lg:px-12 py-6">
+        <div className="flex items-center justify-between mb-8">
+          <div className="space-y-1">
+            <Header size="4xl">Videos</Header>
+            <p className="text-sm font-bold text-gray-400 uppercase tracking-[0.2em]">Manage your multilingual educational content</p>
+          </div>
           {(role === "Admin" || (role === "subadmin" && permissions?.includes("manage video"))) && (
-            <Button onClick={() => setIsOpen(true)}>Create</Button>
+            <Button onClick={() => setIsOpen(true)}>
+              Upload New Video
+            </Button>
           )}
         </div>
 

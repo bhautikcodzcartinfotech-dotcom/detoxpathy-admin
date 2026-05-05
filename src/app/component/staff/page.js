@@ -13,6 +13,7 @@ import {
 import StaffForm from "./component/StaffForm";
 import StaffTable from "./component/StaffTable";
 import StaffLeaveModal from "./component/StaffLeaveModal";
+import Dropdown from "@/utils/dropdown";
 import toast from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
@@ -130,30 +131,29 @@ const StaffPage = () => {
 
   return (
     <RoleGuard allow={["Admin", "subadmin"]}>
-      <div className="w-full h-full px-4 sm:px-6 lg:px-10 xl:px-18 max-w-[1600px] mx-auto">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4 mt-4">
+      <div className="w-full h-full px-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 mt-6">
           <Header size="3xl">Staff Management</Header>
-          <div className="flex items-center gap-2">
-            {/* Only show branch selector if there's more than one branch available */}
+          <div className="flex items-center gap-3">
+            {/* Branch selector using the modern Dropdown component */}
             {branches.length > 1 && (
-              <select 
-                value={selectedBranchId}
-                onChange={(e) => setSelectedBranchId(e.target.value)}
-                className="px-4 py-2 rounded-lg border border-gray-200 text-sm font-bold text-gray-700 outline-none cursor-pointer h-10"
-              >
-                {branches.map(b => (
-                  <option key={b._id} value={b._id}>{b.name}</option>
-                ))}
-              </select>
+              <div className="w-48">
+                <Dropdown
+                  options={branches.map(b => ({ label: b.name, value: b._id }))}
+                  value={selectedBranchId}
+                  onChange={setSelectedBranchId}
+                  placeholder="Select Branch"
+                />
+              </div>
             )}
             {/* If only one branch, just show the name as a label */}
             {branches.length === 1 && (
-              <div className="px-4 py-2 bg-gray-50 border border-gray-100 rounded-lg text-sm font-bold text-gray-600 h-10 flex items-center">
+              <div className="px-5 py-2.5 bg-amber-50 border border-amber-200 rounded-xl text-sm font-bold text-amber-700 shadow-sm flex items-center">
                 Branch: {branches[0].name}
               </div>
             )}
             {(role === "Admin" || (role === "subadmin" && permissions?.includes("add staff"))) && (
-              <Button onClick={() => { setEditing(null); setIsOpen(true); }}>Create</Button>
+              <Button onClick={() => { setEditing(null); setIsOpen(true); }}>Create Staff</Button>
             )}
           </div>
         </div>

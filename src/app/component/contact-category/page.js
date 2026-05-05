@@ -82,7 +82,7 @@ const ContactCategoryPage = () => {
 
   return (
     <RoleGuard allow={["Admin", "subadmin"]}>
-      <div className="w-full h-full px-18">
+      <div className="w-full h-full px-6 py-4">
         <div className="flex items-center justify-between mb-4">
           <Header size="3xl"> Contact Categories</Header>
           <Button onClick={() => setIsOpen(true)}>Create</Button>

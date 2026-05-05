@@ -95,12 +95,14 @@ const PlanTable = ({ plans, onEdit, onDelete }) => {
                 <td className="px-6 py-4 text-gray-700">
                   <p className="text-sm">{p.description}</p>
                 </td>
-                <td className="px-6 py-4 text-center space-x-2">
-                  <ActionButton type="edit" onClick={() => onEdit(p)} />
-                  <ActionButton
-                    type="delete"
-                    onClick={() => handleDeleteClick(p._id, p.name || "Plan")}
-                  />
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center justify-center gap-2">
+                    <ActionButton type="edit" onClick={() => onEdit(p)} />
+                    <ActionButton
+                      type="delete"
+                      onClick={() => handleDeleteClick(p._id, p.name || "Plan")}
+                    />
+                  </div>
                 </td>
               </tr>
             ))}

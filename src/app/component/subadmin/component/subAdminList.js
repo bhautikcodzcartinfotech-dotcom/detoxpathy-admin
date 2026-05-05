@@ -160,40 +160,32 @@ const SubAdminList = ({ subAdmins, onEdit, onDelete, onUpdate, loading = false }
                         {Array.isArray(sa.branch) && sa.branch.length ? sa.branch.map((b) => b.name).join(", ") : "-"}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-gray-700 font-medium">
-                        <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold">DOCTOR</span>
+                        <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-black uppercase tracking-wider">DOCTOR</span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-gray-700 text-sm">{sa.commission ?? 0}%</td>
-                      <td className="px-6 py-4 text-center space-x-2 whitespace-nowrap">
-                        <ActionButton type="edit" onClick={() => onEdit(sa)} />
-                        <ActionButton type="delete" onClick={() => handleDeleteClick(sa._id, sa.username || "Sub Admin")} />
-                        <button
-                          onClick={() => handleLoginAsSubAdmin(sa)}
-                          disabled={loginLoading === sa._id}
-                          className="bg-gradient-to-tr from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white rounded-full w-10 h-10 inline-flex items-center justify-center shadow-lg hover:shadow-xl transition-transform duration-300 transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                          title="Login as this subadmin"
-                        >
-                          {loginLoading === sa._id ? (
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                          ) : (
-                            <FiLogIn size={20} />
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-700 text-sm font-medium">{sa.commission ?? 0}%</td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">
+                          <ActionButton type="edit" onClick={() => onEdit(sa)} />
+                          <ActionButton type="delete" onClick={() => handleDeleteClick(sa._id, sa.username || "Sub Admin")} />
+                          <ActionButton
+                            type="login"
+                            onClick={() => handleLoginAsSubAdmin(sa)}
+                            disabled={loginLoading === sa._id}
+                            title="Login as this doctor"
+                          />
+                          <ActionButton
+                            type="calendar"
+                            onClick={() => openLeaveModal(sa)}
+                            title="Manage Leaves"
+                          />
+                          {matchedSubDoctors.length > 0 && (
+                            <ActionButton
+                              type={isExpanded ? "chevronUp" : "chevronDown"}
+                              onClick={() => toggleRow(sa._id)}
+                              title={isExpanded ? "Collapse sub doctors" : "View sub doctors"}
+                            />
                           )}
-                        </button>
-                        <button
-                          onClick={() => openLeaveModal(sa)}
-                          className="bg-gradient-to-tr from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-white rounded-full w-10 h-10 inline-flex items-center justify-center shadow-lg hover:shadow-xl transition-transform duration-300 transform hover:-translate-y-1"
-                          title="Manage Leaves"
-                        >
-                          <FiCalendar size={20} />
-                        </button>
-                        {matchedSubDoctors.length > 0 && (
-                          <button
-                            onClick={() => toggleRow(sa._id)}
-                            className="bg-gray-100 hover:bg-yellow-200 text-yellow-700 rounded-full w-10 h-10 inline-flex items-center justify-center shadow-md transition-all duration-300"
-                            title={isExpanded ? "Collapse sub doctors" : "View sub doctors"}
-                          >
-                            {isExpanded ? <FiChevronUp size={20} /> : <FiChevronDown size={20} />}
-                          </button>
-                        )}
+                        </div>
                       </td>
                     </tr>
 
@@ -212,32 +204,26 @@ const SubAdminList = ({ subAdmins, onEdit, onDelete, onUpdate, loading = false }
                           <td className="px-6 py-4 whitespace-nowrap text-gray-700 text-sm">
                             {Array.isArray(sd.branch) && sd.branch.length ? sd.branch.map((b) => b.name).join(", ") : "-"}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-gray-700 font-medium">
-                            <span className="px-2 py-1 rounded-full bg-blue-100 text-blue-700 text-[10px] font-bold">SUB DOCTOR</span>
+                           <td className="px-6 py-4 whitespace-nowrap text-gray-700 font-medium">
+                            <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 text-[10px] font-black uppercase tracking-wider border border-amber-100">SUB DOCTOR</span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-gray-700 text-sm">{sd.commission ?? 0}%</td>
-                          <td className="px-6 py-4 text-center space-x-2 whitespace-nowrap">
-                            <ActionButton type="edit" onClick={() => onEdit(sd)} />
-                            <ActionButton type="delete" onClick={() => handleDeleteClick(sd._id, sd.username || "Sub Doctor")} />
-                            <button
-                              onClick={() => handleLoginAsSubAdmin(sd)}
-                              disabled={loginLoading === sd._id}
-                              className="bg-gradient-to-tr from-green-400 to-green-600 hover:from-green-500 hover:to-green-700 text-white rounded-full w-10 h-10 inline-flex items-center justify-center shadow-lg hover:shadow-xl transition-transform duration-300 transform hover:-translate-y-1 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-                              title="Login as this sub doctor"
-                            >
-                              {loginLoading === sd._id ? (
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                              ) : (
-                                <FiLogIn size={20} />
-                              )}
-                            </button>
-                            <button
-                              onClick={() => openLeaveModal(sd)}
-                              className="bg-gradient-to-tr from-amber-400 to-amber-600 hover:from-amber-500 hover:to-amber-700 text-white rounded-full w-10 h-10 inline-flex items-center justify-center shadow-lg hover:shadow-xl transition-transform duration-300 transform hover:-translate-y-1"
-                              title="Manage Leaves"
-                            >
-                              <FiCalendar size={20} />
-                            </button>
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-700 text-sm font-medium">{sd.commission ?? 0}%</td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">
+                              <ActionButton type="edit" onClick={() => onEdit(sd)} />
+                              <ActionButton type="delete" onClick={() => handleDeleteClick(sd._id, sd.username || "Sub Doctor")} />
+                              <ActionButton
+                                type="login"
+                                onClick={() => handleLoginAsSubAdmin(sd)}
+                                disabled={loginLoading === sd._id}
+                                title="Login as this sub doctor"
+                              />
+                              <ActionButton
+                                type="calendar"
+                                onClick={() => openLeaveModal(sd)}
+                                title="Manage Leaves"
+                              />
+                            </div>
                           </td>
                         </tr>
                       ))

@@ -1,18 +1,18 @@
 "use client";
 import React from "react";
 import { FiEdit2, FiTrash2 } from "react-icons/fi";
+import { ActionButton } from "@/utils/actionbutton";
 
 const PartyTable = ({ parties, onEdit, onDelete, role, permissions }) => {
   return (
-    <div className="overflow-x-auto bg-white rounded-2xl shadow-sm border border-gray-100">
-      <table className="w-full text-left border-collapse">
-        <thead>
-          <tr className="bg-yellow-50 text-yellow-800 uppercase text-xs font-bold">
-
-            <th className="p-4 border-b border-yellow-100">Name</th>
-            <th className="p-4 border-b border-yellow-100">Mobile</th>
-            <th className="p-4 border-b border-yellow-100">GSTIN</th>
-            <th className="p-4 border-b border-yellow-100 text-center">Actions</th>
+    <div className="overflow-x-auto bg-white rounded-2xl shadow-md border border-gray-200">
+      <table className="w-full text-left divide-y divide-gray-200">
+        <thead className="bg-gradient-to-r from-yellow-400 to-amber-300">
+          <tr className="text-[11px] uppercase tracking-widest text-gray-700">
+            <th className="px-6 py-3 font-black">Name</th>
+            <th className="px-6 py-3 font-black">Mobile</th>
+            <th className="px-6 py-3 font-black">GSTIN</th>
+            <th className="px-6 py-3 text-center font-black">Actions</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">
@@ -32,22 +32,10 @@ const PartyTable = ({ parties, onEdit, onDelete, role, permissions }) => {
                 <td className="p-4">
                   <div className="flex justify-center gap-2">
                     {(role === "Admin" || (role === "subadmin" && permissions?.includes("edit supplier"))) && (
-                      <button
-                        onClick={() => onEdit(party)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition"
-                        title="Edit"
-                      >
-                        <FiEdit2 size={16} />
-                      </button>
+                      <ActionButton type="edit" onClick={() => onEdit(party)} />
                     )}
                     {(role === "Admin" || (role === "subadmin" && permissions?.includes("delete supplier"))) && (
-                      <button
-                        onClick={() => onDelete(party._id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition"
-                        title="Delete"
-                      >
-                        <FiTrash2 size={16} />
-                      </button>
+                      <ActionButton type="delete" onClick={() => onDelete(party._id)} />
                     )}
                   </div>
                 </td>

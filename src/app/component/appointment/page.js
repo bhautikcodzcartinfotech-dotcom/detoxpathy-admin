@@ -60,6 +60,7 @@ import {
   Target,
   BarChart4,
 } from "lucide-react";
+import Dropdown from "@/utils/dropdown";
 import ConsultationForm from "./ConsultationForm";
 
 const AGORA_SCRIPT_SRC = "https://download.agora.io/sdk/release/AgoraRTC_N.js";
@@ -1280,7 +1281,7 @@ const AppointmentPage = () => {
             <input
               type="text"
               placeholder="Search by patient name or ID..."
-              className="w-full h-12 pl-11 pr-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-teal-500 bg-white shadow-sm transition-all text-sm font-medium"
+              className="w-full h-12 pl-11 pr-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-white shadow-sm transition-all text-sm font-medium"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -1288,35 +1289,29 @@ const AppointmentPage = () => {
 
           <div className="flex flex-wrap gap-2 sm:gap-4 w-full sm:w-auto">
             {role === "Admin" && (
-              <div className="h-12 flex items-center gap-2 bg-white px-4 rounded-xl border border-gray-200 shadow-sm flex-1 min-w-[140px] sm:flex-none">
-                <LayoutGrid className="w-4 h-4 text-gray-400" />
-                <select
-                  className="text-sm font-bold text-gray-700 bg-transparent focus:outline-none cursor-pointer w-full"
+              <div className="flex-1 min-w-[160px] sm:flex-none">
+                <Dropdown
+                  options={allBranches.map((b) => ({ label: b.name, value: b._id }))}
                   value={selectedBranchId}
-                  onChange={(e) => setSelectedBranchId(e.target.value)}
-                >
-                  {allBranches.map((b) => (
-                    <option key={b._id} value={b._id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
+                  onChange={setSelectedBranchId}
+                  placeholder="Select Branch"
+                />
               </div>
             )}
 
-            <div className="h-12 flex items-center gap-2 bg-white px-4 rounded-xl border border-gray-200 shadow-sm flex-1 min-w-[120px] sm:flex-none">
-              <Filter className="w-4 h-4 text-gray-400" />
-              <select
-                className="text-sm font-bold text-gray-700 bg-transparent focus:outline-none cursor-pointer w-full"
+            <div className="flex-1 min-w-[140px] sm:flex-none">
+              <Dropdown
+                options={[
+                  { label: "All Status", value: "" },
+                  { label: "Upcoming", value: "1" },
+                  { label: "Completed", value: "2" },
+                  { label: "Missed", value: "4" },
+                  { label: "Cancelled", value: "3" },
+                ]}
                 value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-              >
-                <option value="">All Status</option>
-                <option value="1">Upcoming</option>
-                <option value="2">Completed</option>
-                <option value="4">Missed</option>
-                <option value="3">Cancelled</option>
-              </select>
+                onChange={setFilterStatus}
+                placeholder="All Status"
+              />
             </div>
           </div>
 

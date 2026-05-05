@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import Loader from "@/utils/loader";
 import { API_BASE, updateOrderStatus, getAuthHeaders } from "@/Api/AllApi";
 import axios from "axios";
+import { ActionButton } from "@/utils/actionbutton";
 import toast from "react-hot-toast";
 
 const STATUS_LABELS = {
@@ -52,11 +53,11 @@ const OrderTable = ({ items, loading, onRefresh, selectedIds = [], onToggleSelec
   };
 
   return (
-    <div className="overflow-x-auto bg-white rounded-xl border border-gray-100 shadow-sm">
-      <table className="min-w-full">
+    <div className="overflow-x-auto shadow-md rounded-2xl border border-gray-200 bg-white">
+      <table className="min-w-full divide-y divide-gray-200">
         <thead>
-          <tr className="border-b border-gray-100">
-            <th className="px-4 py-4 text-left">
+          <tr className="bg-gradient-to-r from-yellow-400 to-amber-300">
+            <th className="px-4 py-3 text-left">
               <input 
                 type="checkbox" 
                 checked={allSelected}
@@ -64,17 +65,17 @@ const OrderTable = ({ items, loading, onRefresh, selectedIds = [], onToggleSelec
                 className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
               />
             </th>
-            <th className="px-4 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">ORD ID</th>
-            <th className="px-4 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">USER</th>
-            <th className="px-4 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">BRANCH</th>
-            <th className="px-4 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">PRODUCT</th>
-            <th className="px-4 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">AMOUNT</th>
-            <th className="px-4 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">TYPE</th>
-            <th className="px-4 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">PAYMENT</th>
-            <th className="px-4 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">COURIER</th>
-            <th className="px-4 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">TRACKING</th>
-            <th className="px-4 py-4 text-left text-[11px] font-bold text-gray-400 uppercase tracking-wider">STATUS</th>
-            <th className="px-4 py-4 text-center text-[11px] font-bold text-gray-400 uppercase tracking-wider"></th>
+            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">ORD ID</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">USER</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">BRANCH</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">PRODUCT</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">AMOUNT</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">TYPE</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">PAYMENT</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">COURIER</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">TRACKING</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">STATUS</th>
+            <th className="px-4 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider"></th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">
@@ -146,12 +147,11 @@ const OrderTable = ({ items, loading, onRefresh, selectedIds = [], onToggleSelec
               </td>
 
               <td className="px-4 py-5 whitespace-nowrap text-right flex items-center justify-end gap-2">
-                <button
-                  className="px-4 py-1.5 border border-gray-200 rounded-lg text-[12px] font-bold text-gray-600 hover:bg-gray-50 transition shadow-sm"
+                <ActionButton
+                  type="view"
                   onClick={() => window.location.href = `/order/${order._id}`}
-                >
-                  View
-                </button>
+                  title="View Order Details"
+                />
               </td>
             </tr>
           ))}

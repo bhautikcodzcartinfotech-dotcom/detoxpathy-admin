@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { FiPlus, FiDownload, FiSave } from "react-icons/fi";
 import { getAllBranches, getAllProducts, createPurchase } from "@/Api/AllApi"; // I need to add createStockTransfer to AllApi
 import { toast } from "react-hot-toast";
+import Dropdown from "@/utils/dropdown";
 import axios from "axios"; // For direct calls if API not yet in AllApi
 import { API_BASE, getAuthHeaders } from "@/Api/AllApi";
 
@@ -85,44 +86,38 @@ const StockTransferPage = () => {
   };
 
   return (
-    <div className="p-6 space-y-8">
+    <div className="px-6 py-6 space-y-8">
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <h2 className="text-xl font-bold mb-6 text-gray-800">New Stock Transfer</h2>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block mb-1 font-semibold text-sm text-gray-600">From Branch (Source)</label>
-              <select
+              <label className="block mb-1.5 font-bold text-sm text-gray-700 ml-1">From Branch (Source)</label>
+              <Dropdown
+                options={branches.map(b => ({ label: b.name, value: b._id }))}
                 value={form.fromBranchId}
-                onChange={e => setForm({...form, fromBranchId: e.target.value})}
-                className="w-full border border-gray-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-yellow-400"
-                required
-              >
-                <option value="">Select Branch</option>
-                {branches.map(b => <option key={b._id} value={b._id}>{b.name}</option>)}
-              </select>
+                onChange={val => setForm({...form, fromBranchId: val})}
+                placeholder="Select Source Branch"
+              />
             </div>
             <div>
-              <label className="block mb-1 font-semibold text-sm text-gray-600">To Branch (Destination)</label>
-              <select
+              <label className="block mb-1.5 font-bold text-sm text-gray-700 ml-1">To Branch (Destination)</label>
+              <Dropdown
+                options={branches.map(b => ({ label: b.name, value: b._id }))}
                 value={form.toBranchId}
-                onChange={e => setForm({...form, toBranchId: e.target.value})}
-                className="w-full border border-gray-200 rounded-xl p-2.5 outline-none focus:ring-2 focus:ring-yellow-400"
-                required
-              >
-                <option value="">Select Branch</option>
-                {branches.map(b => <option key={b._id} value={b._id}>{b.name}</option>)}
-              </select>
+                onChange={val => setForm({...form, toBranchId: val})}
+                placeholder="Select Destination Branch"
+              />
             </div>
           </div>
 
           <div className="border rounded-xl overflow-hidden">
              <table className="w-full">
-                <thead className="bg-gray-50 text-left text-xs font-bold text-gray-500 uppercase">
-                  <tr>
-                    <th className="p-3">Product</th>
-                    <th className="p-3 w-32">Quantity</th>
-                    <th className="p-3 w-16"></th>
+                <thead className="bg-gradient-to-r from-yellow-400 to-amber-300">
+                  <tr className="text-[11px] uppercase tracking-widest text-gray-700">
+                    <th className="px-4 py-3 font-black">Product</th>
+                    <th className="px-4 py-3 font-black w-32">Quantity</th>
+                    <th className="px-4 py-3 font-black w-16"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y">
@@ -162,13 +157,13 @@ const StockTransferPage = () => {
               </button>
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex justify-end pt-4">
             <button
               type="submit"
               disabled={loading}
-              className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 px-8 py-3 rounded-xl font-bold flex items-center gap-2 transition"
+              className="bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-white px-10 py-3 rounded-xl font-black text-sm flex items-center gap-2 transition-all shadow-lg shadow-yellow-200/50 active:scale-95 disabled:opacity-50"
             >
-              <FiSave /> {loading ? "Processing..." : "Transfer Stock"}
+              <FiSave size={20} /> {loading ? "Processing..." : "Transfer Stock"}
             </button>
           </div>
         </form>
@@ -178,14 +173,14 @@ const StockTransferPage = () => {
         <h2 className="text-xl font-bold mb-6 text-gray-800">Recent Transfers</h2>
         <div className="overflow-x-auto">
           <table className="w-full text-left">
-            <thead className="bg-gray-50 text-xs font-bold text-gray-500 uppercase">
-              <tr>
-                <th className="p-4">Date</th>
-                <th className="p-4">From</th>
-                <th className="p-4">To</th>
-                <th className="p-4">Type</th>
-                <th className="p-4">Total</th>
-                <th className="p-4 text-center">Action</th>
+            <thead className="bg-gradient-to-r from-yellow-400 to-amber-300">
+              <tr className="text-[11px] uppercase tracking-widest text-gray-700">
+                <th className="px-4 py-3 font-black">Date</th>
+                <th className="px-4 py-3 font-black">From</th>
+                <th className="px-4 py-3 font-black">To</th>
+                <th className="px-4 py-3 font-black">Type</th>
+                <th className="px-4 py-3 font-black">Total</th>
+                <th className="px-4 py-3 font-black text-center">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y">

@@ -56,24 +56,24 @@ const StockHistoryTable = ({ history, loading, currentPage, totalPages, onPageCh
 
       <div className="overflow-x-auto">
         <table className="w-full text-left">
-          <thead>
-            <tr className="text-[10px] uppercase tracking-wider text-gray-400 border-b border-gray-50">
-              <th className="pb-3 text-center">
+          <thead className="bg-gradient-to-r from-yellow-400 to-amber-300">
+            <tr className="text-[10px] uppercase tracking-widest text-gray-700">
+              <th className="px-4 py-3 text-center">
                 <input 
                   type="checkbox" 
                   checked={selectedIds.length === history.length && history.length > 0} 
                   onChange={toggleSelectAll}
-                  className="rounded border-gray-300 text-[#134D41] focus:ring-[#134D41]"
+                  className="rounded border-gray-300 text-amber-600 focus:ring-amber-500"
                 />
               </th>
-              <th className="pb-3 font-medium text-center">No.</th>
-              <th className="pb-3 font-medium">Date & Time</th>
-              <th className="pb-3 font-medium">Item</th>
-              <th className="pb-3 font-medium">Location</th>
-              <th className="pb-3 font-medium text-center">Type</th>
-              <th className="pb-3 font-medium text-center">Change</th>
-              <th className="pb-3 font-medium text-center">New Available</th>
-              <th className="pb-3 font-medium">Document</th>
+              <th className="px-4 py-3 font-black text-center">No.</th>
+              <th className="px-4 py-3 font-black">Date & Time</th>
+              <th className="px-4 py-3 font-black">Item</th>
+              <th className="px-4 py-3 font-black">Location</th>
+              <th className="px-4 py-3 font-black text-center">Type</th>
+              <th className="px-4 py-3 font-black text-center">Change</th>
+              <th className="px-4 py-3 font-black text-center">New Available</th>
+              <th className="px-4 py-3 font-black">Document</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
@@ -92,7 +92,7 @@ const StockHistoryTable = ({ history, loading, currentPage, totalPages, onPageCh
                       type="checkbox" 
                       checked={isSelected}
                       onChange={() => toggleSelect(item._id)}
-                      className="rounded border-gray-300 text-[#134D41] focus:ring-[#134D41]"
+                      className="rounded border-gray-300 text-amber-600 focus:ring-amber-500"
                     />
                   </td>
                   <td className="py-4 text-center text-sm text-gray-400">{(currentPage - 1) * 20 + index + 1}</td>
@@ -158,14 +158,14 @@ const StockHistoryTable = ({ history, loading, currentPage, totalPages, onPageCh
           <button
             onClick={() => onPageChange(currentPage - 1)}
             disabled={currentPage <= 1}
-            className="px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-[#134D41] border border-gray-200 rounded-lg disabled:opacity-30 hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 text-xs font-black uppercase tracking-widest text-amber-700 bg-amber-50 border border-amber-100 rounded-xl disabled:opacity-30 hover:bg-amber-100 transition-all shadow-sm active:scale-95"
           >
             Previous
           </button>
           <button
             onClick={() => onPageChange(currentPage + 1)}
             disabled={currentPage >= totalPages}
-            className="px-3 py-1.5 text-xs font-bold uppercase tracking-widest text-[#134D41] border border-gray-200 rounded-lg disabled:opacity-30 hover:bg-gray-50 transition-colors"
+            className="px-4 py-2 text-xs font-black uppercase tracking-widest text-amber-700 bg-amber-50 border border-amber-100 rounded-xl disabled:opacity-30 hover:bg-amber-100 transition-all shadow-sm active:scale-95"
           >
             Next
           </button>

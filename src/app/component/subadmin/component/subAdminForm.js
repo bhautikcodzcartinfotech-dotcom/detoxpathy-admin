@@ -1,6 +1,7 @@
 "use client";
 import React, { useMemo, useState, useEffect } from "react";
 import TimeButton from "@/utils/timebutton";
+import { Button } from "@/utils/header";
 import {
   validateEmail,
   validatePassword,
@@ -305,13 +306,12 @@ const SubAdminForm = ({
 
       {/* Buttons */}
       <div className="flex justify-end gap-3 mt-6">
-        <button
-          type="button"
+        <Button
+          variant="secondary"
           onClick={onCancel}
-          className="px-5 py-2 bg-gray-200 hover:bg-gray-300 rounded-xl transition font-semibold"
         >
           Cancel
-        </button>
+        </Button>
         <TimeButton loading={loading}>{submitLabel}</TimeButton>
       </div>
     </form>

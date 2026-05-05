@@ -24,12 +24,12 @@ const ThemedCheckbox = ({ checked, onChange, ariaLabel, disabled = false }) => {
         className="peer sr-only"
       />
       <span
-        className={`w-5 h-5 rounded-md border border-yellow-400 bg-white peer-checked:bg-gradient-to-r peer-checked:from-yellow-400 peer-checked:to-amber-300 peer-checked:border-amber-400 shadow-sm flex items-center justify-center transition-all ${
+        className={`w-5 h-5 rounded-md border border-teal-400 bg-white peer-checked:bg-gradient-to-r peer-checked:from-[#2A9D8F] peer-checked:to-[#64C1B1] peer-checked:border-teal-500 shadow-sm flex items-center justify-center transition-all ${
           disabled ? "bg-gray-100 border-gray-300" : ""
         }`}
       >
         <svg
-          className={`w-3 h-3 text-black opacity-${
+          className={`w-3 h-3 text-white opacity-${
             checked ? 100 : 0
           } transition-opacity`}
           viewBox="0 0 20 20"
@@ -157,18 +157,19 @@ const UserList = ({ users, loading, onEdit, onDelete, onBulkDelete, onSuggest })
 
   return (
     <>
-      <div className="overflow-x-auto shadow-md rounded-2xl border border-gray-200 bg-white h-full">
+      <div className="overflow-x-auto shadow-xl shadow-teal-900/5 rounded-2xl border border-gray-100 bg-white h-full">
         {selectedIds.size > 0 && (
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-amber-50">
-            <p className="text-sm text-amber-800 font-semibold">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-teal-100 bg-teal-50/30">
+            <p className="text-sm text-teal-800 font-semibold">
               {selectedIds.size} selected
             </p>
-            <button
+            <Button
               onClick={() => setBulkDialogOpen(true)}
-              className="px-4 py-2 rounded-xl bg-gradient-to-r from-yellow-400 to-amber-300 text-black text-sm font-semibold shadow hover:from-yellow-500 hover:to-amber-400 transition"
+              variant="primary"
+              className="px-4 py-2 text-sm"
             >
               Delete Selected
-            </button>
+            </Button>
           </div>
         )}
         <table className="min-w-full divide-y divide-gray-200">
@@ -294,15 +295,11 @@ const UserList = ({ users, loading, onEdit, onDelete, onBulkDelete, onSuggest })
                         onClick={() => handleDeleteClick(u._id, u.name)}
                         disabled={isDeleted}
                       />
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          router.push(`/component/users/${u._id}/profile`);
-                        }}
-                        className="inline-flex items-center justify-center px-4 py-1.5 border border-transparent text-xs font-semibold rounded shadow-sm text-white bg-[#134D41] hover:opacity-90 transition-opacity"
-                      >
-                        View
-                      </button>
+                      <ActionButton
+                        type="view"
+                        onClick={() => router.push(`/component/users/${u._id}/profile`)}
+                        title="View Profile"
+                      />
                     </div>
                   </td>
                 </tr>
@@ -394,12 +391,12 @@ const UserList = ({ users, loading, onEdit, onDelete, onBulkDelete, onSuggest })
             </div>
 
             <div className="px-5 py-3 bg-gray-50 border-t border-gray-200 flex justify-end">
-              <button
-                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-xl font-semibold"
+              <Button
+                variant="secondary"
                 onClick={() => setHistoryOpen(false)}
               >
                 Close
-              </button>
+              </Button>
             </div>
           </div>
         </div>
