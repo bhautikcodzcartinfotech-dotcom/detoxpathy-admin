@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from "react";
 import RoleGuard from "@/components/RoleGuard";
 import { Header, Button } from "@/utils/header";
+import { useAuth } from "@/contexts/AuthContext";
 import Drawer from "@/utils/formanimation";
 import toast from "react-hot-toast";
 import {
@@ -15,6 +16,7 @@ import CategoryForm from "./categoryForm";
 import CategoryTable from "./categoryTable";
 
 const CategoryPage = () => {
+  const { role, permissions } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [listLoading, setListLoading] = useState(true);
@@ -108,11 +110,13 @@ const CategoryPage = () => {
   };
 
   return (
-    <RoleGuard allow={["Admin"]}>
+    <RoleGuard allow={["Admin", "subadmin"]}>
       <div className="w-full h-full px-18">
         <div className="flex items-center justify-between mb-4">
           <Header size="3xl"> Categories</Header>
-          <Button onClick={() => setIsOpen(true)}>Create</Button>
+          {(role === "Admin" || (role === "subadmin" && permissions?.includes("manage category"))) && (
+            <Button onClick={() => setIsOpen(true)}>Create</Button>
+          )}
         </div>
 
         {error && (

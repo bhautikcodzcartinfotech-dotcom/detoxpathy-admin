@@ -14,8 +14,10 @@ import {
 import VideoForm from "./videoForm";
 import VideoTable from "./videoTable";
 import SearchComponent from "@/components/SearchComponent";
+import { useAuth } from "@/contexts/AuthContext";
 
 const VideoPage = () => {
+  const { role, permissions } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [listLoading, setListLoading] = useState(true);
@@ -118,11 +120,13 @@ const VideoPage = () => {
   };
 
   return (
-    <RoleGuard allow={["Admin"]}>
+    <RoleGuard allow={["Admin", "subadmin"]}>
       <div className="w-full h-full px-18">
         <div className="flex items-center justify-between mb-4">
           <Header size="3xl">Videos</Header>
-          <Button onClick={() => setIsOpen(true)}>Create</Button>
+          {(role === "Admin" || (role === "subadmin" && permissions?.includes("manage video"))) && (
+            <Button onClick={() => setIsOpen(true)}>Create</Button>
+          )}
         </div>
 
         {error && (

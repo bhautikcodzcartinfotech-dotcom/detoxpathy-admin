@@ -33,7 +33,7 @@ import Image from "next/image";
 
 const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const pathname = usePathname();
-  const { role, isImpersonating, exitImpersonation } = useAuth();
+  const { role, isImpersonating, exitImpersonation, permissions } = useAuth();
 
   const linkClasses = (path) =>
     `flex items-center ${isCollapsed ? "justify-center" : "gap-3 px-3"
@@ -87,11 +87,11 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
         className={`flex-1 flex flex-col gap-6 ${isCollapsed ? "px-2" : "px-4"
           } min-h-0 py-5 overflow-y-auto transition-all duration-300`}
       >
-        {/* Section: Main */}
+        {/* Section: MAIN */}
         <div>
           {!isCollapsed && (
             <h2 className="text-xs font-semibold text-gray-400 uppercase mb-2">
-              Main
+              MAIN
             </h2>
           )}
           <Link href="/dashboard" className={linkClasses("/dashboard")}>
@@ -107,39 +107,11 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                 <MdDeviceHub size={20} />
                 {!isCollapsed && <span>Branches</span>}
               </Link>
-              <Link
-                href="/component/branch-time"
-                className={linkClasses("/component/branch-time")}
-              >
-                <MdAccessTime size={20} />
-                {!isCollapsed && <span>Branch Time</span>}
-              </Link>
-              <Link
-                href="/component/appointment"
-                className={linkClasses("/component/appointment")}
-              >
-                <MdCalendarMonth size={20} />
-                {!isCollapsed && <span>Appointments</span>}
-              </Link>
               {!isCollapsed && (
                 <h2 className="text-xs font-semibold text-gray-400 uppercase mb-2 mt-5">
-                  utils
+                  UTILS
                 </h2>
               )}
-              <Link
-                href="/component/video"
-                className={linkClasses("/component/video")}
-              >
-                <MdVideoLibrary size={20} />
-                {!isCollapsed && <span>Videos</span>}
-              </Link>
-              <Link
-                href="/component/category"
-                className={linkClasses("/component/category")}
-              >
-                <MdCategory size={20} />
-                {!isCollapsed && <span>Categories</span>}
-              </Link>
               <Link
                 href="/component/plan"
                 className={linkClasses("/component/plan")}
@@ -161,141 +133,140 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                 <MdShoppingCart size={20} />
                 {!isCollapsed && <span>Products</span>}
               </Link>
-              {/* <Link
-                href="/component/program"
-                className={linkClasses("/component/program")}
+            </>
+          )}
+          {role === "Admin" && (
+            <>
+              <Link
+                href="/component/video"
+                className={linkClasses("/component/video")}
               >
-                <MdAssignment size={20} />
-                {!isCollapsed && <span>Programs</span>}
-              </Link> */}
+                <MdVideoLibrary size={20} />
+                {!isCollapsed && <span>Videos</span>}
+              </Link>
+              <Link
+                href="/component/category"
+                className={linkClasses("/component/category")}
+              >
+                <MdCategory size={20} />
+                {!isCollapsed && <span>Categories</span>}
+              </Link>
             </>
           )}
         </div>
-
-        {/* Section: Management */}
-        {(role === "Admin" || role === "subadmin") && (
-          <>
-            <div>
-              {!isCollapsed && (
-                <h2 className="text-xs font-semibold text-gray-400 uppercase mb-2">
-                  Management
-                </h2>
-              )}
-              <Link
-                href="/component/users"
-                className={linkClasses("/component/users")}
-              >
-                <MdPeople size={20} />
-                {!isCollapsed && <span>Users</span>}
-              </Link>
-              <Link
-                href="/component/order"
-                className={linkClasses("/component/order")}
-              >
-                <MdShoppingCart size={20} />
-                {!isCollapsed && <span>Orders</span>}
-              </Link>
-              {role === "Admin" && (
-                <Link
-                  href="/component/stock"
-                  className={linkClasses("/component/stock")}
-                >
-                  <MdAssignment size={20} />
-                  {!isCollapsed && <span>Stock Management</span>}
-                </Link>
-              )}
-              {role === "subadmin" && (
-                <>
-                  <Link
-                    href="/component/branch-time"
-                    className={linkClasses("/component/branch-time")}
-                  >
-                    <MdAccessTime size={20} />
-                    {!isCollapsed && <span>Branch Time</span>}
-                  </Link>
-                  <Link
-                    href="/component/appointment"
-                    className={linkClasses("/component/appointment")}
-                  >
-                    <MdCalendarMonth size={20} />
-                    {!isCollapsed && <span>Appointments</span>}
-                  </Link>
-                </>
-              )}
-
-              {role === "Admin" && (
-                <Link
-                  href="/component/subadmin"
-                  className={linkClasses("/component/subadmin")}
-                >
-                  <MdPerson size={20} />
-                  {!isCollapsed && <span>Doctors</span>}
-                </Link>
-              )}
-              {(role === "Admin" || role === "subadmin") && (
-                <Link
-                  href="/component/staff"
-                  className={linkClasses("/component/staff")}
-                >
-                  <MdGroups size={20} />
-                  {!isCollapsed && <span>Staff</span>}
-                </Link>
-              )}
-            </div>
-
-            {/* Section: GST & Inventory */}
-            {role === "Admin" && (
-              <div>
-                {!isCollapsed && (
-                  <h2 className="text-xs font-semibold text-gray-400 uppercase mb-2">
-                    GST & Inventory
-                  </h2>
-                )}
-                <Link
-                  href="/component/party"
-                  className={linkClasses("/component/party")}
-                >
-                  <MdPeople size={20} />
-                  {!isCollapsed && <span>Party Master</span>}
-                </Link>
-                <Link
-                  href="/component/inventory/purchase-entry"
-                  className={linkClasses("/component/inventory/purchase-entry")}
-                >
-                  <MdInventory size={20} />
-                  {!isCollapsed && <span>Purchase Entry</span>}
-                </Link>
-                <Link
-                  href="/component/inventory/stock-transfer"
-                  className={linkClasses("/component/inventory/stock-transfer")}
-                >
-                  <MdTransferWithinAStation size={20} />
-                  {!isCollapsed && <span>Stock Transfer</span>}
-                </Link>
-                <Link
-                  href="/component/accounting"
-                  className={linkClasses("/component/accounting")}
-                >
-                  <MdAccountBalance size={20} />
-                  {!isCollapsed && <span>Accounting</span>}
-                </Link>
-                <Link
-                  href="/component/gst-reports"
-                  className={linkClasses("/component/gst-reports")}
-                >
-                  <MdReceipt size={20} />
-                  {!isCollapsed && <span>GST Reports</span>}
-                </Link>
-              </div>
-            )}
-          </>
-        )}
-
-        {/* Section: Communication (both roles) */}
+        {/* Section: MANAGEMENT */}
         <div>
           {!isCollapsed && (
             <h2 className="text-xs font-semibold text-gray-400 uppercase mb-2">
-              Communication
+              MANAGEMENT
+            </h2>
+          )}
+          <Link
+            href="/component/users"
+            className={linkClasses("/component/users")}
+          >
+            <MdPeople size={20} />
+            {!isCollapsed && <span>Users</span>}
+          </Link>
+          <Link
+            href="/component/order"
+            className={linkClasses("/component/order")}
+          >
+            <MdShoppingCart size={20} />
+            {!isCollapsed && <span>Orders</span>}
+          </Link>
+          <Link
+            href="/component/branch-time"
+            className={linkClasses("/component/branch-time")}
+          >
+            <MdAccessTime size={20} />
+            {!isCollapsed && <span>Branch Time</span>}
+          </Link>
+          <Link
+            href="/component/appointment"
+            className={linkClasses("/component/appointment")}
+          >
+            <MdCalendarMonth size={20} />
+            {!isCollapsed && <span>Appointments</span>}
+          </Link>
+          {(role === "Admin" || role === "subadmin") && (
+            <Link
+              href="/component/staff"
+              className={linkClasses("/component/staff")}
+            >
+              <MdGroups size={20} />
+              {!isCollapsed && <span>Staff</span>}
+            </Link>
+          )}
+          {role === "Admin" && (
+            <Link
+              href="/component/subadmin"
+              className={linkClasses("/component/subadmin")}
+            >
+              <MdPerson size={20} />
+              {!isCollapsed && <span>Doctors</span>}
+            </Link>
+          )}
+        </div>
+
+        {/* Section: INVENTORY (Admin only) */}
+        {role === "Admin" && (
+          <div>
+            {!isCollapsed && (
+              <h2 className="text-xs font-semibold text-gray-400 uppercase mb-2">
+                INVENTORY
+              </h2>
+            )}
+            <Link
+              href="/component/stock"
+              className={linkClasses("/component/stock")}
+            >
+              <MdAssignment size={20} />
+              {!isCollapsed && <span>Stock Management</span>}
+            </Link>
+            <Link
+              href="/component/party"
+              className={linkClasses("/component/party")}
+            >
+              <MdPeople size={20} />
+              {!isCollapsed && <span>Supplier Master</span>}
+            </Link>
+            <Link
+              href="/component/inventory/purchase-entry"
+              className={linkClasses("/component/inventory/purchase-entry")}
+            >
+              <MdInventory size={20} />
+              {!isCollapsed && <span>Purchase Entry</span>}
+            </Link>
+            <Link
+              href="/component/inventory/stock-transfer"
+              className={linkClasses("/component/inventory/stock-transfer")}
+            >
+              <MdTransferWithinAStation size={20} />
+              {!isCollapsed && <span>Stock Transfer</span>}
+            </Link>
+            <Link
+              href="/component/accounting"
+              className={linkClasses("/component/accounting")}
+            >
+              <MdAccountBalance size={20} />
+              {!isCollapsed && <span>Accounting</span>}
+            </Link>
+            <Link
+              href="/component/gst-reports"
+              className={linkClasses("/component/gst-reports")}
+            >
+              <MdReceipt size={20} />
+              {!isCollapsed && <span>GST Reports</span>}
+            </Link>
+          </div>
+        )}
+
+        {/* Section: COMMUNICATION */}
+        <div>
+          {!isCollapsed && (
+            <h2 className="text-xs font-semibold text-gray-400 uppercase mb-2">
+              COMMUNICATION
             </h2>
           )}
           <Link
@@ -305,20 +276,24 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
             <MdChat size={20} />
             {!isCollapsed && <span>Supports</span>}
           </Link>
-          <Link
-            href="/component/contact-category"
-            className={linkClasses("/component/contact-category")}
-          >
-            <MdCategory size={20} />
-            {!isCollapsed && <span>Contact Categories</span>}
-          </Link>
-          <Link
-            href="/component/contact"
-            className={linkClasses("/component/contact")}
-          >
-            <MdPeople size={20} />
-            {!isCollapsed && <span>Contacts</span>}
-          </Link>
+          {(role === "Admin" || (role === "subadmin" && permissions?.includes("show contact categories"))) && (
+            <Link
+              href="/component/contact-category"
+              className={linkClasses("/component/contact-category")}
+            >
+              <MdCategory size={20} />
+              {!isCollapsed && <span>Contact Categories</span>}
+            </Link>
+          )}
+          {(role === "Admin" || (role === "subadmin" && permissions?.includes("show contact page"))) && (
+            <Link
+              href="/component/contact"
+              className={linkClasses("/component/contact")}
+            >
+              <MdPeople size={20} />
+              {!isCollapsed && <span>Contacts</span>}
+            </Link>
+          )}
           <Link
             href="/component/message"
             className={linkClasses("/component/message")}
@@ -326,42 +301,25 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
             <FiMessageCircle size={20} />
             {!isCollapsed && <span>Quick Replies</span>}
           </Link>
-          <Link
-            href="/component/feedback"
-            className={linkClasses("/component/feedback")}
-          >
-            <MdFeedback size={20} />
-            {!isCollapsed && <span>Feedbacks</span>}
-          </Link>
-
+          {(role === "Admin" || (role === "subadmin" && permissions?.includes("show feedback page"))) && (
+            <Link
+              href="/component/feedback"
+              className={linkClasses("/component/feedback")}
+            >
+              <MdFeedback size={20} />
+              {!isCollapsed && <span>Feedbacks</span>}
+            </Link>
+          )}
         </div>
 
-        {/* Section: Settings (Admin only) */}
-        {(role === "Admin" || role === "subadmin") && (
-          <div>
-            {!isCollapsed && (
-              <h2 className="text-xs font-semibold text-gray-400 uppercase mb-2">
-                Settings
-              </h2>
-            )}
-            {role === "Admin" && (
-              <>
-                <Link
-                  href="/component/settings"
-                  className={linkClasses("/component/settings")}
-                >
-                  <MdSettings size={20} />
-                  {!isCollapsed && <span>App Settings</span>}
-                </Link>
-                <Link
-                  href="/component/app-reference"
-                  className={linkClasses("/component/app-reference")}
-                >
-                  <MdAssignment size={20} />
-                  {!isCollapsed && <span>App References</span>}
-                </Link>
-              </>
-            )}
+        {/* Section: SETTINGS */}
+        <div>
+          {!isCollapsed && (
+            <h2 className="text-xs font-semibold text-gray-400 uppercase mb-2">
+              SETTINGS
+            </h2>
+          )}
+          {(role === "Admin" || (role === "subadmin" && permissions?.includes("show Logs page"))) && (
             <Link
               href="/component/logs"
               className={linkClasses("/component/logs")}
@@ -369,8 +327,33 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
               <MdHistory size={20} />
               {!isCollapsed && <span>Logs</span>}
             </Link>
-          </div>
-        )}
+          )}
+          {role === "Admin" && (
+            <>
+              <Link
+                href="/component/settings"
+                className={linkClasses("/component/settings")}
+              >
+                <MdSettings size={20} />
+                {!isCollapsed && <span>App Settings</span>}
+              </Link>
+              <Link
+                href="/component/app-reference"
+                className={linkClasses("/component/app-reference")}
+              >
+                <MdAssignment size={20} />
+                {!isCollapsed && <span>App References</span>}
+              </Link>
+              <Link
+                href="/component/permission"
+                className={linkClasses("/component/permission")}
+              >
+                <MdSettings size={20} />
+                {!isCollapsed && <span>Permissions</span>}
+              </Link>
+            </>
+          )}
+        </div>
 
         {/* Section: Exit Impersonation */}
         {isImpersonating && (

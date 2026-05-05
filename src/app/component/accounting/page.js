@@ -101,9 +101,9 @@ const AccountingPage = () => {
                   <tbody className="divide-y">
                     {data?.map?.((transaction, i) => {
                       // If an account is selected, only show the debit/credit for THAT account
-                      const relevantEntries = selectedAccountId 
-                        ? transaction.entries.filter(e => (e.accountId?._id || e.accountId) === selectedAccountId)
-                        : transaction.entries;
+                      const relevantEntries = (selectedAccountId
+                        ? transaction.entries?.filter(e => (e.accountId?._id || e.accountId) === selectedAccountId)
+                        : transaction.entries) || [];
 
                       return relevantEntries.map((entry, j) => (
                         <tr key={`${i}-${j}`}>

@@ -24,6 +24,7 @@ import {
   acceptTransferAppointment,
   rejectTransferAppointment,
 } from "@/Api/AllApi";
+import { io } from "socket.io-client";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   MdCalendarToday,
@@ -461,19 +462,20 @@ const AppointmentPage = () => {
     }
   };
 
-  // Polling for new appointments every 10 seconds
+  // Polling for new appointments every 3 seconds
   useEffect(() => {
     if (!selectedBranchId) return;
 
     const interval = setInterval(() => {
-      // Only poll if not in an active call and not currently initial-loading
-      if (!activeCallAppointment && !loading) {
+      // Fetch even during active call to detect system-initiated ends
+      if (!loading) {
         fetchAppointments(selectedBranchId, filterDate, filterStatus, filterType, weekRange, viewMode, true);
       }
     }, 3000);
 
     return () => clearInterval(interval);
-  }, [selectedBranchId, filterDate, filterStatus, filterType, weekRange, viewMode, activeCallAppointment, loading]);
+  }, [selectedBranchId, filterDate, filterStatus, filterType, weekRange, viewMode, loading]);
+
 
   // Fetch slots when date or branch changes in reschedule modal
   useEffect(() => {
@@ -1000,6 +1002,24 @@ const AppointmentPage = () => {
     fetchTransferRequests();
   }, []);
 
+  useEffect(() => {
+    const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    if (!token) return;
+
+    const socket = io(API_HOST, {
+      auth: { token },
+    });
+
+    socket.on("call_ended", async (data) => {
+      console.log("[SOCKET] Received call_ended:", data);
+
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [activeCallAppointment?._id, selectedBranchId, filterDate, filterStatus, filterType]);
+
   const toggleUserProfile = async () => {
     if (!showUserProfile && activeCallAppointment?.userId?._id) {
       try {
@@ -1050,10 +1070,55 @@ const AppointmentPage = () => {
   useEffect(() => {
     const intervalId = window.setInterval(() => {
       setCurrentTimeMarker(Date.now());
-    }, 30000);
+    }, 10000);
 
     return () => window.clearInterval(intervalId);
   }, []);
+
+  useEffect(() => {
+    if (!activeCallAppointment || !callConnected) return;
+
+    const doctorId = activeCallAppointment.doctor?._id;
+    const currentDate = activeCallAppointment.date;
+    if (!doctorId || !currentDate) return;
+
+    const parseTimeToMins = (timeStr) => {
+        const match = String(timeStr).trim().match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/i);
+        if (!match) return 0;
+        let hours = Number(match[1]);
+        const mins = Number(match[2]);
+        const period = match[3].toUpperCase();
+        if (period === 'AM') hours = hours === 12 ? 0 : hours;
+        else hours = hours === 12 ? 12 : hours + 12;
+        return hours * 60 + mins;
+    };
+
+    const currentApptStartMins = parseTimeToMins(activeCallAppointment.startTime);
+
+    const nextAppointments = appointments.filter(app => 
+        app.doctor?._id === doctorId && 
+        app.date === currentDate && 
+        app._id !== activeCallAppointment._id &&
+        app.status !== 'cancelled' &&
+        parseTimeToMins(app.startTime) > currentApptStartMins
+    );
+
+    if (nextAppointments.length === 0) return;
+
+    nextAppointments.sort((a, b) => parseTimeToMins(a.startTime) - parseTimeToMins(b.startTime));
+    const nextAppt = nextAppointments[0];
+
+    if (nextAppt) {
+        const nextApptStartMins = parseTimeToMins(nextAppt.startTime);
+        const now = getNowInKolkata();
+        const currentMins = now.getHours() * 60 + now.getMinutes();
+
+        if (currentMins >= nextApptStartMins) {
+            toast.error(`Auto ending call. Doctor has another appointment at ${nextAppt.startTime}`);
+            handleCutCall(activeCallAppointment);
+        }
+    }
+  }, [currentTimeMarker, activeCallAppointment, callConnected, appointments]);
 
   const getAppointmentFilterStatus = (appointment) => {
     if ((appointment.status || 'scheduled') === 'cancelled') {

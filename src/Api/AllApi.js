@@ -229,10 +229,25 @@ export const updateSubAdminById = async (id, payload) => {
   if (payload.role) {
     data.append("role", payload.role);
   }
+  if (Array.isArray(payload.permissions)) {
+    payload.permissions.forEach((p) => data.append("permissions", p));
+    // Also send as JSON string so backend can parse empty array
+    data.append("permissionsJson", JSON.stringify(payload.permissions));
+  }
 
   const res = await axios.put(`${API_BASE}/admin/sub-admin/${id}`, data, {
     headers: { ...getAuthHeaders(), "Content-Type": "multipart/form-data" },
   });
+  return res.data.data;
+};
+
+// Dedicated permissions update using JSON (more reliable for arrays)
+export const updateSubAdminPermissions = async (id, permissions) => {
+  const res = await axios.put(
+    `${API_BASE}/admin/sub-admin/${id}`,
+    { permissions },
+    { headers: { ...getAuthHeaders(), "Content-Type": "application/json" } }
+  );
   return res.data.data;
 };
 

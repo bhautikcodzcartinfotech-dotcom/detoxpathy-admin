@@ -4,7 +4,7 @@ import { ActionButton } from "@/utils/actionbutton";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import { Calendar } from "lucide-react";
 
-const StaffTable = ({ items, loading, onEdit, onDelete, onManageLeave }) => {
+const StaffTable = ({ items, loading, onEdit, onDelete, onManageLeave, role, permissions }) => {
   const [deleteDialog, setDeleteDialog] = useState({
     isOpen: false,
     itemId: null,
@@ -73,18 +73,24 @@ const StaffTable = ({ items, loading, onEdit, onDelete, onManageLeave }) => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
                     <div className="flex justify-center gap-2">
-                      <button
-                        onClick={() => onManageLeave(item)}
-                        className="p-2 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-full transition-all"
-                        title="Manage Leaves"
-                      >
-                        <Calendar size={18} />
-                      </button>
-                      <ActionButton type="edit" onClick={() => onEdit(item)} />
-                      <ActionButton
-                        type="delete"
-                        onClick={() => handleDeleteClick(item._id, item.name || "Staff Member")}
-                      />
+                      {(role === "Admin" || (role === "subadmin" && permissions?.includes("add staff"))) && (
+                        <button
+                          onClick={() => onManageLeave(item)}
+                          className="p-2 bg-amber-50 text-amber-600 hover:bg-amber-100 rounded-full transition-all"
+                          title="Manage Leaves"
+                        >
+                          <Calendar size={18} />
+                        </button>
+                      )}
+                      {(role === "Admin" || (role === "subadmin" && permissions?.includes("edit staff"))) && (
+                        <ActionButton type="edit" onClick={() => onEdit(item)} />
+                      )}
+                      {(role === "Admin" || (role === "subadmin" && permissions?.includes("delete staff"))) && (
+                        <ActionButton
+                          type="delete"
+                          onClick={() => handleDeleteClick(item._id, item.name || "Staff Member")}
+                        />
+                      )}
                     </div>
                   </td>
                 </tr>

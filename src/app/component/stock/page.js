@@ -4,6 +4,7 @@ import RoleGuard from "@/components/RoleGuard";
 import { Header, Button } from "@/utils/header";
 import Drawer from "@/utils/formanimation";
 import toast from "react-hot-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   getMasterStock,
   getBranchStocks,
@@ -24,6 +25,7 @@ import StockForm from "./stockForm";
 import CompanyOrderForm from "./companyOrderForm";
 
 const StockManagementPage = () => {
+  const { role, permissions } = useAuth();
   const [masterStocks, setMasterStocks] = useState([]);
   const [branchStocks, setBranchStocks] = useState([]);
   const [history, setHistory] = useState([]);
@@ -175,7 +177,7 @@ const StockManagementPage = () => {
     : [];
 
   return (
-    <RoleGuard allow={["Admin"]}>
+    <RoleGuard allow={["Admin", "subadmin"]}>
       <div className="w-full h-full px-6 py-4 pb-20">
         <div className="mb-8">
           <Header size="3xl">Stock Management</Header>
@@ -190,16 +192,20 @@ const StockManagementPage = () => {
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-gray-800">Company Master Stock</h3>
               <div className="flex items-center gap-4">
-                <label className="text-[#134D41] hover:text-[#0d362e] font-black text-xs uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 hover:bg-emerald-100">
-                  <input type="file" className="hidden" accept=".pdf" onChange={handleFileUpload} disabled={loading} />
-                  <span>+ Upload PDF</span>
-                </label>
-                <button 
-                  onClick={handleAddProduct}
-                  className="text-[#134D41] hover:text-[#0d362e] font-black text-xs uppercase tracking-widest flex items-center gap-1 transition-colors"
-                >
-                  + Add Product
-                </button>
+                {(role === "Admin" || (role === "subadmin" && permissions?.includes("manage inventory"))) && (
+                  <>
+                    <label className="text-[#134D41] hover:text-[#0d362e] font-black text-xs uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-100 hover:bg-emerald-100">
+                      <input type="file" className="hidden" accept=".pdf" onChange={handleFileUpload} disabled={loading} />
+                      <span>+ Upload PDF</span>
+                    </label>
+                    <button 
+                      onClick={handleAddProduct}
+                      className="text-[#134D41] hover:text-[#0d362e] font-black text-xs uppercase tracking-widest flex items-center gap-1 transition-colors"
+                    >
+                      + Add Product
+                    </button>
+                  </>
+                )}
               </div>
             </div>
             <MasterStockTable 

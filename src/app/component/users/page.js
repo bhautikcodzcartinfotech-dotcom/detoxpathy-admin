@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 
 const UsersPage = () => {
-  const { role, branches } = useAuth();
+  const { role, branches, permissions } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [listLoading, setListLoading] = useState(true);
@@ -304,7 +304,7 @@ const UsersPage = () => {
             <h1 className="text-3xl font-black text-gray-900 tracking-tight">Users / Patients</h1>
             <p className="text-sm text-gray-500 font-medium">Manage all registered users, program status, and branch assignments.</p>
           </div>
-          {role === "Admin" && (
+          {(role === "Admin" || (role === "subadmin" && permissions?.includes("create user"))) && (
             <button
               onClick={() => setIsOpen(true)}
               className="h-12 px-8 bg-teal-900 text-white rounded-none font-black text-xs uppercase tracking-widest hover:bg-teal-950 hover:shadow-lg transition-all flex items-center gap-2"

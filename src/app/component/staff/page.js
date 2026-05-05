@@ -17,7 +17,7 @@ import toast from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
 const StaffPage = () => {
-  const { role, branches: userBranchIds } = useAuth();
+  const { role, branches: userBranchIds, permissions } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [leaveModalOpen, setLeaveModalOpen] = useState(false);
   const [selectedStaffForLeave, setSelectedStaffForLeave] = useState(null);
@@ -152,7 +152,9 @@ const StaffPage = () => {
                 Branch: {branches[0].name}
               </div>
             )}
-            <Button onClick={() => { setEditing(null); setIsOpen(true); }}>Create</Button>
+            {(role === "Admin" || (role === "subadmin" && permissions?.includes("add staff"))) && (
+              <Button onClick={() => { setEditing(null); setIsOpen(true); }}>Create</Button>
+            )}
           </div>
         </div>
 
@@ -168,6 +170,8 @@ const StaffPage = () => {
           onEdit={handleEdit}
           onDelete={handleDelete}
           onManageLeave={handleManageLeave}
+          role={role}
+          permissions={permissions}
         />
 
         <Drawer isOpen={isOpen} onClose={() => setIsOpen(false)}>

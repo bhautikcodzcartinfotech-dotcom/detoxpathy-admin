@@ -162,6 +162,7 @@ export const AuthProvider = ({ children }) => {
     impersonate,
     exitImpersonation,
     isAuthenticated,
+    permissions: user?.permissions || [],
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

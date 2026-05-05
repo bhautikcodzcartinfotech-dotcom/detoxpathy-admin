@@ -71,16 +71,7 @@ const PartyForm = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      <div>
-        <label className="block mb-1 font-semibold text-gray-700">Type</label>
-        <select
-          value={form.type}
-          onChange={(e) => setForm((f) => ({ ...f, type: e.target.value }))}
-          className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
-        >
-          <option value="Supplier">Supplier</option>
-        </select>
-      </div>
+
 
       <div>
         <label className="block mb-1 font-semibold text-gray-700">Name</label>

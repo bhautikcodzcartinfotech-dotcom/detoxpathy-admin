@@ -49,6 +49,7 @@ const SubAdminPage = () => {
           image: formData.image || undefined,
           commission: formData.commission,
           role: formData.role,
+          permissions: formData.permissions,
         });
       } else {
         const payload = {
@@ -59,6 +60,7 @@ const SubAdminPage = () => {
           image: formData.image || undefined,
           commission: formData.commission,
           role: formData.role,
+          permissions: formData.permissions,
         };
         await createSubAdminApi(payload);
       }

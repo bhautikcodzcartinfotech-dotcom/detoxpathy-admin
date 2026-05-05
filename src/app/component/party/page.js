@@ -6,19 +6,20 @@ import PartyTable from "./partyTable";
 import PartyForm from "./partyForm";
 import Drawer from "@/utils/formanimation";
 import { toast } from "react-hot-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const PartyPage = () => {
+  const { role, permissions } = useAuth();
   const [parties, setParties] = useState([]);
   const [loading, setLoading] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editingParty, setEditingParty] = useState(null);
   const [search, setSearch] = useState("");
-  const [filterType, setFilterType] = useState("");
 
   const fetchParties = async () => {
     try {
       setLoading(true);
-      const data = await getAllParties(filterType);
+      const data = await getAllParties();
       setParties(data);
     } catch (error) {
       toast.error("Failed to fetch records");
@@ -29,7 +30,7 @@ const PartyPage = () => {
 
   useEffect(() => {
     fetchParties();
-  }, [filterType]);
+  }, []);
 
   const handleCreateOrUpdate = async (formData) => {
     try {
@@ -73,18 +74,20 @@ const PartyPage = () => {
     <div className="p-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Party Master</h1>
-          <p className="text-gray-500 text-sm">Manage Customers and Suppliers</p>
+          <h1 className="text-2xl font-bold text-gray-800">Supplier Master</h1>
+          <p className="text-gray-500 text-sm">Manage Suppliers</p>
         </div>
-        <button
-          onClick={() => {
-            setEditingParty(null);
-            setIsDrawerOpen(true);
-          }}
-          className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition shadow-sm"
-        >
-          <FiPlus size={20} /> Add Party
-        </button>
+        {(role === "Admin" || (role === "subadmin" && permissions?.includes("manage supplier"))) && (
+          <button
+            onClick={() => {
+              setEditingParty(null);
+              setIsDrawerOpen(true);
+            }}
+            className="bg-yellow-400 hover:bg-yellow-500 text-gray-900 px-5 py-2.5 rounded-xl font-bold flex items-center gap-2 transition shadow-sm"
+          >
+            <FiPlus size={20} /> Add Supplier
+          </button>
+        )}
       </div>
 
       <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -98,16 +101,6 @@ const PartyPage = () => {
             className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
           />
         </div>
-        <select
-          value={filterType}
-          onChange={(e) => setFilterType(e.target.value)}
-          className="px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-yellow-400 transition bg-white"
-        >
-          <option value="">All Types</option>
-          <option value="Customer">Customer</option>
-          <option value="Supplier">Supplier</option>
-          <option value="Both">Both</option>
-        </select>
       </div>
 
       <PartyTable
@@ -117,6 +110,8 @@ const PartyPage = () => {
           setIsDrawerOpen(true);
         }}
         onDelete={handleDelete}
+        role={role}
+        permissions={permissions}
       />
 
       <Drawer
@@ -124,7 +119,7 @@ const PartyPage = () => {
         onClose={() => setIsDrawerOpen(false)}
       >
         <div className="mb-6">
-          <h2 className="text-xl font-bold text-gray-800">{editingParty ? "Edit Party" : "Add Party"}</h2>
+          <h2 className="text-xl font-bold text-gray-800">{editingParty ? "Edit Supplier" : "Add Supplier"}</h2>
         </div>
         <PartyForm
           onSubmit={handleCreateOrUpdate}

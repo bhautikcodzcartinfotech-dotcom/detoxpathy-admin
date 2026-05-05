@@ -9,6 +9,33 @@ import {
 import { getAllBranches } from "@/Api/AllApi";
 import Dropdown from "../../../../utils/dropdown"; // import your dropdown
 
+const PERMISSION_GROUPS = [
+  {
+    category: "Staff Management",
+    permissions: [
+      { label: "Add Staff", value: "add staff" },
+      { label: "Edit Staff", value: "edit staff" },
+      { label: "Delete Staff", value: "delete staff" },
+    ]
+  },
+  {
+    category: "User Management",
+    permissions: [
+      { label: "Create User", value: "create user" },
+    ]
+  },
+  {
+    category: "Page Access",
+    permissions: [
+      { label: "Show Logs Page", value: "show Logs page" },
+      { label: "Show Contact Page", value: "show contact page" },
+      { label: "Show Contact Categories", value: "show contact categories" },
+      { label: "Show Feedback Page", value: "show feedback page" },
+      { label: "Show App References", value: "show app reference page" },
+    ]
+  },
+];
+
 const SubAdminForm = ({
   onSubmit,
   onCancel,
@@ -24,6 +51,7 @@ const SubAdminForm = ({
     branchId: "", // <-- store selected branch id here
     commission: 0,
     role: "doctor",
+    permissions: [],
   });
   const [formErrors, setFormErrors] = useState({});
   const [branches, setBranches] = useState([]);
@@ -45,6 +73,7 @@ const SubAdminForm = ({
             : "",
         commission: initialValues.commission || 0,
         role: initialValues.adminType === "Sub Doctor" ? "sub doctor" : "doctor",
+        permissions: initialValues.permissions || [],
       }));
       setFormErrors({});
     } else {
@@ -56,6 +85,7 @@ const SubAdminForm = ({
         branchId: "",
         commission: 0,
         role: "doctor",
+        permissions: [],
       });
       setFormErrors({});
     }
@@ -113,6 +143,7 @@ const SubAdminForm = ({
       branchId: "",
       commission: 0,
       role: "doctor",
+      permissions: [],
     });
     setFormErrors({});
   };
@@ -234,6 +265,42 @@ const SubAdminForm = ({
           }
           className="w-full border border-yellow-400 rounded-xl p-2 bg-white focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
         />
+      </div>
+
+      {/* Permissions */}
+      <div>
+        <label className="block mb-4 font-semibold text-gray-700">
+          Permissions
+        </label>
+        <div className="space-y-6">
+          {PERMISSION_GROUPS.map((group) => (
+            <div key={group.category} className="border rounded-xl p-4 bg-gray-50/50">
+              <h4 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                <div className="w-1.5 h-1.5 bg-yellow-400 rounded-full"></div>
+                {group.category}
+              </h4>
+              <div className="grid grid-cols-2 gap-3">
+                {group.permissions.map((perm) => (
+                  <label key={perm.value} className="flex items-center gap-3 text-sm text-gray-700 bg-white p-3 border rounded-lg hover:border-yellow-400 cursor-pointer transition-colors min-h-[48px]">
+                    <input
+                      type="checkbox"
+                      checked={form.permissions.includes(perm.value)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setForm((f) => ({ ...f, permissions: [...f.permissions, perm.value] }));
+                        } else {
+                          setForm((f) => ({ ...f, permissions: f.permissions.filter((p) => p !== perm.value) }));
+                        }
+                      }}
+                      className="w-5 h-5 flex-shrink-0 text-yellow-500 focus:ring-yellow-400 border-gray-300 rounded transition-all cursor-pointer"
+                    />
+                    <span className="leading-tight font-medium">{perm.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Buttons */}

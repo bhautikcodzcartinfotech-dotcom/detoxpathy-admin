@@ -173,57 +173,57 @@ const PurchaseEntry = () => {
           </div>
 
           <div className="overflow-x-auto border rounded-xl">
-            <table className="w-full text-left">
-              <thead className="bg-gray-50">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b">
                 <tr>
-                  <th className="p-3 text-sm font-bold text-gray-600">Product</th>
-                  <th className="p-3 text-sm font-bold text-gray-600 w-24">Qty</th>
-                  <th className="p-3 text-sm font-bold text-gray-600 w-32">Rate</th>
-                  <th className="p-3 text-sm font-bold text-gray-600 w-24">GST %</th>
-                  <th className="p-3 text-sm font-bold text-gray-600 w-32">Total</th>
-                  <th className="p-3 text-sm font-bold text-gray-600 w-16"></th>
+                  <th className="p-4 text-sm font-bold text-gray-600 text-left">Product</th>
+                  <th className="p-4 text-sm font-bold text-gray-600 text-center w-24">Qty</th>
+                  <th className="p-4 text-sm font-bold text-gray-600 text-right w-32">Rate</th>
+                  <th className="p-4 text-sm font-bold text-gray-600 text-center w-24">GST %</th>
+                  <th className="p-4 text-sm font-bold text-gray-600 text-right w-32">Total</th>
+                  <th className="p-4 text-sm font-bold text-gray-600 w-16"></th>
                 </tr>
               </thead>
               <tbody className="divide-y">
                 {form.items.map((item, index) => (
-                  <tr key={index}>
-                    <td className="p-2">
+                  <tr key={index} className="hover:bg-gray-50 transition-colors">
+                    <td className="p-3">
                       <select
                         value={item.productId}
                         onChange={e => handleItemChange(index, 'productId', e.target.value)}
-                        className="w-full border-none focus:ring-0 text-sm bg-transparent"
+                        className="w-full border border-transparent focus:border-yellow-400 rounded-lg p-2 text-sm bg-transparent outline-none transition"
                       >
                         <option value="">Select Product</option>
                         {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
                       </select>
                     </td>
-                    <td className="p-2">
+                    <td className="p-3">
                       <input
                         type="number"
                         value={item.quantity}
                         onChange={e => handleItemChange(index, 'quantity', e.target.value)}
-                        className="w-full border-none focus:ring-0 text-sm bg-transparent"
+                        className="w-full border border-transparent focus:border-yellow-400 rounded-lg p-2 text-sm bg-transparent text-center outline-none transition"
                       />
                     </td>
-                    <td className="p-2">
+                    <td className="p-3">
                       <input
                         type="number"
                         value={item.rate}
                         onChange={e => handleItemChange(index, 'rate', e.target.value)}
-                        className="w-full border-none focus:ring-0 text-sm bg-transparent"
+                        className="w-full border border-transparent focus:border-yellow-400 rounded-lg p-2 text-sm bg-transparent text-right outline-none transition"
                       />
                     </td>
-                    <td className="p-2 text-sm text-gray-600 text-center">
-                      {item.gstPercentage}%
+                    <td className="p-3 text-sm text-gray-600 text-center">
+                      <span className="bg-gray-100 px-2 py-1 rounded-md font-medium">{item.gstPercentage}%</span>
                     </td>
-                    <td className="p-2 text-sm font-medium text-right">
-                      {item.totalAmount.toFixed(2)}
+                    <td className="p-3 text-sm font-bold text-right text-gray-800">
+                      ₹{item.totalAmount.toFixed(2)}
                     </td>
-                    <td className="p-2 text-center">
+                    <td className="p-3 text-center">
                       <button
                         type="button"
                         onClick={() => removeItem(index)}
-                        className="text-red-500 hover:text-red-700"
+                        className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
                       >
                         <FiTrash2 />
                       </button>
