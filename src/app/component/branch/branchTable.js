@@ -122,6 +122,11 @@ const BranchTable = ({ items, loading, onEdit, onDelete }) => {
                           State Head
                         </span>
                       )}
+                      {b.isFranchise && (
+                        <span className="px-2 py-0.5 text-[10px] bg-orange-100 text-orange-700 rounded-full font-bold uppercase">
+                          Franchise
+                        </span>
+                      )}
                     </div>
                   </div>
                 </td>
@@ -207,6 +212,11 @@ const BranchTable = ({ items, loading, onEdit, onDelete }) => {
                     {b.isStateHeadBranch && (
                       <span className="px-1.5 py-0.5 text-[8px] bg-purple-100 text-purple-700 rounded-full font-bold uppercase">
                         SH
+                      </span>
+                    )}
+                    {b.isFranchise && (
+                      <span className="px-1.5 py-0.5 text-[8px] bg-orange-100 text-orange-700 rounded-full font-bold uppercase">
+                        F
                       </span>
                     )}
                   </div>

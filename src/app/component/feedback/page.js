@@ -66,7 +66,7 @@ const FeedbackPage = () => {
       <div className="w-full h-full px-4 lg:px-18 py-8">
         <div className="mb-8 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
             <div>
-                <h1 className="text-2xl font-bold text-gray-900">User Feedbacks</h1>
+                <Header className="size-4xl">User Feedbacks</Header>
                 <p className="text-gray-500 mt-1">Manage and approve user testimonials.</p>
             </div>
             

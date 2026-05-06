@@ -4,7 +4,7 @@ import RoleGuard from "@/components/RoleGuard";
 import { Header, Button } from "@/utils/header";
 import Drawer from "@/utils/formanimation";
 import { ActionButton } from "@/utils/actionbutton";
-import { listSubAdmins, updateSubAdminPermissions } from "@/Api/AllApi";
+import { getRolePermissionsApi, updateRolePermissionsApi, deleteRolePermissionApi } from "@/Api/AllApi";
 import TimeButton from "@/utils/timebutton";
 import toast from "react-hot-toast";
 
@@ -36,21 +36,23 @@ const PERMISSION_GROUPS = [
 ];
 
 const PermissionPage = () => {
-  const [subAdmins, setSubAdmins] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isOpen, setIsOpen] = useState(false);
   const [editing, setEditing] = useState(null);
   const [permissions, setPermissions] = useState([]);
   const [saveLoading, setSaveLoading] = useState(false);
+  const [newRoleName, setNewRoleName] = useState("");
+  const [isAddingRole, setIsAddingRole] = useState(false);
 
   const fetchList = async () => {
     try {
       setLoading(true);
-      const data = await listSubAdmins();
-      setSubAdmins(Array.isArray(data) ? data : []);
+      const data = await getRolePermissionsApi();
+      setRoles(Array.isArray(data) ? data : []);
     } catch (e) {
-      setError(e?.response?.data?.message || "Failed to load sub admins");
+      setError(e?.response?.data?.message || "Failed to load roles");
     } finally {
       setLoading(false);
     }
@@ -60,9 +62,28 @@ const PermissionPage = () => {
     fetchList();
   }, []);
 
-  const handleEdit = (admin) => {
-    setEditing(admin);
-    setPermissions(admin.permissions || []);
+  const handleAddRole = async () => {
+    if (!newRoleName.trim()) {
+      toast.error("Please enter a role name");
+      return;
+    }
+    try {
+      setSaveLoading(true);
+      await updateRolePermissionsApi(newRoleName.trim(), []);
+      setNewRoleName("");
+      setIsAddingRole(false);
+      await fetchList();
+      toast.success("New role created successfully");
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to create role");
+    } finally {
+      setSaveLoading(false);
+    }
+  };
+
+  const handleEdit = (roleObj) => {
+    setEditing(roleObj);
+    setPermissions(roleObj.permissions || []);
     setIsOpen(true);
   };
 
@@ -71,13 +92,13 @@ const PermissionPage = () => {
     if (!editing) return;
     try {
       setSaveLoading(true);
-      await updateSubAdminPermissions(editing._id, permissions);
+      await updateRolePermissionsApi(editing.role, permissions);
       await fetchList();
-      toast.success("Permissions updated successfully");
+      toast.success("Role permissions updated successfully");
       setIsOpen(false);
       setEditing(null);
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to update permissions");
+      toast.error(err?.response?.data?.message || "Failed to update role permissions");
     } finally {
       setSaveLoading(false);
     }
@@ -86,9 +107,39 @@ const PermissionPage = () => {
   return (
     <RoleGuard allow={["Admin"]}>
       <div className="w-full h-full px-6 py-4">
-        <div className="flex items-center justify-between mb-4">
-          <Header size="3xl">Manage Permissions</Header>
+        <div className="flex items-center justify-between mb-6">
+          <Header size="3xl">Manage Role Permissions</Header>
+          <Button 
+            onClick={() => setIsAddingRole(!isAddingRole)}
+            variant={isAddingRole ? "secondary" : "gold"}
+          >
+            {isAddingRole ? "Cancel" : "+ Add New Role"}
+          </Button>
         </div>
+
+        {isAddingRole && (
+          <div className="mb-6 p-6 bg-white rounded-2xl border-2 border-yellow-100 shadow-xl shadow-yellow-900/5 animate-in fade-in slide-in-from-top-4 duration-300">
+            <div className="flex flex-col sm:flex-row items-end gap-4">
+              <div className="flex-1 w-full">
+                <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">New Role Name</label>
+                <input
+                  type="text"
+                  value={newRoleName}
+                  onChange={(e) => setNewRoleName(e.target.value)}
+                  placeholder="e.g. Sales Executive, Manager"
+                  className="w-full p-3.5 rounded-xl border border-gray-200 focus:border-yellow-500 focus:ring-4 focus:ring-yellow-500/5 focus:outline-none text-sm transition-all"
+                />
+              </div>
+              <Button 
+                onClick={handleAddRole} 
+                disabled={saveLoading}
+                className="w-full sm:w-auto h-[50px] px-10"
+              >
+                {saveLoading ? "Creating..." : "Create Role"}
+              </Button>
+            </div>
+          </div>
+        )}
 
         {error && (
           <div className="mb-3 p-3 rounded-lg bg-red-50 text-red-600 border border-red-200">
@@ -100,34 +151,56 @@ const PermissionPage = () => {
           <table className="w-full text-left border-collapse">
             <thead className="bg-gradient-to-r from-yellow-400 to-amber-300">
               <tr className="text-[11px] font-black text-gray-700 uppercase tracking-widest">
-                <th className="px-6 py-4">Name</th>
-                <th className="px-6 py-4">Email</th>
-                <th className="px-6 py-4 text-center">Role</th>
+                <th className="px-6 py-4">Role Name</th>
+                <th className="px-6 py-4">Permissions Count</th>
                 <th className="px-6 py-4 text-center">Actions</th>
               </tr>
             </thead>
             <tbody>
               {loading ? (
                 <tr>
-                  <td colSpan="4" className="p-4 text-center text-gray-500">Loading...</td>
+                  <td colSpan="3" className="p-4 text-center text-gray-500">Loading...</td>
                 </tr>
-              ) : subAdmins.length === 0 ? (
+              ) : roles.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="p-4 text-center text-gray-500">No doctors or sub-doctors found.</td>
+                  <td colSpan="3" className="p-4 text-center text-gray-500">No roles found.</td>
                 </tr>
               ) : (
-                subAdmins.map((admin) => (
-                  <tr key={admin._id} className="border-t border-gray-100 hover:bg-gray-50">
-                    <td className="p-4">{admin.username}</td>
-                    <td className="p-4">{admin.email}</td>
-                    <td className="p-4 capitalize">{admin.adminType}</td>
+                roles.map((roleObj, idx) => (
+                  <tr key={roleObj.role || idx} className="border-t border-gray-100 hover:bg-gray-50">
+                    <td className="p-4 font-bold text-gray-800 capitalize">{roleObj.role}</td>
+                    <td className="p-4">
+                      <span className="bg-teal-100 text-teal-800 px-2 py-1 rounded text-xs font-semibold">
+                        {roleObj.permissions?.length || 0} Permissions
+                      </span>
+                    </td>
                     <td className="px-6 py-4 text-center">
-                      <div className="flex justify-center">
+                      <div className="flex justify-center gap-2">
                         <ActionButton
                           type="edit"
-                          onClick={() => handleEdit(admin)}
-                          title="Edit Permissions"
+                          onClick={() => handleEdit(roleObj)}
+                          title="Edit Role Permissions"
                         />
+                        {!['Sub Admin', 'Sub Doctor'].includes(roleObj.role) && (
+                          <ActionButton
+                            type="delete"
+                            onClick={async () => {
+                              if (window.confirm(`Are you sure you want to delete the role "${roleObj.role}"?`)) {
+                                try {
+                                  // We can reuse the update API with a special flag or just delete if it exists in DB
+                                  // For now, let's assume we need a delete API. 
+                                  // I'll add a delete API to AllApi and backend.
+                                  await deleteRolePermissionApi(roleObj.role);
+                                  await fetchList();
+                                  toast.success("Role deleted successfully");
+                                } catch (err) {
+                                  toast.error("Failed to delete role");
+                                }
+                              }
+                            }}
+                            title="Delete Role"
+                          />
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -140,9 +213,9 @@ const PermissionPage = () => {
         <Drawer isOpen={isOpen} onClose={() => setIsOpen(false)}>
           <div className="mb-6 text-center">
             <h2 className="text-3xl font-bold text-yellow-600">
-              Update Permissions
+              Update Role Permissions
             </h2>
-            <p className="text-gray-500 mt-2">For {editing?.username}</p>
+            <p className="text-gray-500 mt-2 font-bold uppercase tracking-wider">Role: {editing?.role}</p>
           </div>
           
           <form onSubmit={handleSave} className="space-y-8">
@@ -183,7 +256,7 @@ const PermissionPage = () => {
               >
                 Cancel
               </Button>
-              <TimeButton loading={saveLoading}>Save Permissions</TimeButton>
+              <TimeButton loading={saveLoading}>Save Role Permissions</TimeButton>
             </div>
           </form>
         </Drawer>

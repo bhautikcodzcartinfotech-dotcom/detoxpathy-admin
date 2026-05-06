@@ -1,5 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
+import { getRolePermissionsApi } from "@/Api/AllApi";
+import Dropdown from "@/utils/dropdown";
 
 const StaffForm = ({ onSubmit, onCancel, loading, initialValues, submitLabel }) => {
   const [formData, setFormData] = useState({
@@ -8,6 +10,19 @@ const StaffForm = ({ onSubmit, onCancel, loading, initialValues, submitLabel }) 
     phone: "",
     role: "",
   });
+  const [roles, setRoles] = useState([]);
+
+  useEffect(() => {
+    const fetchRoles = async () => {
+      try {
+        const data = await getRolePermissionsApi();
+        setRoles(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Failed to load roles", err);
+      }
+    };
+    fetchRoles();
+  }, []);
 
   useEffect(() => {
     if (initialValues) {
@@ -39,6 +54,10 @@ const StaffForm = ({ onSubmit, onCancel, loading, initialValues, submitLabel }) 
 
   const inputClasses = "w-full p-3 rounded-xl border border-gray-200 focus:border-amber-500 focus:ring-4 focus:ring-amber-500/5 focus:outline-none text-sm transition-all shadow-sm bg-gray-50 focus:bg-white";
   const labelClasses = "block text-sm font-bold text-gray-700 mb-1.5 ml-1";
+
+  const roleOptions = roles
+    .filter(r => !['Sub Admin', 'Sub Doctor'].includes(r.role))
+    .map(r => ({ label: r.role, value: r.role }));
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -86,15 +105,12 @@ const StaffForm = ({ onSubmit, onCancel, loading, initialValues, submitLabel }) 
       </div>
 
       <div>
-        <label className={labelClasses}>Staff Role</label>
-        <input
-          type="text"
-          name="role"
-          placeholder="e.g. Sales Executive"
+        <Dropdown
+          label="Staff Role"
+          options={roleOptions}
           value={formData.role}
-          onChange={handleChange}
-          required
-          className={inputClasses}
+          onChange={(val) => setFormData(prev => ({ ...prev, role: val }))}
+          placeholder="Select staff role"
         />
       </div>
 

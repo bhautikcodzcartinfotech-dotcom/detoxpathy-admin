@@ -251,6 +251,30 @@ export const updateSubAdminPermissions = async (id, permissions) => {
   return res.data.data;
 };
 
+// Role based permissions
+export const getRolePermissionsApi = async () => {
+  const res = await axios.get(`${API_BASE}/admin/role-permissions`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const updateRolePermissionsApi = async (role, permissions) => {
+  const res = await axios.post(
+    `${API_BASE}/admin/role-permissions`,
+    { role, permissions },
+    { headers: { ...getAuthHeaders(), "Content-Type": "application/json" } }
+  );
+  return res.data.data;
+};
+
+export const deleteRolePermissionApi = async (role) => {
+  const res = await axios.delete(`${API_BASE}/admin/role-permissions/${role}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
 /* -------------------- BRANCH APIs -------------------- */
 export const getAllBranches = async () => {
   const res = await axios.get(`${API_BASE}/admin/branch/all`, {
@@ -275,6 +299,7 @@ export const createBranchApi = async (payload) => {
       mobileNumber: payload.mobileNumber,
       isMainBranch: payload.isMainBranch,
       isStateHeadBranch: payload.isStateHeadBranch,
+      isFranchise: payload.isFranchise,
       gstin: payload.gstin,
     },
     { headers: getAuthHeaders() }
@@ -297,6 +322,7 @@ export const updateBranchById = async (id, payload) => {
     "mobileNumber",
     "isMainBranch",
     "isStateHeadBranch",
+    "isFranchise",
     "gstin",
   ];
   keys.forEach((k) => {
@@ -381,6 +407,7 @@ export const createPlanApi = async (payload) => {
     days: Number(payload.days),
     price: Number(payload.price || 0),
     bulkDiscount: Number(payload.bulkDiscount || 0),
+    notificationDays: payload.notificationDays || [],
   };
   const res = await axios.post(`${API_BASE}/admin/plan/create`, body, {
     headers: getAuthHeaders(),
@@ -396,6 +423,7 @@ export const updatePlanById = async (id, payload) => {
   if (typeof payload.days !== "undefined") body.days = Number(payload.days);
   if (typeof payload.price !== "undefined") body.price = Number(payload.price);
   if (typeof payload.bulkDiscount !== "undefined") body.bulkDiscount = Number(payload.bulkDiscount);
+  if (typeof payload.notificationDays !== "undefined") body.notificationDays = payload.notificationDays;
   const res = await axios.put(`${API_BASE}/admin/plan/update/${id}`, body, {
     headers: getAuthHeaders(),
   });
