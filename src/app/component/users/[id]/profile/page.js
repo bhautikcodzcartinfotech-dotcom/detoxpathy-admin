@@ -25,6 +25,30 @@ const UserProfilePage = () => {
     return value ? "Yes" : "No";
   };
 
+  const calculateAge = (dob) => {
+    if (!dob) return null;
+    try {
+      let birthDate;
+      if (typeof dob === "string" && dob.includes("/")) {
+        const [day, month, year] = dob.split("/").map(Number);
+        birthDate = new Date(year, month - 1, day);
+      } else {
+        birthDate = new Date(dob);
+      }
+
+      if (isNaN(birthDate.getTime())) return null;
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age;
+    } catch (err) {
+      return null;
+    }
+  };
+
   const [loading, setLoading] = useState(true);
   const [overview, setOverview] = useState(null);
   const [selectedDay, setSelectedDay] = useState(null); // for popup
@@ -135,7 +159,6 @@ const UserProfilePage = () => {
             user: {
               ...prev.user,
               planResumeDate: new Date().toISOString().split("T")[0],
-              planCurrentDay: (prev.user.planCurrentDay || 0) + 1,
               planCurrentDate: new Date().toISOString().split("T")[0],
             },
           }));
@@ -285,8 +308,10 @@ const UserProfilePage = () => {
                   <div className="text-sm font-medium text-gray-800">{overview.user?.plan?.name ? `${overview.user.plan.name} (₹${overview.user.plan.price || 0})` : "-"}</div>
                 </div>
                 <div className="border-b border-gray-200 p-6">
-                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Gender & DOB</div>
-                  <div className="text-sm font-medium text-gray-800">{overview.user?.gender || "-"} • {overview.user?.dob || "-"}</div>
+                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Gender, Age & DOB</div>
+                  <div className="text-sm font-medium text-gray-800">
+                    {overview.user?.gender || "-"} • {calculateAge(overview.user?.dob) ? `${calculateAge(overview.user?.dob)} Years` : "-"} • {overview.user?.dob || "-"}
+                  </div>
                 </div>
 
                 <div className="border-b md:border-r border-gray-200 p-6">
@@ -298,7 +323,13 @@ const UserProfilePage = () => {
                   <div className="text-sm font-medium text-gray-800">{overview.user?.height || "-"} cm • {overview.user?.weight || "-"} kg</div>
                 </div>
                 <div className="border-b border-gray-200 p-6">
-                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Language & Referrer</div>
+                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Referral Details</div>
+                  <div className="text-sm font-medium text-gray-800">
+                    Referred By : <span className="font-bold text-amber-700">{overview.user?.referrerName || "-"}</span>
+                  </div>
+                </div>
+                <div className="border-b md:border-r border-gray-200 p-6">
+                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Language & App Referer</div>
                   <div className="text-sm font-medium text-gray-800">{overview.user?.language || "-"} • {overview.user?.appReferer || "-"}</div>
                 </div>
 
@@ -321,11 +352,11 @@ const UserProfilePage = () => {
                 <div className="p-6">
                   <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Body Measurements</div>
                   <div className="text-sm font-medium text-gray-800 flex flex-wrap gap-x-3 gap-y-1">
-                    <span>Biceps: {overview.user?.Biceps || "-"}</span>
-                    <span>Chest: {overview.user?.Chest || "-"}</span>
-                    <span>Hip: {overview.user?.Hip || "-"}</span>
-                    <span>Thigh: {overview.user?.Thigh || "-"}</span>
-                    <span>Waist: {overview.user?.Waist || "-"}</span>
+                    <span>Biceps: {overview.user?.biceps || "-"}</span>
+                    <span>Chest: {overview.user?.chest || "-"}</span>
+                    <span>Hip: {overview.user?.hip || "-"}</span>
+                    <span>Thigh: {overview.user?.thigh || "-"}</span>
+                    <span>Waist: {overview.user?.waist || "-"}</span>
                   </div>
                 </div>
               </div>
@@ -541,43 +572,82 @@ const UserProfilePage = () => {
             )}
 
             {/* ------------------ Program Progress ------------------ */}
-            <div className="mx-8 bg-white rounded-2xl shadow-sm border border-gray-200 p-6 overflow-hidden">
-              <h3 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-4">
-                Program Progress
-              </h3>
+            <div className="mx-8 bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+              <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-gray-50/50">
+                <h3 className="text-lg font-bold text-gray-800">
+                  Program Progress
+                </h3>
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                  {overview.user?.plan?.name || "Standard Plan"} • {overview.user?.plan?.days || 0} Days
+                </span>
+              </div>
 
               {overview?.user?.plan?.days ? (
-                <div className="flex flex-wrap gap-2">
-                  {Array.from({ length: overview.user.plan.days }).map((_, index) => {
-                    const dayNum = index + 1;
-                    const isCompleted = dayNum <= (overview.user.planCurrentDay || 0);
-                    const videoDayData = overview.progress?.find((p) => p.day === dayNum);
-                    const reportData = overview.dailyReports?.find((r) => r.day === dayNum);
-                    const checklistData = overview.dailyChecklist?.find((c) => c.day === dayNum);
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-[#134D41]">
+                      <tr className="text-[10px] font-black text-white uppercase tracking-widest whitespace-nowrap">
+                        <th className="px-4 py-4 text-left">Day</th>
+                        <th className="px-4 py-4 text-left">Weight</th>
+                        <th className="px-4 py-4 text-left">Water</th>
+                        <th className="px-4 py-4 text-left">Sleep</th>
+                        <th className="px-4 py-4 text-left">Exercise</th>
+                        <th className="px-4 py-4 text-left">Juice</th>
+                        <th className="px-4 py-4 text-left">Pranayama</th>
+                        <th className="px-4 py-4 text-left">Video</th>
+                        <th className="px-6 py-4 text-left">Diet Mistake</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-100">
+                      {Array.from({ length: overview.user.plan.days })
+                        .slice(0, overview.user.planCurrentDay || 0)
+                        .map((_, index) => {
+                          const dayNum = index + 1;
+                          const isCompleted = dayNum <= (overview.user.planCurrentDay || 0);
+                          const isCurrent = dayNum === (overview.user.planCurrentDay || 0);
 
-                    const hasData = videoDayData || reportData || checklistData;
+                          const videoDayData = overview.progress?.find((p) => p.day === dayNum);
+                          const checklistData = overview.dailyChecklist?.find((c) => c.day === dayNum);
 
-                    return (
-                      <div
-                        key={dayNum}
-                        onClick={() => {
-                          if (hasData) handleDayClick({ day: dayNum });
-                        }}
-                        className={`w-12 h-12 flex items-center justify-center font-bold text-sm rounded ${hasData ? "cursor-pointer hover:opacity-90 ring-2 ring-transparent hover:ring-yellow-400" : "cursor-default"
-                          } transition-all`}
-                        style={{
-                          backgroundColor: isCompleted ? "#134D41" : "#E5E7EB",
-                          color: isCompleted ? "#FFFFFF" : "#9CA3AF",
-                          opacity: hasData ? 1 : 0.6
-                        }}
-                      >
-                        {dayNum}
-                      </div>
-                    );
-                  })}
+                          return (
+                            <tr key={dayNum} className={`hover:bg-teal-50/30 transition-colors ${isCurrent ? 'bg-teal-50/50 font-bold' : ''}`}>
+                              <td className="px-4 py-4 whitespace-nowrap text-xs font-bold text-gray-700">
+                                Day {dayNum}
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
+                                {checklistData?.todayWeight ? `${checklistData.todayWeight} kg` : '-'}
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
+                                {checklistData?.waterIntake ? `${checklistData.waterIntake} L` : '-'}
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
+                                {checklistData?.sleepHours ? `${checklistData.sleepHours} hr` : '-'}
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
+                                {checklistData?.exerciseMinutes ? `${checklistData.exerciseMinutes} min` : '-'}
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
+                                {checklistData?.greenJuice ? `${checklistData.greenJuice}x` : '-'}
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
+                                {checklistData?.pranayamaMinutes ? `${checklistData.pranayamaMinutes} min` : '-'}
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap text-[10px] font-bold">
+                                {videoDayData ? (
+                                  <span className="text-red-600 uppercase tracking-tight">Watched</span>
+                                ) : <span className="text-gray-300">-</span>}
+                              </td>
+                              <td className="px-6 py-4 text-xs text-red-500 max-w-[200px] truncate" title={checklistData?.dietMistake}>
+                                {checklistData?.dietMistake || '-'}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
                 </div>
               ) : (
-                <div className="text-gray-500 text-sm">No program active or days not found.</div>
+                <div className="p-10 text-center text-gray-500 italic">No program plan active.</div>
               )}
             </div>
 
@@ -631,9 +701,14 @@ const UserProfilePage = () => {
                       className="rounded-xl border border-amber-200 overflow-hidden shadow-sm"
                     >
                       <div className="bg-amber-100 px-4 py-3 border-b border-amber-200 flex justify-between items-center">
-                        <span className="font-semibold text-gray-800">
-                          Video: {va.videoId?.title?.english || "Unknown Title"}
-                        </span>
+                        <div className="flex items-center gap-3">
+                          <span className="font-semibold text-gray-800">
+                            Video: {va.videoId?.title?.english || "Unknown Title"}
+                          </span>
+                          <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${va.isPassed ? 'bg-teal-600 text-white' : 'bg-red-600 text-white'}`}>
+                            {va.isPassed ? 'Passed' : 'Failed'} ({va.correctCount || 0}/{va.answers?.length || 0})
+                          </span>
+                        </div>
                         <span className="text-xs text-gray-500">
                           {new Date(va.createdAt).toLocaleString()}
                         </span>
@@ -643,7 +718,12 @@ const UserProfilePage = () => {
                           va.answers.map((ans, i) => (
                             <div key={i} className="flex flex-col border-b border-yellow-200 pb-2 last:border-0 last:pb-0">
                               <span className="text-sm font-medium text-gray-700 tracking-wide">Question : {ans.questionId?.questionText?.english || ans.questionId || "Unknown Question"}</span>
-                              <span className="text-md text-gray-900 mt-1 font-semibold">Answer : {ans.answer}</span>
+                              <div className="flex items-center gap-2 mt-1">
+                                <span className="text-md text-gray-900 font-semibold">Answer : {ans.answer}</span>
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${ans.isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                  {ans.isCorrect ? 'Correct' : 'Incorrect'}
+                                </span>
+                              </div>
                             </div>
                           ))
                         ) : (

@@ -22,6 +22,7 @@ const UserForm = ({
     branchId: "",
     planId: "",
     gstin: "",
+    usedReferralCode: "",
   });
   const [errors, setErrors] = useState({});
   const [branches, setBranches] = useState([]);
@@ -55,6 +56,7 @@ const UserForm = ({
         branchId: initialValues.branch?._id || initialValues.branch || "",
         planId: initialValues.plan?._id || initialValues.plan || "",
         gstin: initialValues.gstin || "",
+        usedReferralCode: initialValues.usedReferralCode || "",
       });
       setErrors({});
 
@@ -85,6 +87,7 @@ const UserForm = ({
             : "",
         planId: "",
         gstin: "",
+        usedReferralCode: "",
       });
       setErrors({});
       setPlanHistory([]);
@@ -243,7 +246,7 @@ const UserForm = ({
           </p>
         )}
       </div>
-      
+
       {/* GSTIN */}
       <div>
         <label className="block mb-1 font-semibold text-gray-700">GSTIN (Optional)</label>
@@ -254,6 +257,21 @@ const UserForm = ({
           className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
           placeholder="Enter GSTIN"
         />
+      </div>
+
+      {/* Used Referral Code */}
+      <div>
+        <label className="block mb-1 font-semibold text-gray-700">Used Referral Code (Optional)</label>
+        <input
+          type="text"
+          value={form.usedReferralCode}
+          onChange={(e) => setForm((f) => ({ ...f, usedReferralCode: e.target.value.toUpperCase() }))}
+          className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+          placeholder="Enter Referral Code (e.g. A1B2C3D4E5F6)"
+        />
+        <p className="text-gray-500 text-xs mt-1">
+          Provide the code of the person who referred this user.
+        </p>
       </div>
 
       {/* Buttons */}

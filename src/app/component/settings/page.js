@@ -20,8 +20,8 @@ const SettingsPage = () => {
   const getVideoUrl = (rawPath) => {
     if (!rawPath) return '';
     const normalizedPath = rawPath.replace(/\\/g, '/');
-    const filePath = normalizedPath.startsWith('uploads/') 
-      ? normalizedPath.slice(8) 
+    const filePath = normalizedPath.startsWith('uploads/')
+      ? normalizedPath.slice(8)
       : normalizedPath;
     const encodedPath = encodeURIComponent(filePath);
     return `${API_HOST}/api/v1/uploads/${encodedPath}`;
@@ -88,13 +88,13 @@ const SettingsPage = () => {
       }
 
       setSaving(true);
-      
+
       // Filter out internal MongoDB fields before sending to API
       const { _id, createdAt, updatedAt, __v, ...updateData } = formData;
-      
+
       console.log("Updating settings with data:", updateData);
       await updateSettingById(settings._id, updateData);
-      
+
       setSettings({ ...settings, ...formData });
       toast.success("Settings updated successfully!");
     } catch (error) {
@@ -122,14 +122,14 @@ const SettingsPage = () => {
 
       const response = await generateUrl(uploadData);
       console.log("Upload response:", response);
-      
+
       // Handle response structure (it might be a string or an object with data property)
       // Normalize backslashes to forward slashes for cross-platform compatibility
       let fileUrl = typeof response === 'string' ? response : response.data;
       if (fileUrl && typeof fileUrl === 'string') {
         fileUrl = fileUrl.replace(/\\/g, '/');
       }
-      
+
       if (fileUrl) {
         console.log("Setting testimonialImage to:", fileUrl);
         handleInputChange("testimonialImage", fileUrl);
@@ -346,11 +346,10 @@ const SettingsPage = () => {
                 </label>
               </div>
               <div
-                className={`px-4 py-2 rounded-full text-sm font-medium inline-block ${
-                  formData.appActive
-                    ? "bg-amber-200 text-yellow-900"
-                    : "bg-red-100 text-red-800"
-                }`}
+                className={`px-4 py-2 rounded-full text-sm font-medium inline-block ${formData.appActive
+                  ? "bg-amber-200 text-yellow-900"
+                  : "bg-red-100 text-red-800"
+                  }`}
               >
                 {formData.appActive ? "Active" : "Inactive"}
               </div>
@@ -621,9 +620,8 @@ const SettingsPage = () => {
                       />
                       <label
                         htmlFor="testimonial-image-upload"
-                        className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl border-2 border-dashed border-amber-300 bg-amber-50/30 text-amber-700 font-medium cursor-pointer hover:bg-amber-50 hover:border-amber-400 transition-all ${
-                          isUploadingImage ? "opacity-50 cursor-not-allowed" : ""
-                        }`}
+                        className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl border-2 border-dashed border-amber-300 bg-amber-50/30 text-amber-700 font-medium cursor-pointer hover:bg-amber-50 hover:border-amber-400 transition-all ${isUploadingImage ? "opacity-50 cursor-not-allowed" : ""
+                          }`}
                       >
                         {isUploadingImage ? (
                           <>
@@ -665,63 +663,63 @@ const SettingsPage = () => {
           {formData.resumeLink && (
             <div className="bg-gradient-to-br from-white to-yellow-50 rounded-2xl shadow-lg border border-yellow-200 p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-      
+
                 {/* Resume Video */}
                 <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <svg
-                    className="w-6 h-6 text-yellow-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <svg
+                      className="w-6 h-6 text-yellow-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      />
+                    </svg>
+                    Resume Video Preview
+                  </h3>
+
+                  <video
+                    src={getVideoUrl(formData.resumeLink)}
+                    controls
+                    className="w-full rounded-xl shadow-lg"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                    />
-                  </svg>
-                  Resume Video Preview
-                </h3>
-        
-                <video
-                  src={getVideoUrl(formData.resumeLink)}
-                  controls
-                  className="w-full rounded-xl shadow-lg"
-                >
-                  Your browser does not support the video tag.
-                </video>
+                    Your browser does not support the video tag.
+                  </video>
                 </div>
-                  
+
                 {/* Trial Video */}
                 <div>
-                <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <svg
-                    className="w-6 h-6 text-yellow-600"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <svg
+                      className="w-6 h-6 text-yellow-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
+                      />
+                    </svg>
+                    Trial Video Preview
+                  </h3>
+
+                  <video
+                    src={getVideoUrl(formData.trialLink || formData.resumeLink)}
+                    controls
+                    className="w-full rounded-xl shadow-lg"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                    />
-                  </svg>
-                  Trial Video Preview
-                </h3>
-        
-                <video
-                  src={getVideoUrl(formData.trialLink || formData.resumeLink)}
-                  controls
-                  className="w-full rounded-xl shadow-lg"
-                >
-                  Your browser does not support the video tag.
-                </video>
+                    Your browser does not support the video tag.
+                  </video>
                 </div>
-        
+
               </div>
             </div>
           )}

@@ -1084,24 +1084,24 @@ const AppointmentPage = () => {
     if (!doctorId || !currentDate) return;
 
     const parseTimeToMins = (timeStr) => {
-        const match = String(timeStr).trim().match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/i);
-        if (!match) return 0;
-        let hours = Number(match[1]);
-        const mins = Number(match[2]);
-        const period = match[3].toUpperCase();
-        if (period === 'AM') hours = hours === 12 ? 0 : hours;
-        else hours = hours === 12 ? 12 : hours + 12;
-        return hours * 60 + mins;
+      const match = String(timeStr).trim().match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/i);
+      if (!match) return 0;
+      let hours = Number(match[1]);
+      const mins = Number(match[2]);
+      const period = match[3].toUpperCase();
+      if (period === 'AM') hours = hours === 12 ? 0 : hours;
+      else hours = hours === 12 ? 12 : hours + 12;
+      return hours * 60 + mins;
     };
 
     const currentApptStartMins = parseTimeToMins(activeCallAppointment.startTime);
 
-    const nextAppointments = appointments.filter(app => 
-        app.doctor?._id === doctorId && 
-        app.date === currentDate && 
-        app._id !== activeCallAppointment._id &&
-        app.status !== 'cancelled' &&
-        parseTimeToMins(app.startTime) > currentApptStartMins
+    const nextAppointments = appointments.filter(app =>
+      app.doctor?._id === doctorId &&
+      app.date === currentDate &&
+      app._id !== activeCallAppointment._id &&
+      app.status !== 'cancelled' &&
+      parseTimeToMins(app.startTime) > currentApptStartMins
     );
 
     if (nextAppointments.length === 0) return;
@@ -1110,14 +1110,14 @@ const AppointmentPage = () => {
     const nextAppt = nextAppointments[0];
 
     if (nextAppt) {
-        const nextApptStartMins = parseTimeToMins(nextAppt.startTime);
-        const now = getNowInKolkata();
-        const currentMins = now.getHours() * 60 + now.getMinutes();
+      const nextApptStartMins = parseTimeToMins(nextAppt.startTime);
+      const now = getNowInKolkata();
+      const currentMins = now.getHours() * 60 + now.getMinutes();
 
-        if (currentMins >= nextApptStartMins) {
-            toast.error(`Auto ending call. Doctor has another appointment at ${nextAppt.startTime}`);
-            handleCutCall(activeCallAppointment);
-        }
+      if (currentMins >= nextApptStartMins) {
+        toast.error(`Auto ending call. Doctor has another appointment at ${nextAppt.startTime}`);
+        handleCutCall(activeCallAppointment);
+      }
     }
   }, [currentTimeMarker, activeCallAppointment, callConnected, appointments]);
 
@@ -1651,7 +1651,7 @@ const AppointmentPage = () => {
                               <div>
                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Body Measurements</p>
                                 <div className="text-[9px] font-bold text-slate-500 leading-tight">
-                                  Biceps: {user?.Biceps || 0} • Chest: {user?.Chest || 0} • Hip: {user?.Hip || 0} • Thigh: {user?.Thigh || 0} • Waist: {user?.Waist || 0}
+                                  Biceps: {user?.biceps || 0} • Chest: {user?.chest || 0} • Hip: {user?.hip || 0} • Thigh: {user?.thigh || 0} • Waist: {user?.waist || 0}
                                 </div>
                               </div>
                             </div>

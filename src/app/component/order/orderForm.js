@@ -56,7 +56,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
   };
 
   const handleQuantityChange = (productId, delta) => {
-    setSelectedProducts(selectedProducts.map(p => 
+    setSelectedProducts(selectedProducts.map(p =>
       p.productId === productId ? { ...p, quantity: Math.max(1, p.quantity + delta) } : p
     ));
   };
@@ -161,65 +161,65 @@ const OrderForm = ({ onCancel, onSuccess }) => {
         />
       </div>
 
-        {/* Selected Products & Plans List */}
-        <div className="space-y-2">
-          {selectedPlans.map((p, idx) => (
-            <div key={`plan-${idx}`} className="flex items-center justify-between p-3 border-2 border-yellow-200 rounded-xl bg-yellow-50 shadow-sm">
-              <div className="flex flex-col">
-                <span className="font-bold text-yellow-800">PLAN: {p.name}</span>
-                <span className="text-xs text-yellow-600 font-semibold">₹{p.price} (Applied Branch Discount)</span>
+      {/* Selected Products & Plans List */}
+      <div className="space-y-2">
+        {selectedPlans.map((p, idx) => (
+          <div key={`plan-${idx}`} className="flex items-center justify-between p-3 border-2 border-yellow-200 rounded-xl bg-yellow-50 shadow-sm">
+            <div className="flex flex-col">
+              <span className="font-bold text-yellow-800">PLAN: {p.name}</span>
+              <span className="text-xs text-yellow-600 font-semibold">₹{p.price} (Applied Branch Discount)</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => handleRemovePlan(p.planId)}
+              className="text-red-500 hover:text-red-700 font-bold p-1 bg-red-50 rounded-full w-8 h-8 flex items-center justify-center transition"
+            >
+              &times;
+            </button>
+          </div>
+        ))}
+        {selectedProducts.map((p, idx) => (
+          <div key={idx} className="flex items-center justify-between p-3 border rounded-xl bg-gray-50 shadow-sm">
+            <div className="flex flex-col">
+              <span className="font-semibold text-gray-800">{p.name}</span>
+              <span className="text-xs text-gray-500">₹{p.price} / unit</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center border rounded-lg bg-white overflow-hidden shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => handleQuantityChange(p.productId, -1)}
+                  className="px-3 py-1 bg-gray-100 hover:bg-gray-200 transition font-bold"
+                >
+                  -
+                </button>
+                <span className="px-4 font-bold min-w-[40px] text-center">{p.quantity}</span>
+                <button
+                  type="button"
+                  onClick={() => handleQuantityChange(p.productId, 1)}
+                  className="px-3 py-1 bg-gray-100 hover:bg-gray-200 transition font-bold"
+                >
+                  +
+                </button>
               </div>
               <button
                 type="button"
-                onClick={() => handleRemovePlan(p.planId)}
+                onClick={() => handleRemoveProduct(p.productId)}
                 className="text-red-500 hover:text-red-700 font-bold p-1 bg-red-50 rounded-full w-8 h-8 flex items-center justify-center transition"
               >
                 &times;
               </button>
             </div>
-          ))}
-          {selectedProducts.map((p, idx) => (
-            <div key={idx} className="flex items-center justify-between p-3 border rounded-xl bg-gray-50 shadow-sm">
-              <div className="flex flex-col">
-                <span className="font-semibold text-gray-800">{p.name}</span>
-                <span className="text-xs text-gray-500">₹{p.price} / unit</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex items-center border rounded-lg bg-white overflow-hidden shadow-sm">
-                  <button
-                    type="button"
-                    onClick={() => handleQuantityChange(p.productId, -1)}
-                    className="px-3 py-1 bg-gray-100 hover:bg-gray-200 transition font-bold"
-                  >
-                    -
-                  </button>
-                  <span className="px-4 font-bold min-w-[40px] text-center">{p.quantity}</span>
-                  <button
-                    type="button"
-                    onClick={() => handleQuantityChange(p.productId, 1)}
-                    className="px-3 py-1 bg-gray-100 hover:bg-gray-200 transition font-bold"
-                  >
-                    +
-                  </button>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveProduct(p.productId)}
-                  className="text-red-500 hover:text-red-700 font-bold p-1 bg-red-50 rounded-full w-8 h-8 flex items-center justify-center transition"
-                >
-                   &times;
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
+          </div>
+        ))}
+      </div>
 
       {selectedProducts.length > 0 && (
         <div className="p-4 bg-yellow-50 rounded-xl border border-yellow-200">
-           <div className="flex justify-between items-center text-lg font-bold">
-              <span className="text-gray-700">Total Estimation:</span>
-              <span className="text-yellow-700">₹{totalAmount.toLocaleString()}</span>
-           </div>
+          <div className="flex justify-between items-center text-lg font-bold">
+            <span className="text-gray-700">Total Estimation:</span>
+            <span className="text-yellow-700">₹{totalAmount.toLocaleString()}</span>
+          </div>
         </div>
       )}
 
@@ -242,7 +242,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
             onChange={(e) => setShippingAddress({ ...shippingAddress, mobile: e.target.value })}
           />
         </div>
-        
+
         <div className="grid grid-cols-2 gap-4">
           <input
             type="text"

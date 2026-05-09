@@ -240,7 +240,7 @@ const OrderPage = () => {
   };
 
   return (
-    <RoleGuard allow={["Admin", "subadmin"]}>
+    <RoleGuard allow={["Admin", "subadmin"]} permission="show order page">
       <div className="w-full h-full px-8 lg:px-12 py-6">
         <div className="flex items-center justify-between mb-8">
           <div className="space-y-1">

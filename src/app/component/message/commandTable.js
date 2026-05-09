@@ -98,20 +98,20 @@ const CommandTable = ({
       <div className="overflow-x-auto shadow-md rounded-2xl border border-gray-200 bg-white">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gradient-to-r from-yellow-400 to-amber-300">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+            <tr className="text-[11px] font-black text-gray-700 uppercase tracking-widest">
+              <th className="px-6 py-4 text-left">
                 Title
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left">
                 Type
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left">
                 Description / Audio
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th className="px-6 py-4 text-left">
                 Status
               </th>
-              <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th className="px-6 py-4 text-center">
                 Actions
               </th>
             </tr>
@@ -131,10 +131,10 @@ const CommandTable = ({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                         cmd.type === "text"
-                          ? "bg-yellow-400 text-yellow-800"
-                          : "bg-yellow-400 text-yellow-800"
+                          ? "bg-amber-100 text-amber-700 border border-amber-200"
+                          : "bg-blue-100 text-blue-700 border border-blue-200"
                       }`}
                     >
                       {cmd.type}
@@ -156,41 +156,40 @@ const CommandTable = ({
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${
+                      className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
                         cmd.isApproved
-                          ? "bg-green-100 text-green-800"
-                          : "bg-red-100 text-red-800"
+                          ? "bg-emerald-100 text-emerald-700 border border-emerald-200"
+                          : "bg-rose-100 text-rose-700 border border-rose-200"
                       }`}
                     >
                       {cmd.isApproved ? "Approved" : "Pending"}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-center space-x-2">
-                    {currentRole === "Admin" && !cmd.isApproved && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onApprove(cmd._id);
-                        }}
-                        className="p-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors title='Approve'"
-                        title="Approve"
-                      >
-                        Approve
-                      </button>
-                    )}
-                    <ActionButton
-                      type="edit"
-                      disabled={!canModify}
-                      onClick={() => canModify && onEdit(cmd)}
-                    />
-                    <ActionButton
-                      type="delete"
-                      disabled={!canModify}
-                      onClick={() =>
-                        canModify &&
-                        handleDeleteClick(cmd._id, cmd.title || "Command")
-                      }
-                    />
+                  <td className="px-6 py-4">
+                    <div className="flex justify-center items-center gap-2">
+                      {currentRole === "Admin" && !cmd.isApproved && (
+                        <ActionButton
+                          type="approve"
+                          title="Approve"
+                          onClick={() => onApprove(cmd._id)}
+                        />
+                      )}
+                      <ActionButton
+                        type="edit"
+                        title="Edit"
+                        disabled={!canModify}
+                        onClick={() => canModify && onEdit(cmd)}
+                      />
+                      <ActionButton
+                        type="delete"
+                        title="Delete"
+                        disabled={!canModify}
+                        onClick={() =>
+                          canModify &&
+                          handleDeleteClick(cmd._id, cmd.title || "Command")
+                        }
+                      />
+                    </div>
                   </td>
                 </tr>
               );

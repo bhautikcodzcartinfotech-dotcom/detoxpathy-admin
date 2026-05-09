@@ -79,7 +79,7 @@ const PurchaseEntry = () => {
     const qty = Number(item.quantity) || 0;
     const rate = Number(item.rate) || 0;
     const gst = Number(item.gstPercentage) || 0;
-    
+
     const taxable = qty * rate;
     const gstAmt = (taxable * gst) / 100;
     item.totalAmount = taxable + gstAmt;

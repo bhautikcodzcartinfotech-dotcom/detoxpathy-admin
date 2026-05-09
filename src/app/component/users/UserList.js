@@ -12,9 +12,8 @@ import { getUserOverview } from "@/Api/AllApi";
 const ThemedCheckbox = ({ checked, onChange, ariaLabel, disabled = false }) => {
   return (
     <label
-      className={`inline-flex items-center select-none ${
-        disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
-      }`}
+      className={`inline-flex items-center select-none ${disabled ? "cursor-not-allowed opacity-60" : "cursor-pointer"
+        }`}
     >
       <input
         type="checkbox"
@@ -25,14 +24,12 @@ const ThemedCheckbox = ({ checked, onChange, ariaLabel, disabled = false }) => {
         className="peer sr-only"
       />
       <span
-        className={`w-5 h-5 rounded-md border border-teal-400 bg-white peer-checked:bg-gradient-to-r peer-checked:from-[#2A9D8F] peer-checked:to-[#64C1B1] peer-checked:border-teal-500 shadow-sm flex items-center justify-center transition-all ${
-          disabled ? "bg-gray-100 border-gray-300" : ""
-        }`}
+        className={`w-5 h-5 rounded-md border border-teal-400 bg-white peer-checked:bg-gradient-to-r peer-checked:from-[#2A9D8F] peer-checked:to-[#64C1B1] peer-checked:border-teal-500 shadow-sm flex items-center justify-center transition-all ${disabled ? "bg-gray-100 border-gray-300" : ""
+          }`}
       >
         <svg
-          className={`w-3 h-3 text-white opacity-${
-            checked ? 100 : 0
-          } transition-opacity`}
+          className={`w-3 h-3 text-white opacity-${checked ? 100 : 0
+            } transition-opacity`}
           viewBox="0 0 20 20"
           fill="currentColor"
           aria-hidden="true"
@@ -180,7 +177,7 @@ const UserList = ({ users, loading, onEdit, onDelete, onBulkDelete, onSuggest })
                 <ThemedCheckbox
                   checked={
                     selectedIds.size ===
-                      users.filter((u) => !u.isDeleted).length &&
+                    users.filter((u) => !u.isDeleted).length &&
                     users.filter((u) => !u.isDeleted).length > 0
                   }
                   onChange={toggleAll}
@@ -243,9 +240,8 @@ const UserList = ({ users, loading, onEdit, onDelete, onBulkDelete, onSuggest })
               return (
                 <tr
                   key={u._id}
-                  className={`relative hover:bg-yellow-50 transition-all duration-200 cursor-pointer ${
-                    isDeleted ? "bg-red-50" : ""
-                  }`}
+                  className={`relative hover:bg-yellow-50 transition-all duration-200 cursor-pointer ${isDeleted ? "bg-red-50" : ""
+                    }`}
                 >
                   <td className="px-4 py-4">
                     <ThemedCheckbox

@@ -21,16 +21,16 @@ const CompanyOrderForm = ({ products, plans, onSubmit, onCancel, loading }) => {
     const discount = Number(product.bulkDiscount) || 0;
     const bulkPrice = sellingPrice - (sellingPrice * discount / 100);
 
-    setSelectedProducts([...selectedProducts, { 
-      productId, 
-      quantity: 1, 
-      name: product.name, 
-      price: bulkPrice 
+    setSelectedProducts([...selectedProducts, {
+      productId,
+      quantity: 1,
+      name: product.name,
+      price: bulkPrice
     }]);
   };
 
   const handleQuantityChange = (productId, delta) => {
-    setSelectedProducts(selectedProducts.map(p => 
+    setSelectedProducts(selectedProducts.map(p =>
       p.productId === productId ? { ...p, quantity: Math.max(1, p.quantity + delta) } : p
     ));
   };
@@ -51,16 +51,16 @@ const CompanyOrderForm = ({ products, plans, onSubmit, onCancel, loading }) => {
     const discount = Number(plan.bulkDiscount) || 0;
     const bulkPrice = plan.price - (plan.price * discount / 100);
 
-    setSelectedPlans([...selectedPlans, { 
-      planId, 
-      quantity: 1, 
-      name: plan.name, 
-      price: bulkPrice 
+    setSelectedPlans([...selectedPlans, {
+      planId,
+      quantity: 1,
+      name: plan.name,
+      price: bulkPrice
     }]);
   };
 
   const handlePlanQuantityChange = (planId, delta) => {
-    setSelectedPlans(selectedPlans.map(p => 
+    setSelectedPlans(selectedPlans.map(p =>
       p.planId === planId ? { ...p, quantity: Math.max(1, p.quantity + delta) } : p
     ));
   };
@@ -80,8 +80,8 @@ const CompanyOrderForm = ({ products, plans, onSubmit, onCancel, loading }) => {
     });
   };
 
-  const totalAmount = 
-    selectedProducts.reduce((sum, p) => sum + (p.price * p.quantity), 0) + 
+  const totalAmount =
+    selectedProducts.reduce((sum, p) => sum + (p.price * p.quantity), 0) +
     selectedPlans.reduce((sum, p) => sum + (p.price * p.quantity), 0);
 
   return (
@@ -197,10 +197,10 @@ const CompanyOrderForm = ({ products, plans, onSubmit, onCancel, loading }) => {
 
       {(selectedProducts.length > 0 || selectedPlans.length > 0) && (
         <div className="p-4 bg-[#134D41]/5 rounded-xl border border-[#134D41]/20">
-           <div className="flex justify-between items-center text-lg font-bold">
-              <span className="text-gray-700 font-black tracking-tighter uppercase text-sm">Grand Total (Incl. Discounts):</span>
-              <span className="text-[#134D41] text-2xl tracking-tighter">₹{totalAmount.toLocaleString()}</span>
-           </div>
+          <div className="flex justify-between items-center text-lg font-bold">
+            <span className="text-gray-700 font-black tracking-tighter uppercase text-sm">Grand Total (Incl. Discounts):</span>
+            <span className="text-[#134D41] text-2xl tracking-tighter">₹{totalAmount.toLocaleString()}</span>
+          </div>
         </div>
       )}
 

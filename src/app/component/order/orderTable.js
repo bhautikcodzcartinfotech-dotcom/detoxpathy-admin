@@ -58,8 +58,8 @@ const OrderTable = ({ items, loading, onRefresh, selectedIds = [], onToggleSelec
         <thead>
           <tr className="bg-gradient-to-r from-yellow-400 to-amber-300">
             <th className="px-4 py-3 text-left">
-              <input 
-                type="checkbox" 
+              <input
+                type="checkbox"
                 checked={allSelected}
                 onChange={onSelectAll}
                 className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
@@ -82,8 +82,8 @@ const OrderTable = ({ items, loading, onRefresh, selectedIds = [], onToggleSelec
           {items.map((order) => (
             <tr key={order._id} className={`hover:bg-gray-50/50 transition-all duration-200 ${selectedIds.includes(order._id) ? 'bg-teal-50/30' : ''}`}>
               <td className="px-4 py-5">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   checked={selectedIds.includes(order._id)}
                   onChange={() => onToggleSelection(order._id)}
                   className="w-4 h-4 rounded border-gray-300 text-teal-600 focus:ring-teal-500 cursor-pointer"
@@ -96,7 +96,7 @@ const OrderTable = ({ items, loading, onRefresh, selectedIds = [], onToggleSelec
               <td className="px-4 py-5 whitespace-nowrap text-[13px] font-medium text-gray-700">
                 {order.user ? `${order.user.name} ${order.user.surname || ""}` : (order.shippingAddress?.name || "N/A")}
               </td>
-              
+
               <td className="px-4 py-5 whitespace-nowrap text-[13px] text-gray-500">
                 <span className="font-medium text-teal-700">{order.branch?.name || "N/A"}</span>
               </td>

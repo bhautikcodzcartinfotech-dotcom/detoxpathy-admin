@@ -1,7 +1,7 @@
 // components/ui/ActionButton.jsx
 "use client";
 
-import { FiEdit, FiTrash2, FiClock, FiInfo, FiPlusCircle, FiEye, FiLogIn, FiCalendar, FiChevronUp, FiChevronDown } from "react-icons/fi";
+import { FiEdit, FiTrash2, FiClock, FiInfo, FiPlusCircle, FiEye, FiLogIn, FiCalendar, FiChevronUp, FiChevronDown, FiCheck } from "react-icons/fi";
 
 export const ActionButton = ({ type = "edit", onClick, disabled = false, title = "" }) => {
   const Icon = {
@@ -14,7 +14,8 @@ export const ActionButton = ({ type = "edit", onClick, disabled = false, title =
     login: FiLogIn,
     calendar: FiCalendar,
     chevronUp: FiChevronUp,
-    chevronDown: FiChevronDown
+    chevronDown: FiChevronDown,
+    approve: FiCheck
   }[type] || FiEdit;
 
   const styles = {
@@ -27,7 +28,8 @@ export const ActionButton = ({ type = "edit", onClick, disabled = false, title =
     login: "bg-green-50 text-green-600 hover:bg-green-600 hover:text-white shadow-green-900/5 hover:shadow-green-900/20",
     calendar: "bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white shadow-indigo-900/5 hover:shadow-indigo-900/20",
     chevronUp: "bg-gray-50 text-gray-600 hover:bg-gray-200 shadow-sm",
-    chevronDown: "bg-gray-50 text-gray-600 hover:bg-gray-200 shadow-sm"
+    chevronDown: "bg-gray-50 text-gray-600 hover:bg-gray-200 shadow-sm",
+    approve: "bg-green-50 text-green-600 hover:bg-green-600 hover:text-white shadow-green-900/5 hover:shadow-green-900/20"
   }[type] || "bg-gray-50 text-gray-600";
 
   return (

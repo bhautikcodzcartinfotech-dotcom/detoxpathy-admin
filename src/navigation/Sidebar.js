@@ -168,13 +168,15 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
             <MdPeople size={20} />
             {!isCollapsed && <span>Users</span>}
           </Link>
-          <Link
-            href="/component/order"
-            className={linkClasses("/component/order")}
-          >
-            <MdShoppingCart size={20} />
-            {!isCollapsed && <span>Orders</span>}
-          </Link>
+          {(role === "Admin" || (role === "subadmin" && permissions?.includes("show order page"))) && (
+            <Link
+              href="/component/order"
+              className={linkClasses("/component/order")}
+            >
+              <MdShoppingCart size={20} />
+              {!isCollapsed && <span>Orders</span>}
+            </Link>
+          )}
           <Link
             href="/component/branch-time"
             className={linkClasses("/component/branch-time")}
@@ -343,6 +345,20 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
               >
                 <MdAssignment size={20} />
                 {!isCollapsed && <span>App References</span>}
+              </Link>
+              <Link
+                href="/component/medical-condition"
+                className={linkClasses("/component/medical-condition")}
+              >
+                <MdAssignment size={20} />
+                {!isCollapsed && <span>Medical Conditions</span>}
+              </Link>
+              <Link
+                href="/component/faq"
+                className={linkClasses("/component/faq")}
+              >
+                <MdQuiz size={20} />
+                {!isCollapsed && <span>FAQs</span>}
               </Link>
               <Link
                 href="/component/permission"

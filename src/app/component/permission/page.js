@@ -31,6 +31,7 @@ const PERMISSION_GROUPS = [
       { label: "Show Contact Categories", value: "show contact categories" },
       { label: "Show Feedback Page", value: "show feedback page" },
       { label: "Show App References", value: "show app reference page" },
+      { label: "Show Order Page", value: "show order page" },
     ]
   },
 ];
@@ -111,14 +112,14 @@ const PermissionPage = () => {
           <Header size="3xl">Manage Role Permissions</Header>
           <Button 
             onClick={() => setIsAddingRole(!isAddingRole)}
-            variant={isAddingRole ? "secondary" : "gold"}
+            variant={isAddingRole ? "secondary" : "primary"}
           >
             {isAddingRole ? "Cancel" : "+ Add New Role"}
           </Button>
         </div>
 
         {isAddingRole && (
-          <div className="mb-6 p-6 bg-white rounded-2xl border-2 border-yellow-100 shadow-xl shadow-yellow-900/5 animate-in fade-in slide-in-from-top-4 duration-300">
+          <div className="mb-6 p-6 bg-white rounded-2xl border-2 border-teal-100 shadow-xl shadow-teal-900/5 animate-in fade-in slide-in-from-top-4 duration-300">
             <div className="flex flex-col sm:flex-row items-end gap-4">
               <div className="flex-1 w-full">
                 <label className="block text-sm font-bold text-gray-700 mb-2 ml-1">New Role Name</label>
@@ -127,7 +128,7 @@ const PermissionPage = () => {
                   value={newRoleName}
                   onChange={(e) => setNewRoleName(e.target.value)}
                   placeholder="e.g. Sales Executive, Manager"
-                  className="w-full p-3.5 rounded-xl border border-gray-200 focus:border-yellow-500 focus:ring-4 focus:ring-yellow-500/5 focus:outline-none text-sm transition-all"
+                  className="w-full p-3.5 rounded-xl border border-gray-200 focus:border-[#134D41] focus:ring-4 focus:ring-[#134D41]/5 focus:outline-none text-sm transition-all"
                 />
               </div>
               <Button 
@@ -149,8 +150,8 @@ const PermissionPage = () => {
 
         <div className="bg-white rounded-xl shadow overflow-hidden">
           <table className="w-full text-left border-collapse">
-            <thead className="bg-gradient-to-r from-yellow-400 to-amber-300">
-              <tr className="text-[11px] font-black text-gray-700 uppercase tracking-widest">
+            <thead className="bg-[#134D41]">
+              <tr className="text-[11px] font-black text-white uppercase tracking-widest">
                 <th className="px-6 py-4">Role Name</th>
                 <th className="px-6 py-4">Permissions Count</th>
                 <th className="px-6 py-4 text-center">Actions</th>
@@ -212,7 +213,7 @@ const PermissionPage = () => {
 
         <Drawer isOpen={isOpen} onClose={() => setIsOpen(false)}>
           <div className="mb-6 text-center">
-            <h2 className="text-3xl font-bold text-yellow-600">
+            <h2 className="text-3xl font-bold text-[#134D41]">
               Update Role Permissions
             </h2>
             <p className="text-gray-500 mt-2 font-bold uppercase tracking-wider">Role: {editing?.role}</p>
@@ -223,12 +224,12 @@ const PermissionPage = () => {
               {PERMISSION_GROUPS.map((group) => (
                 <div key={group.category} className="border rounded-xl p-4 bg-gray-50/30">
                   <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                    <span className="w-2 h-2 bg-yellow-400 rounded-full"></span>
+                    <span className="w-2 h-2 bg-teal-500 rounded-full"></span>
                     {group.category}
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
                     {group.permissions.map((perm) => (
-                      <label key={perm.value} className="flex items-center gap-3 p-3 bg-white border rounded-lg cursor-pointer hover:border-yellow-400 transition-colors shadow-sm min-h-[50px]">
+                      <label key={perm.value} className="flex items-center gap-3 p-3 bg-white border rounded-lg cursor-pointer hover:border-teal-500 transition-colors shadow-sm min-h-[50px]">
                         <input
                           type="checkbox"
                           checked={permissions.includes(perm.value)}
@@ -239,7 +240,7 @@ const PermissionPage = () => {
                               setPermissions(permissions.filter(p => p !== perm.value));
                             }
                           }}
-                          className="w-5 h-5 flex-shrink-0 text-yellow-500 focus:ring-yellow-400 border-gray-300 rounded transition-all cursor-pointer"
+                          className="w-5 h-5 flex-shrink-0 text-teal-600 focus:ring-teal-500 border-gray-300 rounded transition-all cursor-pointer"
                         />
                         <span className="text-gray-700 font-medium text-sm leading-tight">{perm.label}</span>
                       </label>

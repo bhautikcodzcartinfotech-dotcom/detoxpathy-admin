@@ -20,7 +20,7 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [existingSuggestion, setExistingSuggestion] = useState(null);
-  
+
   // Search states
   const [programSearch, setProgramSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
@@ -38,12 +38,12 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
           const response = await getSuggestedProgram(user._id);
           const suggestion = response?.suggestion;
           const products = response?.products || [];
-          
+
           setAvailableProducts(products);
 
           if (suggestion) {
             setExistingSuggestion(suggestion);
-            
+
             // Set current program
             const currentProgramId = suggestion.plans?._id || suggestion.plans || "";
             setSelectedProgramId(currentProgramId);
@@ -74,9 +74,9 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
   };
 
   const handleProductToggle = (productId) => {
-    setSelectedProductIds(prev => 
-      prev.includes(productId) 
-        ? prev.filter(id => id !== productId) 
+    setSelectedProductIds(prev =>
+      prev.includes(productId)
+        ? prev.filter(id => id !== productId)
         : [...prev, productId]
     );
   };
@@ -131,11 +131,11 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
   };
 
   // Filtered lists
-  const filteredPrograms = programs.filter(p => 
+  const filteredPrograms = programs.filter(p =>
     p.name?.toLowerCase().includes(programSearch.toLowerCase())
   );
 
-  const filteredProducts = availableProducts.filter(p => 
+  const filteredProducts = availableProducts.filter(p =>
     p.name?.toLowerCase().includes(productSearch.toLowerCase())
   );
 
@@ -144,7 +144,7 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
   return (
     <div className="flex flex-col h-full">
       <div className="flex-1 space-y-6 pr-1">
-        
+
         {/* Program Selection */}
         <section>
           <div className="flex flex-col gap-3 mb-4">
@@ -152,12 +152,12 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
               <div className="w-1 h-4 bg-yellow-400 rounded-full"></div>
               <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider">Select Health Program</h3>
             </div>
-            
+
             {/* Program Search */}
             <div className="relative">
-              <input 
-                type="text" 
-                placeholder="Search programs..." 
+              <input
+                type="text"
+                placeholder="Search programs..."
                 value={programSearch}
                 onChange={(e) => setProgramSearch(e.target.value)}
                 className="w-full sm:w-80 pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-yellow-400/20 focus:border-yellow-400 transition-all outline-none"
@@ -184,8 +184,8 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
                     key={program._id}
                     onClick={() => handleProgramSelect(program._id)}
                     className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex items-center gap-4 ${isSelected
-                        ? "border-yellow-400 bg-yellow-50 shadow-sm"
-                        : "border-gray-100 bg-white hover:border-yellow-200"
+                      ? "border-yellow-400 bg-yellow-50 shadow-sm"
+                      : "border-gray-100 bg-white hover:border-yellow-200"
                       }`}
                   >
                     <div
@@ -201,7 +201,7 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
                           {program.days} Days
                         </span>
                         <span className="text-[10px] bg-green-100 px-2 py-0.5 rounded text-green-700 font-bold">
-                          ₹{program.price}
+                          ₹{program.price} 
                         </span>
                       </div>
                     </div>
@@ -222,9 +222,9 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
 
             {/* Product Search */}
             <div className="relative">
-              <input 
-                type="text" 
-                placeholder="Search products..." 
+              <input
+                type="text"
+                placeholder="Search products..."
                 value={productSearch}
                 onChange={(e) => setProductSearch(e.target.value)}
                 className="w-full sm:w-80 pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs focus:bg-white focus:ring-2 focus:ring-teal-400/20 focus:border-teal-400 transition-all outline-none"
@@ -252,8 +252,8 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
                     key={product._id}
                     onClick={() => handleProductToggle(product._id)}
                     className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center gap-3 ${isSelected
-                        ? "border-teal-400 bg-teal-50 shadow-sm"
-                        : "border-gray-100 bg-white hover:border-teal-100"
+                      ? "border-teal-400 bg-teal-50 shadow-sm"
+                      : "border-gray-100 bg-white hover:border-teal-100"
                       }`}
                   >
                     <div

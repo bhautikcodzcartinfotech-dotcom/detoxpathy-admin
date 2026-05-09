@@ -69,7 +69,7 @@ const OrderDetailsPage = () => {
     <div className="p-6 bg-[#F8FAFC] min-h-screen">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
-        <button 
+        <button
           onClick={() => router.back()}
           className="p-2 bg-white rounded-lg shadow-sm hover:bg-gray-50 transition-colors"
         >
@@ -93,7 +93,7 @@ const OrderDetailsPage = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Left Column: Order Items & Shipping */}
         <div className="lg:col-span-2 space-y-8">
-          
+
           {/* Items Section */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
@@ -188,21 +188,21 @@ const OrderDetailsPage = () => {
 
         {/* Right Column: User Info & Actions */}
         <div className="space-y-8">
-          
+
           {/* User Profile Summary */}
           {order.user && (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex flex-col items-center text-center">
               <div className="w-20 h-20 rounded-full overflow-hidden mb-4 border-4 border-teal-50 ring-4 ring-white">
-                <img 
-                  src={order.user.image?.startsWith('http') ? order.user.image : (order.user.image ? `${API_BASE}/${order.user.image}` : `https://ui-avatars.com/api/?name=${order.user.name}+${order.user.surname}`)} 
-                  alt={order.user.name} 
+                <img
+                  src={order.user.image?.startsWith('http') ? order.user.image : (order.user.image ? `${API_BASE}/${order.user.image}` : `https://ui-avatars.com/api/?name=${order.user.name}+${order.user.surname}`)}
+                  alt={order.user.name}
                   className="w-full h-full object-cover"
                 />
               </div>
               <h3 className="font-bold text-lg text-gray-900">{order.user.name} {order.user.surname}</h3>
               <p className="text-sm text-gray-500 mb-6">{order.user.mobilePrefix} {order.user.mobileNumber}</p>
-              
-              <button 
+
+              <button
                 onClick={() => router.push(`/component/users/${order.user.id}/profile`)}
                 className="w-full py-2.5 bg-gray-900 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-gray-800 transition"
               >
@@ -216,7 +216,7 @@ const OrderDetailsPage = () => {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">
             <div>
               <label className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 block">Update Order Status</label>
-              <select 
+              <select
                 value={order.orderStatus}
                 disabled={updating}
                 onChange={(e) => handleStatusChange(e.target.value)}
@@ -256,7 +256,7 @@ const OrderDetailsPage = () => {
               </div>
             </div>
 
-            <button 
+            <button
               onClick={() => downloadOrderInvoiceApi(order._id)}
               className="w-full py-2.5 border border-teal-600 text-teal-600 rounded-xl text-sm font-bold hover:bg-teal-50 transition"
             >
