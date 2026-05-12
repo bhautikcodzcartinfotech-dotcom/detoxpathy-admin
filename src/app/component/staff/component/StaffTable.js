@@ -1,15 +1,21 @@
 "use client";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/contexts/AuthContext";
 import { ActionButton } from "@/utils/actionbutton";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import { Calendar } from "lucide-react";
+import toast from "react-hot-toast";
 
 const StaffTable = ({ items, loading, onEdit, onDelete, onManageLeave, role, permissions }) => {
+  const router = useRouter();
+  const { impersonate } = useAuth();
   const [deleteDialog, setDeleteDialog] = useState({
     isOpen: false,
     itemId: null,
     itemName: null,
   });
+  const [loginLoading, setLoginLoading] = useState(null);
 
   const handleDeleteClick = (itemId, itemName) => {
     setDeleteDialog({
@@ -38,6 +44,31 @@ const StaffTable = ({ items, loading, onEdit, onDelete, onManageLeave, role, per
     });
   };
 
+  const handleLoginAsStaff = async (staff) => {
+    try {
+      setLoginLoading(staff._id);
+      const email = staff.email;
+      const password = staff.originalPassword || staff.password;
+
+      if (!email || !password) {
+        throw new Error("Staff email/password not available");
+      }
+
+      const result = await impersonate(email, password);
+      if (result?.success) {
+        toast.success(`Logged in as ${staff.username}`);
+        router.push("/dashboard");
+      } else {
+        throw new Error(result?.error || "Login failed");
+      }
+    } catch (error) {
+      console.error("Staff direct login error:", error);
+      toast.error(error?.response?.data?.message || error?.message || "Failed to login as staff");
+    } finally {
+      setLoginLoading(null);
+    }
+  };
+
   if (loading) {
     return (
       <div className="w-full flex justify-center py-20">
@@ -55,7 +86,6 @@ const StaffTable = ({ items, loading, onEdit, onDelete, onManageLeave, role, per
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Name</th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Email</th>
-                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Phone</th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Role</th>
                 <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
               </tr>
@@ -63,12 +93,11 @@ const StaffTable = ({ items, loading, onEdit, onDelete, onManageLeave, role, per
             <tbody className="bg-white divide-y divide-gray-200">
               {items.map((item) => (
                 <tr key={item._id} className="hover:bg-yellow-50 transition-all duration-200">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{item.name}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{item.username || item.name}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium">{item.email}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium">{item.phone}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-teal-50 text-teal-700">
-                      {item.role}
+                      {item.adminType || item.role}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">
@@ -86,7 +115,15 @@ const StaffTable = ({ items, loading, onEdit, onDelete, onManageLeave, role, per
                       {(role === "Admin" || (role === "subadmin" && permissions?.includes("delete staff"))) && (
                         <ActionButton
                           type="delete"
-                          onClick={() => handleDeleteClick(item._id, item.name || "Staff Member")}
+                          onClick={() => handleDeleteClick(item._id, item.username || item.name || "Staff Member")}
+                        />
+                      )}
+                      {role === "Admin" && (
+                        <ActionButton
+                          type="login"
+                          onClick={() => handleLoginAsStaff(item)}
+                          disabled={loginLoading === item._id}
+                          title="Login as this staff"
                         />
                       )}
                     </div>
@@ -95,7 +132,7 @@ const StaffTable = ({ items, loading, onEdit, onDelete, onManageLeave, role, per
               ))}
               {items.length === 0 && (
                 <tr>
-                  <td colSpan="5" className="px-6 py-12 text-center text-gray-400 font-medium bg-gray-50/30">
+                  <td colSpan="4" className="px-6 py-12 text-center text-gray-400 font-medium bg-gray-50/30">
                     No staff members found for this branch.
                   </td>
                 </tr>

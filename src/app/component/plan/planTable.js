@@ -4,7 +4,7 @@ import { ActionButton } from "@/utils/actionbutton";
 import NotFoundCard from "@/components/NotFoundCard";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 
-const PlanTable = ({ plans, onEdit, onDelete }) => {
+const PlanTable = ({ plans, onEdit, onDelete, currency = "₹" }) => {
   const [deleteDialog, setDeleteDialog] = useState({
     isOpen: false,
     itemId: null,
@@ -84,7 +84,7 @@ const PlanTable = ({ plans, onEdit, onDelete }) => {
                   {p.name}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-gray-700">
-                  ₹{p.price || 0}
+                  {currency}{p.price || 0}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-gray-700">
                   {p.bulkDiscount || 0}%

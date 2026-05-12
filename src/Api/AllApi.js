@@ -297,8 +297,6 @@ export const createBranchApi = async (payload) => {
       longitude: payload.longitude,
       mobilePrefix: payload.mobilePrefix,
       mobileNumber: payload.mobileNumber,
-      isMainBranch: payload.isMainBranch,
-      isStateHeadBranch: payload.isStateHeadBranch,
       isFranchise: payload.isFranchise,
       gstin: payload.gstin,
     },
@@ -320,8 +318,6 @@ export const updateBranchById = async (id, payload) => {
     "longitude",
     "mobilePrefix",
     "mobileNumber",
-    "isMainBranch",
-    "isStateHeadBranch",
     "isFranchise",
     "gstin",
   ];
@@ -544,6 +540,14 @@ export const deleteQuestion = async (questionId) => {
   });
   return res.data.data;
 };
+
+export const getQuestionUserStats = async (questionId) => {
+  const res = await axios.get(`${API_BASE}/admin/question/get-user-stats/${questionId}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
 
 export const createVideoApi = async (payload) => {
   console.log("------------------payload----------------", payload.videoSecond);

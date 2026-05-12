@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import TimeButton from "@/utils/timebutton";
+import { getSetting } from "@/Api/AllApi";
 import { validateForm } from "@/utils/validation";
 
 const PlanForm = ({
@@ -11,8 +12,31 @@ const PlanForm = ({
   loading = false,
   title = "Plan",
 }) => {
+  const [currency, setCurrency] = useState("₹");
   const [form, setForm] = useState({ name: "", description: "", days: "", price: "", bulkDiscount: "", notificationDays: [] });
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    const fetchCurrency = async () => {
+      try {
+        const response = await getSetting();
+        let settingsData;
+        if (response && response.data) {
+          settingsData = response.data;
+        } else if (response && response.setting) {
+          settingsData = response.setting;
+        } else if (response && response._id) {
+          settingsData = response;
+        }
+        if (settingsData && settingsData.currency) {
+          setCurrency(settingsData.currency);
+        }
+      } catch (error) {
+        console.error("Failed to fetch settings:", error);
+      }
+    };
+    fetchCurrency();
+  }, []);
 
   useEffect(() => {
     if (initialData) {
@@ -160,7 +184,7 @@ const PlanForm = ({
        </div>
 
         <div>
-          <label className="block mb-1 font-semibold text-gray-700">Price *</label>
+          <label className="block mb-1 font-semibold text-gray-700">Price ({currency}) *</label>
           <input
             type="number"
             value={form.price}

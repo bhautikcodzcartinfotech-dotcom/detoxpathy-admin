@@ -344,6 +344,7 @@ const VideoForm = ({
     { label: "Trial Video", value: 6 },
     { label: "Body Detoxification", value: 7 },
     { label: "Instruction", value: 8 },
+    { label: "Hold Video", value: 9 },
   ];
 
   const videoTypeOptions = [

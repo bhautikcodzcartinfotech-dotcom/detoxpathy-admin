@@ -5,6 +5,7 @@ import {
   createPlanApi,
   updatePlanById,
   deletePlanById,
+  getSetting,
 } from "@/Api/AllApi";
 import PlanTable from "./planTable";
 import PlanForm from "./planForm";
@@ -18,6 +19,26 @@ const PlanPage = () => {
   const [loading, setLoading] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState(null);
+  const [currency, setCurrency] = useState("₹");
+
+  const fetchSettings = async () => {
+    try {
+      const response = await getSetting();
+      let settingsData;
+      if (response && response.data) {
+        settingsData = response.data;
+      } else if (response && response.setting) {
+        settingsData = response.setting;
+      } else if (response && response._id) {
+        settingsData = response;
+      }
+      if (settingsData && settingsData.currency) {
+        setCurrency(settingsData.currency);
+      }
+    } catch (error) {
+      console.error("Failed to fetch settings:", error);
+    }
+  };
 
   const fetchPlans = async () => {
     setLoading(true);
@@ -33,6 +54,7 @@ const PlanPage = () => {
   };
 
   useEffect(() => {
+    fetchSettings();
     fetchPlans();
   }, []);
 
@@ -99,6 +121,7 @@ const PlanPage = () => {
             setDrawerOpen(true);
           }}
           onDelete={handleDelete}
+          currency={currency}
         />
       )}
 

@@ -24,6 +24,27 @@ const SearchComponent = ({
   languageOptions = [],
   selectedLanguage = "",
   onLanguageChange = () => {},
+  // Gender and City filters
+  selectedGender = "",
+  onGenderChange = () => {},
+  selectedCity = "",
+  onCityChange = () => {},
+  selectedState = "",
+  onStateChange = () => {},
+  selectedCountry = "",
+  onCountryChange = () => {},
+
+  // Referrer filter
+  referrerOptions = [],
+  selectedReferrer = "",
+  onReferrerChange = () => {},
+  // Age range filter
+  selectedAgeRange = "",
+  onAgeRangeChange = () => {},
+  skipBodyMeasurement = "",
+  onSkipBodyMeasurementChange = () => {},
+
+
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -148,6 +169,101 @@ const SearchComponent = ({
             </div>
           )}
 
+          {/* Gender Filter */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Filter by Gender
+            </label>
+            <Dropdown
+              options={[
+                { label: "All Genders", value: "" },
+                { label: "Male", value: "Male" },
+                { label: "Female", value: "Female" },
+                { label: "Other", value: "Other" },
+              ]}
+              value={selectedGender}
+              onChange={onGenderChange}
+            />
+          </div>
+
+          {/* City Filter */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Filter by City
+            </label>
+            <input
+              type="text"
+              value={selectedCity}
+              onChange={(e) => onCityChange(e.target.value)}
+              placeholder="Enter city..."
+              className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition text-sm shadow-sm bg-gray-50 focus:bg-white"
+            />
+          </div>
+
+          {/* State Filter */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Filter by State
+            </label>
+            <input
+              type="text"
+              value={selectedState}
+              onChange={(e) => onStateChange(e.target.value)}
+              placeholder="Enter state..."
+              className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition text-sm shadow-sm bg-gray-50 focus:bg-white"
+            />
+          </div>
+
+          {/* Country Filter */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Filter by Country
+            </label>
+            <input
+              type="text"
+              value={selectedCountry}
+              onChange={(e) => onCountryChange(e.target.value)}
+              placeholder="Enter country..."
+              className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition text-sm shadow-sm bg-gray-50 focus:bg-white"
+            />
+          </div>
+
+
+          {/* Referrer Filter */}
+          {referrerOptions.length > 0 && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Filter by Referrer
+              </label>
+              <Dropdown
+                options={[{ label: "All Referrers", value: "" }, ...referrerOptions]}
+                value={selectedReferrer}
+                onChange={onReferrerChange}
+                showSearch={true}
+                placeholder="Search referrer..."
+              />
+            </div>
+          )}
+
+          {/* Age Range Filter */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Age Range
+            </label>
+            <Dropdown
+              options={[
+                { label: "All Ages", value: "" },
+                { label: "0 - 18", value: "0-18" },
+                { label: "18 - 30", value: "18-30" },
+                { label: "30 - 50", value: "30-50" },
+                { label: "50+", value: "50+" },
+              ]}
+              value={selectedAgeRange}
+              onChange={onAgeRangeChange}
+              placeholder="Select age range"
+            />
+          </div>
+
           {/* Date Filter */}
           {onDateChange && (
             <div>
@@ -159,19 +275,38 @@ const SearchComponent = ({
                   type="date"
                   value={selectedDate}
                   onChange={(e) => onDateChange(e.target.value)}
-                  className="flex-1 border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition text-sm"
+                  className="flex-1 border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition text-sm shadow-sm bg-gray-50 focus:bg-white"
                 />
                 {selectedDate && (
                   <button
                     onClick={() => onDateChange("")}
                     className="px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-semibold text-gray-700 transition whitespace-nowrap"
                   >
-                    Clear Date
+                    Clear
                   </button>
                 )}
               </div>
             </div>
           )}
+
+          {/* Skip Body Measurement Dropdown */}
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Body Measurement
+            </label>
+            <Dropdown
+              options={[
+                { label: "All Users", value: "" },
+                { label: "Skip Body Measurement", value: "skip" },
+                { label: "Provided", value: "provided" },
+              ]}
+              value={skipBodyMeasurement}
+              onChange={onSkipBodyMeasurementChange}
+              placeholder="Filter by measurement"
+            />
+          </div>
+
+
         </div>
       )}
 

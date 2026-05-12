@@ -44,12 +44,31 @@ const UsersPage = () => {
   const [plans, setPlans] = useState([]);
   const [userPlanHistoryMap, setUserPlanHistoryMap] = useState({}); // userId -> planHistory count
   const [selectedLanguage, setSelectedLanguage] = useState("");
+  const [selectedGender, setSelectedGender] = useState("");
+  const [selectedCity, setSelectedCity] = useState("");
+  const [selectedState, setSelectedState] = useState("");
+  const [selectedCountry, setSelectedCountry] = useState("");
+  const [selectedReferrer, setSelectedReferrer] = useState("");
+
+  const [selectedAgeRange, setSelectedAgeRange] = useState("");
+  const [skipBodyMeasurement, setSkipBodyMeasurement] = useState("");
+
+
   const [stats, setStats] = useState({
     total: 0,
     active: 0,
     completed: 0,
-    inactive: 0
+    inactive: 0,
+    avgHeight: 0,
+    maxHeight: 0,
+    minHeight: 0,
+    avgWeight: 0,
+    maxWeight: 0,
+    minWeight: 0,
+    avgIdealWeight: 0
   });
+
+
 
   const fetchList = async () => {
     try {
@@ -89,8 +108,35 @@ const UsersPage = () => {
     // Actually, let's just make it zero or calculate a placeholder to match designs
     const completed = users.filter(u => u.meetDoctor && !u.isDeleted).length;
 
-    setStats({ total, active, completed, inactive });
+    const heights = users.map(u => parseFloat(u.height)).filter(h => !isNaN(h) && h > 0);
+    const weights = users.map(u => parseFloat(u.weight)).filter(w => !isNaN(w) && w > 0);
+    const idealWeights = users.map(u => parseFloat(u.idealWeight)).filter(w => !isNaN(w) && w > 0);
+
+    const avgHeight = heights.length > 0 ? (heights.reduce((a, b) => a + b, 0) / heights.length).toFixed(1) : 0;
+    const maxHeight = heights.length > 0 ? Math.max(...heights) : 0;
+    const minHeight = heights.length > 0 ? Math.min(...heights) : 0;
+
+    const avgWeight = weights.length > 0 ? (weights.reduce((a, b) => a + b, 0) / weights.length).toFixed(1) : 0;
+    const maxWeight = weights.length > 0 ? Math.max(...weights) : 0;
+    const minWeight = weights.length > 0 ? Math.min(...weights) : 0;
+    const avgIdealWeight = idealWeights.length > 0 ? (idealWeights.reduce((a, b) => a + b, 0) / idealWeights.length).toFixed(1) : 0;
+
+    setStats({ 
+      total, 
+      active, 
+      completed, 
+      inactive,
+      avgHeight,
+      maxHeight,
+      minHeight,
+      avgWeight,
+      maxWeight,
+      minWeight,
+      avgIdealWeight
+    });
+
   }, [users]);
+
 
   useEffect(() => {
     fetchList();
@@ -133,9 +179,53 @@ const UsersPage = () => {
     }
   }, [planHistoryFilter, users.length]);
 
-  const applyFilters = (list, term, status, planId, date, planHistoryType, language) => {
+  const calculateAge = (dob) => {
+    if (!dob) return null;
+    // Format could be DD/MM/YYYY or YYYY-MM-DD
+    let birthDate;
+    if (dob.includes("/")) {
+      const parts = dob.split("/");
+      if (parts.length !== 3) return null;
+      birthDate = new Date(parts[2], parts[1] - 1, parts[0]);
+    } else {
+      birthDate = new Date(dob);
+    }
+    
+    if (isNaN(birthDate.getTime())) return null;
+
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const m = today.getMonth() - birthDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+    return age;
+  };
+
+  const applyFilters = (list, term, status, planId, date, planHistoryType, language, gender, city, state, country, skipBody, referrer, ageRange) => {
+
+
     const base = Array.isArray(list) ? list : [];
     let data = base;
+
+    // Filter by age range
+    if (ageRange) {
+      data = data.filter((u) => {
+        const age = calculateAge(u.dob);
+        if (age === null) return false;
+        
+        const [min, max] = ageRange.split("-").map(n => n === "+" ? Infinity : Number(n));
+        if (ageRange.endsWith("+")) {
+          return age >= min;
+        }
+        return age >= min && age <= max;
+      });
+    }
+
+    // Filter by referrer (Include the referrer themselves + their referees)
+    if (referrer) {
+      data = data.filter((u) => u.usedReferralCode === referrer || u.referralCode === referrer);
+    }
 
     // For subadmin, only show active users (already filtered in fetchList)
     if (role === "subadmin") {
@@ -190,6 +280,58 @@ const UsersPage = () => {
       );
     }
 
+    // Filter by gender
+    if (gender) {
+      data = data.filter((u) => u.gender === gender);
+    }
+
+    // Filter by city
+    if (city) {
+      data = data.filter((u) =>
+        u.city && u.city.toLowerCase().includes(city.toLowerCase())
+      );
+    }
+
+    // Filter by state
+    if (state) {
+      data = data.filter((u) =>
+        u.state && u.state.toLowerCase().includes(state.toLowerCase())
+      );
+    }
+
+    // Filter by country
+    if (country) {
+      data = data.filter((u) =>
+        u.country && u.country.toLowerCase().includes(country.toLowerCase())
+      );
+    }
+
+    // Filter by body measurement (Skip Body Measurement)
+    if (skipBody === "skip") {
+      data = data.filter((u) => {
+        const hasMeasurement = 
+          (u.waist && u.waist != "0" && u.waist != 0) || 
+          (u.hip && u.hip != "0" && u.hip != 0) || 
+          (u.chest && u.chest != "0" && u.chest != 0) || 
+          (u.thigh && u.thigh != "0" && u.thigh != 0) || 
+          (u.biceps && u.biceps != "0" && u.biceps != 0);
+        return !hasMeasurement;
+      });
+    } else if (skipBody === "provided") {
+      data = data.filter((u) => {
+        const hasMeasurement = 
+          (u.waist && u.waist != "0" && u.waist != 0) || 
+          (u.hip && u.hip != "0" && u.hip != 0) || 
+          (u.chest && u.chest != "0" && u.chest != 0) || 
+          (u.thigh && u.thigh != "0" && u.thigh != 0) || 
+          (u.biceps && u.biceps != "0" && u.biceps != 0);
+        return hasMeasurement;
+      });
+    }
+
+
+
+
     // Search term filter
     if (!term) return data;
     const t = term.toLowerCase();
@@ -213,7 +355,16 @@ const UsersPage = () => {
       selectedPlan,
       selectedDate,
       planHistoryFilter,
-      selectedLanguage
+      selectedLanguage,
+      selectedGender,
+      selectedCity,
+      selectedState,
+      selectedCountry,
+      skipBodyMeasurement,
+      selectedReferrer,
+      selectedAgeRange
+
+
     );
     setFilteredUsers(filtered);
     setSearchLoading(false);
@@ -229,7 +380,16 @@ const UsersPage = () => {
         selectedPlan,
         selectedDate,
         planHistoryFilter,
-        selectedLanguage
+        selectedLanguage,
+        selectedGender,
+        selectedCity,
+        selectedState,
+        selectedCountry,
+        skipBodyMeasurement,
+        selectedReferrer,
+        selectedAgeRange
+
+
       )
     );
   }, [
@@ -238,6 +398,15 @@ const UsersPage = () => {
     selectedDate,
     planHistoryFilter,
     selectedLanguage,
+    selectedGender,
+    selectedCity,
+    selectedState,
+    selectedCountry,
+    skipBodyMeasurement,
+    selectedReferrer,
+    selectedAgeRange,
+
+
     users,
     userPlanHistoryMap,
   ]);
@@ -348,6 +517,67 @@ const UsersPage = () => {
           ))}
         </div>
 
+        {/* Physical Stats Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+          {/* Height Stats */}
+          <div className="bg-white p-6 rounded-2xl border-l-4 border-blue-500 shadow-lg shadow-blue-900/5 transition-all hover:-translate-y-1">
+            <div className="flex justify-between items-start mb-4">
+              <p className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase">Height Statistics (cm)</p>
+              <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                </svg>
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <p className="text-xs text-gray-400 mb-1">Average</p>
+                <p className="text-2xl font-black text-gray-900">{stats.avgHeight}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 mb-1 text-center">Lowest</p>
+                <p className="text-2xl font-black text-red-500 text-center">{stats.minHeight}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-400 mb-1 text-right">Highest</p>
+                <p className="text-2xl font-black text-green-600 text-right">{stats.maxHeight}</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Weight Stats */}
+          <div className="bg-white p-6 rounded-2xl border-l-4 border-indigo-500 shadow-lg shadow-indigo-900/5 transition-all hover:-translate-y-1">
+            <div className="flex justify-between items-start mb-4">
+              <p className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase">Weight Statistics (kg)</p>
+              <div className="w-8 h-8 bg-indigo-50 rounded-full flex items-center justify-center">
+                <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                </svg>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+              <div>
+                <p className="text-[10px] text-gray-400 mb-1 uppercase font-bold tracking-tighter">Avg Actual</p>
+                <p className="text-2xl font-black text-gray-900">{stats.avgWeight}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-400 mb-1 uppercase font-bold tracking-tighter">Avg Ideal</p>
+                <p className="text-2xl font-black text-blue-600">{stats.avgIdealWeight}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-400 mb-1 uppercase font-bold tracking-tighter">Lowest</p>
+                <p className="text-2xl font-black text-red-500">{stats.minWeight}</p>
+              </div>
+              <div>
+                <p className="text-[10px] text-gray-400 mb-1 uppercase font-bold tracking-tighter text-right">Highest</p>
+                <p className="text-2xl font-black text-green-600 text-right">{stats.maxWeight}</p>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+
         {error && (
           <div className="mb-3 p-3 rounded-lg bg-red-50 text-red-600 border border-red-200 flex-shrink-0">
             {error}
@@ -385,6 +615,28 @@ const UsersPage = () => {
             ]}
             selectedLanguage={selectedLanguage}
             onLanguageChange={setSelectedLanguage}
+            selectedGender={selectedGender}
+            onGenderChange={setSelectedGender}
+            selectedCity={selectedCity}
+            onCityChange={setSelectedCity}
+            selectedState={selectedState}
+            onStateChange={setSelectedState}
+            selectedCountry={selectedCountry}
+            onCountryChange={setSelectedCountry}
+            skipBodyMeasurement={skipBodyMeasurement}
+            onSkipBodyMeasurementChange={setSkipBodyMeasurement}
+
+
+            referrerOptions={users
+              .filter((u) => u.referralCode)
+              .map((u) => ({
+                label: `${u.name} ${u.surname || ""} (${u.referralCode})`,
+                value: u.referralCode,
+              }))}
+            selectedReferrer={selectedReferrer}
+            onReferrerChange={setSelectedReferrer}
+            selectedAgeRange={selectedAgeRange}
+            onAgeRangeChange={setSelectedAgeRange}
           />
         </div>
 

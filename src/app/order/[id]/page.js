@@ -111,7 +111,7 @@ const OrderDetailsPage = () => {
                     <p className="text-xs text-gray-500 line-clamp-1">{planItem.description}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-teal-600">₹{planItem.price}</p>
+                    <p className="font-bold text-teal-600">{order.currency || "₹"}{planItem.price}</p>
                     <p className="text-[10px] text-gray-400">Qty: 1</p>
                   </div>
                 </div>
@@ -125,7 +125,7 @@ const OrderDetailsPage = () => {
                     <p className="text-xs text-gray-500 line-clamp-1">{order.plan.description}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-teal-600">₹{order.plan.price}</p>
+                    <p className="font-bold text-teal-600">{order.currency || "₹"}{order.plan.price}</p>
                     <p className="text-[10px] text-gray-400">Qty: 1</p>
                   </div>
                 </div>
@@ -144,7 +144,7 @@ const OrderDetailsPage = () => {
                     <p className="text-xs text-gray-500 line-clamp-1">{item.description}</p>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-teal-600">₹{item.price}</p>
+                    <p className="font-bold text-teal-600">{order.currency || "₹"}{item.price}</p>
                     <p className="text-[10px] text-gray-400">Qty: {item.quantity}</p>
                   </div>
                 </div>
@@ -152,7 +152,7 @@ const OrderDetailsPage = () => {
             </div>
             <div className="bg-gray-50 p-6 flex justify-between items-center">
               <span className="font-bold text-gray-600">Total Amount</span>
-              <span className="text-2xl font-black text-teal-700">₹{order.totalAmount.toLocaleString()}</span>
+              <span className="text-2xl font-black text-teal-700">{order.currency || "₹"}{order.totalAmount.toLocaleString()}</span>
             </div>
           </div>
 

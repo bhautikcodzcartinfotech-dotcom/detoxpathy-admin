@@ -33,7 +33,7 @@ import Image from "next/image";
 
 const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const pathname = usePathname();
-  const { role, isImpersonating, exitImpersonation, permissions } = useAuth();
+  const { user, role, isImpersonating, exitImpersonation, permissions } = useAuth();
 
   const linkClasses = (path) =>
     `flex items-center ${isCollapsed ? "justify-center" : "gap-3 px-3"
@@ -379,7 +379,11 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
               className={`flex items-center ${isCollapsed ? "justify-center" : "gap-3 px-3"} py-3 rounded-xl text-sm font-semibold transition-all duration-300 bg-red-500 text-white shadow-lg hover:bg-red-600 hover:shadow-xl transform hover:scale-105 w-full`}
             >
               <FiLogOut size={20} />
-              {!isCollapsed && <span>Exit Sub-Admin</span>}
+              {!isCollapsed && (
+                <span>
+                  Exit {user?.adminType === "Sub Admin" ? "Doctor" : (user?.adminType ? (user.adminType.charAt(0).toUpperCase() + user.adminType.slice(1)) : "Sub-Admin")}
+                </span>
+              )}
             </button>
           </div>
         )}

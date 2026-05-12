@@ -7,8 +7,8 @@ const StaffForm = ({ onSubmit, onCancel, loading, initialValues, submitLabel }) 
   const [formData, setFormData] = useState({
     name: "",
     email: "",
-    phone: "",
     role: "",
+    password: "",
   });
   const [roles, setRoles] = useState([]);
 
@@ -27,17 +27,17 @@ const StaffForm = ({ onSubmit, onCancel, loading, initialValues, submitLabel }) 
   useEffect(() => {
     if (initialValues) {
       setFormData({
-        name: initialValues.name || "",
+        name: initialValues.username || initialValues.name || "",
         email: initialValues.email || "",
-        phone: initialValues.phone || "",
-        role: initialValues.role || "",
+        role: initialValues.adminType || initialValues.role || "",
+        password: "", // Keep password empty on edit
       });
     } else {
       setFormData({
         name: "",
         email: "",
-        phone: "",
         role: "",
+        password: "",
       });
     }
   }, [initialValues]);
@@ -88,29 +88,25 @@ const StaffForm = ({ onSubmit, onCancel, loading, initialValues, submitLabel }) 
       </div>
 
       <div>
-        <label className={labelClasses}>Phone Number</label>
-        <input
-          type="tel"
-          name="phone"
-          placeholder="10 digit number"
-          value={formData.phone}
-          onChange={handleChange}
-          required
-          minLength={10}
-          maxLength={10}
-          pattern="[0-9]{10}"
-          title="Please enter exactly 10 digits"
-          className={inputClasses}
-        />
-      </div>
-
-      <div>
         <Dropdown
           label="Staff Role"
           options={roleOptions}
           value={formData.role}
           onChange={(val) => setFormData(prev => ({ ...prev, role: val }))}
           placeholder="Select staff role"
+        />
+      </div>
+
+      <div>
+        <label className={labelClasses}>Password {initialValues && "(Leave blank to keep current)"}</label>
+        <input
+          type="password"
+          name="password"
+          placeholder="Enter password"
+          value={formData.password}
+          onChange={handleChange}
+          required={!initialValues}
+          className={inputClasses}
         />
       </div>
 

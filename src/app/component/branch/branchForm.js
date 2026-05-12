@@ -21,8 +21,6 @@ const BranchForm = ({
     longitude: "",
     mobilePrefix: "+91",
     mobileNumber: "",
-    isMainBranch: false,
-    isStateHeadBranch: false,
     isFranchise: false,
     gstin: "",
   });
@@ -37,12 +35,10 @@ const BranchForm = ({
         state: initialValues.state ?? "",
         pincode: initialValues.pincode ?? "",
         email: initialValues.email ?? "",
-        latitude: initialValues.latitude ?? "",
-        longitude: initialValues.longitude ?? "",
+        latitude: String(initialValues.latitude ?? "").trim(),
+        longitude: String(initialValues.longitude ?? "").trim(),
         mobilePrefix: initialValues.mobilePrefix ?? "+91",
         mobileNumber: initialValues.mobileNumber ?? "",
-        isMainBranch: initialValues.isMainBranch ?? false,
-        isStateHeadBranch: initialValues.isStateHeadBranch ?? false,
         isFranchise: initialValues.isFranchise ?? false,
         gstin: initialValues.gstin ?? "",
       });
@@ -59,8 +55,6 @@ const BranchForm = ({
         longitude: "",
         mobilePrefix: "+91",
         mobileNumber: "",
-        isMainBranch: false,
-        isStateHeadBranch: false,
         isFranchise: false,
         gstin: "",
       });
@@ -92,14 +86,14 @@ const BranchForm = ({
       return null;
     };
     const latitudeRule = (v) => {
-      if (!v) return null; // Optional field
+      if (!v) return "Latitude is required.";
       const num = Number(v);
       if (isNaN(num)) return "Latitude must be a valid number.";
       if (num < -90 || num > 90) return "Latitude must be between -90 and 90.";
       return null;
     };
     const longitudeRule = (v) => {
-      if (!v) return null; // Optional field
+      if (!v) return "Longitude is required.";
       const num = Number(v);
       if (isNaN(num)) return "Longitude must be a valid number.";
       if (num < -180 || num > 180)
@@ -144,7 +138,7 @@ const BranchForm = ({
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label className="block mb-1 font-semibold text-gray-700">Name</label>
+          <label className="block mb-1 font-semibold text-gray-700">Name *</label>
           <input
             type="text"
             value={form.name}
@@ -158,7 +152,7 @@ const BranchForm = ({
         </div>
         <div>
           <label className="block mb-1 font-semibold text-gray-700">
-            Email
+            Email *
           </label>
           <input
             type="email"
@@ -185,7 +179,7 @@ const BranchForm = ({
 
       <div>
         <label className="block mb-1 font-semibold text-gray-700">
-          Address
+          Address *
         </label>
         <input
           type="text"
@@ -198,7 +192,7 @@ const BranchForm = ({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <div>
-          <label className="block mb-1 font-semibold text-gray-700">City</label>
+          <label className="block mb-1 font-semibold text-gray-700">City *</label>
           <input
             type="text"
             value={form.city}
@@ -212,7 +206,7 @@ const BranchForm = ({
         </div>
         <div>
           <label className="block mb-1 font-semibold text-gray-700">
-            State
+            State *
           </label>
           <input
             type="text"
@@ -251,7 +245,7 @@ const BranchForm = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
           <label className="block mb-1 font-semibold text-gray-700">
-            Latitude <span className="text-gray-500 text-sm">(Optional)</span>
+            Latitude *
           </label>
           <input
             type="number"
@@ -271,7 +265,7 @@ const BranchForm = ({
         </div>
         <div>
           <label className="block mb-1 font-semibold text-gray-700">
-            Longitude <span className="text-gray-500 text-sm">(Optional)</span>
+            Longitude *
           </label>
           <input
             type="number"
@@ -334,7 +328,6 @@ const BranchForm = ({
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-6">
         <div className="flex items-center gap-3">
           <label className="block mb-1 font-semibold text-gray-700">
             isFranchise
@@ -347,51 +340,11 @@ const BranchForm = ({
               setForm((f) => ({
                 ...f,
                 isFranchise: checked,
-                ...(checked && { isMainBranch: false, isStateHeadBranch: false }),
               }));
             }}
             className="w-5 h-5 text-yellow-500 rounded border-gray-300 focus:ring-yellow-500 focus:ring-2"
           />
         </div>
-
-        <div className="flex items-center gap-3">
-          <label className="block mb-1 font-semibold text-gray-700">
-            Main Branch
-          </label>
-          <input
-            type="checkbox"
-            checked={form.isMainBranch}
-            onChange={(e) => {
-              const checked = e.target.checked;
-              setForm((f) => ({
-                ...f,
-                isMainBranch: checked,
-                ...(checked && { isFranchise: false }),
-              }));
-            }}
-            className="w-5 h-5 text-yellow-500 rounded border-gray-300 focus:ring-yellow-500 focus:ring-2"
-          />
-        </div>
-
-        <div className="flex items-center gap-3">
-          <label className="block mb-1 font-semibold text-gray-700">
-            State Head Branch
-          </label>
-          <input
-            type="checkbox"
-            checked={form.isStateHeadBranch}
-            onChange={(e) => {
-              const checked = e.target.checked;
-              setForm((f) => ({
-                ...f,
-                isStateHeadBranch: checked,
-                ...(checked && { isFranchise: false }),
-              }));
-            }}
-            className="w-5 h-5 text-yellow-500 rounded border-gray-300 focus:ring-yellow-500 focus:ring-2"
-          />
-        </div>
-      </div>
 
       <div className="flex justify-end gap-3 mt-6">
         <button

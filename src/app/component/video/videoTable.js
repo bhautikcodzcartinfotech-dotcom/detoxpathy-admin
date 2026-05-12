@@ -125,6 +125,7 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                           6: "Trial Video",
                           7: "Body Detoxification",
                           8: "Instruction",
+                          9: "Hold Video",
                         }[video.type] || video.type}
                       </span>
                       <span>Day: {video.day ?? "N/A"}</span>

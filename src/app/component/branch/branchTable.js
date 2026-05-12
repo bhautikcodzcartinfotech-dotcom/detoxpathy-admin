@@ -112,16 +112,6 @@ const BranchTable = ({ items, loading, onEdit, onDelete }) => {
                   <div className="flex flex-col">
                     <span className="font-semibold text-gray-800">{b.name}</span>
                     <div className="flex gap-1 mt-1">
-                      {b.isMainBranch && (
-                        <span className="px-2 py-0.5 text-[10px] bg-blue-100 text-blue-700 rounded-full font-bold uppercase">
-                          Main
-                        </span>
-                      )}
-                      {b.isStateHeadBranch && (
-                        <span className="px-2 py-0.5 text-[10px] bg-purple-100 text-purple-700 rounded-full font-bold uppercase">
-                          State Head
-                        </span>
-                      )}
                       {b.isFranchise && (
                         <span className="px-2 py-0.5 text-[10px] bg-orange-100 text-orange-700 rounded-full font-bold uppercase">
                           Franchise
@@ -204,16 +194,6 @@ const BranchTable = ({ items, loading, onEdit, onDelete }) => {
                 <div className="text-base font-semibold text-gray-900 flex items-center gap-2">
                   {b.name}
                   <div className="flex gap-1">
-                    {b.isMainBranch && (
-                      <span className="px-1.5 py-0.5 text-[8px] bg-blue-100 text-blue-700 rounded-full font-bold uppercase">
-                        M
-                      </span>
-                    )}
-                    {b.isStateHeadBranch && (
-                      <span className="px-1.5 py-0.5 text-[8px] bg-purple-100 text-purple-700 rounded-full font-bold uppercase">
-                        SH
-                      </span>
-                    )}
                     {b.isFranchise && (
                       <span className="px-1.5 py-0.5 text-[8px] bg-orange-100 text-orange-700 rounded-full font-bold uppercase">
                         F

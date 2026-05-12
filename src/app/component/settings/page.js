@@ -6,6 +6,7 @@ import { getSetting, updateSettingById, listVideos, generateUrl, API_HOST } from
 import toast from "react-hot-toast";
 import Loader from "@/utils/loader";
 import RichTextEditor from "@/components/RichTextEditor";
+import Dropdown from "@/utils/dropdown";
 
 const SettingsPage = () => {
   const [loading, setLoading] = useState(true);
@@ -48,8 +49,12 @@ const SettingsPage = () => {
         return;
       }
 
-      setSettings(settingsData);
-      setFormData(settingsData);
+      const finalData = {
+        ...settingsData,
+        currency: settingsData.currency || "₹"
+      };
+      setSettings(finalData);
+      setFormData(finalData);
     } catch (error) {
       console.error("Failed to fetch settings:", error);
       toast.error("Failed to load settings");
@@ -357,18 +362,99 @@ const SettingsPage = () => {
 
             {/* Version */}
             <div className="bg-gradient-to-br from-white to-amber-50 rounded-2xl shadow-lg border border-amber-200 p-6">
-              <h3 className="text-lg font-semibold text-gray-800 mb-4">
+              <h3 className="text-sm font-bold text-gray-700 mb-4 tracking-wide">
                 App Version
               </h3>
               <input
                 type="number"
                 value={formData.version || ""}
                 onChange={(e) => handleInputChange("version", e.target.value)}
-                className="w-full text-3xl font-bold text-yellow-600 bg-transparent border-none outline-none"
+                className="w-full px-4 py-3 rounded-xl border border-amber-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
                 min="1"
                 step="0.1"
                 placeholder="1.0"
               />
+            </div>
+
+            {/* Currency */}
+            <div className="bg-gradient-to-br from-white to-yellow-50 rounded-2xl shadow-lg border border-yellow-200 p-6 flex flex-col justify-between h-full">
+              <div className="flex-1">
+                <Dropdown
+                  label="App Currency"
+                  placeholder="Select Currency"
+                  showSearch={true}
+                  options={[
+                    { value: "₹", label: "₹ - Indian Rupee (INR)" },
+                    { value: "$", label: "$ - US Dollar (USD)" },
+                    { value: "€", label: "€ - Euro (EUR)" },
+                    { value: "£", label: "£ - British Pound (GBP)" },
+                    { value: "AED", label: "AED - UAE Dirham" },
+                    { value: "SAR", label: "SAR - Saudi Riyal" },
+                    { value: "KWD", label: "KWD - Kuwaiti Dinar" },
+                    { value: "BHD", label: "BHD - Bahraini Dinar" },
+                    { value: "QAR", label: "QAR - Qatari Riyal" },
+                    { value: "OMR", label: "OMR - Omani Rial" },
+                    { value: "¥", label: "¥ - Japanese Yen (JPY)" },
+                    { value: "C$", label: "C$ - Canadian Dollar (CAD)" },
+                    { value: "A$", label: "A$ - Australian Dollar (AUD)" },
+                    { value: "S$", label: "S$ - Singapore Dollar (SGD)" },
+                  ]}
+                  value={formData.currency || "₹"}
+                  onChange={(val) => handleInputChange("currency", val)}
+                />
+              </div>
+              <p className="text-[11px] text-gray-500 mt-4 leading-relaxed italic opacity-70">
+                Changes will reflect in products, plans, and new orders.
+              </p>
+            </div>
+
+            {/* Video Language */}
+            <div className="bg-gradient-to-br from-white to-amber-50 rounded-2xl shadow-lg border border-amber-200 p-6 flex flex-col justify-between h-full">
+              <div className="flex-1">
+                <h3 className="text-sm font-bold text-gray-700 mb-4 tracking-wide uppercase">
+                  Allowed Video Languages
+                </h3>
+                <div className="space-y-3">
+                  {[
+                    { id: 1, label: "English" },
+                    { id: 2, label: "Gujarati" },
+                    { id: 3, label: "Hindi" },
+                  ].map((lang) => {
+                    const isChecked = (formData.videoLanguage || []).includes(lang.id);
+                    return (
+                      <label key={lang.id} className="flex items-center gap-3 cursor-pointer group">
+                        <div className="relative flex items-center justify-center">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={(e) => {
+                              const current = formData.videoLanguage || [];
+                              const next = e.target.checked
+                                ? [...current, lang.id]
+                                : current.filter(id => id !== lang.id);
+                              handleInputChange("videoLanguage", next);
+                            }}
+                            className="sr-only"
+                          />
+                          <div className={`w-5 h-5 rounded border-2 transition-all ${isChecked ? 'bg-yellow-500 border-yellow-500' : 'bg-white border-gray-300 group-hover:border-yellow-400'}`}>
+                            {isChecked && (
+                              <svg className="w-full h-full text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                              </svg>
+                            )}
+                          </div>
+                        </div>
+                        <span className={`text-sm font-semibold transition-colors ${isChecked ? 'text-gray-900' : 'text-gray-500'}`}>
+                          {lang.label}
+                        </span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </div>
+              <p className="text-[11px] text-gray-500 mt-4 leading-relaxed italic opacity-70">
+                Only selected languages will be available for video content.
+              </p>
             </div>
           </div>
 
@@ -508,6 +594,20 @@ const SettingsPage = () => {
                   value={formData.appoinmentDescription || ""}
                   onChange={(e) => handleInputChange("appoinmentDescription", e.target.value)}
                   placeholder="Enter appointment description..."
+                  rows={4}
+                  className="w-full px-4 py-3 rounded-xl border border-amber-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none resize-none"
+                />
+              </div>
+
+              {/* Product Screen Description */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Product Screen Description
+                </label>
+                <textarea
+                  value={formData.productScreenDescription || ""}
+                  onChange={(e) => handleInputChange("productScreenDescription", e.target.value)}
+                  placeholder="Enter product screen description..."
                   rows={4}
                   className="w-full px-4 py-3 rounded-xl border border-amber-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none resize-none"
                 />

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { getAllUsers, getAllProducts, getAllPlans, createOrder } from "@/Api/AllApi";
+import { getAllUsers, getAllProducts, getAllPlans, createOrder, getSetting } from "@/Api/AllApi";
 import TimeButton from "@/utils/timebutton";
 import Dropdown from "@/utils/dropdown";
 import toast from "react-hot-toast";
@@ -13,6 +13,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
   const [selectedUser, setSelectedUser] = useState("");
   const [selectedProducts, setSelectedProducts] = useState([]); // [{productId, quantity}]
   const [selectedPlans, setSelectedPlans] = useState([]); // [{planId, name, price}]
+  const [currency, setCurrency] = useState("₹");
   const [shippingAddress, setShippingAddress] = useState({
     name: "",
     mobile: "",
@@ -27,14 +28,27 @@ const OrderForm = ({ onCancel, onSuccess }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [usersData, productsData, plansData] = await Promise.all([
+        const [usersData, productsData, plansData, settingsRes] = await Promise.all([
           getAllUsers(),
           getAllProducts({ start: 1, limit: 1000 }),
-          getAllPlans()
+          getAllPlans(),
+          getSetting()
         ]);
         setUsers(usersData || []);
         setProducts(productsData?.products || []);
         setPlans(plansData || []);
+        
+        let settingsData;
+        if (settingsRes && settingsRes.data) {
+          settingsData = settingsRes.data;
+        } else if (settingsRes && settingsRes.setting) {
+          settingsData = settingsRes.setting;
+        } else if (settingsRes && settingsRes._id) {
+          settingsData = settingsRes;
+        }
+        if (settingsData && settingsData.currency) {
+          setCurrency(settingsData.currency);
+        }
       } catch (err) {
         toast.error("Failed to fetch data");
       }
@@ -137,7 +151,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
             const finalPrice = sellingPrice - (sellingPrice * discount / 100);
             return {
               value: p._id,
-              label: `${p.name} - ₹${finalPrice.toLocaleString()} (${p.bulkDiscount}%)`
+              label: `${p.name} - ${currency}${finalPrice.toLocaleString()} (${p.bulkDiscount}%)`
             };
           })}
           value=""
@@ -153,7 +167,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
             const finalPrice = p.price - (p.price * discount / 100);
             return {
               value: p._id,
-              label: `${p.name} - ₹${finalPrice.toLocaleString()} (${p.bulkDiscount}%)`
+              label: `${p.name} - ${currency}${finalPrice.toLocaleString()} (${p.bulkDiscount}%)`
             };
           })}
           value={""}
@@ -167,7 +181,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
           <div key={`plan-${idx}`} className="flex items-center justify-between p-3 border-2 border-yellow-200 rounded-xl bg-yellow-50 shadow-sm">
             <div className="flex flex-col">
               <span className="font-bold text-yellow-800">PLAN: {p.name}</span>
-              <span className="text-xs text-yellow-600 font-semibold">₹{p.price} (Applied Branch Discount)</span>
+              <span className="text-xs text-yellow-600 font-semibold">{currency}{p.price} (Applied Branch Discount)</span>
             </div>
             <button
               type="button"
@@ -182,7 +196,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
           <div key={idx} className="flex items-center justify-between p-3 border rounded-xl bg-gray-50 shadow-sm">
             <div className="flex flex-col">
               <span className="font-semibold text-gray-800">{p.name}</span>
-              <span className="text-xs text-gray-500">₹{p.price} / unit</span>
+              <span className="text-xs text-gray-500">{currency}{p.price} / unit</span>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center border rounded-lg bg-white overflow-hidden shadow-sm">
@@ -218,7 +232,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
         <div className="p-4 bg-yellow-50 rounded-xl border border-yellow-200">
           <div className="flex justify-between items-center text-lg font-bold">
             <span className="text-gray-700">Total Estimation:</span>
-            <span className="text-yellow-700">₹{totalAmount.toLocaleString()}</span>
+            <span className="text-yellow-700">{currency}{totalAmount.toLocaleString()}</span>
           </div>
         </div>
       )}

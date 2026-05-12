@@ -71,8 +71,8 @@ const StockManagementPage = () => {
 
       setMasterStocks(Array.isArray(masterData) ? masterData : []);
       
-      const otherBranches = Array.isArray(branchData) ? branchData.filter(b => !b.isMainBranch) : [];
-      setBranches(otherBranches);
+      const allBranchList = Array.isArray(branchData) ? branchData : [];
+      setBranches(allBranchList);
       
       const otherBranchStocks = Array.isArray(branchStockData) ? branchStockData : [];
       setBranchStocks(otherBranchStocks);
@@ -83,8 +83,8 @@ const StockManagementPage = () => {
       
       await fetchHistory(1);
 
-      if (otherBranches.length > 0 && !selectedBranchId) {
-        setSelectedBranchId(otherBranches[0]._id);
+      if (allBranchList.length > 0 && !selectedBranchId) {
+        setSelectedBranchId(allBranchList[0]._id);
       }
     } catch (error) {
       console.error("Error fetching stock data:", error);

@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import TimeButton from "@/utils/timebutton";
 import { validateForm } from "@/utils/validation";
-import { API_BASE } from "@/Api/AllApi";
+import { API_BASE, getSetting } from "@/Api/AllApi";
 
 const ProductForm = ({
   onSubmit,
@@ -11,6 +11,7 @@ const ProductForm = ({
   initialValues = null,
   submitLabel = "Create",
 }) => {
+  const [currency, setCurrency] = useState("₹");
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -25,6 +26,28 @@ const ProductForm = ({
   const [existingImages, setExistingImages] = useState([]); // For displaying existing images when editing
   const [imagesToRemove, setImagesToRemove] = useState([]); // Track images to remove
   const [errors, setErrors] = useState({});
+
+  useEffect(() => {
+    const fetchCurrency = async () => {
+      try {
+        const response = await getSetting();
+        let settingsData;
+        if (response && response.data) {
+          settingsData = response.data;
+        } else if (response && response.setting) {
+          settingsData = response.setting;
+        } else if (response && response._id) {
+          settingsData = response;
+        }
+        if (settingsData && settingsData.currency) {
+          setCurrency(settingsData.currency);
+        }
+      } catch (error) {
+        console.error("Failed to fetch settings:", error);
+      }
+    };
+    fetchCurrency();
+  }, []);
 
   useEffect(() => {
     if (initialValues) {
@@ -179,7 +202,7 @@ const ProductForm = ({
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="block mb-1 font-semibold text-gray-700">
-            Base Price
+            Base Price ({currency})
           </label>
           <input
             type="number"
@@ -199,7 +222,7 @@ const ProductForm = ({
 
         <div>
           <label className="block mb-1 font-semibold text-gray-700">
-            Discounted Price
+            Discounted Price ({currency})
           </label>
           <input
             type="number"

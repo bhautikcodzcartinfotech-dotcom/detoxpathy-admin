@@ -121,14 +121,18 @@ export const AuthProvider = ({ children }) => {
     if (!adminType) return null;
     const key = String(adminType).toLowerCase().replace(/\s+/g, "");
     if (key === "admin") return "Admin";
-    if (key === "subadmin" || key === "subdoctor") return "subadmin";
-    return adminType; // fallback to raw value
+    return "subadmin";
   };
 
   const normalizeBranchIds = (branchArr) => {
-    if (!Array.isArray(branchArr)) return [];
-    return branchArr
-      .map((b) => (typeof b === "string" ? b : b?._id))
+    if (!branchArr) return [];
+    const idArray = Array.isArray(branchArr) ? branchArr : [branchArr];
+    return idArray
+      .map((b) => {
+        if (!b) return null;
+        if (typeof b === "string") return b;
+        return b._id ? String(b._id) : String(b);
+      })
       .filter(Boolean);
   };
 

@@ -34,6 +34,12 @@ const PERMISSION_GROUPS = [
       { label: "Show Order Page", value: "show order page" },
     ]
   },
+  {
+    category: "Appointment Management",
+    permissions: [
+      { label: "Join Appointment Call", value: "join appointment call" },
+    ]
+  },
 ];
 
 const PermissionPage = () => {

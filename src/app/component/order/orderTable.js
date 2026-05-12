@@ -109,7 +109,7 @@ const OrderTable = ({ items, loading, onRefresh, selectedIds = [], onToggleSelec
               </td>
 
               <td className="px-4 py-5 whitespace-nowrap text-[13px] font-bold text-gray-800">
-                ₹{order.totalAmount.toLocaleString()}
+                {order.currency || "₹"}{order.totalAmount.toLocaleString()}
               </td>
 
               <td className="px-4 py-5 whitespace-nowrap">

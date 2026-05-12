@@ -9,6 +9,7 @@ import {
   addProduct,
   updateProduct,
   deleteProduct,
+  getSetting,
 } from "@/Api/AllApi";
 import ProductForm from "./productForm";
 import ProductTable from "./productTable";
@@ -25,6 +26,27 @@ const ProductPage = () => {
     limit: 10,
     total: 0,
   });
+
+  const [currency, setCurrency] = useState("₹");
+
+  const fetchSettings = async () => {
+    try {
+      const response = await getSetting();
+      let settingsData;
+      if (response && response.data) {
+        settingsData = response.data;
+      } else if (response && response.setting) {
+        settingsData = response.setting;
+      } else if (response && response._id) {
+        settingsData = response;
+      }
+      if (settingsData && settingsData.currency) {
+        setCurrency(settingsData.currency);
+      }
+    } catch (error) {
+      console.error("Failed to fetch settings:", error);
+    }
+  };
 
   const fetchList = async () => {
     try {
@@ -45,6 +67,10 @@ const ProductPage = () => {
       setListLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchSettings();
+  }, []);
 
   useEffect(() => {
     fetchList();
@@ -116,6 +142,7 @@ const ProductPage = () => {
           loading={listLoading}
           onEdit={handleEdit}
           onDelete={handleDelete}
+          currency={currency}
         />
 
         <Drawer isOpen={isOpen} onClose={() => setIsOpen(false)}>

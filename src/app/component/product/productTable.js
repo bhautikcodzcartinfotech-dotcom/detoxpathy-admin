@@ -6,7 +6,7 @@ import { ActionButton } from "@/utils/actionbutton";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import { API_BASE } from "@/Api/AllApi";
 
-const ProductTable = ({ items, loading, onEdit, onDelete }) => {
+const ProductTable = ({ items, loading, onEdit, onDelete, currency = "₹" }) => {
   const [deleteDialog, setDeleteDialog] = useState({
     isOpen: false,
     itemId: null,
@@ -41,7 +41,7 @@ const ProductTable = ({ items, loading, onEdit, onDelete }) => {
   };
 
   const formatPrice = (price) => {
-    return `₹${Number(price).toLocaleString()}`;
+    return `${currency}${Number(price).toLocaleString()}`;
   };
 
   const truncateText = (text, maxLength = 50) => {

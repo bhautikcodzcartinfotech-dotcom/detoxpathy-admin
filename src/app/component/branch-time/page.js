@@ -40,11 +40,9 @@ const BranchTimePage = () => {
         if (role === "subadmin" && branches.length > 0) {
           setSelectedBranchId(branches[0]);
         } else {
-          const defaultBranch = role === "Admin" ? data.find(b => b.isMainBranch) : data[0];
+          const defaultBranch = data[0];
           if (defaultBranch) {
             setSelectedBranchId(defaultBranch._id);
-          } else {
-            setSelectedBranchId(data[0]._id);
           }
         }
       }
@@ -130,7 +128,7 @@ const BranchTimePage = () => {
                 </span>
               </div>
             )}
-            {branchTimeData && (role !== "Admin" || allBranches.find((b) => b._id === selectedBranchId)?.isMainBranch) && (
+            {branchTimeData && (
               <Button onClick={() => setIsOpen(true)}>Update Time</Button>
             )}
           </div>
@@ -213,7 +211,9 @@ const BranchTimePage = () => {
             </div>
             <h3 className="text-2xl font-bold text-gray-800 mb-3">No Configuration Found</h3>
             <p className="text-gray-500 mb-8 max-w-sm mx-auto">It looks like the operational hours haven't been set for this branch yet.</p>
-            {(role !== "Admin" || allBranches.find((b) => b._id === selectedBranchId)?.isMainBranch) && (
+            {branchTimeData ? (
+              <Button onClick={() => setIsOpen(true)}>Update Schedule</Button>
+            ) : (
               <Button onClick={() => setIsOpen(true)}>Initialize Schedule</Button>
             )}
           </div>

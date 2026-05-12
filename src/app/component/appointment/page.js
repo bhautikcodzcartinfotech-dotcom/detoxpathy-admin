@@ -15,6 +15,7 @@ import {
   generateSlots,
   rescheduleAppointment,
   getAllPlans,
+  getAllProducts,
   suggestProgram,
   getSuggestedProgram,
   getUserOverview,
@@ -23,6 +24,7 @@ import {
   getTransferRequests,
   acceptTransferAppointment,
   rejectTransferAppointment,
+  getSetting,
 } from "@/Api/AllApi";
 import { io } from "socket.io-client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -80,7 +82,7 @@ const getNowInKolkata = () =>
 
 const AppointmentPage = () => {
   const router = useRouter();
-  const { role, branches } = useAuth();
+  const { role, branches, permissions, user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState([]);
   const [allBranches, setAllBranches] = useState([]);
@@ -106,11 +108,15 @@ const AppointmentPage = () => {
     submitting: false
   });
   const [allPlans, setAllPlans] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
   const [selectedPlanId, setSelectedPlanId] = useState("");
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
   const [suggesting, setSuggesting] = useState(false);
   const [selectedProgressDay, setSelectedProgressDay] = useState(null);
   const [planSearchTerm, setPlanSearchTerm] = useState("");
+  const [productSearchTerm, setProductSearchTerm] = useState("");
   const [showPlanPicker, setShowPlanPicker] = useState(false);
+  const [showProductPicker, setShowProductPicker] = useState(false);
   const [activeSuggestion, setActiveSuggestion] = useState(null);
   const [showUserProfile, setShowUserProfile] = useState(false);
   const [userOverviewData, setUserOverviewData] = useState(null);
@@ -120,6 +126,7 @@ const AppointmentPage = () => {
   const [showConsultationForm, setShowConsultationForm] = useState(false);
   const [transferRequests, setTransferRequests] = useState([]);
   const [transferActionLoadingId, setTransferActionLoadingId] = useState(null);
+  const [currency, setCurrency] = useState("₹");
   const localVideoRef = useRef(null);
   const remoteVideoGridRef = useRef(null);
   const agoraSdkPromiseRef = useRef(null);
@@ -376,14 +383,19 @@ const AppointmentPage = () => {
   const fetchAllBranches = async () => {
     try {
       const data = await getAllBranches();
-      setAllBranches(data);
-      if (data.length > 0 && !selectedBranchId) {
-        if (role === "subadmin" && branches.length > 0) {
-          setSelectedBranchId(branches[0]);
-        } else {
-          const defaultBranch = role === "Admin" ? data.find(b => b.isMainBranch) : data[0];
-          setSelectedBranchId(defaultBranch ? defaultBranch._id : data[0]._id);
-        }
+      let allBranchList = Array.isArray(data) ? data : [];
+      
+      // For staff, filter the branch list to only show their assigned branches
+      if (role !== "Admin") {
+        const assignedBranchIds = branches || [];
+        allBranchList = allBranchList.filter(b => 
+          assignedBranchIds.includes(String(b._id))
+        );
+      }
+      
+      setAllBranches(allBranchList);
+      if (allBranchList.length > 0 && !selectedBranchId) {
+        setSelectedBranchId(allBranchList[0]._id);
       }
     } catch (e) {
       console.error(e);
@@ -396,6 +408,35 @@ const AppointmentPage = () => {
       setAllPlans(data || []);
     } catch (e) {
       console.error(e);
+    }
+  };
+  
+  const fetchAllProducts = async () => {
+    try {
+      const data = await getAllProducts({ limit: 100 });
+      // API returns { products, cartLength }
+      setAllProducts(data?.products || []);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchSettings = async () => {
+    try {
+      const response = await getSetting();
+      let settingsData;
+      if (response && response.data) {
+        settingsData = response.data;
+      } else if (response && response.setting) {
+        settingsData = response.setting;
+      } else if (response && response._id) {
+        settingsData = response;
+      }
+      if (settingsData && settingsData.currency) {
+        setCurrency(settingsData.currency);
+      }
+    } catch (error) {
+      console.error("Failed to fetch settings:", error);
     }
   };
 
@@ -873,10 +914,20 @@ const AppointmentPage = () => {
         const resp = await getSuggestedProgram(appointment.userId?._id);
         const suggestion = resp?.suggestion || resp;
         setActiveSuggestion(suggestion);
-        if (suggestion && suggestion.plans) {
-          setSelectedPlanId(suggestion.plans?._id || suggestion.plans);
+        if (suggestion) {
+          if (suggestion.plans) {
+            setSelectedPlanId(suggestion.plans?._id || suggestion.plans);
+          } else {
+            setSelectedPlanId("");
+          }
+          if (suggestion.products) {
+            setSelectedProductIds(suggestion.products.map(p => p?._id || p));
+          } else {
+            setSelectedProductIds([]);
+          }
         } else {
           setSelectedPlanId("");
+          setSelectedProductIds([]);
         }
       } catch (e) {
         console.error("Error fetching suggestion:", e);
@@ -934,8 +985,8 @@ const AppointmentPage = () => {
   };
 
   const handleSuggestProgram = async () => {
-    if (!selectedPlanId) {
-      toast.error("Please select a program to suggest");
+    if (!selectedPlanId && selectedProductIds.length === 0) {
+      toast.error("Please select a program or products to suggest");
       return;
     }
 
@@ -944,13 +995,16 @@ const AppointmentPage = () => {
       await suggestProgram({
         userId: activeCallAppointment.userId?._id,
         planId: selectedPlanId,
+        products: selectedProductIds,
       });
-      toast.success("Program suggested successfully");
+      toast.success("Suggested successfully");
 
       // Update local suggestion state
       const suggestedPlan = allPlans.find(p => p._id === selectedPlanId);
+      const suggestedProducts = allProducts.filter(p => selectedProductIds.includes(p._id));
       setActiveSuggestion({
         plans: suggestedPlan,
+        products: suggestedProducts,
         suggestedAt: new Date().toISOString()
       });
     } catch (error) {
@@ -1000,7 +1054,9 @@ const AppointmentPage = () => {
   useEffect(() => {
     fetchAllBranches();
     fetchAllPlans();
+    fetchAllProducts();
     fetchTransferRequests();
+    fetchSettings();
   }, []);
 
   useEffect(() => {
@@ -1313,6 +1369,19 @@ const AppointmentPage = () => {
                 placeholder="All Status"
               />
             </div>
+
+            <div className="flex-1 min-w-[140px] sm:flex-none">
+              <Dropdown
+                options={[
+                  { label: "All Types", value: "" },
+                  { label: "Online", value: "1" },
+                  { label: "Offline", value: "2" },
+                ]}
+                value={filterType}
+                onChange={setFilterType}
+                placeholder="All Types"
+              />
+            </div>
           </div>
 
           <div className="flex flex-wrap gap-2 w-full sm:w-auto">
@@ -1380,7 +1449,8 @@ const AppointmentPage = () => {
                     const isOnline = item.type === 1;
                     const timeState = getAppointmentTimeState(item);
                     const isCurrentCall = activeCallAppointment?._id === item._id;
-                    const canReceiveCall = isOnline && timeState.isLiveWindow && item.call?.status !== "ended" && (!activeCallAppointment?._id || isCurrentCall);
+                    const isAuthorizedToJoin = role === "Admin" || (item.doctor?._id || item.doctor) === user?._id || permissions?.includes("join appointment call");
+                    const canReceiveCall = isOnline && timeState.isLiveWindow && item.call?.status !== "ended" && (!activeCallAppointment?._id || isCurrentCall) && isAuthorizedToJoin;
 
                     return (
                       <tr key={item._id} className="group hover:bg-gray-50/80 transition-all duration-200">
@@ -1460,7 +1530,8 @@ const AppointmentPage = () => {
                 const isOnline = item.type === 1;
                 const timeState = getAppointmentTimeState(item);
                 const isCurrentCall = activeCallAppointment?._id === item._id;
-                const canReceiveCall = isOnline && timeState.isLiveWindow && item.call?.status !== "ended" && (!activeCallAppointment?._id || isCurrentCall);
+                const isAuthorizedToJoin = role === "Admin" || (item.doctor?._id || item.doctor) === user?._id || permissions?.includes("join appointment call");
+                const canReceiveCall = isOnline && timeState.isLiveWindow && item.call?.status !== "ended" && (!activeCallAppointment?._id || isCurrentCall) && isAuthorizedToJoin;
 
                 return (
                   <div key={item._id} className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm transition-all active:scale-[0.98]">
@@ -1616,7 +1687,7 @@ const AppointmentPage = () => {
                               </div>
                               <div>
                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Plan Configuration</p>
-                                <p className="text-xs font-bold text-slate-700">{user?.plan?.name || "No Active Plan"} (₹{user?.plan?.price || 0})</p>
+                                <p className="text-xs font-bold text-slate-700">{user?.plan?.name || "No Active Plan"} ({currency}{user?.plan?.price || 0})</p>
                               </div>
                               <div>
                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Gender & DOB</p>
@@ -1778,7 +1849,7 @@ const AppointmentPage = () => {
                                 userOverviewData.planHistory.map((history, i) => (
                                   <div key={history._id} className={`p-4 rounded-2xl border transition-all ${i === 0 ? 'bg-teal-50/50 border-teal-100' : 'bg-slate-50 border-slate-100'}`}>
                                     <div className="flex justify-between items-start mb-1">
-                                      <p className="text-xs font-black text-slate-800">{history.plan?.name || "Subscription"} (₹{history.plan?.price || 0})</p>
+                                      <p className="text-xs font-black text-slate-800">{history.plan?.name || "Subscription"} ({currency}{history.plan?.price || 0})</p>
                                       <p className="text-[8px] font-bold text-slate-400">{new Date(history.createdAt).toLocaleString()}</p>
                                     </div>
                                     <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{history.plan?.days || history.plan?.planDays || "-"} Days</p>
@@ -1966,53 +2037,126 @@ const AppointmentPage = () => {
                   <div className="flex flex-col lg:flex-row items-center gap-4 sm:gap-8 justify-between">
                     <div className="flex flex-col gap-2 w-full lg:max-w-xl">
                       <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 px-1">Prescription Suggestion</label>
-                      <div className="relative">
-                        <div
-                          onClick={() => setShowPlanPicker(!showPlanPicker)}
-                          className={`flex flex-col sm:flex-row items-center justify-between gap-4 bg-slate-50 border p-2 sm:p-3 rounded-2xl sm:rounded-[1.5rem] w-full cursor-pointer transition-all hover:bg-slate-100 ${selectedPlanId ? 'border-teal-200 bg-teal-50/20' : 'border-slate-200 shadow-sm'}`}
-                        >
-                          <div className="flex items-center gap-3 sm:gap-4 px-1 sm:px-2 w-full sm:flex-1 min-w-0">
-                            <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-[1.25rem] flex items-center justify-center shrink-0 ${selectedPlanId ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20' : 'bg-white border border-slate-100 text-slate-400'}`}>
-                              <MdOutlineCategory size={20} className="sm:size-6" />
-                            </div>
-                            <span className={`text-sm sm:text-base font-black truncate flex-1 ${selectedPlanId ? 'text-teal-900' : 'text-slate-500'}`}>
-                              {selectedPlanId ? allPlans.find(p => p._id === selectedPlanId)?.name : 'Select a program...'}
-                            </span>
-                          </div>
-                          <button
-                            onClick={(e) => { e.stopPropagation(); handleSuggestProgram(); }}
-                            disabled={!selectedPlanId || suggesting}
-                            className="h-10 sm:h-12 w-full sm:w-auto px-4 sm:px-8 bg-teal-600 hover:bg-teal-700 text-white rounded-xl sm:rounded-2xl text-[10px] sm:text-[11px] font-black uppercase tracking-widest shadow-xl shadow-teal-100 transition-all disabled:opacity-50 active:scale-95 whitespace-nowrap"
+                      <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
+                        {/* Plan Picker */}
+                        <div className="relative flex-1 w-full">
+                          <div
+                            onClick={() => { setShowPlanPicker(!showPlanPicker); setShowProductPicker(false); }}
+                            className={`flex items-center justify-between gap-3 bg-slate-50 border p-3 rounded-2xl w-full cursor-pointer transition-all hover:bg-slate-100 ${selectedPlanId ? 'border-teal-200 bg-teal-50/20' : 'border-slate-200 shadow-sm'}`}
                           >
-                            {suggesting ? "Wait..." : "Suggest"}
-                          </button>
+                            <div className="flex items-center gap-3 px-1 w-full min-w-0">
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${selectedPlanId ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20' : 'bg-white border border-slate-100 text-slate-400'}`}>
+                                <MdOutlineCategory size={20} />
+                              </div>
+                              <div className="flex flex-col flex-1 truncate">
+                                <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Program</span>
+                                <span className={`text-sm font-black truncate ${selectedPlanId ? 'text-teal-900' : 'text-slate-500'}`}>
+                                  {selectedPlanId ? allPlans.find(p => p._id === selectedPlanId)?.name : 'Select Plan...'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <AnimatePresence>
+                            {showPlanPicker && (
+                              <>
+                                <div className="fixed inset-0 z-[100]" onClick={() => setShowPlanPicker(false)} />
+                                <motion.div
+                                  initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                                  className="absolute bottom-full left-0 right-0 mb-6 z-[101] max-h-[300px] overflow-y-auto bg-white rounded-[1rem] border border-slate-100 shadow-[0_30px_90px_rgba(0,0,0,0.15)] p-2 custom-scrollbar"
+                                >
+                                  <div className="p-2 sticky top-0 bg-white border-b border-slate-50 mb-1">
+                                    <input
+                                      type="text" placeholder="Search plans..." value={planSearchTerm} onChange={(e) => setPlanSearchTerm(e.target.value)}
+                                      className="w-full p-2 bg-slate-50 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500/10"
+                                    />
+                                  </div>
+                                  {allPlans.filter(p => p.name.toLowerCase().includes(planSearchTerm.toLowerCase())).map(plan => (
+                                    <div
+                                      key={plan._id} onClick={() => { setSelectedPlanId(plan._id); setShowPlanPicker(false); }}
+                                      className={`p-3 rounded-xl cursor-pointer transition-all flex items-center justify-between mb-1 ${selectedPlanId === plan._id ? 'bg-teal-600 text-white' : 'hover:bg-slate-50 text-slate-700'}`}
+                                    >
+                                      <div className="flex flex-col">
+                                        <span className="text-xs font-black">{plan.name}</span>
+                                        <span className={`text-[9px] font-bold tracking-widest uppercase ${selectedPlanId === plan._id ? 'text-teal-100' : 'text-teal-600'}`}>{currency}{plan.price} • {plan.days} Days</span>
+                                      </div>
+                                      {selectedPlanId === plan._id && <CheckCircle size={14} />}
+                                    </div>
+                                  ))}
+                                </motion.div>
+                              </>
+                            )}
+                          </AnimatePresence>
                         </div>
 
-                        <AnimatePresence>
-                          {showPlanPicker && (
-                            <>
-                              <div className="fixed inset-0 z-[100]" onClick={() => setShowPlanPicker(false)} />
-                              <motion.div
-                                initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                                className="absolute bottom-full left-0 right-0 mb-6 z-[101] max-h-[400px] overflow-y-auto bg-white rounded-[1rem] border border-slate-100 shadow-[0_30px_90px_rgba(0,0,0,0.15)] p-3 custom-scrollbar"
-                              >
-                                {allPlans.map(plan => (
-                                  <div
-                                    key={plan._id}
-                                    onClick={() => { setSelectedPlanId(plan._id); setShowPlanPicker(false); }}
-                                    className={`p-4 hover:bg-slate-50 rounded-[1.5rem] cursor-pointer transition-all border border-transparent ${selectedPlanId === plan._id ? 'bg-teal-50/50 border-teal-100 shadow-sm' : ''} flex items-center justify-between group`}
-                                  >
-                                    <div className="flex flex-col">
-                                      <span className="text-sm font-black text-slate-800">{plan.name}</span>
-                                      <span className="text-[10px] text-teal-600 font-bold tracking-widest uppercase">₹{plan.price} • {plan.days} Days</span>
-                                    </div>
-                                    <ChevronRight size={16} className={`text-slate-300 group-hover:text-teal-500 transition-colors ${selectedPlanId === plan._id ? 'text-teal-500' : ''}`} />
+                        {/* Product Picker */}
+                        <div className="relative flex-1 w-full">
+                          <div
+                            onClick={() => { setShowProductPicker(!showProductPicker); setShowPlanPicker(false); }}
+                            className={`flex items-center justify-between gap-3 bg-slate-50 border p-3 rounded-2xl w-full cursor-pointer transition-all hover:bg-slate-100 ${selectedProductIds.length > 0 ? 'border-teal-200 bg-teal-50/20' : 'border-slate-200 shadow-sm'}`}
+                          >
+                            <div className="flex items-center gap-3 px-1 w-full min-w-0">
+                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${selectedProductIds.length > 0 ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20' : 'bg-white border border-slate-100 text-slate-400'}`}>
+                                <LayoutGrid size={20} />
+                              </div>
+                              <div className="flex flex-col flex-1 truncate">
+                                <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Products</span>
+                                <span className={`text-sm font-black truncate ${selectedProductIds.length > 0 ? 'text-teal-900' : 'text-slate-500'}`}>
+                                  {selectedProductIds.length > 0 ? `${selectedProductIds.length} Selected` : 'Select Products...'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <AnimatePresence>
+                            {showProductPicker && (
+                              <>
+                                <div className="fixed inset-0 z-[100]" onClick={() => setShowProductPicker(false)} />
+                                <motion.div
+                                  initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                                  className="absolute bottom-full left-0 right-0 mb-6 z-[101] max-h-[300px] overflow-y-auto bg-white rounded-[1rem] border border-slate-100 shadow-[0_30px_90px_rgba(0,0,0,0.15)] p-2 custom-scrollbar"
+                                >
+                                  <div className="p-2 sticky top-0 bg-white border-b border-slate-50 mb-1">
+                                    <input
+                                      type="text" placeholder="Search products..." value={productSearchTerm} onChange={(e) => setProductSearchTerm(e.target.value)}
+                                      className="w-full p-2 bg-slate-50 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500/10"
+                                    />
                                   </div>
-                                ))}
-                              </motion.div>
-                            </>
-                          )}
-                        </AnimatePresence>
+                                  {allProducts.filter(p => p.name.toLowerCase().includes(productSearchTerm.toLowerCase())).map(product => {
+                                    const isSelected = selectedProductIds.includes(product._id);
+                                    return (
+                                      <div
+                                        key={product._id} 
+                                        onClick={() => {
+                                          setSelectedProductIds(prev => 
+                                            isSelected ? prev.filter(id => id !== product._id) : [...prev, product._id]
+                                          );
+                                        }}
+                                        className={`p-3 rounded-xl cursor-pointer transition-all flex items-center justify-between mb-1 ${isSelected ? 'bg-teal-600 text-white' : 'hover:bg-slate-50 text-slate-700'}`}
+                                      >
+                                        <div className="flex items-center gap-3">
+                                          <div className="w-8 h-8 rounded-lg bg-white border border-slate-100 overflow-hidden shrink-0">
+                                            <img src={`${API_HOST}/${product.image}`} alt="" className="w-full h-full object-cover" onError={(e) => e.target.src = "https://via.placeholder.com/150"} />
+                                          </div>
+                                          <span className="text-xs font-black">{product.name}</span>
+                                        </div>
+                                        {isSelected && <CheckCircle size={14} />}
+                                      </div>
+                                    );
+                                  })}
+                                </motion.div>
+                              </>
+                            )}
+                          </AnimatePresence>
+                        </div>
+
+                        <button
+                          onClick={(e) => { e.stopPropagation(); handleSuggestProgram(); }}
+                          disabled={suggesting}
+                          className="h-12 w-full sm:w-auto px-8 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-teal-100 transition-all disabled:opacity-50 active:scale-95 whitespace-nowrap"
+                        >
+                          {suggesting ? "Wait..." : "Suggest"}
+                        </button>
                       </div>
                     </div>
 

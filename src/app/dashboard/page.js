@@ -138,7 +138,7 @@ const DashboardPage = () => {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="space-y-1">
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">
-            {getGreeting()}, <span className="text-teal-700">{user?.name || (role === "Admin" ? "Admin" : "Sub Admin")}</span> 👋
+            {getGreeting()}, <span className="text-teal-700">{user?.username || (role === "Admin" ? "Admin" : "Sub Admin")}</span> 👋
           </h1>
           <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
             Here's Detoxpathy's overview for today — {getTodayFormatted()}

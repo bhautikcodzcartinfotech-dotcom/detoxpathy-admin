@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { FiPlus, FiTrash2, FiSave } from "react-icons/fi";
-import { getAllParties, getAllProducts, getAllBranches, createPurchase, getAllPurchases } from "@/Api/AllApi";
+import { getAllParties, getAllProducts, getAllBranches, createPurchase, getAllPurchases, getSetting } from "@/Api/AllApi";
 import { toast } from "react-hot-toast";
 
 const PurchaseEntry = () => {
@@ -10,6 +10,7 @@ const PurchaseEntry = () => {
   const [branches, setBranches] = useState([]);
   const [recentPurchases, setRecentPurchases] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [currency, setCurrency] = useState("₹");
 
   const [form, setForm] = useState({
     supplierId: "",
@@ -34,14 +35,28 @@ const PurchaseEntry = () => {
 
   useEffect(() => {
     const fetchData = async () => {
-      const [s, p, b] = await Promise.all([
+      const [s, p, b, settingsRes] = await Promise.all([
         getAllParties("Supplier"),
         getAllProducts({ limit: 1000 }),
-        getAllBranches()
+        getAllBranches(),
+        getSetting()
       ]);
       setSuppliers(s);
       setProducts(p.products || []);
       setBranches(b);
+      
+      let settingsData;
+      if (settingsRes && settingsRes.data) {
+        settingsData = settingsRes.data;
+      } else if (settingsRes && settingsRes.setting) {
+        settingsData = settingsRes.setting;
+      } else if (settingsRes && settingsRes._id) {
+        settingsData = settingsRes;
+      }
+      if (settingsData && settingsData.currency) {
+        setCurrency(settingsData.currency);
+      }
+
       fetchPurchases();
     };
     fetchData();
@@ -217,7 +232,7 @@ const PurchaseEntry = () => {
                       <span className="bg-gray-100 px-2 py-1 rounded-md font-medium">{item.gstPercentage}%</span>
                     </td>
                     <td className="p-3 text-sm font-bold text-right text-gray-800">
-                      ₹{item.totalAmount.toFixed(2)}
+                      {currency}{item.totalAmount.toFixed(2)}
                     </td>
                     <td className="p-3 text-center">
                       <button
@@ -294,7 +309,7 @@ const PurchaseEntry = () => {
                       {p.items?.map(item => `${item.productId?.name} (${item.quantity})`).join(', ')}
                     </div>
                   </td>
-                  <td className="p-3 text-right font-bold whitespace-nowrap">₹{p.grandTotal?.toLocaleString()}</td>
+                  <td className="p-3 text-right font-bold whitespace-nowrap">{p.currency || "₹"}{p.grandTotal?.toLocaleString()}</td>
                 </tr>
               ))}
               {recentPurchases.length === 0 && (
