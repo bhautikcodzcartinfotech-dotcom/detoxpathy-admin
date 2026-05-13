@@ -376,6 +376,22 @@ const SettingsPage = () => {
               />
             </div>
 
+            {/* Video Price */}
+            <div className="bg-gradient-to-br from-white to-yellow-50 rounded-2xl shadow-lg border border-yellow-200 p-6">
+              <h3 className="text-sm font-bold text-gray-700 mb-4 tracking-wide">
+                Video Price ({formData.currency || "₹"})
+              </h3>
+              <input
+                type="number"
+                value={formData.videoPrice ?? ""}
+                onChange={(e) => handleInputChange("videoPrice", e.target.value === "" ? "" : e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-yellow-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
+                min="0"
+                step="0.01"
+                placeholder="0"
+              />
+            </div>
+
             {/* Currency */}
             <div className="bg-gradient-to-br from-white to-yellow-50 rounded-2xl shadow-lg border border-yellow-200 p-6 flex flex-col justify-between h-full">
               <div className="flex-1">

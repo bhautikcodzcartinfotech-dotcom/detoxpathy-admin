@@ -310,21 +310,31 @@ const UsersPage = () => {
     if (skipBody === "skip") {
       data = data.filter((u) => {
         const hasMeasurement = 
-          (u.waist && u.waist != "0" && u.waist != 0) || 
-          (u.hip && u.hip != "0" && u.hip != 0) || 
-          (u.chest && u.chest != "0" && u.chest != 0) || 
-          (u.thigh && u.thigh != "0" && u.thigh != 0) || 
-          (u.biceps && u.biceps != "0" && u.biceps != 0);
+          (u.leftWaist && u.leftWaist != "0" && u.leftWaist != 0) || 
+          (u.rightWaist && u.rightWaist != "0" && u.rightWaist != 0) || 
+          (u.leftHip && u.leftHip != "0" && u.leftHip != 0) || 
+          (u.rightHip && u.rightHip != "0" && u.rightHip != 0) || 
+          (u.leftChest && u.leftChest != "0" && u.leftChest != 0) || 
+          (u.rightChest && u.rightChest != "0" && u.rightChest != 0) || 
+          (u.leftThigh && u.leftThigh != "0" && u.leftThigh != 0) || 
+          (u.rightThigh && u.rightThigh != "0" && u.rightThigh != 0) || 
+          (u.leftBiceps && u.leftBiceps != "0" && u.leftBiceps != 0) || 
+          (u.rightBiceps && u.rightBiceps != "0" && u.rightBiceps != 0);
         return !hasMeasurement;
       });
     } else if (skipBody === "provided") {
       data = data.filter((u) => {
         const hasMeasurement = 
-          (u.waist && u.waist != "0" && u.waist != 0) || 
-          (u.hip && u.hip != "0" && u.hip != 0) || 
-          (u.chest && u.chest != "0" && u.chest != 0) || 
-          (u.thigh && u.thigh != "0" && u.thigh != 0) || 
-          (u.biceps && u.biceps != "0" && u.biceps != 0);
+          (u.leftWaist && u.leftWaist != "0" && u.leftWaist != 0) || 
+          (u.rightWaist && u.rightWaist != "0" && u.rightWaist != 0) || 
+          (u.leftHip && u.leftHip != "0" && u.leftHip != 0) || 
+          (u.rightHip && u.rightHip != "0" && u.rightHip != 0) || 
+          (u.leftChest && u.leftChest != "0" && u.leftChest != 0) || 
+          (u.rightChest && u.rightChest != "0" && u.rightChest != 0) || 
+          (u.leftThigh && u.leftThigh != "0" && u.leftThigh != 0) || 
+          (u.rightThigh && u.rightThigh != "0" && u.rightThigh != 0) || 
+          (u.leftBiceps && u.leftBiceps != "0" && u.leftBiceps != 0) || 
+          (u.rightBiceps && u.rightBiceps != "0" && u.rightBiceps != 0);
         return hasMeasurement;
       });
     }

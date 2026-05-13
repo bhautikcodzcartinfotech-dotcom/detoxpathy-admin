@@ -1758,7 +1758,7 @@ const AppointmentPage = () => {
                               <div>
                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Body Measurements</p>
                                 <div className="text-[9px] font-bold text-slate-500 leading-tight">
-                                  Biceps: {user?.biceps || 0} • Chest: {user?.chest || 0} • Hip: {user?.hip || 0} • Thigh: {user?.thigh || 0} • Waist: {user?.waist || 0}
+                                  Biceps (L/R): {user?.leftBiceps || 0}/{user?.rightBiceps || 0} • Chest: {user?.leftChest || 0}/{user?.rightChest || 0} • Hip: {user?.leftHip || 0}/{user?.rightHip || 0} • Thigh: {user?.leftThigh || 0}/{user?.rightThigh || 0} • Waist: {user?.leftWaist || 0}/{user?.rightWaist || 0}
                                 </div>
                               </div>
                             </div>

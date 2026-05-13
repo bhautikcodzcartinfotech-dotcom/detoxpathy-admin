@@ -358,12 +358,27 @@ const UserProfilePage = () => {
                 </div>
                 <div className="border-t border-gray-200 p-6">
                   <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Body Measurements</div>
-                  <div className="text-sm font-medium text-gray-800 flex flex-wrap gap-x-3 gap-y-1">
-                    <span>Biceps: {overview.user?.biceps || "-"}</span>
-                    <span>Chest: {overview.user?.chest || "-"}</span>
-                    <span>Hip: {overview.user?.hip || "-"}</span>
-                    <span>Thigh: {overview.user?.thigh || "-"}</span>
-                    <span>Waist: {overview.user?.waist || "-"}</span>
+                  <div className="text-sm font-medium text-gray-800 grid grid-cols-2 gap-x-6 gap-y-2 w-full">
+                    <div>
+                      <div className="font-bold mb-1 text-gray-500 uppercase text-[10px] tracking-wider border-b pb-1">Left</div>
+                      <div className="flex flex-col gap-1">
+                        <span>Biceps: {overview.user?.leftBiceps || "-"}</span>
+                        <span>Chest: {overview.user?.leftChest || "-"}</span>
+                        <span>Hip: {overview.user?.leftHip || "-"}</span>
+                        <span>Thigh: {overview.user?.leftThigh || "-"}</span>
+                        <span>Waist: {overview.user?.leftWaist || "-"}</span>
+                      </div>
+                    </div>
+                    <div>
+                      <div className="font-bold mb-1 text-gray-500 uppercase text-[10px] tracking-wider border-b pb-1">Right</div>
+                      <div className="flex flex-col gap-1">
+                        <span>Biceps: {overview.user?.rightBiceps || "-"}</span>
+                        <span>Chest: {overview.user?.rightChest || "-"}</span>
+                        <span>Hip: {overview.user?.rightHip || "-"}</span>
+                        <span>Thigh: {overview.user?.rightThigh || "-"}</span>
+                        <span>Waist: {overview.user?.rightWaist || "-"}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div className="border-t md:border-l border-gray-200 p-6">
