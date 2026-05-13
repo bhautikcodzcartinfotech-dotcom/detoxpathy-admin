@@ -1,6 +1,6 @@
 import axios from "axios";
 
-export const API_BASE = "http://51.20.42.105:3002/api/v1";
+export const API_BASE = "http://51.20.42.105:3002/api/v1"; 
 // export const API_BASE = "http://69.62.73.194:4009/api/v1";
 // export const API_BASE = "https://admin.detoxpathy.com/api/v1";
 // export const API_BASE = "https://backend.fatendfit.com/api/v1";
