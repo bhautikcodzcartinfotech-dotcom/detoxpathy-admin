@@ -25,6 +25,13 @@ const UserProfilePage = () => {
     return value ? "Yes" : "No";
   };
 
+  const formatIndianDate = (dateStr) => {
+    if (!dateStr) return "-";
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return "-";
+    return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+  };
+
   const calculateAge = (dob) => {
     if (!dob) return null;
     try {
@@ -349,7 +356,7 @@ const UserProfilePage = () => {
                         : "-")}
                   </div>
                 </div>
-                <div className="p-6">
+                <div className="border-t border-gray-200 p-6">
                   <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Body Measurements</div>
                   <div className="text-sm font-medium text-gray-800 flex flex-wrap gap-x-3 gap-y-1">
                     <span>Biceps: {overview.user?.biceps || "-"}</span>
@@ -358,6 +365,10 @@ const UserProfilePage = () => {
                     <span>Thigh: {overview.user?.thigh || "-"}</span>
                     <span>Waist: {overview.user?.waist || "-"}</span>
                   </div>
+                </div>
+                <div className="border-t md:border-l border-gray-200 p-6">
+                  <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">First Login Date</div>
+                  <div className="text-sm font-medium text-gray-800">{formatIndianDate(overview.user?.createdAt)}</div>
                 </div>
               </div>
             </div>

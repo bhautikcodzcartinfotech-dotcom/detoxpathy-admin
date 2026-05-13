@@ -10,7 +10,7 @@ import toast from "react-hot-toast";
 import { FiLogIn, FiChevronDown, FiChevronUp, FiCalendar } from "react-icons/fi";
 import LeaveManagementModal from "./LeaveManagementModal";
 
-const SubAdminList = ({ subAdmins, onEdit, onDelete, onUpdate, loading = false }) => {
+const SubAdminList = ({ subAdmins, appointments = [], onEdit, onDelete, onUpdate, loading = false }) => {
   const router = useRouter();
   const { impersonate } = useAuth();
   const [deleteDialog, setDeleteDialog] = useState({
@@ -24,6 +24,53 @@ const SubAdminList = ({ subAdmins, onEdit, onDelete, onUpdate, loading = false }
     isOpen: false,
     doctor: null,
   });
+
+  const calculateDoctorStats = (doctorId) => {
+    const doctorApps = appointments.filter(app => (app.doctor?._id || app.doctor) === doctorId);
+    const totalApps = doctorApps.length;
+
+    const timeToMinutes = (timeString) => {
+      if (!timeString) return 0;
+      const match = String(timeString).trim().match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/i);
+      if (!match) return 0;
+      let hours = parseInt(match[1]);
+      const minutes = parseInt(match[2]);
+      const period = match[3].toUpperCase();
+      if (period === 'AM') {
+        hours = hours === 12 ? 0 : hours;
+      } else {
+        hours = hours === 12 ? 12 : hours + 12;
+      }
+      return (hours * 60) + minutes;
+    };
+
+    let totalMinutes = 0;
+    doctorApps.forEach(app => {
+      const start = timeToMinutes(app.startTime);
+      const end = timeToMinutes(app.endTime);
+      if (end > start) {
+        totalMinutes += (end - start);
+      }
+    });
+
+    const averageMinutes = totalApps > 0 ? totalMinutes / totalApps : 0;
+
+    const formatMinutes = (mins) => {
+      const h = Math.floor(mins / 60);
+      const m = Math.floor(mins % 60);
+      const s = Math.round((mins * 60) % 60);
+
+      if (h > 0) return `${h}h ${m}m ${s}s`;
+      if (m > 0) return `${m}m ${s}s`;
+      return `${s}s`;
+    };
+
+    return {
+      totalApps,
+      averageTime: totalApps > 0 ? formatMinutes(averageMinutes) : "0m",
+      totalTime: formatMinutes(totalMinutes)
+    };
+  };
 
   const toggleRow = (id) => {
     const newExpandedRows = new Set(expandedRows);
@@ -134,6 +181,7 @@ const SubAdminList = ({ subAdmins, onEdit, onDelete, onUpdate, loading = false }
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Branches</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Role</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Commission (%)</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Consulting Time</th>
               <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
@@ -163,6 +211,20 @@ const SubAdminList = ({ subAdmins, onEdit, onDelete, onUpdate, loading = false }
                         <span className="px-2.5 py-1 rounded-full bg-amber-100 text-amber-700 text-[10px] font-black uppercase tracking-wider">DOCTOR</span>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-gray-700 text-sm font-medium">{sa.commission ?? 0}%</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        {(() => {
+                          const stats = calculateDoctorStats(sa._id);
+                          return (
+                            <div className="flex flex-col">
+                              <span className="text-[11px] font-black text-amber-600 uppercase tracking-tighter">Average: {stats.averageTime}</span>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">Time: {stats.totalTime}</span>
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Apps: {stats.totalApps}</span>
+                              </div>
+                            </div>
+                          );
+                        })()}
+                      </td>
                       <td className="px-6 py-4">
                         <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">
                           <ActionButton type="edit" onClick={() => onEdit(sa)} />
@@ -208,6 +270,20 @@ const SubAdminList = ({ subAdmins, onEdit, onDelete, onUpdate, loading = false }
                             <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 text-[10px] font-black uppercase tracking-wider border border-amber-100">SUB DOCTOR</span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-gray-700 text-sm font-medium">{sd.commission ?? 0}%</td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            {(() => {
+                              const stats = calculateDoctorStats(sd._id);
+                              return (
+                                <div className="flex flex-col">
+                                  <span className="text-[11px] font-black text-amber-600 uppercase tracking-tighter">Average: {stats.averageTime}</span>
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-tighter">Time: {stats.totalTime}</span>
+                                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Apps: {stats.totalApps}</span>
+                                  </div>
+                                </div>
+                              );
+                            })()}
+                          </td>
                           <td className="px-6 py-4">
                             <div className="flex items-center justify-center gap-1.5 whitespace-nowrap">
                               <ActionButton type="edit" onClick={() => onEdit(sd)} />
@@ -233,7 +309,7 @@ const SubAdminList = ({ subAdmins, onEdit, onDelete, onUpdate, loading = false }
               })
             ) : (
               <tr>
-                <td colSpan={7} className="px-6 py-4 text-center text-gray-500 text-sm">No Doctors Found</td>
+                <td colSpan={8} className="px-6 py-4 text-center text-gray-500 text-sm">No Doctors Found</td>
               </tr>
             )}
           </tbody>

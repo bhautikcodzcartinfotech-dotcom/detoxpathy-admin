@@ -7,10 +7,20 @@ import {
   createSubAdminApi,
   listSubAdmins,
   updateSubAdminById,
+  getAppointmentsByBranch,
 } from "@/Api/AllApi";
 import SubAdminForm from "./component/subAdminForm";
 import SubAdminList from "./component/subAdminList";
 import toast from "react-hot-toast";
+
+const getTodayInKolkata = () => {
+  const d = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, '0'),
+    String(d.getDate()).padStart(2, '0')
+  ].join('-');
+};
 
 const SubAdminPage = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -18,6 +28,7 @@ const SubAdminPage = () => {
   const [listLoading, setListLoading] = useState(true);
   const [error, setError] = useState("");
   const [subAdmins, setSubAdmins] = useState([]);
+  const [appointments, setAppointments] = useState([]);
   const [editing, setEditing] = useState(null);
 
   const fetchList = async () => {
@@ -25,6 +36,11 @@ const SubAdminPage = () => {
       setListLoading(true);
       const data = await listSubAdmins();
       setSubAdmins(Array.isArray(data) ? data : []);
+      
+      // Fetch only today's appointments for doctor stats
+      const today = getTodayInKolkata();
+      const appData = await getAppointmentsByBranch("all", { date: today });
+      setAppointments(Array.isArray(appData) ? appData : []);
     } catch (e) {
       setError(e?.response?.data?.message || "Failed to load sub admins");
     } finally {
@@ -118,6 +134,7 @@ const SubAdminPage = () => {
 
         <SubAdminList
           subAdmins={subAdmins}
+          appointments={appointments}
           loading={listLoading}
           onEdit={handleEdit}
           onDelete={handleDelete}

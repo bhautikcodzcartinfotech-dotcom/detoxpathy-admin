@@ -1244,6 +1244,26 @@ const AppointmentPage = () => {
     upcoming: appointments.filter(a => getAppointmentFilterStatus(a) === 'upcoming').length,
     missed: appointments.filter(a => getAppointmentFilterStatus(a) === 'missed').length,
     cancelled: appointments.filter(a => getAppointmentFilterStatus(a) === 'cancelled').length,
+    mostBooked: (() => {
+      const counts = {};
+      appointments.forEach(app => {
+        if (app.startTime && app.status !== 'cancelled') {
+          const match = String(app.startTime).trim().match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/i);
+          if (match) {
+            let h = parseInt(match[1]);
+            const period = match[3].toUpperCase();
+            const displayH = h;
+            const nextH = (h % 12) + 1;
+            const nextPeriod = (h === 11 && period === 'AM') ? 'PM' : (h === 11 && period === 'PM') ? 'AM' : period;
+            const key = `${displayH}:00 ${period} - ${nextH}:00 ${nextPeriod}`;
+            counts[key] = (counts[key] || 0) + 1;
+          }
+        }
+      });
+      return Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 1);
+    })(),
   };
 
   return (
@@ -1319,13 +1339,29 @@ const AppointmentPage = () => {
             { label: "UPCOMING", value: stats.upcoming, color: "border-orange-500", icon: Clock3, iconColor: "text-orange-500" },
             { label: "MISSED", value: stats.missed, color: "border-gray-400", icon: XOctagon, iconColor: "text-gray-400" },
             { label: "CANCELLED", value: stats.cancelled, color: "border-red-500", icon: XOctagon, iconColor: "text-red-500" },
+            { label: "MOST BOOKED SLOT", isList: true, value: stats.mostBooked, color: "border-amber-500", icon: Clock3, iconColor: "text-amber-500" },
           ].map((item, idx) => (
             <div key={idx} className={`bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl border-t-4 ${item.color} shadow-sm transition-all hover:shadow-md hover:scale-[1.02]`}>
               <div className="flex justify-between items-start mb-2">
                 <p className="text-xs font-black text-gray-400 tracking-widest">{item.label}</p>
                 <item.icon className={`w-4 h-4 ${item.iconColor}`} />
               </div>
-              <p className="text-3xl font-black text-gray-900">{item.value.toLocaleString()}</p>
+              {item.isList ? (
+                <div className="space-y-1 mt-2">
+                  {item.value.length > 0 ? (
+                    item.value.map(([slot, count], i) => (
+                      <div key={i} className="flex justify-between items-center bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+                        <span className="text-[11px] font-black text-gray-700">{slot}</span>
+                        <span className="text-[10px] font-bold text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full">{count} Bookings</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-[10px] font-bold text-gray-400 italic">No data yet</p>
+                  )}
+                </div>
+              ) : (
+                <p className="text-3xl font-black text-gray-900">{item.value.toLocaleString()}</p>
+              )}
             </div>
           ))}
         </div>
