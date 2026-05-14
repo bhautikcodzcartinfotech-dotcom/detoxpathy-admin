@@ -62,6 +62,7 @@ const UserProfilePage = () => {
   const [closing, setClosing] = useState(false);
   const [planActionLoading, setPlanActionLoading] = useState(false);
   const [videoAnswers, setVideoAnswers] = useState([]);
+  const [selectedImage, setSelectedImage] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
     title: "",
@@ -359,25 +360,14 @@ const UserProfilePage = () => {
                 <div className="border-t border-gray-200 p-6">
                   <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Body Measurements</div>
                   <div className="text-sm font-medium text-gray-800 grid grid-cols-2 gap-x-6 gap-y-2 w-full">
-                    <div>
-                      <div className="font-bold mb-1 text-gray-500 uppercase text-[10px] tracking-wider border-b pb-1">Left</div>
-                      <div className="flex flex-col gap-1">
-                        <span>Biceps: {overview.user?.leftBiceps || "-"}</span>
-                        <span>Chest: {overview.user?.leftChest || "-"}</span>
-                        <span>Hip: {overview.user?.leftHip || "-"}</span>
-                        <span>Thigh: {overview.user?.leftThigh || "-"}</span>
-                        <span>Waist: {overview.user?.leftWaist || "-"}</span>
-                      </div>
+                    <div className="flex flex-col gap-1">
+                      <span>Waist: {overview.user?.waist || "-"}</span>
+                      <span>Hip: {overview.user?.hip || "-"}</span>
+                      <span>Chest: {overview.user?.chest || "-"}</span>
                     </div>
-                    <div>
-                      <div className="font-bold mb-1 text-gray-500 uppercase text-[10px] tracking-wider border-b pb-1">Right</div>
-                      <div className="flex flex-col gap-1">
-                        <span>Biceps: {overview.user?.rightBiceps || "-"}</span>
-                        <span>Chest: {overview.user?.rightChest || "-"}</span>
-                        <span>Hip: {overview.user?.rightHip || "-"}</span>
-                        <span>Thigh: {overview.user?.rightThigh || "-"}</span>
-                        <span>Waist: {overview.user?.rightWaist || "-"}</span>
-                      </div>
+                    <div className="flex flex-col gap-1">
+                      <span>Thigh: {overview.user?.thigh || "-"}</span>
+                      <span>Biceps: {overview.user?.biceps || "-"}</span>
                     </div>
                   </div>
                 </div>
@@ -596,6 +586,152 @@ const UserProfilePage = () => {
                 </div>
               </div>
             )}
+
+            {/* ------------------ Transformation Journey ------------------ */}
+            <div className="mx-8 bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+              <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-gray-50/50">
+                <h3 className="text-lg font-bold text-gray-800">
+                  Transformation Journey
+                </h3>
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                  Visual Progress Tracking
+                </span>
+              </div>
+
+              <div className="p-2 w-full">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-20">
+                  {/* Front View Group */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Before Front */}
+                    <div className="space-y-3">
+                      <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Before Front</h4>
+                      <div className="group relative">
+                        <div 
+                          className="aspect-square bg-gray-100 rounded-2xl overflow-hidden border border-dashed border-gray-200 flex items-center justify-center cursor-pointer hover:border-red-300 transition-all group"
+                          onClick={() => overview.user?.before?.front && setSelectedImage(`${API_BASE}/${overview.user.before.front}`)}
+                        >
+                          {overview.user?.before?.front ? (
+                            <img 
+                              src={`${API_BASE}/${overview.user.before.front}`} 
+                              alt="Before Front" 
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="flex flex-col items-center gap-2 text-gray-400">
+                              <svg className="w-8 h-8 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              <span className="text-[8px] font-bold uppercase tracking-widest opacity-50">Empty</span>
+                            </div>
+                          )}
+                          {overview.user?.before?.front && (
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <span className="text-white text-[10px] font-bold uppercase tracking-widest bg-black/20 px-3 py-1 rounded-full backdrop-blur-sm border border-white/20">View</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* After Front */}
+                    <div className="space-y-3">
+                      <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">After Front</h4>
+                      <div className="group relative">
+                        <div 
+                          className="aspect-square bg-gray-100 rounded-2xl overflow-hidden border border-dashed border-gray-200 flex items-center justify-center cursor-pointer hover:border-teal-300 transition-all group"
+                          onClick={() => overview.user?.after?.front && setSelectedImage(`${API_BASE}/${overview.user.after.front}`)}
+                        >
+                          {overview.user?.after?.front ? (
+                            <img 
+                              src={`${API_BASE}/${overview.user.after.front}`} 
+                              alt="After Front" 
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="flex flex-col items-center gap-2 text-gray-400">
+                              <svg className="w-8 h-8 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              <span className="text-[8px] font-bold uppercase tracking-widest opacity-50">Empty</span>
+                            </div>
+                          )}
+                          {overview.user?.after?.front && (
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <span className="text-white text-[10px] font-bold uppercase tracking-widest bg-black/20 px-3 py-1 rounded-full backdrop-blur-sm border border-white/20">View</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Side View Group */}
+                  <div className="grid grid-cols-2 gap-4">
+                    {/* Before Side */}
+                    <div className="space-y-3">
+                      <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Before Side</h4>
+                      <div className="group relative">
+                        <div 
+                          className="aspect-square bg-gray-100 rounded-2xl overflow-hidden border border-dashed border-gray-200 flex items-center justify-center cursor-pointer hover:border-red-300 transition-all group"
+                          onClick={() => overview.user?.before?.side && setSelectedImage(`${API_BASE}/${overview.user.before.side}`)}
+                        >
+                          {overview.user?.before?.side ? (
+                            <img 
+                              src={`${API_BASE}/${overview.user.before.side}`} 
+                              alt="Before Side" 
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="flex flex-col items-center gap-2 text-gray-400">
+                              <svg className="w-8 h-8 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              <span className="text-[8px] font-bold uppercase tracking-widest opacity-50">Empty</span>
+                            </div>
+                          )}
+                          {overview.user?.before?.side && (
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <span className="text-white text-[10px] font-bold uppercase tracking-widest bg-black/20 px-3 py-1 rounded-full backdrop-blur-sm border border-white/20">View</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* After Side */}
+                    <div className="space-y-3">
+                      <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">After Side</h4>
+                      <div className="group relative">
+                        <div 
+                          className="aspect-square bg-gray-100 rounded-2xl overflow-hidden border border-dashed border-gray-200 flex items-center justify-center cursor-pointer hover:border-teal-300 transition-all group"
+                          onClick={() => overview.user?.after?.side && setSelectedImage(`${API_BASE}/${overview.user.after.side}`)}
+                        >
+                          {overview.user?.after?.side ? (
+                            <img 
+                              src={`${API_BASE}/${overview.user.after.side}`} 
+                              alt="After Side" 
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="flex flex-col items-center gap-2 text-gray-400">
+                              <svg className="w-8 h-8 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                              <span className="text-[8px] font-bold uppercase tracking-widest opacity-50">Empty</span>
+                            </div>
+                          )}
+                          {overview.user?.after?.side && (
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                              <span className="text-white text-[10px] font-bold uppercase tracking-widest bg-black/20 px-3 py-1 rounded-full backdrop-blur-sm border border-white/20">View</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
 
             {/* ------------------ Program Progress ------------------ */}
             <div className="mx-8 bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
@@ -956,6 +1092,29 @@ const UserProfilePage = () => {
           confirmText="Confirm"
           cancelText="Cancel"
         />
+
+        {/* Image Viewer Modal */}
+        {selectedImage && (
+          <div 
+            className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-sm flex items-center justify-center p-4 md:p-10 animate-fade-in"
+            onClick={() => setSelectedImage(null)}
+          >
+            <button 
+              className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors p-2"
+              onClick={() => setSelectedImage(null)}
+            >
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <img 
+              src={selectedImage} 
+              alt="Full Size" 
+              className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-zoom-in"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        )}
       </div>
     </RoleGuard>
   );

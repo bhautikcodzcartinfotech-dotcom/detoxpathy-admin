@@ -8,6 +8,79 @@ import Loader from "@/utils/loader";
 import RichTextEditor from "@/components/RichTextEditor";
 import Dropdown from "@/utils/dropdown";
 
+const MultiLangTextarea = ({ label, value, onChange, placeholder, rows = 4 }) => {
+  const [activeLang, setActiveLang] = useState('english');
+  
+  const langs = [
+    { id: 'english', label: 'English' },
+    { id: 'hindi', label: 'Hindi' },
+    { id: 'gujarati', label: 'Gujarati' },
+  ];
+
+  const handleLangChange = (langId, val) => {
+    onChange({
+      ...(value || {}),
+      [langId]: val
+    });
+  };
+
+  const copyToAll = () => {
+    const englishVal = value?.english || "";
+    onChange({
+      english: englishVal,
+      hindi: englishVal,
+      gujarati: englishVal
+    });
+    toast.success(`Copied English to all languages`);
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <label className="block text-sm font-bold text-gray-700 uppercase tracking-wider">
+          {label}
+        </label>
+        <div className="flex items-center gap-4">
+          <button
+            type="button"
+            onClick={copyToAll}
+            className="text-[9px] font-black uppercase tracking-widest text-amber-600 hover:text-amber-700 bg-amber-50 px-2 py-1 rounded-md border border-amber-200 transition-all flex items-center gap-1"
+            title="Copy English text to all languages"
+          >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V7M8 7h8a2 2 0 012 2v9a2 2 0 01-2 2H10a2 2 0 01-2-2V7z" />
+            </svg>
+            Use English for All
+          </button>
+          <div className="flex bg-amber-50 p-1 rounded-lg border border-amber-100">
+            {langs.map((lang) => (
+              <button
+                key={lang.id}
+                type="button"
+                onClick={() => setActiveLang(lang.id)}
+                className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${
+                  activeLang === lang.id
+                    ? "bg-gradient-to-r from-yellow-500 to-amber-500 text-white shadow-md"
+                    : "text-amber-700 hover:text-amber-900"
+                }`}
+              >
+                {lang.label}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      <textarea
+        value={value?.[activeLang] || ""}
+        onChange={(e) => handleLangChange(activeLang, e.target.value)}
+        placeholder={`${placeholder} (${activeLang})...`}
+        rows={rows}
+        className="w-full px-4 py-3 rounded-xl border border-amber-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none resize-none font-medium text-gray-700"
+      />
+    </div>
+  );
+};
+
 const SettingsPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -51,7 +124,16 @@ const SettingsPage = () => {
 
       const finalData = {
         ...settingsData,
-        currency: settingsData.currency || "₹"
+        currency: settingsData.currency || "₹",
+        appoinmentDescription: typeof settingsData.appoinmentDescription === 'object' && settingsData.appoinmentDescription !== null 
+          ? settingsData.appoinmentDescription 
+          : { english: settingsData.appoinmentDescription || "", hindi: "", gujarati: "" },
+        testimonialDescription: typeof settingsData.testimonialDescription === 'object' && settingsData.testimonialDescription !== null 
+          ? settingsData.testimonialDescription 
+          : { english: settingsData.testimonialDescription || "", hindi: "", gujarati: "" },
+        productScreenDescription: typeof settingsData.productScreenDescription === 'object' && settingsData.productScreenDescription !== null 
+          ? settingsData.productScreenDescription 
+          : { english: settingsData.productScreenDescription || "", hindi: "", gujarati: "" }
       };
       setSettings(finalData);
       setFormData(finalData);
@@ -87,7 +169,10 @@ const SettingsPage = () => {
   const handleUpdate = async () => {
     try {
       // Validation: Testimonial Description and Image cannot both be present
-      if (formData.testimonialDescription && formData.testimonialImage) {
+      const hasTestimonialDesc = formData.testimonialDescription && 
+        (formData.testimonialDescription.english || formData.testimonialDescription.hindi || formData.testimonialDescription.gujarati);
+      
+      if (hasTestimonialDesc && formData.testimonialImage) {
         toast.error("Please provide either a Testimonial Description or an Image, not both.");
         return;
       }
@@ -602,32 +687,20 @@ const SettingsPage = () => {
               </div>
 
               {/* Appointment Description */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Appointment Description
-                </label>
-                <textarea
-                  value={formData.appoinmentDescription || ""}
-                  onChange={(e) => handleInputChange("appoinmentDescription", e.target.value)}
-                  placeholder="Enter appointment description..."
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-xl border border-amber-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none resize-none"
-                />
-              </div>
+              <MultiLangTextarea
+                label="Appointment Description"
+                value={formData.appoinmentDescription}
+                onChange={(value) => handleInputChange("appoinmentDescription", value)}
+                placeholder="Enter appointment description"
+              />
 
               {/* Product Screen Description */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Product Screen Description
-                </label>
-                <textarea
-                  value={formData.productScreenDescription || ""}
-                  onChange={(e) => handleInputChange("productScreenDescription", e.target.value)}
-                  placeholder="Enter product screen description..."
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-xl border border-amber-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none resize-none"
-                />
-              </div>
+              <MultiLangTextarea
+                label="Product Screen Description"
+                value={formData.productScreenDescription}
+                onChange={(value) => handleInputChange("productScreenDescription", value)}
+                placeholder="Enter product screen description"
+              />
 
             </div>
           </div>
@@ -652,20 +725,12 @@ const SettingsPage = () => {
             </h3>
             <div className="space-y-8">
               {/* Testimonial Description */}
-              <div className="space-y-2">
-                <label className="block text-sm font-medium text-gray-700">
-                  Testimonial Description
-                </label>
-                <textarea
-                  value={formData.testimonialDescription || ""}
-                  onChange={(e) =>
-                    handleInputChange("testimonialDescription", e.target.value)
-                  }
-                  placeholder="Enter testimonial description..."
-                  rows={4}
-                  className="w-full px-4 py-3 rounded-xl border border-amber-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none resize-none"
-                />
-              </div>
+              <MultiLangTextarea
+                label="Testimonial Description"
+                value={formData.testimonialDescription}
+                onChange={(value) => handleInputChange("testimonialDescription", value)}
+                placeholder="Enter testimonial description"
+              />
 
               {/* Testimonial Image Upload */}
               <div className="space-y-4">

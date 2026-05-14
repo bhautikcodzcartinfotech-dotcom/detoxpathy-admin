@@ -181,7 +181,6 @@ const UsersPage = () => {
 
   const calculateAge = (dob) => {
     if (!dob) return null;
-    // Format could be DD/MM/YYYY or YYYY-MM-DD
     let birthDate;
     if (dob.includes("/")) {
       const parts = dob.split("/");
@@ -190,9 +189,7 @@ const UsersPage = () => {
     } else {
       birthDate = new Date(dob);
     }
-    
     if (isNaN(birthDate.getTime())) return null;
-
     const today = new Date();
     let age = today.getFullYear() - birthDate.getFullYear();
     const m = today.getMonth() - birthDate.getMonth();
@@ -202,56 +199,36 @@ const UsersPage = () => {
     return age;
   };
 
+  // Funnel tracking for relative percentage
+  const [funnelSteps, setFunnelSteps] = useState([]);
+  const [activeStages, setActiveStages] = useState([0]);
+
   const applyFilters = (list, term, status, planId, date, planHistoryType, language, gender, city, state, country, skipBody, referrer, ageRange) => {
-
-
     const base = Array.isArray(list) ? list : [];
     let data = base;
+    const counts = [base.length];
 
-    // Filter by age range
-    if (ageRange) {
-      data = data.filter((u) => {
-        const age = calculateAge(u.dob);
-        if (age === null) return false;
-        
-        const [min, max] = ageRange.split("-").map(n => n === "+" ? Infinity : Number(n));
-        if (ageRange.endsWith("+")) {
-          return age >= min;
-        }
-        return age >= min && age <= max;
-      });
-    }
-
-    // Filter by referrer (Include the referrer themselves + their referees)
-    if (referrer) {
-      data = data.filter((u) => u.usedReferralCode === referrer || u.referralCode === referrer);
-    }
-
-    // For subadmin, only show active users (already filtered in fetchList)
+    // 1. Status
     if (role === "subadmin") {
       data = data.filter((u) => !u.isDeleted);
     } else {
-      // Admin filtering: all | active | inactive
       if (status === "active") data = data.filter((u) => !u.isDeleted);
       else if (status === "inactive") data = data.filter((u) => u.isDeleted);
-      // "all" shows all users (no filtering)
     }
+    counts.push(data.length);
 
-    // Filter by plan
+    // 2. Plan
     if (planId) {
-      data = data.filter((u) => {
-        const userPlanId = u.plan?._id || u.plan;
-        return userPlanId === planId;
-      });
+      data = data.filter((u) => (u.plan?._id || u.plan) === planId);
     }
+    counts.push(data.length);
 
-    // Filter by date (createdAt)
+    // 3. Date
     if (date) {
       const filterDate = new Date(date);
       filterDate.setHours(0, 0, 0, 0);
       const nextDay = new Date(filterDate);
       nextDay.setDate(nextDay.getDate() + 1);
-
       data = data.filter((u) => {
         if (!u.createdAt) return false;
         const userDate = new Date(u.createdAt);
@@ -259,166 +236,105 @@ const UsersPage = () => {
         return userDate >= filterDate && userDate < nextDay;
       });
     }
+    counts.push(data.length);
 
-    // Filter by plan history (only one plan vs upgraded)
-    if (planHistoryType) {
-      data = data.filter((u) => {
-        const historyCount = userPlanHistoryMap[u._id] || 1; // Default to 1 if not fetched
-        if (planHistoryType === "one") {
-          return historyCount === 1; // Only one plan
-        } else if (planHistoryType === "upgraded") {
-          return historyCount > 1; // Multiple plans (upgraded)
-        }
-        return true;
-      });
-    }
-
-    // Filter by language
-    if (language) {
-      data = data.filter((u) =>
-        u.language && u.language.toString().toLowerCase() === language.toLowerCase()
-      );
-    }
-
-    // Filter by gender
+    // 4. Gender
     if (gender) {
       data = data.filter((u) => u.gender === gender);
     }
+    counts.push(data.length);
 
-    // Filter by city
-    if (city) {
-      data = data.filter((u) =>
-        u.city && u.city.toLowerCase().includes(city.toLowerCase())
-      );
+    // 5. Language
+    if (language) {
+      data = data.filter((u) => u.language && u.language.toString().toLowerCase() === language.toLowerCase());
     }
+    counts.push(data.length);
 
-    // Filter by state
+    // 6. State
     if (state) {
-      data = data.filter((u) =>
-        u.state && u.state.toLowerCase().includes(state.toLowerCase())
-      );
+      data = data.filter((u) => u.state && u.state.toLowerCase().includes(state.toLowerCase()));
     }
+    counts.push(data.length);
 
-    // Filter by country
-    if (country) {
-      data = data.filter((u) =>
-        u.country && u.country.toLowerCase().includes(country.toLowerCase())
-      );
+    // 7. City
+    if (city) {
+      data = data.filter((u) => u.city && u.city.toLowerCase().includes(city.toLowerCase()));
     }
+    counts.push(data.length);
 
-    // Filter by body measurement (Skip Body Measurement)
-    if (skipBody === "skip") {
+    // 8. Age Range
+    if (ageRange) {
       data = data.filter((u) => {
-        const hasMeasurement = 
-          (u.leftWaist && u.leftWaist != "0" && u.leftWaist != 0) || 
-          (u.rightWaist && u.rightWaist != "0" && u.rightWaist != 0) || 
-          (u.leftHip && u.leftHip != "0" && u.leftHip != 0) || 
-          (u.rightHip && u.rightHip != "0" && u.rightHip != 0) || 
-          (u.leftChest && u.leftChest != "0" && u.leftChest != 0) || 
-          (u.rightChest && u.rightChest != "0" && u.rightChest != 0) || 
-          (u.leftThigh && u.leftThigh != "0" && u.leftThigh != 0) || 
-          (u.rightThigh && u.rightThigh != "0" && u.rightThigh != 0) || 
-          (u.leftBiceps && u.leftBiceps != "0" && u.leftBiceps != 0) || 
-          (u.rightBiceps && u.rightBiceps != "0" && u.rightBiceps != 0);
-        return !hasMeasurement;
-      });
-    } else if (skipBody === "provided") {
-      data = data.filter((u) => {
-        const hasMeasurement = 
-          (u.leftWaist && u.leftWaist != "0" && u.leftWaist != 0) || 
-          (u.rightWaist && u.rightWaist != "0" && u.rightWaist != 0) || 
-          (u.leftHip && u.leftHip != "0" && u.leftHip != 0) || 
-          (u.rightHip && u.rightHip != "0" && u.rightHip != 0) || 
-          (u.leftChest && u.leftChest != "0" && u.leftChest != 0) || 
-          (u.rightChest && u.rightChest != "0" && u.rightChest != 0) || 
-          (u.leftThigh && u.leftThigh != "0" && u.leftThigh != 0) || 
-          (u.rightThigh && u.rightThigh != "0" && u.rightThigh != 0) || 
-          (u.leftBiceps && u.leftBiceps != "0" && u.leftBiceps != 0) || 
-          (u.rightBiceps && u.rightBiceps != "0" && u.rightBiceps != 0);
-        return hasMeasurement;
+        const age = calculateAge(u.dob);
+        if (age === null) return false;
+        const [min, max] = ageRange.split("-").map(n => n === "+" ? Infinity : Number(n));
+        return ageRange.endsWith("+") ? age >= min : (age >= min && age <= max);
       });
     }
+    counts.push(data.length);
 
-
-
-
-    // Search term filter
-    if (!term) return data;
-    const t = term.toLowerCase();
-    return data.filter(
-      (user) =>
+    // 9. Remaining
+    if (referrer) {
+      data = data.filter((u) => u.usedReferralCode === referrer || u.referralCode === referrer);
+    }
+    if (skipBody) {
+      data = data.filter((u) => {
+        const hasMeasurement = (u.waist && u.waist != "0") || (u.hip && u.hip != "0") || (u.chest && u.chest != "0") || (u.thigh && u.thigh != "0") || (u.biceps && u.biceps != "0");
+        return skipBody === "skip" ? !hasMeasurement : hasMeasurement;
+      });
+    }
+    if (term) {
+      const t = term.toLowerCase();
+      data = data.filter((user) =>
         (user.name || "").toLowerCase().includes(t) ||
         String(user.mobileNumber || "").includes(t) ||
         `${user.mobilePrefix || ""}${user.mobileNumber || ""}`.includes(t) ||
         (user.branch?.name || "").toLowerCase().includes(t) ||
         (user.plan?.name || "").toLowerCase().includes(t)
-    );
+      );
+    }
+    counts.push(data.length);
+
+    const activeStages = [0]; // Base always active
+    if (role === "subadmin" || status !== "all") activeStages.push(1);
+    if (planId) activeStages.push(2);
+    if (date) activeStages.push(3);
+    if (gender) activeStages.push(4);
+    if (language) activeStages.push(5);
+    if (state) activeStages.push(6);
+    if (city) activeStages.push(7);
+    if (ageRange) activeStages.push(8);
+    if (referrer || skipBody || term) activeStages.push(9);
+
+    return { filtered: data, steps: counts, activeStages };
   };
 
   const handleSearch = (searchTerm) => {
     setSearchLoading(true);
-
-    const filtered = applyFilters(
-      users,
-      searchTerm,
-      filter,
-      selectedPlan,
-      selectedDate,
-      planHistoryFilter,
-      selectedLanguage,
-      selectedGender,
-      selectedCity,
-      selectedState,
-      selectedCountry,
-      skipBodyMeasurement,
-      selectedReferrer,
-      selectedAgeRange
-
-
+    const { filtered, steps, activeStages: stages } = applyFilters(
+      users, searchTerm, filter, selectedPlan, selectedDate, planHistoryFilter,
+      selectedLanguage, selectedGender, selectedCity, selectedState, selectedCountry,
+      skipBodyMeasurement, selectedReferrer, selectedAgeRange
     );
     setFilteredUsers(filtered);
+    setFunnelSteps(steps);
+    setActiveStages(stages);
     setSearchLoading(false);
   };
 
-  // React to filter changes
   useEffect(() => {
-    setFilteredUsers(
-      applyFilters(
-        users,
-        "",
-        filter,
-        selectedPlan,
-        selectedDate,
-        planHistoryFilter,
-        selectedLanguage,
-        selectedGender,
-        selectedCity,
-        selectedState,
-        selectedCountry,
-        skipBodyMeasurement,
-        selectedReferrer,
-        selectedAgeRange
-
-
-      )
+    const { filtered, steps, activeStages: stages } = applyFilters(
+      users, "", filter, selectedPlan, selectedDate, planHistoryFilter,
+      selectedLanguage, selectedGender, selectedCity, selectedState, selectedCountry,
+      skipBodyMeasurement, selectedReferrer, selectedAgeRange
     );
+    setFilteredUsers(filtered);
+    setFunnelSteps(steps);
+    setActiveStages(stages);
   }, [
-    filter,
-    selectedPlan,
-    selectedDate,
-    planHistoryFilter,
-    selectedLanguage,
-    selectedGender,
-    selectedCity,
-    selectedState,
-    selectedCountry,
-    skipBodyMeasurement,
-    selectedReferrer,
-    selectedAgeRange,
-
-
-    users,
-    userPlanHistoryMap,
+    filter, selectedPlan, selectedDate, planHistoryFilter, selectedLanguage, 
+    selectedGender, selectedCity, selectedState, selectedCountry, 
+    skipBodyMeasurement, selectedReferrer, selectedAgeRange, users, userPlanHistoryMap
   ]);
 
   const handleSubmit = async (formData) => {
@@ -650,11 +566,52 @@ const UsersPage = () => {
           />
         </div>
 
-        {!listLoading && (
-          <div className="mb-4 text-sm text-gray-600 flex-shrink-0">
-            Showing {filteredUsers.length} of {users.length} users
-          </div>
-        )}
+        {!listLoading && (() => {
+          const finalCount = funnelSteps[funnelSteps.length - 1] || 0;
+          
+          // The base for percentage should be the result of the LAST active filter stage before the final one
+          // We look for the largest stage in activeStages that is less than the last active stage
+          const lastActiveIdx = activeStages.length - 1;
+          const currentStage = activeStages[lastActiveIdx];
+          const previousStage = activeStages[lastActiveIdx - 1] ?? 0;
+          
+          const baseCount = funnelSteps[previousStage] ?? users.length;
+          const percentage = baseCount > 0 ? ((finalCount / baseCount) * 100).toFixed(1) : 0;
+          const isDeepFiltered = activeStages.length > 2; // More than [Base, Status]
+
+          return (
+            <div className="mb-6 flex items-center justify-between bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+              <div className="flex items-center gap-4">
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Filtered Results</span>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-2xl font-black text-gray-900">{finalCount}</span>
+                    <span className="text-sm font-bold text-gray-400">
+                      of {baseCount} {isDeepFiltered ? "matching users" : "Total Users"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex flex-col items-end gap-2">
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                  {isDeepFiltered ? "Relative Group Share" : "Overall Representation"}
+                </span>
+                <div className="flex items-center gap-3">
+                  <div className="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-teal-500 transition-all duration-500" 
+                      style={{ width: `${percentage}%` }}
+                    />
+                  </div>
+                  <span className="text-lg font-black text-teal-600">
+                    {percentage}%
+                  </span>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         <div className="flex-1 min-h-0">
           <UserList

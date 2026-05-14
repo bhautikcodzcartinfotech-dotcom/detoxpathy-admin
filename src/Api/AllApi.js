@@ -1,6 +1,6 @@
 import axios from "axios";
 
-// export const API_BASE = "http://51.20.42.105:3002/api/v1"; 
+// export const API_BASE = "http://192.168.29.204:3002/api/v1"; 
 // export const API_BASE = "http://69.62.73.194:4009/api/v1";
 export const API_BASE = "https://admin.detoxpathy.com/api/v1";
 // export const API_BASE = "https://backend.fatendfit.com/api/v1";
@@ -354,37 +354,63 @@ export const getUsersByBranch = async (branchId) => {
 };
 
 export const createUserApi = async (payload) => {
-  const res = await axios.post(
-    `${API_BASE}/admin/user/add`,
-    {
-      name: payload.name,
-      mobilePrefix: payload.mobilePrefix,
-      mobileNumber: payload.mobileNumber,
-      branchId: payload.branchId,
-      planId: payload.planId,
-      gstin: payload.gstin,
-    },
-    { headers: getAuthHeaders() }
-  );
+  const data = new FormData();
+  data.append("name", payload.name);
+  data.append("mobilePrefix", payload.mobilePrefix);
+  data.append("mobileNumber", payload.mobileNumber);
+  data.append("branchId", payload.branchId);
+  data.append("planId", payload.planId);
+  if (payload.gstin) data.append("gstin", payload.gstin);
+  if (payload.usedReferralCode) data.append("usedReferralCode", payload.usedReferralCode);
+  
+  // Measurements
+  if (payload.waist) data.append("waist", payload.waist);
+  if (payload.hip) data.append("hip", payload.hip);
+  if (payload.chest) data.append("chest", payload.chest);
+  if (payload.thigh) data.append("thigh", payload.thigh);
+  if (payload.biceps) data.append("biceps", payload.biceps);
+
+  // Photos
+  if (payload.image) data.append("image", payload.image);
+  if (payload.before_front) data.append("before_front", payload.before_front);
+  if (payload.before_side) data.append("before_side", payload.before_side);
+  if (payload.after_front) data.append("after_front", payload.after_front);
+  if (payload.after_side) data.append("after_side", payload.after_side);
+
+  const res = await axios.post(`${API_BASE}/admin/user/add`, data, {
+    headers: { ...getAuthHeaders(), "Content-Type": "multipart/form-data" },
+  });
   return res.data.data;
 };
 
 export const updateUserById = async (id, payload) => {
-  // Build only defined fields to avoid sending undefined values
-  const body = {};
-  if (typeof payload.name !== "undefined") body.name = payload.name;
-  if (typeof payload.mobilePrefix !== "undefined")
-    body.mobilePrefix = payload.mobilePrefix;
-  if (typeof payload.mobileNumber !== "undefined")
-    body.mobileNumber = payload.mobileNumber;
-  if (typeof payload.branchId !== "undefined") body.branchId = payload.branchId;
-  if (typeof payload.planId !== "undefined") body.planId = payload.planId;
-  if (typeof payload.isDeleted !== "undefined")
-    body.isDeleted = payload.isDeleted;
-  if (typeof payload.gstin !== "undefined") body.gstin = payload.gstin;
+  const data = new FormData();
+  
+  if (typeof payload.name !== "undefined") data.append("name", payload.name);
+  if (typeof payload.mobilePrefix !== "undefined") data.append("mobilePrefix", payload.mobilePrefix);
+  if (typeof payload.mobileNumber !== "undefined") data.append("mobileNumber", payload.mobileNumber);
+  if (typeof payload.branchId !== "undefined") data.append("branchId", payload.branchId);
+  if (typeof payload.planId !== "undefined") data.append("planId", payload.planId);
+  if (typeof payload.isDeleted !== "undefined") data.append("isDeleted", payload.isDeleted);
+  if (typeof payload.gstin !== "undefined") data.append("gstin", payload.gstin);
+  if (typeof payload.planCurrentDay !== "undefined") data.append("planCurrentDay", payload.planCurrentDay);
 
-  const res = await axios.put(`${API_BASE}/admin/user/update/${id}`, body, {
-    headers: getAuthHeaders(),
+  // Body Measurements
+  if (typeof payload.waist !== "undefined") data.append("waist", payload.waist);
+  if (typeof payload.hip !== "undefined") data.append("hip", payload.hip);
+  if (typeof payload.chest !== "undefined") data.append("chest", payload.chest);
+  if (typeof payload.thigh !== "undefined") data.append("thigh", payload.thigh);
+  if (typeof payload.biceps !== "undefined") data.append("biceps", payload.biceps);
+
+  // Images
+  if (payload.image) data.append("image", payload.image);
+  if (payload.before_front) data.append("before_front", payload.before_front);
+  if (payload.before_side) data.append("before_side", payload.before_side);
+  if (payload.after_front) data.append("after_front", payload.after_front);
+  if (payload.after_side) data.append("after_side", payload.after_side);
+
+  const res = await axios.put(`${API_BASE}/admin/user/update/${id}`, data, {
+    headers: { ...getAuthHeaders(), "Content-Type": "multipart/form-data" },
   });
   return res.data.data;
 };

@@ -254,9 +254,9 @@ const SearchComponent = ({
               options={[
                 { label: "All Ages", value: "" },
                 { label: "0 - 18", value: "0-18" },
-                { label: "18 - 30", value: "18-30" },
-                { label: "30 - 50", value: "30-50" },
-                { label: "50+", value: "50+" },
+                { label: "19 - 30", value: "19-30" },
+                { label: "31 - 50", value: "31-50" },
+                { label: "51+", value: "51+" },
               ]}
               value={selectedAgeRange}
               onChange={onAgeRangeChange}
