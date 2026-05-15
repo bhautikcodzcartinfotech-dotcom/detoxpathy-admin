@@ -10,14 +10,6 @@ import toast from "react-hot-toast";
 
 const PERMISSION_GROUPS = [
   {
-    category: "Staff Management",
-    permissions: [
-      { label: "Add Staff", value: "add staff" },
-      { label: "Edit Staff", value: "edit staff" },
-      { label: "Delete Staff", value: "delete staff" },
-    ]
-  },
-  {
     category: "User Management",
     permissions: [
       { label: "Create User", value: "create user" },
@@ -32,6 +24,16 @@ const PERMISSION_GROUPS = [
       { label: "Show Feedback Page", value: "show feedback page" },
       { label: "Show App References", value: "show app reference page" },
       { label: "Show Order Page", value: "show order page" },
+      { label: "Show Branches Page", value: "show branches page" },
+      { label: "Show Staff Page", value: "show staff page" },
+    ]
+  },
+  {
+    category: "Staff Management",
+    permissions: [
+      { label: "Add Staff", value: "add staff" },
+      { label: "Edit Staff", value: "edit staff" },
+      { label: "Delete Staff", value: "delete staff" },
     ]
   },
   {
@@ -112,11 +114,11 @@ const PermissionPage = () => {
   };
 
   return (
-    <RoleGuard allow={["Admin"]}>
+    <RoleGuard allow={["Admin", "subadmin"]} permission="show staff page">
       <div className="w-full h-full px-6 py-4">
         <div className="flex items-center justify-between mb-6">
           <Header size="3xl">Manage Role Permissions</Header>
-          <Button 
+          <Button
             onClick={() => setIsAddingRole(!isAddingRole)}
             variant={isAddingRole ? "secondary" : "primary"}
           >
@@ -137,8 +139,8 @@ const PermissionPage = () => {
                   className="w-full p-3.5 rounded-xl border border-gray-200 focus:border-[#134D41] focus:ring-4 focus:ring-[#134D41]/5 focus:outline-none text-sm transition-all"
                 />
               </div>
-              <Button 
-                onClick={handleAddRole} 
+              <Button
+                onClick={handleAddRole}
                 disabled={saveLoading}
                 className="w-full sm:w-auto h-[50px] px-10"
               >
@@ -175,7 +177,9 @@ const PermissionPage = () => {
               ) : (
                 roles.map((roleObj, idx) => (
                   <tr key={roleObj.role || idx} className="border-t border-gray-100 hover:bg-gray-50">
-                    <td className="p-4 font-bold text-gray-800 capitalize">{roleObj.role}</td>
+                    <td className="p-4 font-bold text-gray-800 capitalize">
+                      {roleObj.role === "Sub Admin" ? "Doctor" : roleObj.role}
+                    </td>
                     <td className="p-4">
                       <span className="bg-teal-100 text-teal-800 px-2 py-1 rounded text-xs font-semibold">
                         {roleObj.permissions?.length || 0} Permissions
@@ -194,9 +198,6 @@ const PermissionPage = () => {
                             onClick={async () => {
                               if (window.confirm(`Are you sure you want to delete the role "${roleObj.role}"?`)) {
                                 try {
-                                  // We can reuse the update API with a special flag or just delete if it exists in DB
-                                  // For now, let's assume we need a delete API. 
-                                  // I'll add a delete API to AllApi and backend.
                                   await deleteRolePermissionApi(roleObj.role);
                                   await fetchList();
                                   toast.success("Role deleted successfully");
@@ -222,9 +223,9 @@ const PermissionPage = () => {
             <h2 className="text-3xl font-bold text-[#134D41]">
               Update Role Permissions
             </h2>
-            <p className="text-gray-500 mt-2 font-bold uppercase tracking-wider">Role: {editing?.role}</p>
+            <p className="text-gray-500 mt-2 font-bold uppercase tracking-wider">Role: {editing?.role === "Sub Admin" ? "Doctor" : editing?.role}</p>
           </div>
-          
+
           <form onSubmit={handleSave} className="space-y-8">
             <div className="space-y-6">
               {PERMISSION_GROUPS.map((group) => (

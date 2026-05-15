@@ -29,6 +29,11 @@ const StockTransferPage = () => {
       setBranches(b);
       setProducts(p.products || []);
       setTransfers(t.data.data || []);
+      
+      const mainBranch = b.find(branch => branch.isMainBranch);
+      if (mainBranch) {
+        setForm(prev => ({ ...prev, fromBranchId: mainBranch._id }));
+      }
     };
     fetchData();
   }, []);
@@ -94,8 +99,9 @@ const StockTransferPage = () => {
             <div>
               <label className="block mb-1.5 font-bold text-sm text-gray-700 ml-1">From Branch (Source)</label>
               <Dropdown
-                options={branches.map(b => ({ label: b.name, value: b._id }))}
+                options={branches.filter(b => b.isMainBranch).map(b => ({ label: b.name, value: b._id }))}
                 value={form.fromBranchId}
+
                 onChange={val => setForm({...form, fromBranchId: val})}
                 placeholder="Select Source Branch"
               />

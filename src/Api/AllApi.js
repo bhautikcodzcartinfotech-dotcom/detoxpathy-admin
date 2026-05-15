@@ -1,6 +1,6 @@
 import axios from "axios";
 
-export const API_BASE = "http://localhost:3002/api/v1";
+export const API_BASE = "http://192.168.29.204:3002/api/v1"; 
 // export const API_BASE = "http://69.62.73.194:4009/api/v1";
 // export const API_BASE = "https://admin.detoxpathy.com/api/v1";
 // export const API_BASE = "https://backend.fatendfit.com/api/v1";
@@ -298,6 +298,7 @@ export const createBranchApi = async (payload) => {
       mobilePrefix: payload.mobilePrefix,
       mobileNumber: payload.mobileNumber,
       isFranchise: payload.isFranchise,
+      isMainBranch: payload.isMainBranch,
       gstin: payload.gstin,
     },
     { headers: getAuthHeaders() }
@@ -319,6 +320,7 @@ export const updateBranchById = async (id, payload) => {
     "mobilePrefix",
     "mobileNumber",
     "isFranchise",
+    "isMainBranch",
     "gstin",
   ];
   keys.forEach((k) => {
@@ -1122,10 +1124,8 @@ export const updateBranchTime = async (branchId, payload) => {
   const res = await axios.put(`${API_BASE}/admin/branchTime/${branchId}`, payload, {
     headers: getAuthHeaders(),
   });
-  return res.data.data;
+  return res.data; // Return the whole response because it might be a success message for staff
 };
-
-
 
 export const updateProduct = async (id, payload) => {
   const res = await axios.put(`${API_BASE}/admin/product/update/${id}`, payload, {
@@ -1468,6 +1468,13 @@ export const createCompanyOrder = async (data) => {
 
 export const verifyCompanyOrderPaymentApi = async (data) => {
   const res = await axios.post(`${API_BASE}/admin/order/verify-payment`, data, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const deleteOrderApi = async (id) => {
+  const res = await axios.delete(`${API_BASE}/admin/order/${id}`, {
     headers: getAuthHeaders(),
   });
   return res.data.data;

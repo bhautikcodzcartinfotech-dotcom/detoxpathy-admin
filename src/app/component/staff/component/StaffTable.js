@@ -97,7 +97,7 @@ const StaffTable = ({ items, loading, onEdit, onDelete, onManageLeave, role, per
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium">{item.email}</td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-teal-50 text-teal-700">
-                      {item.adminType || item.role}
+                      {(item.adminType || item.role) === "Sub Admin" ? "Doctor" : (item.adminType || item.role)}
                     </span>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-center">

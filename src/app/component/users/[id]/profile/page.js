@@ -347,7 +347,7 @@ const UserProfilePage = () => {
                 <div className="border-b md:border-r md:border-b-0 border-gray-200 p-6">
                   <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Engagements</div>
                   <div className="text-sm font-medium text-gray-800">
-                    Trial: {formatYesNo(overview.user?.bookTrial)} | Meet Dr: {formatYesNo(overview.user?.meetDoctor)} | Order: {formatYesNo(overview.user?.order)}
+                    Trial: {formatYesNo(overview.user?.bookTrial)} {overview.user?.videoPurshaceDate && `(${formatIndianDate(overview.user.videoPurshaceDate)})`} | Meet Dr: {formatYesNo(overview.user?.meetDoctor)} | Order: {formatYesNo(overview.user?.order)}
                   </div>
                 </div>
                 <div className="border-b md:border-r md:border-b-0 border-gray-200 p-6">

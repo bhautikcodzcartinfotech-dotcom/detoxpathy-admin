@@ -126,6 +126,7 @@ const AppointmentPage = () => {
   const [showConsultationForm, setShowConsultationForm] = useState(false);
   const [transferRequests, setTransferRequests] = useState([]);
   const [transferActionLoadingId, setTransferActionLoadingId] = useState(null);
+
   const [currency, setCurrency] = useState("₹");
   const localVideoRef = useRef(null);
   const remoteVideoGridRef = useRef(null);
@@ -1057,7 +1058,7 @@ const AppointmentPage = () => {
     fetchAllProducts();
     fetchTransferRequests();
     fetchSettings();
-  }, []);
+  }, [role]);
 
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -1695,22 +1696,22 @@ const AppointmentPage = () => {
                             <div className="flex items-center justify-between mb-6">
                               <div className="flex flex-col sm:flex-row sm:items-center gap-5">
                                 <div className="w-16 h-16 rounded-full overflow-hidden bg-teal-500 text-white flex items-center justify-center font-bold text-2xl shrink-0 border-4 border-white shadow-lg">
-                                  {user?.image ? (
-                                    <img src={`${API_HOST}/${user.image}`} className="w-full h-full object-cover" />
-                                  ) : (user?.name?.[0] || "U")}
+                                  {userOverviewData?.user?.image ? (
+                                    <img src={`${API_HOST}/${userOverviewData.user.image}`} className="w-full h-full object-cover" />
+                                  ) : (userOverviewData?.user?.name?.[0] || "U")}
                                 </div>
                                 <div className="flex flex-col">
                                   <h5 className="text-xl font-black text-slate-900 leading-none mb-1">
-                                    {user?.name} {user?.surname}
+                                    {userOverviewData?.user?.name} {userOverviewData?.user?.surname}
                                   </h5>
                                   <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                    USR-{user?._id?.slice(-6).toUpperCase()} • {user?.mobileNumber || "No Mobile"} • {user?.email || "No Email"}
+                                    USR-{userOverviewData?.user?._id?.slice(-6).toUpperCase()} • {userOverviewData?.user?.mobileNumber || "No Mobile"} • {userOverviewData?.user?.email || "No Email"}
                                   </p>
                                 </div>
                               </div>
-                              {user?.planHoldDate && (
+                              {userOverviewData?.user?.planHoldDate && (
                                 <div className="bg-amber-50 border border-amber-100 px-3 py-1 rounded-full">
-                                  <span className="text-[10px] font-black text-amber-600 uppercase">Hold — Day {user?.planCurrentDay || 1}</span>
+                                  <span className="text-[10px] font-black text-amber-600 uppercase">Hold — Day {userOverviewData?.user?.planCurrentDay || 1}</span>
                                 </div>
                               )}
                             </div>
@@ -1719,46 +1720,46 @@ const AppointmentPage = () => {
                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-6 gap-x-4 border-t border-slate-50 pt-6">
                               <div>
                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Branch</p>
-                                <p className="text-xs font-bold text-slate-700">{user?.branch?.name || "Global"}</p>
+                                <p className="text-xs font-bold text-slate-700">{userOverviewData?.user?.branch?.name || "Global"}</p>
                               </div>
                               <div>
                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Plan Configuration</p>
-                                <p className="text-xs font-bold text-slate-700">{user?.plan?.name || "No Active Plan"} ({currency}{user?.plan?.price || 0})</p>
+                                <p className="text-xs font-bold text-slate-700">{userOverviewData?.user?.plan?.name || "No Active Plan"} ({currency}{userOverviewData?.user?.plan?.price || 0})</p>
                               </div>
                               <div>
                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Gender & DOB</p>
-                                <p className="text-xs font-bold text-slate-700">{user?.gender || "-"} • {user?.dob || "-"}</p>
+                                <p className="text-xs font-bold text-slate-700">{userOverviewData?.user?.gender || "-"} • {userOverviewData?.user?.dob || "-"}</p>
                               </div>
 
                               <div>
                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Location</p>
-                                <p className="text-xs font-bold text-slate-700 truncate" title={`${user?.city}, ${user?.state}, ${user?.country}`}>
-                                  {user?.city || "-"}, {user?.state || "-"}, {user?.country || "India"}
+                                <p className="text-xs font-bold text-slate-700 truncate" title={`${userOverviewData?.user?.city}, ${userOverviewData?.user?.state}, ${userOverviewData?.user?.country}`}>
+                                  {userOverviewData?.user?.city || "-"}, {userOverviewData?.user?.state || "-"}, {userOverviewData?.user?.country || "India"}
                                 </p>
                               </div>
                               <div>
                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Physical Stats</p>
-                                <p className="text-xs font-bold text-slate-700">{user?.height || "-"} cm • {user?.weight || "-"} kg</p>
+                                <p className="text-xs font-bold text-slate-700">{userOverviewData?.user?.height || "-"} cm • {userOverviewData?.user?.weight || "-"} kg</p>
                               </div>
                               <div>
                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Language & Referrer</p>
-                                <p className="text-xs font-bold text-slate-700">{user?.language || "en"} • {user?.appReferer || "-"}</p>
+                                <p className="text-xs font-bold text-slate-700">{userOverviewData?.user?.language || "en"} • {userOverviewData?.user?.appReferer || "-"}</p>
                               </div>
 
                               <div>
                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Engagements</p>
-                                <p className="text-xs font-bold text-slate-700">Trial: {user?.bookTrial ? "Yes" : "No"} | Meet Dr: {user?.meetDoctor} | Order: {user?.order}</p>
+                                <p className="text-xs font-bold text-slate-700">Trial: {userOverviewData?.user?.bookTrial ? "Yes" : "No"} | Meet Dr: {userOverviewData?.user?.meetDoctor} | Order: {userOverviewData?.user?.order}</p>
                               </div>
                               <div>
                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Medical Condition</p>
-                                <p className="text-xs font-bold text-slate-700 truncate" title={Array.isArray(user?.medicalDescription) ? user.medicalDescription.join(", ") : user?.medicalDescription}>
-                                  {Array.isArray(user?.medicalDescription) ? user.medicalDescription.join(", ") : user?.medicalDescription || "-"}
+                                <p className="text-xs font-bold text-slate-700 truncate" title={Array.isArray(userOverviewData?.user?.medicalDescription) ? userOverviewData.user.medicalDescription.join(", ") : userOverviewData?.user?.medicalDescription}>
+                                  {Array.isArray(userOverviewData?.user?.medicalDescription) ? userOverviewData.user.medicalDescription.join(", ") : userOverviewData?.user?.medicalDescription || "-"}
                                 </p>
                               </div>
                               <div>
                                 <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Body Measurements</p>
                                 <div className="text-[9px] font-bold text-slate-500 leading-tight">
-                                  Waist: {user?.waist || 0} • Hip: {user?.hip || 0} • Chest: {user?.chest || 0} • Thigh: {user?.thigh || 0} • Biceps: {user?.biceps || 0}
+                                  Waist: {userOverviewData?.user?.waist || 0} • Hip: {userOverviewData?.user?.hip || 0} • Chest: {userOverviewData?.user?.chest || 0} • Thigh: {userOverviewData?.user?.thigh || 0} • Biceps: {userOverviewData?.user?.biceps || 0}
                                 </div>
                               </div>
                             </div>
@@ -1768,19 +1769,19 @@ const AppointmentPage = () => {
                           <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
                             <h6 className="text-[10px] font-black uppercase tracking-widest text-teal-600 mb-4 items-center flex gap-2"><Target size={14} /> Program Progress</h6>
                             <div className="flex flex-wrap gap-2 mb-6">
-                              {[...Array(user?.plan?.days || 15)].map((_, i) => {
+                              {[...Array(userOverviewData?.user?.plan?.days || 15)].map((_, i) => {
                                 const dayNum = i + 1;
-                                const videoDayData = userOverviewData.progress?.find((p) => p.day === dayNum);
-                                const reportData = userOverviewData.dailyReports?.find((r) => r.day === dayNum);
-                                const checklistData = userOverviewData.dailyChecklist?.find((c) => c.day === dayNum);
+                                const videoDayData = userOverviewData?.progress?.find((p) => p.day === dayNum);
+                                const reportData = userOverviewData?.dailyReports?.find((r) => r.day === dayNum);
+                                const checklistData = userOverviewData?.dailyChecklist?.find((c) => c.day === dayNum);
                                 const hasData = videoDayData || reportData || checklistData;
 
                                 return (
                                   <button
                                     key={i}
                                     onClick={() => setSelectedProgressDay(dayNum)}
-                                    className={`w-10 h-10 rounded-xl flex flex-col items-center justify-center transition-all hover:scale-110 active:scale-95 ${dayNum < (user?.planCurrentDay || 1) ? 'bg-teal-900 text-white shadow-md' :
-                                      dayNum === (user?.planCurrentDay || 1) ? 'bg-teal-500 text-white ring-4 ring-teal-100 shadow-lg' :
+                                    className={`w-10 h-10 rounded-xl flex flex-col items-center justify-center transition-all hover:scale-110 active:scale-95 ${dayNum < (userOverviewData?.user?.planCurrentDay || 1) ? 'bg-teal-900 text-white shadow-md' :
+                                      dayNum === (userOverviewData?.user?.planCurrentDay || 1) ? 'bg-teal-500 text-white ring-4 ring-teal-100 shadow-lg' :
                                         selectedProgressDay === dayNum ? 'bg-white border-2 border-teal-500 text-teal-600' :
                                           'bg-slate-50 text-slate-400 hover:bg-slate-100'
                                       } ${hasData ? 'ring-1 ring-teal-200' : ''}`}

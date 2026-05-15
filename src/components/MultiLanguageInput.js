@@ -294,6 +294,9 @@ const MultiLanguageInput = ({
                 )}
               </div>
             </div>
+            <span className="ml-2 text-xs font-semibold text-gray-500 group-hover:text-amber-600 transition-colors">
+              {copyCheckboxLabel}
+            </span>
           </label>
         )}
       </div>

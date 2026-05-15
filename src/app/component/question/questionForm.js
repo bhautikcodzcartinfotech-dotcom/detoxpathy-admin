@@ -42,7 +42,6 @@ const QuestionForm = ({
   });
 
   const [errors, setErrors] = useState({});
-  const [copyOptionsToAll, setCopyOptionsToAll] = useState(false);
   const [optionCount, setOptionCount] = useState(4); // 1 = A only, 2 = A+B, 3 = A+B+C, 4 = A+B+C+D
 
   // ─── Populate form on edit ──────────────────────────────────────────────────
@@ -163,49 +162,7 @@ const QuestionForm = ({
   };
 
   // ─── Helpers ─────────────────────────────────────────────────────────────────
-  const handleOptionChange = (lang, key, value) => {
-    setForm((prev) => {
-      const next = {
-        ...prev,
-        options: {
-          ...prev.options,
-          [lang]: { ...prev.options[lang], [key]: value },
-        },
-      };
 
-      // If copy-to-all is on and we're editing English, mirror to other langs
-      if (copyOptionsToAll && lang === "english") {
-        for (const otherLang of LANGS) {
-          if (otherLang !== "english") {
-            next.options[otherLang] = { ...next.options[otherLang], [key]: value };
-          }
-        }
-      }
-
-      return next;
-    });
-
-    if (errors[`options_${lang}_${key}`]) {
-      setErrors((prev) => ({ ...prev, [`options_${lang}_${key}`]: "" }));
-    }
-  };
-
-  const handleCopyChange = (e) => {
-    const checked = e.target.checked;
-    setCopyOptionsToAll(checked);
-    if (checked) {
-      setForm((prev) => ({
-        ...prev,
-        options: LANGS.reduce((acc, lang) => {
-          acc[lang] =
-            lang === "english"
-              ? { ...prev.options.english }
-              : { ...prev.options.english };
-          return acc;
-        }, {}),
-      }));
-    }
-  };
 
   // ─── Dropdown data ───────────────────────────────────────────────────────────
   const videoOptions = videos.map((v) => ({
@@ -310,31 +267,6 @@ const QuestionForm = ({
                 </svg>
                 Answer Options
               </h3>
-
-              {/* Copy-to-all toggle */}
-              <label className="flex items-center gap-2 cursor-pointer select-none text-sm text-gray-600">
-                <div className="relative">
-                  <input
-                    type="checkbox"
-                    checked={copyOptionsToAll}
-                    onChange={handleCopyChange}
-                    className="sr-only"
-                  />
-                  <div className={`w-6 h-6 rounded-lg border-2 transition-all duration-200 flex items-center justify-center
-                    ${copyOptionsToAll
-                      ? "bg-gradient-to-br from-yellow-400 to-amber-500 border-yellow-500 shadow-lg shadow-yellow-200"
-                      : "bg-white border-yellow-300 hover:border-yellow-400"}`}>
-                    {copyOptionsToAll && (
-                      <svg className="w-4 h-4 text-white" fill="currentColor" viewBox="0 0 20 20">
-                        <path fillRule="evenodd"
-                          d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                          clipRule="evenodd" />
-                      </svg>
-                    )}
-                  </div>
-                </div>
-                {/* Mirror English to all languages */}
-              </label>
             </div>
 
             {/* ── Number of Options Selector ── */}
@@ -408,44 +340,39 @@ const QuestionForm = ({
             </div>
 
             {/* ── Per-language option inputs ── */}
-            {LANGS.map((lang) => {
-              const isDisabled = copyOptionsToAll && lang !== "english";
-              return (
-                <div key={lang} className="bg-white rounded-xl border border-yellow-200 p-4 shadow-sm">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="text-sm font-bold text-gray-700 capitalize">{LANG_LABELS[lang]}</span>
-                    {isDisabled && (
-                      <span className="text-xs font-normal bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">
-                        Auto-filled
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    {OPTION_KEYS.slice(0, optionCount).map((key) => (
-                      <div key={key}>
-                        <input
-                          type="text"
-                          placeholder={`${lang} option ${key.toUpperCase()}`}
-                          value={form.options[lang]?.[key] || ""}
-                          onChange={(e) => handleOptionChange(lang, key, e.target.value)}
-                          disabled={isDisabled}
-                          className={`w-full border rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 transition
-                            ${form.correctAnswer === key
-                              ? "border-amber-300 bg-amber-50 focus:ring-amber-400"
-                              : "border-yellow-200 bg-white focus:ring-yellow-300"}
-                            ${isDisabled ? "opacity-60 cursor-not-allowed" : ""}
-                            ${errors[`options_${lang}_${key}`] ? "border-red-400 bg-red-50" : ""}`}
-                        />
-                        {errors[`options_${lang}_${key}`] && (
-                          <p className="text-red-500 text-xs mt-0.5">{errors[`options_${lang}_${key}`]}</p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+            <div className="space-y-4">
+              {OPTION_KEYS.slice(0, optionCount).map((key) => (
+                <MultiLanguageInput
+                  key={key}
+                  label={`Option ${key.toUpperCase()}`}
+                  icon="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                  values={{
+                    english: form.options.english[key],
+                    gujarati: form.options.gujarati[key],
+                    hindi: form.options.hindi[key],
+                  }}
+                  onChange={(vals) => {
+                    setForm((prev) => ({
+                      ...prev,
+                      options: {
+                        ...prev.options,
+                        english: { ...prev.options.english, [key]: vals.english },
+                        gujarati: { ...prev.options.gujarati, [key]: vals.gujarati },
+                        hindi: { ...prev.options.hindi, [key]: vals.hindi },
+                      },
+                    }));
+                  }}
+                  errors={Object.keys(errors).reduce((acc, errKey) => {
+                    if (errKey.includes(`options_`) && errKey.endsWith(`_${key}`)) {
+                      const lang = errKey.split("_")[1];
+                      acc[lang] = errors[errKey];
+                    }
+                    return acc;
+                  }, {})}
+                  sectionClassName="!bg-white !p-4 border-yellow-100"
+                />
+              ))}
+            </div>
           </div>
         )}
 

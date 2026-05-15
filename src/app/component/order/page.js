@@ -7,6 +7,7 @@ import {
   bulkDownloadInvoicesApi,
   createCompanyOrder,
   verifyCompanyOrderPaymentApi,
+  deleteOrderApi,
   getAllUsers,
   getAllProducts,
   getAllPlans,
@@ -152,9 +153,14 @@ const OrderPage = () => {
           color: "#134D41",
         },
         modal: {
-          ondismiss: function () {
+          ondismiss: async function () {
             setLoading(false);
-            toast.error("Payment cancelled");
+            try {
+              await deleteOrderApi(order._id);
+            } catch (err) {
+              console.error("Company order cleanup failed:", err);
+            }
+            toast.error("Payment cancelled. Order has been removed.");
           }
         }
       };

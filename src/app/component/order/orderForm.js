@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { getAllUsers, getAllProducts, getAllPlans, createOrder, getSetting } from "@/Api/AllApi";
+import { getAllUsers, getAllProducts, getAllPlans, createOrder, getSetting, verifyCompanyOrderPaymentApi, deleteOrderApi } from "@/Api/AllApi";
 import TimeButton from "@/utils/timebutton";
 import Dropdown from "@/utils/dropdown";
 import toast from "react-hot-toast";
@@ -14,6 +14,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
   const [selectedProducts, setSelectedProducts] = useState([]); // [{productId, quantity}]
   const [selectedPlans, setSelectedPlans] = useState([]); // [{planId, name, price}]
   const [currency, setCurrency] = useState("₹");
+  const [paymentMethod, setPaymentMethod] = useState("Offline");
   const [shippingAddress, setShippingAddress] = useState({
     name: "",
     mobile: "",
@@ -63,10 +64,15 @@ const OrderForm = ({ onCancel, onSuccess }) => {
       return;
     }
     const product = products.find(p => p._id === productId);
-    const discount = Number(product.bulkDiscount) || 0;
     const sellingPrice = product.discountedPrice > 0 ? product.discountedPrice : product.basePrice;
-    const finalPrice = sellingPrice - (sellingPrice * discount / 100);
-    setSelectedProducts([...selectedProducts, { productId, quantity: 1, name: product.name, price: finalPrice }]);
+    setSelectedProducts([...selectedProducts, { 
+      productId, 
+      quantity: 1, 
+      name: product.name, 
+      basePrice: sellingPrice, 
+      bulkDiscount: Number(product.bulkDiscount) || 0,
+      gstPercentage: Number(product.gstPercentage) || 0
+    }]);
   };
 
   const handleQuantityChange = (productId, delta) => {
@@ -84,10 +90,13 @@ const OrderForm = ({ onCancel, onSuccess }) => {
     const plan = plans.find(p => p._id === planId);
     if (!plan) return;
 
-    const discount = Number(plan.bulkDiscount) || 0;
-    const finalPrice = plan.price - (plan.price * discount / 100);
     // Replace the entire array with just the new plan to enforce single-selection
-    setSelectedPlans([{ planId, name: plan.name, price: finalPrice }]);
+    setSelectedPlans([{ 
+      planId, 
+      name: plan.name, 
+      basePrice: Number(plan.price), 
+      bulkDiscount: Number(plan.bulkDiscount) || 0 
+    }]);
   };
 
   const handleRemovePlan = (planId) => {
@@ -105,21 +114,83 @@ const OrderForm = ({ onCancel, onSuccess }) => {
         userId: selectedUser,
         products: selectedProducts.map(({ productId, quantity }) => ({ productId, quantity })),
         plans: selectedPlans.map(p => p.planId),
-        type: 2, // Default Branch order
+        type: paymentMethod === "Online" ? 1 : 2,
         shippingAddress: shippingAddress.name ? shippingAddress : undefined,
-        paymentMethod: 'Branch' // Default for type 2 usually
+        paymentMethod: paymentMethod === "Online" ? 'Razorpay' : 'Offline'
       };
-      await createOrder(payload);
-      toast.success("Order created successfully!");
-      onSuccess();
+      const res = await createOrder(payload);
+
+      if (paymentMethod === "Online") {
+        const { order, razorpayOrder, razorpayKey } = res;
+
+        const options = {
+          key: razorpayKey,
+          amount: razorpayOrder.amount,
+          currency: razorpayOrder.currency,
+          name: "DetoxPathy",
+          description: "Order Payment",
+          order_id: razorpayOrder.id,
+          handler: async function (response) {
+            try {
+              setLoading(true);
+              await verifyCompanyOrderPaymentApi({
+                orderId: order._id,
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+              });
+              toast.success("Payment successful & Order created");
+              onSuccess();
+            } catch (err) {
+              toast.error("Payment verification failed");
+              console.error(err);
+            } finally {
+              setLoading(false);
+            }
+          },
+          prefill: {
+            name: order.shippingAddress?.name || "",
+            contact: order.shippingAddress?.mobile || "",
+          },
+          theme: {
+            color: "#134D41",
+          },
+          modal: {
+            ondismiss: async function () {
+              setLoading(false);
+              try {
+                await deleteOrderApi(order._id);
+              } catch (err) {
+                console.error("Cleanup failed:", err);
+              }
+              toast.error("Payment cancelled");
+            }
+          }
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.open();
+      } else {
+        toast.success("Order created successfully!");
+        onSuccess();
+      }
     } catch (err) {
       toast.error(err?.response?.data?.error || err?.response?.data?.message || "Failed to create order");
     } finally {
-      setLoading(false);
+      if (paymentMethod === "Offline") {
+        setLoading(false);
+      }
     }
   };
 
-  const totalAmount = selectedProducts.reduce((sum, p) => sum + (p.price * p.quantity), 0) + selectedPlans.reduce((sum, p) => sum + p.price, 0);
+  const getItemPrice = (item) => {
+    const base = Number(item.basePrice) || 0;
+    const gst = Number(item.gstPercentage) || 0;
+    return base + (base * gst / 100);
+  };
+
+  const totalAmount = selectedProducts.reduce((sum, p) => sum + (getItemPrice(p) * p.quantity), 0) + 
+                     selectedPlans.reduce((sum, p) => sum + getItemPrice(p), 0);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 px-1">
@@ -143,12 +214,12 @@ const OrderForm = ({ onCancel, onSuccess }) => {
           placeholder="-- Choose Product --"
           showSearch={true}
           options={products.map(p => {
-            const discount = Number(p.bulkDiscount) || 0;
             const sellingPrice = p.discountedPrice > 0 ? p.discountedPrice : p.basePrice;
-            const finalPrice = sellingPrice - (sellingPrice * discount / 100);
+            const gst = Number(p.gstPercentage) || 0;
+            const priceWithGst = sellingPrice + (sellingPrice * gst / 100);
             return {
               value: p._id,
-              label: `${p.name} - ${currency}${finalPrice.toLocaleString()} (${p.bulkDiscount}%)`
+              label: `${p.name} - ${currency}${priceWithGst.toLocaleString()} (Incl. ${gst}% GST)`
             };
           })}
           value=""
@@ -160,11 +231,9 @@ const OrderForm = ({ onCancel, onSuccess }) => {
           placeholder="-- Choose Plan --"
           showSearch={true}
           options={plans.map(p => {
-            const discount = Number(p.bulkDiscount) || 0;
-            const finalPrice = p.price - (p.price * discount / 100);
             return {
               value: p._id,
-              label: `${p.name} - ${currency}${finalPrice.toLocaleString()} (${p.bulkDiscount}%)`
+              label: `${p.name} - ${currency}${p.price.toLocaleString()}`
             };
           })}
           value={""}
@@ -172,13 +241,27 @@ const OrderForm = ({ onCancel, onSuccess }) => {
         />
       </div>
 
+      {/* Payment Method Selection */}
+      <Dropdown
+        label="Payment Method"
+        placeholder="-- Select Payment Method --"
+        options={[
+          { value: "Offline", label: "Offline" },
+          { value: "Online", label: "Online" }
+        ]}
+        value={paymentMethod}
+        onChange={(val) => setPaymentMethod(val)}
+      />
+
       {/* Selected Products & Plans List */}
       <div className="space-y-2">
         {selectedPlans.map((p, idx) => (
           <div key={`plan-${idx}`} className="flex items-center justify-between p-3 border-2 border-yellow-200 rounded-xl bg-yellow-50 shadow-sm">
             <div className="flex flex-col">
               <span className="font-bold text-yellow-800">PLAN: {p.name}</span>
-              <span className="text-xs text-yellow-600 font-semibold">{currency}{p.price} (Applied Branch Discount)</span>
+              <span className="text-xs text-yellow-600 font-semibold">
+                {currency}{getItemPrice(p).toLocaleString()}
+              </span>
             </div>
             <button
               type="button"
@@ -193,7 +276,9 @@ const OrderForm = ({ onCancel, onSuccess }) => {
           <div key={idx} className="flex items-center justify-between p-3 border rounded-xl bg-gray-50 shadow-sm">
             <div className="flex flex-col">
               <span className="font-semibold text-gray-800">{p.name}</span>
-              <span className="text-xs text-gray-500">{currency}{p.price} / unit</span>
+              <span className="text-xs text-gray-500">
+                {currency}{getItemPrice(p).toLocaleString()} / unit {p.gstPercentage > 0 && `(Incl. ${p.gstPercentage}% GST)`}
+              </span>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center border rounded-lg bg-white overflow-hidden shadow-sm">
@@ -236,7 +321,6 @@ const OrderForm = ({ onCancel, onSuccess }) => {
 
       {/* Shipping Address (Optional) */}
       <div className="border-t pt-4 space-y-3">
-        <h3 className="font-bold text-gray-700 text-lg">(Optional)</h3>
         <div className="grid grid-cols-2 gap-4">
           <input
             type="text"

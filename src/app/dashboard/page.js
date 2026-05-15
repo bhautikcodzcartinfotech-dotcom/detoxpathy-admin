@@ -348,12 +348,12 @@ const DashboardPage = () => {
           </div>
         </div>
 
-        {/* Quick Actions */}
-        <div className="lg:col-span-4 xl:col-span-4 flex flex-col gap-4">
-           <div className="bg-white p-6 rounded-none shadow-lg border border-gray-100 flex-1 flex flex-col h-full">
-              <h2 className="text-[10px] font-black text-gray-400 uppercase mb-6">Quick Actions</h2>
-              <div className="flex flex-col gap-4 flex-1 justify-center">
-                 {role === "Admin" && (
+        {/* Quick Actions - Only for Super Admin */}
+        {role === "Admin" && (
+          <div className="lg:col-span-4 xl:col-span-4 flex flex-col gap-4">
+             <div className="bg-white p-6 rounded-none shadow-lg border border-gray-100 flex-1 flex flex-col h-full">
+                <h2 className="text-[10px] font-black text-gray-400 uppercase mb-6">Quick Actions</h2>
+                <div className="flex flex-col gap-4 flex-1 justify-center">
                    <Button 
                     onClick={() => setIsAddDoctorModalOpen(true)}
                     variant="primary"
@@ -361,15 +361,13 @@ const DashboardPage = () => {
                    >
                       <PlusCircle className="w-4 h-4" /> Add Doctor
                    </Button>
-                 )}
-                 <Button 
-                  onClick={() => router.push('/component/users')}
-                  variant="secondary"
-                  className="w-full h-14"
-                 >
-                    <UserPlus className="w-4 h-4 text-teal-600" /> Add User
-                 </Button>
-                 {role === "Admin" && (
+                   <Button 
+                    onClick={() => router.push('/component/users')}
+                    variant="secondary"
+                    className="w-full h-14"
+                   >
+                      <UserPlus className="w-4 h-4 text-teal-600" /> Add User
+                   </Button>
                    <Button 
                     onClick={() => router.push('/component/video')}
                     variant="secondary"
@@ -377,18 +375,16 @@ const DashboardPage = () => {
                    >
                       <Video className="w-4 h-4 text-teal-600" /> Upload Video
                    </Button>
-                 )}
-                 {role === "Admin" && (
                    <Button 
                     variant="primary"
                     className="w-full h-14 text-white"
                    >
                       Trigger Payout
                    </Button>
-                 )}
-              </div>
-           </div>
-        </div>
+                </div>
+             </div>
+          </div>
+        )}
       </div>
 
       {/* Add Doctor Modal */}

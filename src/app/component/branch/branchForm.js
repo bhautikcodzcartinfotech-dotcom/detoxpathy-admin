@@ -22,6 +22,7 @@ const BranchForm = ({
     mobilePrefix: "+91",
     mobileNumber: "",
     isFranchise: false,
+    isMainBranch: false,
     gstin: "",
   });
   const [errors, setErrors] = useState({});
@@ -40,6 +41,7 @@ const BranchForm = ({
         mobilePrefix: initialValues.mobilePrefix ?? "+91",
         mobileNumber: initialValues.mobileNumber ?? "",
         isFranchise: initialValues.isFranchise ?? false,
+        isMainBranch: initialValues.isMainBranch ?? false,
         gstin: initialValues.gstin ?? "",
       });
       setErrors({});
@@ -56,6 +58,7 @@ const BranchForm = ({
         mobilePrefix: "+91",
         mobileNumber: "",
         isFranchise: false,
+        isMainBranch: false,
         gstin: "",
       });
       setErrors({});
@@ -328,22 +331,42 @@ const BranchForm = ({
         </div>
       </div>
 
-        <div className="flex items-center gap-3">
-          <label className="block mb-1 font-semibold text-gray-700">
-            isFranchise
-          </label>
-          <input
-            type="checkbox"
-            checked={form.isFranchise}
-            onChange={(e) => {
-              const checked = e.target.checked;
-              setForm((f) => ({
-                ...f,
-                isFranchise: checked,
-              }));
-            }}
-            className="w-5 h-5 text-yellow-500 rounded border-gray-300 focus:ring-yellow-500 focus:ring-2"
-          />
+        <div className="flex flex-wrap items-center gap-6">
+          <div className="flex items-center gap-3">
+            <label className="block mb-1 font-semibold text-gray-700">
+              isFranchise
+            </label>
+            <input
+              type="checkbox"
+              checked={form.isFranchise}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setForm((f) => ({
+                  ...f,
+                  isFranchise: checked,
+                }));
+              }}
+              className="w-5 h-5 text-yellow-500 rounded border-gray-300 focus:ring-yellow-500 focus:ring-2"
+            />
+          </div>
+
+          <div className="flex items-center gap-3">
+            <label className="block mb-1 font-semibold text-gray-700">
+              isMainBranch
+            </label>
+            <input
+              type="checkbox"
+              checked={form.isMainBranch}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setForm((f) => ({
+                  ...f,
+                  isMainBranch: checked,
+                }));
+              }}
+              className="w-5 h-5 text-green-500 rounded border-gray-300 focus:ring-green-500 focus:ring-2"
+            />
+          </div>
         </div>
 
       <div className="flex justify-end gap-3 mt-6">

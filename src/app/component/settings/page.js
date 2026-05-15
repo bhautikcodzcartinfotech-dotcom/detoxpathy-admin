@@ -85,7 +85,9 @@ const SettingsPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [isUploadingBanner, setIsUploadingBanner] = useState(false);
   const [settings, setSettings] = useState(null);
+
   const [formData, setFormData] = useState({});
   const [trialVideos, setTrialVideos] = useState([]);
   const [loadingTrialVideos, setLoadingTrialVideos] = useState(true);
@@ -183,7 +185,22 @@ const SettingsPage = () => {
       const { _id, createdAt, updatedAt, __v, ...updateData } = formData;
 
       console.log("Updating settings with data:", updateData);
-      await updateSettingById(settings._id, updateData);
+      
+      if (formData.bannerFile) {
+        const data = new FormData();
+        Object.keys(updateData).forEach(key => {
+          if (typeof updateData[key] === 'object' && updateData[key] !== null) {
+            data.append(key, JSON.stringify(updateData[key]));
+          } else {
+            data.append(key, updateData[key]);
+          }
+        });
+        data.append('banner', formData.bannerFile);
+        await updateSettingById(settings._id, data);
+      } else {
+        await updateSettingById(settings._id, updateData);
+      }
+
 
       setSettings({ ...settings, ...formData });
       toast.success("Settings updated successfully!");
@@ -234,6 +251,25 @@ const SettingsPage = () => {
       setIsUploadingImage(false);
     }
   };
+
+  // Handle banner upload
+  const handleBannerUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Preview the banner locally
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFormData(prev => ({
+        ...prev,
+        banner: reader.result,
+        bannerFile: file // Keep the file to upload during handleUpdate
+      }));
+    };
+    reader.readAsDataURL(file);
+    toast.success("Banner selected! Click 'Update Settings' to save.");
+  };
+
 
   if (loading) {
     return (
@@ -626,6 +662,80 @@ const SettingsPage = () => {
             </div>
           </div>
 
+          {/* Banner Management */}
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 transition-all hover:shadow-2xl">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600 shadow-inner">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">App Banner</h3>
+                <p className="text-sm text-gray-500">Upload a prominent banner for your mobile application</p>
+              </div>
+            </div>
+            
+            <div className="space-y-6">
+              <div className="relative group w-full">
+                <div className="w-full aspect-[4/1] md:aspect-[5/1] rounded-[2rem] bg-gray-50 border-4 border-dashed border-gray-200 flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:border-amber-300 group-hover:bg-amber-50/30 shadow-inner">
+                  {formData.banner ? (
+                    <label htmlFor="banner-upload-main" className="cursor-pointer w-full h-full block">
+                      <img
+                        src={formData.banner?.startsWith('data:') ? formData.banner : getVideoUrl(formData.banner)}
+                        alt="App Banner"
+                        className="w-full h-full object-contain transition-transform duration-500 group-hover:scale-105"
+                      />
+                    </label>
+                  ) : (
+                    <label htmlFor="banner-upload-main" className="flex flex-col items-center justify-center w-full h-full cursor-pointer p-8">
+                      <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-md mx-auto mb-4 text-gray-300 group-hover:text-amber-400 transition-colors">
+                        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                        </svg>
+                      </div>
+                      <p className="text-gray-500 font-semibold group-hover:text-amber-600 transition-colors">Select a banner image</p>
+                      <p className="text-xs text-gray-400 mt-1">Recommended size: 1200 x 400 pixels (PNG, JPG)</p>
+                    </label>
+                  )}
+                </div>
+                
+                {formData.banner && (
+                  <button
+                    type="button"
+                    onClick={() => setFormData(prev => ({ ...prev, banner: "", bannerFile: null }))}
+                    className="absolute top-4 right-4 bg-white/90 backdrop-blur text-red-500 p-2.5 rounded-2xl shadow-xl opacity-0 group-hover:opacity-100 transition-all duration-300 hover:bg-red-50 hover:scale-110 border border-red-100"
+                    title="Remove Banner"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+              
+              <div className="flex justify-center pt-2">
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleBannerUpload}
+                  className="hidden"
+                  id="banner-upload-main"
+                />
+                <label
+                  htmlFor="banner-upload-main"
+                  className="group px-8 py-4 bg-gradient-to-r from-gray-900 to-gray-800 text-white font-bold rounded-2xl hover:from-amber-600 hover:to-amber-500 transition-all duration-300 cursor-pointer flex items-center gap-3 shadow-xl hover:shadow-amber-200 hover:-translate-y-0.5"
+                >
+                  <svg className="w-5 h-5 transition-transform group-hover:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                  {formData.banner ? "Replace Current Banner" : "Upload Banner Image"}
+                </label>
+              </div>
+            </div>
+          </div>
+
+
 
           {/* HTML Content */}
           <div className="bg-gradient-to-br from-white to-amber-50 rounded-2xl shadow-lg border border-amber-200 p-6">
@@ -725,6 +835,7 @@ const SettingsPage = () => {
             </h3>
             <div className="space-y-8">
               {/* Testimonial Description */}
+
               <MultiLangTextarea
                 label="Testimonial Description"
                 value={formData.testimonialDescription}

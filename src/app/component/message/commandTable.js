@@ -145,11 +145,13 @@ const CommandTable = ({
                       <p className="text-sm">{cmd.description}</p>
                     )}
                     {cmd.type === "audio" && cmd.audioUrl && (
-                      <audio controls className="w-full mt-1 rounded-lg  ">
-                        <source
-                          src={resolveAudioUrl(cmd.audioUrl)}
-                          type="audio/mpeg"
-                        />
+                      <audio controls className="w-full mt-1 rounded-lg">
+                        <source src={resolveAudioUrl(cmd.audioUrl)} />
+                        <source src={resolveAudioUrl(cmd.audioUrl)} type="audio/mpeg" />
+                        <source src={resolveAudioUrl(cmd.audioUrl)} type="audio/ogg" />
+                        <source src={resolveAudioUrl(cmd.audioUrl)} type="audio/wav" />
+                        <source src={resolveAudioUrl(cmd.audioUrl)} type="audio/aac" />
+                        <source src={resolveAudioUrl(cmd.audioUrl)} type="audio/webm" />
                         Your browser does not support audio.
                       </audio>
                     )}

@@ -191,7 +191,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
             <MdCalendarMonth size={20} />
             {!isCollapsed && <span>Appointments</span>}
           </Link>
-          {(role === "Admin" || role === "subadmin") && (
+          {(role === "Admin" || (role === "subadmin" && permissions?.includes("show staff page"))) && (
             <Link
               href="/component/staff"
               className={linkClasses("/component/staff")}

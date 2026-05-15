@@ -130,7 +130,7 @@ const StaffPage = () => {
   };
 
   return (
-    <RoleGuard allow={["Admin", "subadmin"]}>
+    <RoleGuard allow={["Admin", "subadmin"]} permission="show staff page">
       <div className="w-full h-full px-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 mt-6">
           <Header size="3xl">Staff Management</Header>
