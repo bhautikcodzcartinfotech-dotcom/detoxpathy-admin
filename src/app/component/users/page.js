@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 
 const UsersPage = () => {
-  const { role, branches, permissions } = useAuth();
+  const { user, role, branches, permissions } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [listLoading, setListLoading] = useState(true);
@@ -121,10 +121,10 @@ const UsersPage = () => {
     const minWeight = weights.length > 0 ? Math.min(...weights) : 0;
     const avgIdealWeight = idealWeights.length > 0 ? (idealWeights.reduce((a, b) => a + b, 0) / idealWeights.length).toFixed(1) : 0;
 
-    setStats({ 
-      total, 
-      active, 
-      completed, 
+    setStats({
+      total,
+      active,
+      completed,
       inactive,
       avgHeight,
       maxHeight,
@@ -267,8 +267,29 @@ const UsersPage = () => {
       data = data.filter((u) => {
         const age = calculateAge(u.dob);
         if (age === null) return false;
-        const [min, max] = ageRange.split("-").map(n => n === "+" ? Infinity : Number(n));
-        return ageRange.endsWith("+") ? age >= min : (age >= min && age <= max);
+        
+        const cleanAgeRange = ageRange.trim().replace(/\s+/g, "");
+        
+        // Case: 50+
+        if (cleanAgeRange.endsWith("+")) {
+          const min = parseInt(cleanAgeRange);
+          return !isNaN(min) && age >= min;
+        }
+        
+        // Case: 20-30
+        if (cleanAgeRange.includes("-")) {
+          const [minStr, maxStr] = cleanAgeRange.split("-");
+          const min = parseInt(minStr);
+          const max = parseInt(maxStr);
+          if (isNaN(min) && isNaN(max)) return false;
+          if (isNaN(min)) return age <= max;
+          if (isNaN(max)) return age >= min;
+          return age >= min && age <= max;
+        }
+        
+        // Case: Exact age (e.g. 25)
+        const exactAge = parseInt(cleanAgeRange);
+        return !isNaN(exactAge) && age === exactAge;
       });
     }
     counts.push(data.length);
@@ -332,8 +353,8 @@ const UsersPage = () => {
     setFunnelSteps(steps);
     setActiveStages(stages);
   }, [
-    filter, selectedPlan, selectedDate, planHistoryFilter, selectedLanguage, 
-    selectedGender, selectedCity, selectedState, selectedCountry, 
+    filter, selectedPlan, selectedDate, planHistoryFilter, selectedLanguage,
+    selectedGender, selectedCity, selectedState, selectedCountry,
     skipBodyMeasurement, selectedReferrer, selectedAgeRange, users, userPlanHistoryMap
   ]);
 
@@ -398,11 +419,6 @@ const UsersPage = () => {
             <Header size="4xl">Users & Patients</Header>
             <p className="text-sm font-bold text-gray-400 uppercase tracking-[0.2em]">Manage all registered users and program assignments</p>
           </div>
-          {(role === "Admin" || (role === "subadmin" && permissions?.includes("create user"))) && (
-            <Button onClick={() => setIsOpen(true)}>
-              Add New Patient
-            </Button>
-          )}
         </div>
 
         {/* Stats Section */}
@@ -444,64 +460,65 @@ const UsersPage = () => {
         </div>
 
         {/* Physical Stats Section */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
-          {/* Height Stats */}
-          <div className="bg-white p-6 rounded-2xl border-l-4 border-blue-500 shadow-lg shadow-blue-900/5 transition-all hover:-translate-y-1">
-            <div className="flex justify-between items-start mb-4">
-              <p className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase">Height Statistics (cm)</p>
-              <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center">
-                <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                </svg>
+        {role === "Admin" && user?.adminType === "Admin" && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+            {/* Height Stats */}
+            <div className="bg-white p-6 rounded-2xl border-l-4 border-blue-500 shadow-lg shadow-blue-900/5 transition-all hover:-translate-y-1">
+              <div className="flex justify-between items-start mb-4">
+                <p className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase">Height Statistics (cm)</p>
+                <div className="w-8 h-8 bg-blue-50 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                  </svg>
+                </div>
               </div>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div>
-                <p className="text-xs text-gray-400 mb-1">Average</p>
-                <p className="text-2xl font-black text-gray-900">{stats.avgHeight}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400 mb-1 text-center">Lowest</p>
-                <p className="text-2xl font-black text-red-500 text-center">{stats.minHeight}</p>
-              </div>
-              <div>
-                <p className="text-xs text-gray-400 mb-1 text-right">Highest</p>
-                <p className="text-2xl font-black text-green-600 text-right">{stats.maxHeight}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Weight Stats */}
-          <div className="bg-white p-6 rounded-2xl border-l-4 border-indigo-500 shadow-lg shadow-indigo-900/5 transition-all hover:-translate-y-1">
-            <div className="flex justify-between items-start mb-4">
-              <p className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase">Weight Statistics (kg)</p>
-              <div className="w-8 h-8 bg-indigo-50 rounded-full flex items-center justify-center">
-                <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
-                </svg>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <div>
-                <p className="text-[10px] text-gray-400 mb-1 uppercase font-bold tracking-tighter">Avg Actual</p>
-                <p className="text-2xl font-black text-gray-900">{stats.avgWeight}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-gray-400 mb-1 uppercase font-bold tracking-tighter">Avg Ideal</p>
-                <p className="text-2xl font-black text-blue-600">{stats.avgIdealWeight}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-gray-400 mb-1 uppercase font-bold tracking-tighter">Lowest</p>
-                <p className="text-2xl font-black text-red-500">{stats.minWeight}</p>
-              </div>
-              <div>
-                <p className="text-[10px] text-gray-400 mb-1 uppercase font-bold tracking-tighter text-right">Highest</p>
-                <p className="text-2xl font-black text-green-600 text-right">{stats.maxWeight}</p>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <p className="text-xs text-gray-400 mb-1">Average</p>
+                  <p className="text-2xl font-black text-gray-900">{stats.avgHeight}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 mb-1 text-center">Lowest</p>
+                  <p className="text-2xl font-black text-red-500 text-center">{stats.minHeight}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-400 mb-1 text-right">Highest</p>
+                  <p className="text-2xl font-black text-green-600 text-right">{stats.maxHeight}</p>
+                </div>
               </div>
             </div>
 
+            {/* Weight Stats */}
+            <div className="bg-white p-6 rounded-2xl border-l-4 border-indigo-500 shadow-lg shadow-indigo-900/5 transition-all hover:-translate-y-1">
+              <div className="flex justify-between items-start mb-4">
+                <p className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase">Weight Statistics (kg)</p>
+                <div className="w-8 h-8 bg-indigo-50 rounded-full flex items-center justify-center">
+                  <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 6l3 1m0 0l-3 9a5.002 5.002 0 006.001 0M6 7l3 9M6 7l6-2m6 2l3-1m-3 1l-3 9a5.002 5.002 0 006.001 0M18 7l3 9m-3-9l-6-2m0-2v2m0 16V5m0 16H9m3 0h3" />
+                  </svg>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div>
+                  <p className="text-[10px] text-gray-400 mb-1 uppercase font-bold tracking-tighter">Avg Actual</p>
+                  <p className="text-2xl font-black text-gray-900">{stats.avgWeight}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-400 mb-1 uppercase font-bold tracking-tighter">Avg Ideal</p>
+                  <p className="text-2xl font-black text-blue-600">{stats.avgIdealWeight}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-400 mb-1 uppercase font-bold tracking-tighter">Lowest</p>
+                  <p className="text-2xl font-black text-red-500">{stats.minWeight}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-gray-400 mb-1 uppercase font-bold tracking-tighter text-right">Highest</p>
+                  <p className="text-2xl font-black text-green-600 text-right">{stats.maxWeight}</p>
+                </div>
+              </div>
+            </div>
           </div>
-        </div>
+        )}
 
 
         {error && (
@@ -568,13 +585,13 @@ const UsersPage = () => {
 
         {!listLoading && (() => {
           const finalCount = funnelSteps[funnelSteps.length - 1] || 0;
-          
+
           // The base for percentage should be the result of the LAST active filter stage before the final one
           // We look for the largest stage in activeStages that is less than the last active stage
           const lastActiveIdx = activeStages.length - 1;
           const currentStage = activeStages[lastActiveIdx];
           const previousStage = activeStages[lastActiveIdx - 1] ?? 0;
-          
+
           const baseCount = funnelSteps[previousStage] ?? users.length;
           const percentage = baseCount > 0 ? ((finalCount / baseCount) * 100).toFixed(1) : 0;
           const isDeepFiltered = activeStages.length > 2; // More than [Base, Status]
@@ -592,15 +609,15 @@ const UsersPage = () => {
                   </div>
                 </div>
               </div>
-              
+
               <div className="flex flex-col items-end gap-2">
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
                   {isDeepFiltered ? "Relative Group Share" : "Overall Representation"}
                 </span>
                 <div className="flex items-center gap-3">
                   <div className="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-teal-500 transition-all duration-500" 
+                    <div
+                      className="h-full bg-teal-500 transition-all duration-500"
                       style={{ width: `${percentage}%` }}
                     />
                   </div>

@@ -31,7 +31,7 @@ const OrderTable = ({ items, loading, onRefresh, selectedIds = [], onToggleSelec
 
   if (!items || items.length === 0) {
     return (
-      <div className="p-10 text-center text-gray-500 bg-white rounded-2xl border border-gray-100 shadow-sm">
+      <div className="p-10 mt-8 text-center text-gray-500 bg-white rounded-2xl border border-gray-100 shadow-sm">
         No orders found matching the criteria.
       </div>
     );

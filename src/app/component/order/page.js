@@ -1,8 +1,8 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { 
-  getAllOrders, 
-  getOrderStats, 
+import {
+  getAllOrders,
+  getOrderStats,
   bulkUpdateOrderStatusApi,
   bulkDownloadInvoicesApi,
   createCompanyOrder,
@@ -114,7 +114,7 @@ const OrderPage = () => {
     try {
       setLoading(true);
       const res = await createCompanyOrder(orderData);
-      
+
       const { order, razorpayOrder, razorpayKey } = res;
 
       const options = {
@@ -152,7 +152,7 @@ const OrderPage = () => {
           color: "#134D41",
         },
         modal: {
-          ondismiss: function() {
+          ondismiss: function () {
             setLoading(false);
             toast.error("Payment cancelled");
           }
@@ -177,7 +177,7 @@ const OrderPage = () => {
   };
 
   const handleToggleSelection = (id) => {
-    setSelectedIds(prev => 
+    setSelectedIds(prev =>
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
     );
   };
@@ -197,7 +197,7 @@ const OrderPage = () => {
     try {
       setIsBulkUpdating(true);
       const res = await bulkUpdateOrderStatusApi(selectedIds, Number(bulkStatus));
-      
+
       if (res.success > 0 && res.failed === 0) {
         toast.success(`Successfully updated all ${res.success} orders!`);
       } else if (res.success === 0 && res.failed > 0) {
@@ -249,14 +249,14 @@ const OrderPage = () => {
           </div>
           <div className="flex items-center gap-4">
             {role === 'subadmin' && (
-              <Button 
+              <Button
                 onClick={() => setIsCompanyOrderDrawerOpen(true)}
                 variant="secondary"
               >
                 Company Order
               </Button>
             )}
-            <Button 
+            <Button
               onClick={() => setIsDrawerOpen(true)}
               variant="primary"
             >
@@ -266,7 +266,7 @@ const OrderPage = () => {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 mb-5 md:grid-cols-4 gap-4">
           {[
             { label: "TOTAL ORDERS", value: stats.totalOrders.toLocaleString(), color: "border-green-600" },
             { label: "PENDING DISPATCH", value: stats.pendingDispatch.toLocaleString(), color: "border-red-600" },
@@ -281,21 +281,31 @@ const OrderPage = () => {
         </div>
 
         {/* Filters & Bulk Actions */}
-        <div className="bg-white p-4 rounded-xl border border-gray-100 shadow-sm space-y-4">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex-1 min-w-[300px]">
-              <input
-                type="text"
-                placeholder="Search by ORD-ID, user, product..."
-                className="w-full h-11 px-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] bg-gray-50 transition-all"
-                value={filter.search}
-                onChange={(e) => handleFilterChange("search", e.target.value)}
-              />
+        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-lg shadow-gray-200/50 space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
+            {/* Search Bar */}
+            <div className="md:col-span-6 space-y-2">
+              <label className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase ml-1">Search Orders</label>
+              <div className="relative group">
+                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                  <svg className="w-4 h-4 text-gray-400 group-focus-within:text-[#134D41] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                  </svg>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search by ORD-ID, user name, mobile, or product..."
+                  className="w-full h-12 pl-11 pr-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] bg-gray-50/50 transition-all placeholder:text-gray-400 text-sm font-medium"
+                  value={filter.search}
+                  onChange={(e) => handleFilterChange("search", e.target.value)}
+                />
+              </div>
             </div>
 
-            <div className="w-48">
+            {/* Type Filter */}
+            <div className="md:col-span-3">
               <Dropdown
-                label="Type"
+                label="Order Type"
                 options={[
                   { label: "All Types", value: "" },
                   { label: "Online", value: "1" },
@@ -306,9 +316,10 @@ const OrderPage = () => {
               />
             </div>
 
-            <div className="w-48">
+            {/* Status Filter */}
+            <div className="md:col-span-3">
               <Dropdown
-                label="Status"
+                label="Order Status"
                 options={[
                   { label: "All Status", value: "" },
                   { label: "Pending", value: "1" },
@@ -362,7 +373,7 @@ const OrderPage = () => {
                 >
                   Download Selected
                 </Button>
-                <Button 
+                <Button
                   variant="secondary"
                   onClick={() => setSelectedIds([])}
                   className="h-9 px-4 text-xs border-none"
@@ -374,10 +385,10 @@ const OrderPage = () => {
           )}
         </div>
 
-        <OrderTable 
-          items={orders} 
-          loading={loading} 
-          onRefresh={() => { fetchOrders(); fetchStats(); }} 
+        <OrderTable
+          items={orders}
+          loading={loading}
+          onRefresh={() => { fetchOrders(); fetchStats(); }}
           selectedIds={selectedIds}
           onToggleSelection={handleToggleSelection}
           onSelectAll={handleSelectAll}

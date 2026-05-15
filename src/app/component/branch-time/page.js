@@ -12,6 +12,7 @@ import {
 } from "@/Api/AllApi";
 import { useAuth } from "@/contexts/AuthContext";
 import BranchTimeForm from "./branchTimeForm";
+import Dropdown from "@/utils/dropdown";
 
 const BranchTimePage = () => {
   const { role, branches } = useAuth();
@@ -119,17 +120,24 @@ const BranchTimePage = () => {
             )}
           </div>
 
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-6">
             {role === "Admin" && (
-              <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-full border border-gray-200 shadow-sm">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider">Branch</label>
-                <span className="p-1 text-sm font-semibold text-gray-700">
-                  {allBranches.find((b) => b._id === selectedBranchId)?.name || "Loading..."}
-                </span>
+              <div className="flex items-center gap-3 w-[400px]">
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">Select Branch:</label>
+                <div className="flex-1">
+                  <Dropdown
+                    options={allBranches.map(b => ({ label: b.name, value: b._id }))}
+                    value={selectedBranchId}
+                    onChange={(val) => setSelectedBranchId(val)}
+                    placeholder="Choose Branch"
+                  />
+                </div>
               </div>
             )}
-            {branchTimeData && (
-              <Button onClick={() => setIsOpen(true)}>Update Time</Button>
+            {selectedBranchId && (
+              <Button onClick={() => setIsOpen(true)}>
+                {branchTimeData ? "Update Time" : "Initialize Time"}
+              </Button>
             )}
           </div>
         </div>
@@ -166,7 +174,7 @@ const BranchTimePage = () => {
                       {daysMap[item.day] || `Day ${item.day}`}
                     </span>
                   </div>
-                  
+
                   <div>
                     <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Time Window</div>
                     <div className="text-sm font-medium text-gray-800 bg-gray-50 p-2 rounded-lg border border-gray-100 inline-block">

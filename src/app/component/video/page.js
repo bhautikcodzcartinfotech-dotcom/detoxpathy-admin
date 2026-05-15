@@ -29,8 +29,6 @@ const VideoPage = () => {
   const [videoToDelete, setVideoToDelete] = useState(null);
   const [typeFilter, setTypeFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedDate, setSelectedDate] = useState('');
-  const [planHistoryFilter, setPlanHistoryFilter] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
   const fetchList = async (params = {}) => {
     try {
@@ -50,14 +48,12 @@ const VideoPage = () => {
     const params = {};
     if (typeFilter !== 'all') params.type = typeFilter;
     if (searchTerm) params.search = searchTerm;
-    if (selectedDate) params.startDate = selectedDate;
-    if (planHistoryFilter) params.planHistory = planHistoryFilter;
     fetchList(params);
   };
 
   useEffect(() => {
     fetchWithFilters();
-  }, [typeFilter, searchTerm, selectedDate, planHistoryFilter]);
+  }, [typeFilter, searchTerm]);
 
 
 
@@ -143,7 +139,6 @@ const VideoPage = () => {
         <SearchComponent
           onSearch={setSearchTerm}
           onFilterChange={setTypeFilter}
-          onDateChange={setSelectedDate}
           searchLoading={searchLoading}
           searchPlaceholder="Search by title, description, day, or category..."
           filterOptions={[
@@ -160,7 +155,7 @@ const VideoPage = () => {
           ]}
           filterValue={typeFilter}
           filterLabel="Type"
-          selectedDate={selectedDate}
+          mode="minimal"
         />
 
         {!listLoading && (

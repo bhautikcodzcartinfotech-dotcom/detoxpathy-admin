@@ -35,6 +35,9 @@ const UserForm = ({
     chest: "",
     thigh: "",
     biceps: "",
+    height: "",
+    weight: "",
+    idealWeight: "",
   });
   const [errors, setErrors] = useState({});
   const [branches, setBranches] = useState([]);
@@ -75,6 +78,9 @@ const UserForm = ({
         chest: initialValues.chest || "",
         thigh: initialValues.thigh || "",
         biceps: initialValues.biceps || "",
+        height: initialValues.height || "",
+        weight: initialValues.weight || "",
+        idealWeight: initialValues.idealWeight || "",
       });
       setErrors({});
 
@@ -311,64 +317,44 @@ const UserForm = ({
           Provide the code of the person who referred this user.
         </p>
       </div>
-      
-      {/* Body Measurements */}
+
+      {/* Physical Metrics */}
       <div className="border-t border-gray-100 pt-6">
         <h4 className="text-sm font-bold text-gray-800 uppercase tracking-wider mb-4 flex items-center gap-2">
-          <svg className="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          <svg className="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 8v8m-4-5h8m-11 1a2 2 0 110 4h12a2 2 0 110-4H5a2 2 0 110-4h12a2 2 0 110 4" />
           </svg>
-          Body Measurements (inch)
+          Physical Metrics
         </h4>
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Waist</label>
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Height (cm)</label>
             <input
-              type="text"
-              value={form.waist}
-              onChange={(e) => setForm(f => ({ ...f, waist: e.target.value }))}
-              className="w-full border border-gray-200 rounded-xl p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-              placeholder="0"
+              type="number"
+              value={form.height}
+              onChange={(e) => setForm(f => ({ ...f, height: e.target.value }))}
+              className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm"
+              placeholder="e.g. 170"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Hip</label>
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Current Weight (kg)</label>
             <input
-              type="text"
-              value={form.hip}
-              onChange={(e) => setForm(f => ({ ...f, hip: e.target.value }))}
-              className="w-full border border-gray-200 rounded-xl p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-              placeholder="0"
+              type="number"
+              value={form.weight}
+              onChange={(e) => setForm(f => ({ ...f, weight: e.target.value }))}
+              className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm"
+              placeholder="e.g. 70"
             />
           </div>
           <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Chest</label>
+            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Ideal Weight (kg)</label>
             <input
-              type="text"
-              value={form.chest}
-              onChange={(e) => setForm(f => ({ ...f, chest: e.target.value }))}
-              className="w-full border border-gray-200 rounded-xl p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-              placeholder="0"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Thigh</label>
-            <input
-              type="text"
-              value={form.thigh}
-              onChange={(e) => setForm(f => ({ ...f, thigh: e.target.value }))}
-              className="w-full border border-gray-200 rounded-xl p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-              placeholder="0"
-            />
-          </div>
-          <div>
-            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Biceps</label>
-            <input
-              type="text"
-              value={form.biceps}
-              onChange={(e) => setForm(f => ({ ...f, biceps: e.target.value }))}
-              className="w-full border border-gray-200 rounded-xl p-2 focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
-              placeholder="0"
+              type="number"
+              value={form.idealWeight}
+              onChange={(e) => setForm(f => ({ ...f, idealWeight: e.target.value }))}
+              className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm"
+              placeholder="e.g. 65"
             />
           </div>
         </div>

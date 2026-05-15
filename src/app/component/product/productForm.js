@@ -85,8 +85,8 @@ const ProductForm = ({
 
   const validate = () => {
     const required = (label) => (v) => !v ? `${label} is required.` : null;
-    const number = (label) => (v) => isNaN(Number(v)) ? `${label} must be a number.` : null;
-    const positive = (label) => (v) => Number(v) <= 0 ? `${label} must be positive.` : null;
+    const number = (label) => (v) => (v !== "" && v !== null && v !== undefined) && isNaN(Number(v)) ? `${label} must be a number.` : null;
+    const positive = (label) => (v) => (v !== "" && v !== null && v !== undefined) && Number(v) <= 0 ? `${label} must be positive.` : null;
 
     const errs = validateForm({
       name: {
@@ -107,7 +107,19 @@ const ProductForm = ({
       },
       bulkDiscount: {
         value: form.bulkDiscount,
-        rules: [required("Bulk Discount"), number("Bulk Discount"), positive("Bulk Discount")],
+        rules: [number("Bulk Discount"), positive("Bulk Discount")],
+      },
+      hsnCode: {
+        value: form.hsnCode,
+        rules: [required("HSN Code")],
+      },
+      gstPercentage: {
+        value: form.gstPercentage,
+        rules: [required("GST Percentage"), number("GST Percentage")],
+      },
+      unit: {
+        value: form.unit,
+        rules: [required("Unit")],
       },
     });
 
@@ -255,6 +267,9 @@ const ProductForm = ({
             className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
             placeholder="HSN Code"
           />
+          {errors.hsnCode && (
+            <p className="text-red-500 text-sm mt-1">{errors.hsnCode}</p>
+          )}
         </div>
 
         <div>
@@ -270,6 +285,9 @@ const ProductForm = ({
             className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
             placeholder="18"
           />
+          {errors.gstPercentage && (
+            <p className="text-red-500 text-sm mt-1">{errors.gstPercentage}</p>
+          )}
         </div>
       </div>
 
@@ -287,6 +305,9 @@ const ProductForm = ({
             className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
             placeholder="Pcs, Kg, etc."
           />
+          {errors.unit && (
+            <p className="text-red-500 text-sm mt-1">{errors.unit}</p>
+          )}
         </div>
 
       </div>

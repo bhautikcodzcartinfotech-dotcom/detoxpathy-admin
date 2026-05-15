@@ -37,7 +37,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
         setUsers(usersData || []);
         setProducts(productsData?.products || []);
         setPlans(plansData || []);
-        
+
         let settingsData;
         if (settingsRes && settingsRes.data) {
           settingsData = settingsRes.data;
@@ -81,16 +81,13 @@ const OrderForm = ({ onCancel, onSuccess }) => {
 
   const handleSelectPlan = (planId) => {
     if (!planId) return;
-    if (selectedPlans.find(p => p.planId === planId)) {
-      toast.error("Plan already added");
-      return;
-    }
     const plan = plans.find(p => p._id === planId);
     if (!plan) return;
 
     const discount = Number(plan.bulkDiscount) || 0;
     const finalPrice = plan.price - (plan.price * discount / 100);
-    setSelectedPlans([...selectedPlans, { planId, name: plan.name, price: finalPrice }]);
+    // Replace the entire array with just the new plan to enforce single-selection
+    setSelectedPlans([{ planId, name: plan.name, price: finalPrice }]);
   };
 
   const handleRemovePlan = (planId) => {
@@ -239,7 +236,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
 
       {/* Shipping Address (Optional) */}
       <div className="border-t pt-4 space-y-3">
-        <h3 className="font-bold text-gray-700 text-lg">Shipping Details (Optional)</h3>
+        <h3 className="font-bold text-gray-700 text-lg">(Optional)</h3>
         <div className="grid grid-cols-2 gap-4">
           <input
             type="text"

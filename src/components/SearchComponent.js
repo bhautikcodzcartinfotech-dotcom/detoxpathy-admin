@@ -15,36 +15,35 @@ const SearchComponent = ({
   // Additional filters
   planOptions = [],
   selectedPlan = "",
-  onPlanChange = () => {},
+  onPlanChange = null,
   selectedDate = "",
   onDateChange = null,
   planHistoryFilter = null,
-  onPlanHistoryFilterChange = () => {},
+  onPlanHistoryFilterChange = null,
   // Language filter
   languageOptions = [],
   selectedLanguage = "",
-  onLanguageChange = () => {},
+  onLanguageChange = null,
   // Gender and City filters
   selectedGender = "",
-  onGenderChange = () => {},
+  onGenderChange = null,
   selectedCity = "",
-  onCityChange = () => {},
+  onCityChange = null,
   selectedState = "",
-  onStateChange = () => {},
+  onStateChange = null,
   selectedCountry = "",
-  onCountryChange = () => {},
+  onCountryChange = null,
 
   // Referrer filter
   referrerOptions = [],
   selectedReferrer = "",
-  onReferrerChange = () => {},
+  onReferrerChange = null,
   // Age range filter
   selectedAgeRange = "",
-  onAgeRangeChange = () => {},
+  onAgeRangeChange = null,
   skipBodyMeasurement = "",
-  onSkipBodyMeasurementChange = () => {},
-
-
+  onSkipBodyMeasurementChange = null,
+  mode = "full",
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
 
@@ -121,116 +120,147 @@ const SearchComponent = ({
       </div>
 
       {/* Additional Filters Grid */}
-      {(planOptions.length > 0 || (planHistoryFilter !== null && planHistoryFilter !== undefined) || languageOptions.length > 0 || onDateChange) && (
+      {mode === "full" && (
+        (planOptions && planOptions.length > 0 && onPlanChange) || 
+        onPlanHistoryFilterChange || 
+        (languageOptions && languageOptions.length > 0 && onLanguageChange) || 
+        onDateChange || 
+        onGenderChange || 
+        onCityChange || 
+        onStateChange || 
+        onCountryChange || 
+        (referrerOptions && referrerOptions.length > 0 && onReferrerChange) || 
+        onAgeRangeChange || 
+        onSkipBodyMeasurementChange
+      ) && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-200">
           {/* Plan Filter */}
-          {planOptions.length > 0 && (
+          {planOptions && planOptions.length > 0 && onPlanChange && (
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Filter by Plan
               </label>
               <Dropdown
-                options={[{ label: "All Plans", value: "" }, ...planOptions]}
+                options={[
+                  { label: "All Plans", value: "" },
+                  ...planOptions.map((plan) => ({
+                    label: plan.name,
+                    value: plan._id,
+                  })),
+                ]}
                 value={selectedPlan}
                 onChange={onPlanChange}
+                placeholder="Select plan"
               />
             </div>
           )}
 
           {/* Plan History Filter */}
-          {planHistoryFilter !== null && planHistoryFilter !== undefined && (
+          {onPlanHistoryFilterChange && (
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Plan History
+                Plan History Status
               </label>
               <Dropdown
                 options={[
                   { label: "All Users", value: "" },
-                  { label: "Only One Plan", value: "one" },
-                  { label: "Upgraded Plan", value: "upgraded" },
+                  { label: "With Plan History", value: "with_history" },
+                  { label: "No Plan History", value: "no_history" },
                 ]}
                 value={planHistoryFilter}
                 onChange={onPlanHistoryFilterChange}
+                placeholder="Select status"
               />
             </div>
           )}
 
           {/* Language Filter */}
-          {languageOptions.length > 0 && (
+          {languageOptions && languageOptions.length > 0 && onLanguageChange && (
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Filter by Language
               </label>
               <Dropdown
-                options={[{ label: "All Languages", value: "" }, ...languageOptions]}
+                options={[
+                  { label: "All Languages", value: "" },
+                  ...languageOptions,
+                ]}
                 value={selectedLanguage}
                 onChange={onLanguageChange}
+                placeholder="Select language"
               />
             </div>
           )}
 
           {/* Gender Filter */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Filter by Gender
-            </label>
-            <Dropdown
-              options={[
-                { label: "All Genders", value: "" },
-                { label: "Male", value: "Male" },
-                { label: "Female", value: "Female" },
-                { label: "Other", value: "Other" },
-              ]}
-              value={selectedGender}
-              onChange={onGenderChange}
-            />
-          </div>
+          {onGenderChange && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Filter by Gender
+              </label>
+              <Dropdown
+                options={[
+                  { label: "All Genders", value: "" },
+                  { label: "Male", value: "Male" },
+                  { label: "Female", value: "Female" },
+                  { label: "Other", value: "Other" },
+                ]}
+                value={selectedGender}
+                onChange={onGenderChange}
+              />
+            </div>
+          )}
 
           {/* City Filter */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Filter by City
-            </label>
-            <input
-              type="text"
-              value={selectedCity}
-              onChange={(e) => onCityChange(e.target.value)}
-              placeholder="Enter city..."
-              className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition text-sm shadow-sm bg-gray-50 focus:bg-white"
-            />
-          </div>
+          {onCityChange && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Filter by City
+              </label>
+              <input
+                type="text"
+                value={selectedCity}
+                onChange={(e) => onCityChange(e.target.value)}
+                placeholder="Enter city..."
+                className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition text-sm shadow-sm bg-gray-50 focus:bg-white"
+              />
+            </div>
+          )}
 
           {/* State Filter */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Filter by State
-            </label>
-            <input
-              type="text"
-              value={selectedState}
-              onChange={(e) => onStateChange(e.target.value)}
-              placeholder="Enter state..."
-              className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition text-sm shadow-sm bg-gray-50 focus:bg-white"
-            />
-          </div>
+          {onStateChange && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Filter by State
+              </label>
+              <input
+                type="text"
+                value={selectedState}
+                onChange={(e) => onStateChange(e.target.value)}
+                placeholder="Enter state..."
+                className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition text-sm shadow-sm bg-gray-50 focus:bg-white"
+              />
+            </div>
+          )}
 
           {/* Country Filter */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Filter by Country
-            </label>
-            <input
-              type="text"
-              value={selectedCountry}
-              onChange={(e) => onCountryChange(e.target.value)}
-              placeholder="Enter country..."
-              className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition text-sm shadow-sm bg-gray-50 focus:bg-white"
-            />
-          </div>
-
+          {onCountryChange && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Filter by Country
+              </label>
+              <input
+                type="text"
+                value={selectedCountry}
+                onChange={(e) => onCountryChange(e.target.value)}
+                placeholder="Enter country..."
+                className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition text-sm shadow-sm bg-gray-50 focus:bg-white"
+              />
+            </div>
+          )}
 
           {/* Referrer Filter */}
-          {referrerOptions.length > 0 && (
+          {referrerOptions && referrerOptions.length > 0 && onReferrerChange && (
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Filter by Referrer
@@ -240,29 +270,26 @@ const SearchComponent = ({
                 value={selectedReferrer}
                 onChange={onReferrerChange}
                 showSearch={true}
-                placeholder="Search referrer..."
+                placeholder="Select referrer"
               />
             </div>
           )}
 
           {/* Age Range Filter */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Age Range
-            </label>
-            <Dropdown
-              options={[
-                { label: "All Ages", value: "" },
-                { label: "0 - 18", value: "0-18" },
-                { label: "19 - 30", value: "19-30" },
-                { label: "31 - 50", value: "31-50" },
-                { label: "51+", value: "51+" },
-              ]}
-              value={selectedAgeRange}
-              onChange={onAgeRangeChange}
-              placeholder="Select age range"
-            />
-          </div>
+          {onAgeRangeChange && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Age Range
+              </label>
+              <input
+                type="text"
+                value={selectedAgeRange}
+                onChange={(e) => onAgeRangeChange(e.target.value)}
+                placeholder="e.g. 25, 20-30, or 50+"
+                className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition text-sm shadow-sm bg-gray-50 focus:bg-white"
+              />
+            </div>
+          )}
 
           {/* Date Filter */}
           {onDateChange && (
@@ -290,21 +317,23 @@ const SearchComponent = ({
           )}
 
           {/* Skip Body Measurement Dropdown */}
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">
-              Body Measurement
-            </label>
-            <Dropdown
-              options={[
-                { label: "All Users", value: "" },
-                { label: "Skip Body Measurement", value: "skip" },
-                { label: "Provided", value: "provided" },
-              ]}
-              value={skipBodyMeasurement}
-              onChange={onSkipBodyMeasurementChange}
-              placeholder="Filter by measurement"
-            />
-          </div>
+          {onSkipBodyMeasurementChange && (
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Body Measurement
+              </label>
+              <Dropdown
+                options={[
+                  { label: "All Users", value: "" },
+                  { label: "Skip Body Measurement", value: "skip" },
+                  { label: "Provided", value: "provided" },
+                ]}
+                value={skipBodyMeasurement}
+                onChange={onSkipBodyMeasurementChange}
+                placeholder="Filter by measurement"
+              />
+            </div>
+          )}
 
 
         </div>
