@@ -7,8 +7,11 @@ import NotFoundCard from "@/components/NotFoundCard";
 import Dropdown from "@/utils/dropdown";
 import { getLogs, getAllBranches } from "@/Api/AllApi";
 import toast from "react-hot-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const LogsPage = () => {
+  const { role, user } = useAuth();
+  const isDoctor = role === "subadmin";
   const [loading, setLoading] = useState(true);
   const [logs, setLogs] = useState([]);
   const [pagination, setPagination] = useState({
@@ -31,8 +34,10 @@ const LogsPage = () => {
   }, []);
 
   useEffect(() => {
+    // Wait until user ID is available for doctors to prevent fetching all logs initially
+    if (isDoctor && !user?._id) return;
     fetchLogs();
-  }, [filters, pagination.page]);
+  }, [filters, pagination.page, isDoctor, user?._id]);
 
   const fetchBranches = async () => {
     try {
@@ -51,6 +56,12 @@ const LogsPage = () => {
         page: pagination.page,
         limit: pagination.limit,
       };
+
+      // SECURITY: Force doctors to only see their own logs
+      if (isDoctor && user?._id) {
+        params.userId = user._id;
+      }
+
       // Remove empty filters
       Object.keys(params).forEach(
         (key) => params[key] === "" && delete params[key]
@@ -144,6 +155,14 @@ const LogsPage = () => {
       <div className="w-full h-full px-4 sm:px-6 lg:px-10 xl:px-18">
         <div className="mb-6">
           <Header size="3xl">Logs</Header>
+          {isDoctor && (
+            <div className="mt-3 flex items-center gap-2 px-4 py-2.5 bg-blue-50 border border-blue-200 rounded-xl text-sm text-blue-700 font-medium w-fit">
+              <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+              </svg>
+              You can only view your own activity logs.
+            </div>
+          )}
         </div>
 
         {/* Filters */}
@@ -164,18 +183,20 @@ const LogsPage = () => {
               />
             </div>
 
-            {/* Branch Filter */}
-            <div>
-              <Dropdown
-                label="Branch"
-                options={[
-                  { label: "All Branches", value: "" },
-                  ...branches.map((b) => ({ label: b.name, value: b._id })),
-                ]}
-                value={filters.branchId}
-                onChange={(val) => handleFilterChange("branchId", val)}
-              />
-            </div>
+            {/* Branch Filter — Admin only */}
+            {!isDoctor && (
+              <div>
+                <Dropdown
+                  label="Branch"
+                  options={[
+                    { label: "All Branches", value: "" },
+                    ...branches.map((b) => ({ label: b.name, value: b._id })),
+                  ]}
+                  value={filters.branchId}
+                  onChange={(val) => handleFilterChange("branchId", val)}
+                />
+              </div>
+            )}
 
             {/* Start Date */}
             <div>

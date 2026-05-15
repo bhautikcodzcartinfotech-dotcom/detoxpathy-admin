@@ -1,8 +1,8 @@
 import axios from "axios";
 
-// export const API_BASE = "http://192.168.29.204:3002/api/v1"; 
+export const API_BASE = "http://localhost:3002/api/v1";
 // export const API_BASE = "http://69.62.73.194:4009/api/v1";
-export const API_BASE = "https://admin.detoxpathy.com/api/v1";
+// export const API_BASE = "https://admin.detoxpathy.com/api/v1";
 // export const API_BASE = "https://backend.fatendfit.com/api/v1";
 // Host base used to resolve file URLs coming from multer (e.g., uploads/..)
 export const API_HOST = API_BASE.replace(/\/?api\/?v1\/?$/, "").replace(
@@ -362,7 +362,7 @@ export const createUserApi = async (payload) => {
   data.append("planId", payload.planId);
   if (payload.gstin) data.append("gstin", payload.gstin);
   if (payload.usedReferralCode) data.append("usedReferralCode", payload.usedReferralCode);
-  
+
   // Measurements
   if (payload.waist) data.append("waist", payload.waist);
   if (payload.hip) data.append("hip", payload.hip);
@@ -385,7 +385,7 @@ export const createUserApi = async (payload) => {
 
 export const updateUserById = async (id, payload) => {
   const data = new FormData();
-  
+
   if (typeof payload.name !== "undefined") data.append("name", payload.name);
   if (typeof payload.mobilePrefix !== "undefined") data.append("mobilePrefix", payload.mobilePrefix);
   if (typeof payload.mobileNumber !== "undefined") data.append("mobileNumber", payload.mobileNumber);
@@ -1702,4 +1702,31 @@ export const deleteFaq = async (id) => {
   });
   return res.data.data;
 };
+
+/* -------------------- BRANCH TIME REQUEST APIs -------------------- */
+export const listBranchTimeRequests = async (branchId = "") => {
+  const url = branchId
+    ? `${API_BASE}/admin/branchTime/requests/${branchId}`
+    : `${API_BASE}/admin/branchTime/requests`;
+
+  const res = await axios.get(url, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const approveBranchTimeRequest = async (requestId) => {
+  const res = await axios.post(`${API_BASE}/admin/branchTime/requests/${requestId}/approve`, {}, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const rejectBranchTimeRequest = async (requestId, adminComment = "") => {
+  const res = await axios.post(`${API_BASE}/admin/branchTime/requests/${requestId}/reject`, { adminComment }, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
 

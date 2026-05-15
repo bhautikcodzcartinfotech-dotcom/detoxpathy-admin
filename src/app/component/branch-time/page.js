@@ -8,7 +8,10 @@ import {
   getBranchTime,
   getAllBranches,
   createBranchTime,
-  updateBranchTime
+  updateBranchTime,
+  listBranchTimeRequests,
+  approveBranchTimeRequest,
+  rejectBranchTimeRequest
 } from "@/Api/AllApi";
 import { useAuth } from "@/contexts/AuthContext";
 import BranchTimeForm from "./branchTimeForm";
@@ -22,6 +25,9 @@ const BranchTimePage = () => {
   const [allBranches, setAllBranches] = useState([]);
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [isOpen, setIsOpen] = useState(false);
+  const [requests, setRequests] = useState([]);
+  const [selectedRequestId, setSelectedRequestId] = useState("");
+  const [actionLoading, setActionLoading] = useState(false);
 
   const daysMap = {
     1: "Monday",
@@ -70,17 +76,78 @@ const BranchTimePage = () => {
     }
   };
 
+  const fetchRequests = async (branchId) => {
+    if (role !== "Admin") return;
+    try {
+      const data = await listBranchTimeRequests(branchId || "");
+      setRequests(data);
+    } catch (e) {
+      console.error("Failed to fetch requests", e);
+    }
+  };
+
   useEffect(() => {
     fetchAllBranches();
+    if (role === "Admin") {
+      fetchRequests();
+    }
   }, []);
 
   useEffect(() => {
     if (selectedBranchId) {
       fetchBranchTimeData(selectedBranchId);
+      if (role === "Admin") {
+        fetchRequests(selectedBranchId);
+        setSelectedRequestId(""); // Reset request selection when branch changes
+      }
     } else {
       setLoading(false);
     }
   }, [selectedBranchId]);
+
+  const handleRequestChange = (requestId) => {
+    setSelectedRequestId(requestId);
+    if (requestId) {
+      const req = requests.find(r => r._id === requestId);
+      if (req) {
+        setBranchTimeData(req);
+      }
+    } else {
+      fetchBranchTimeData(selectedBranchId);
+    }
+  };
+
+  const handleApprove = async () => {
+    if (!selectedRequestId) return;
+    try {
+      setActionLoading(true);
+      await approveBranchTimeRequest(selectedRequestId);
+      toast.success("Request approved and schedule updated!");
+      setSelectedRequestId("");
+      fetchRequests(selectedBranchId);
+      fetchBranchTimeData(selectedBranchId);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to approve request");
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleReject = async () => {
+    if (!selectedRequestId) return;
+    try {
+      setActionLoading(true);
+      await rejectBranchTimeRequest(selectedRequestId);
+      toast.success("Request rejected");
+      setSelectedRequestId("");
+      fetchRequests(selectedBranchId);
+      fetchBranchTimeData(selectedBranchId);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to reject request");
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   const handleSubmit = async (formData) => {
     try {
@@ -90,14 +157,22 @@ const BranchTimePage = () => {
         availability: formData.availability
       };
 
-      if (branchTimeData) {
+      if (branchTimeData && !selectedRequestId) {
         // Update
-        await updateBranchTime(selectedBranchId, payload);
-        toast.success("Branch time updated successfully!");
+        const res = await updateBranchTime(selectedBranchId, payload);
+        if (role === "subadmin") {
+          toast.success("Update request sent to admin for approval!");
+        } else {
+          toast.success("Branch time updated successfully!");
+        }
       } else {
         // Create
         await createBranchTime(payload);
-        toast.success("Branch time created successfully!");
+        if (role === "subadmin") {
+          toast.success("Initialization request sent to admin for approval!");
+        } else {
+          toast.success("Branch time created successfully!");
+        }
       }
 
       await fetchBranchTimeData(selectedBranchId);
@@ -111,33 +186,83 @@ const BranchTimePage = () => {
 
   return (
     <RoleGuard allow={["Admin", "subadmin"]}>
-      <div className="w-full h-full px-4 sm:px-6 lg:px-10 xl:px-18">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6">
-          <div className="flex flex-col gap-1">
-            <Header size="3xl">Branch Time</Header>
-            {branchTimeData && (
-              <p className="text-xs text-gray-400">Manage operational hours for your branch</p>
+      <div className="flex flex-col gap-6 px-4 sm:px-6 lg:px-10 xl:px-18">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-white rounded-3xl border border-gray-100 shadow-sm">
+          <div className="flex flex-col">
+            <h1 className="text-2xl font-bold text-gray-800 tracking-tight">Branch Time Management</h1>
+            {role === "Admin" && requests.length > 0 && (
+              <div className="flex items-center gap-2 mt-1">
+                <span className="flex h-2 w-2 rounded-full bg-yellow-500 animate-pulse"></span>
+                <p className="text-sm text-yellow-700 font-semibold">
+                  {requests.length} Doctor {requests.length === 1 ? 'request' : 'requests'} pending approval
+                </p>
+              </div>
+            )}
+            {role === "Admin" && requests.length === 0 && (
+               <p className="text-sm text-gray-400 mt-1 font-medium">All schedules are up to date</p>
             )}
           </div>
 
           <div className="flex flex-wrap items-center gap-6">
             {role === "Admin" && (
-              <div className="flex items-center gap-3 w-[400px]">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wider whitespace-nowrap">Select Branch:</label>
-                <div className="flex-1">
-                  <Dropdown
-                    options={allBranches.map(b => ({ label: b.name, value: b._id }))}
-                    value={selectedBranchId}
-                    onChange={(val) => setSelectedBranchId(val)}
-                    placeholder="Choose Branch"
-                  />
+              <div className="flex items-center gap-4 bg-gray-50 p-2 rounded-2xl border border-gray-100">
+                <div className="flex items-center gap-3 w-[280px]">
+                  <div className="flex-1">
+                    <Dropdown
+                      options={[
+                        { label: "✅ Active Schedule", value: "" },
+                        ...requests.map(r => ({
+                          label: `⏳ ${r.requestedBy?.username || 'Doctor'} - ${new Date(r.createdAt).toLocaleDateString()}`,
+                          value: r._id
+                        }))
+                      ]}
+                      value={selectedRequestId}
+                      onChange={handleRequestChange}
+                      placeholder="Pending Requests"
+                      className="border-none bg-transparent shadow-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="w-[1px] h-8 bg-gray-200"></div>
+
+                <div className="flex items-center gap-3 w-[220px]">
+                  <div className="flex-1">
+                    <Dropdown
+                      options={allBranches.map(b => ({ label: b.name, value: b._id }))}
+                      value={selectedBranchId}
+                      onChange={(val) => setSelectedBranchId(val)}
+                      placeholder="Select Branch"
+                      className="border-none bg-transparent shadow-none"
+                    />
+                  </div>
                 </div>
               </div>
             )}
-            {selectedBranchId && (
+            {selectedBranchId && !selectedRequestId && (
               <Button onClick={() => setIsOpen(true)}>
                 {branchTimeData ? "Update Time" : "Initialize Time"}
               </Button>
+            )}
+            {selectedRequestId && (
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="primary"
+                  onClick={handleApprove}
+                  loading={actionLoading}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  Approve
+                </Button>
+                <Button
+                  variant="secondary"
+                  onClick={handleReject}
+                  loading={actionLoading}
+                  className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+                >
+                  Reject
+                </Button>
+              </div>
             )}
           </div>
         </div>
@@ -157,10 +282,13 @@ const BranchTimePage = () => {
                 </div>
                 <div>
                   <h2 className="text-xl font-bold text-gray-800">
-                    Active Schedule
+                    {selectedRequestId ? "Requested Schedule" : "Active Schedule"}
                   </h2>
                   <p className="text-sm text-gray-500 mt-1 font-medium tracking-wide">
-                    Updated: {new Date(branchTimeData.updatedAt).toLocaleDateString()}
+                    {selectedRequestId
+                      ? `Requested by: ${requests.find(r => r._id === selectedRequestId)?.requestedBy?.username || 'N/A'}`
+                      : `Updated: ${new Date(branchTimeData.updatedAt).toLocaleDateString()}`
+                    }
                   </p>
                 </div>
               </div>

@@ -5,6 +5,7 @@ import { API_BASE, updateOrderStatus, getAuthHeaders } from "@/Api/AllApi";
 import axios from "axios";
 import { ActionButton } from "@/utils/actionbutton";
 import toast from "react-hot-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const STATUS_LABELS = {
   1: "Pending",
@@ -25,6 +26,8 @@ const STATUS_COLORS = {
 };
 
 const OrderTable = ({ items, loading, onRefresh, selectedIds = [], onToggleSelection, onSelectAll }) => {
+  const { role } = useAuth();
+  const isDoctor = role === "subadmin";
   const [updatingId, setUpdatingId] = useState(null);
 
   if (loading) return <div className="p-10 flex justify-center"><Loader /></div>;
@@ -132,17 +135,27 @@ const OrderTable = ({ items, loading, onRefresh, selectedIds = [], onToggleSelec
 
               <td className="px-4 py-5 whitespace-nowrap">
                 <div className="flex items-center gap-2">
-                  <select
-                    value={Number(order.orderStatus)}
-                    onChange={(e) => handleStatusChange(order._id, e.target.value)}
-                    disabled={updatingId === order._id}
-                    className={`text-[12px] font-bold px-3 py-1 rounded-lg border-0 cursor-pointer focus:outline-none transition-all ${STATUS_COLORS[Number(order.orderStatus)] || "bg-gray-100 text-gray-700"}`}
-                  >
-                    {Object.entries(STATUS_LABELS).map(([val, label]) => (
-                      <option key={val} value={val}>{label}</option>
-                    ))}
-                  </select>
-                  {updatingId === order._id && <span className="w-4 h-4 border-2 border-teal-600 border-t-transparent rounded-full animate-spin"></span>}
+                  {isDoctor ? (
+                    // Doctor (subadmin): read-only badge, cannot change status
+                    <span className={`text-[12px] font-bold px-3 py-1 rounded-lg ${STATUS_COLORS[Number(order.orderStatus)] || "bg-gray-100 text-gray-700"}`}>
+                      {STATUS_LABELS[Number(order.orderStatus)] || "Unknown"}
+                    </span>
+                  ) : (
+                    // Admin: interactive dropdown
+                    <>
+                      <select
+                        value={Number(order.orderStatus)}
+                        onChange={(e) => handleStatusChange(order._id, e.target.value)}
+                        disabled={updatingId === order._id}
+                        className={`text-[12px] font-bold px-3 py-1 rounded-lg border-0 cursor-pointer focus:outline-none transition-all ${STATUS_COLORS[Number(order.orderStatus)] || "bg-gray-100 text-gray-700"}`}
+                      >
+                        {Object.entries(STATUS_LABELS).map(([val, label]) => (
+                          <option key={val} value={val}>{label}</option>
+                        ))}
+                      </select>
+                      {updatingId === order._id && <span className="w-4 h-4 border-2 border-teal-600 border-t-transparent rounded-full animate-spin"></span>}
+                    </>
+                  )}
                 </div>
               </td>
 

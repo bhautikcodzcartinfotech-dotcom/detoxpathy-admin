@@ -14,8 +14,11 @@ import {
 } from "@/Api/AllApi";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import toast from "react-hot-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const UserProfilePage = () => {
+  const { role } = useAuth();
+  const isDoctor = role === "subadmin";
   const params = useParams();
   const router = useRouter();
   const userId = params?.id;
@@ -946,39 +949,41 @@ const UserProfilePage = () => {
             </div>
 
             {/* ------------------ User Feedback ------------------ */}
-            <div className="p-6 mx-8 bg-white rounded-2xl shadow-lg border border-gray-200">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-gray-800">User Feedback</h3>
-              </div>
-              {overview?.feedback ? (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                  {[
-                    { label: "App Experience", value: overview.feedback.appExperience },
-                    { label: "Doctor Consultant", value: overview.feedback.doctorCostultant },
-                    { label: "Product Quality", value: overview.feedback.product },
-                    { label: "Support", value: overview.feedback.support },
-                  ].map((item, idx) => (
-                    <div key={idx} className="bg-amber-50 p-4 rounded-xl border border-amber-100 flex flex-col items-center">
-                      <div className="text-xs font-bold text-[#134D41] uppercase tracking-wider mb-2">{item.label}</div>
-                      <div className="flex items-center gap-1">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <svg
-                            key={star}
-                            className={`w-5 h-5 ${star <= (item.value || 0) ? "text-yellow-500 fill-yellow-500" : "text-gray-300 fill-gray-300"}`}
-                            viewBox="0 0 20 20"
-                          >
-                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                          </svg>
-                        ))}
-                      </div>
-                      <div className="mt-2 text-lg font-bold text-gray-800">{item.value || 0}/5</div>
-                    </div>
-                  ))}
+            {!isDoctor && (
+              <div className="p-6 mx-8 bg-white rounded-2xl shadow-lg border border-gray-200">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-bold text-gray-800">User Feedback</h3>
                 </div>
-              ) : (
-                <div className="text-gray-500 italic">No feedback provided yet.</div>
-              )}
-            </div>
+                {overview?.feedback ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                    {[
+                      { label: "App Experience", value: overview.feedback.appExperience },
+                      { label: "Doctor Consultant", value: overview.feedback.doctorCostultant },
+                      { label: "Product Quality", value: overview.feedback.product },
+                      { label: "Support", value: overview.feedback.support },
+                    ].map((item, idx) => (
+                      <div key={idx} className="bg-amber-50 p-4 rounded-xl border border-amber-100 flex flex-col items-center">
+                        <div className="text-xs font-bold text-[#134D41] uppercase tracking-wider mb-2">{item.label}</div>
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <svg
+                              key={star}
+                              className={`w-5 h-5 ${star <= (item.value || 0) ? "text-yellow-500 fill-yellow-500" : "text-gray-300 fill-gray-300"}`}
+                              viewBox="0 0 20 20"
+                            >
+                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                            </svg>
+                          ))}
+                        </div>
+                        <div className="mt-2 text-lg font-bold text-gray-800">{item.value || 0}/5</div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-gray-500 italic">No feedback provided yet.</div>
+                )}
+              </div>
+            )}
           </div>
         )}
 

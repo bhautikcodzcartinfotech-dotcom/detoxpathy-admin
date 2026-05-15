@@ -278,6 +278,13 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
             <MdChat size={20} />
             {!isCollapsed && <span>Supports</span>}
           </Link>
+          <Link
+            href="/component/reports"
+            className={linkClasses("/component/reports")}
+          >
+            <MdSummarize size={20} />
+            {!isCollapsed && <span>Reports</span>}
+          </Link>
           {(role === "Admin" || (role === "subadmin" && permissions?.includes("show contact categories"))) && (
             <Link
               href="/component/contact-category"

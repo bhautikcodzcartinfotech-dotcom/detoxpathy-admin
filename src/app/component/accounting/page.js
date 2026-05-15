@@ -1,9 +1,10 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { FiFileText, FiTrendingUp, FiPieChart, FiBarChart2 } from "react-icons/fi";
+import { FiFileText, FiTrendingUp, FiPieChart, FiBarChart2, FiDownload } from "react-icons/fi";
 import axios from "axios";
 import { API_BASE, getAuthHeaders } from "@/Api/AllApi";
 import Dropdown from "@/utils/dropdown";
+import { toast } from "react-hot-toast";
 
 const AccountingPage = () => {
   const [activeTab, setActiveTab] = useState("ledger");
@@ -46,6 +47,66 @@ const AccountingPage = () => {
     }
   };
 
+  const downloadReport = () => {
+    if (!data || (Array.isArray(data) && data.length === 0)) {
+      toast.error("No data to export");
+      return;
+    }
+
+    let csvContent = "";
+    let filename = `${activeTab}_report_${new Date().toISOString().split('T')[0]}.csv`;
+
+    if (activeTab === 'ledger') {
+      csvContent += "Date,Description,Account,Debit,Credit\n";
+      data.forEach(transaction => {
+        const relevantEntries = selectedAccountId
+          ? transaction.entries?.filter(e => (e.accountId?._id || e.accountId) === selectedAccountId)
+          : transaction.entries || [];
+        
+        relevantEntries.forEach((entry, j) => {
+          const date = j === 0 ? new Date(transaction.transactionDate).toLocaleDateString() : "";
+          const desc = j === 0 ? `"${transaction.description.replace(/"/g, '""')}"` : "";
+          const account = `"${entry.accountId?.name || 'N/A'}"`;
+          const debit = entry.debit > 0 ? entry.debit : "";
+          const credit = entry.credit > 0 ? entry.credit : "";
+          csvContent += `${date},${desc},${account},${debit},${credit}\n`;
+        });
+      });
+    } else if (activeTab === 'trial') {
+      csvContent += "Account Name,Type,Balance\n";
+      data.forEach(acc => {
+        const balance = (acc.balance || 0) >= 0 ? acc.balance : `-${Math.abs(acc.balance)}`;
+        csvContent += `"${acc.name}","${acc.type}",${balance}\n`;
+      });
+    } else if (activeTab === 'pnl') {
+      csvContent += "Category,Name,Balance\n";
+      data.revenues?.forEach(r => csvContent += `Revenue,"${r.name}",${r.balance}\n`);
+      csvContent += `Revenue,"Total Revenue",${data.totalRevenue}\n`;
+      data.expenses?.forEach(e => csvContent += `Expense,"${e.name}",${e.balance}\n`);
+      csvContent += `Expense,"Total Expenses",${data.totalExpense}\n`;
+      csvContent += `Result,"Net Profit",${data.netProfit}\n`;
+    } else if (activeTab === 'balance') {
+      csvContent += "Category,Name,Balance\n";
+      data.assets?.forEach(a => csvContent += `Asset,"${a.name}",${a.balance}\n`);
+      csvContent += `Asset,"Total Assets",${data.totalAssets}\n`;
+      data.liabilities?.forEach(l => csvContent += `Liability,"${l.name}",${l.balance}\n`);
+      data.equity?.forEach(e => csvContent += `Equity,"${e.name}",${e.balance}\n`);
+      const totalLiabEquity = (data.totalLiabilities || 0) + (data.totalEquity || 0);
+      csvContent += `Total,"Total Liab. & Equity",${totalLiabEquity}\n`;
+    }
+
+    const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' }); // Add BOM for Excel UTF-8
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success("Downloaded successfully!");
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex flex-wrap gap-4">
@@ -66,6 +127,19 @@ const AccountingPage = () => {
             <tab.icon /> {tab.label}
           </button>
         ))}
+      </div>
+
+      <div className="flex justify-between items-center mb-2">
+        <h2 className="text-xl font-bold text-gray-800 capitalize">
+          {activeTab.replace('-', ' ')} Report
+        </h2>
+        <button
+          onClick={downloadReport}
+          disabled={loading || !data}
+          className="flex items-center gap-2 px-4 py-2 bg-[#134D41] text-white rounded-lg font-bold hover:bg-[#0f3d34] transition disabled:opacity-50"
+        >
+          <FiDownload /> Export to Excel
+        </button>
       </div>
 
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 min-h-[400px]">

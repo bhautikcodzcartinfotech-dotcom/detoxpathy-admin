@@ -342,29 +342,33 @@ const OrderPage = () => {
                 {selectedIds.length} orders selected
               </span>
               <div className="flex items-center gap-2 ml-auto">
-                <div className="w-48">
-                  <Dropdown
-                    options={[
-                      { label: "-- Change Status --", value: "" },
-                      { label: "Pending", value: "1" },
-                      { label: "Packed", value: "2" },
-                      { label: "Processing", value: "3" },
-                      { label: "In Transit", value: "4" },
-                      { label: "Delivered", value: "5" },
-                      { label: "Cancelled", value: "6" },
-                    ]}
-                    value={bulkStatus}
-                    onChange={(val) => setBulkStatus(val)}
-                  />
-                </div>
-                <Button
-                  onClick={handleBulkUpdate}
-                  disabled={isBulkUpdating || !bulkStatus}
-                  variant="primary"
-                  className="h-11 px-4 text-xs"
-                >
-                  {isBulkUpdating ? "Updating..." : "Apply Bulk Update"}
-                </Button>
+                {role !== 'subadmin' && (
+                  <>
+                    <div className="w-48">
+                      <Dropdown
+                        options={[
+                          { label: "-- Change Status --", value: "" },
+                          { label: "Pending", value: "1" },
+                          { label: "Packed", value: "2" },
+                          { label: "Processing", value: "3" },
+                          { label: "In Transit", value: "4" },
+                          { label: "Delivered", value: "5" },
+                          { label: "Cancelled", value: "6" },
+                        ]}
+                        value={bulkStatus}
+                        onChange={(val) => setBulkStatus(val)}
+                      />
+                    </div>
+                    <Button
+                      onClick={handleBulkUpdate}
+                      disabled={isBulkUpdating || !bulkStatus}
+                      variant="primary"
+                      className="h-11 px-4 text-xs"
+                    >
+                      {isBulkUpdating ? "Updating..." : "Apply Bulk Update"}
+                    </Button>
+                  </>
+                )}
                 <Button
                   onClick={handleBulkDownload}
                   disabled={loading || selectedIds.length === 0}
@@ -383,6 +387,7 @@ const OrderPage = () => {
               </div>
             </div>
           )}
+
         </div>
 
         <OrderTable
