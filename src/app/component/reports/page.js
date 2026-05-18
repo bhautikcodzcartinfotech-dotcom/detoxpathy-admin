@@ -75,6 +75,16 @@ const ReportsPage = () => {
   const [appReferences, setAppReferences] = useState([]);
   const [selectedMedicalCondition, setSelectedMedicalCondition] = useState("");
   const [selectedAppReference, setSelectedAppReference] = useState("");
+  const appReferenceOptions = useMemo(() => {
+    const options = [{ label: "All Sources", value: "" }];
+    appReferences.forEach(r => {
+      options.push({ label: r.name, value: r.name });
+    });
+    if (!appReferences.some(r => r.name === "App Referral")) {
+      options.push({ label: "App Referral", value: "App Referral" });
+    }
+    return options;
+  }, [appReferences]);
   const [selectedVideoLanguage, setSelectedVideoLanguage] = useState("");
   const [selectedConsultingType, setSelectedConsultingType] = useState(""); // online | offline
   const [selectedVideoWatchStatus, setSelectedVideoWatchStatus] = useState(""); // watched | not_watched
@@ -337,7 +347,10 @@ const ReportsPage = () => {
       if (reportType === 'video' && (item.planCurrentDay || 0) === 0) return false;
 
       if (selectedMedicalCondition && !user?.medicalDescription?.includes(selectedMedicalCondition)) return false;
-      if (selectedAppReference && user?.appReferer !== selectedAppReference && user?.usedReferralCode !== selectedAppReference) return false;
+      if (selectedAppReference) {
+        const userSource = user?.appReferer || (user?.usedReferralCode ? "App Referral" : "Direct");
+        if (userSource !== selectedAppReference) return false;
+      }
       if (selectedVideoLanguage && user?.videoLanguage !== selectedVideoLanguage) return false;
       if (selectedConsultingType) {
         const type = String(item.appointmentType || user?.appointmentType || "");
@@ -424,7 +437,7 @@ const ReportsPage = () => {
       }
 
       // Referrers
-      const ref = u.appReferer || u.usedReferralCode || "Direct";
+      const ref = u.appReferer || (u.usedReferralCode ? "App Referral" : "Direct");
       refCounts[ref] = (refCounts[ref] || 0) + 1;
     });
 
@@ -736,8 +749,7 @@ const ReportsPage = () => {
           <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full -mr-16 -mt-16 blur-3xl opacity-50"></div>
           <div className="flex flex-col relative z-10">
             <Header size="4xl" className="flex items-center gap-3">
-              <MdSummarize className="text-indigo-600" />
-              Advanced Reports
+              Reports
             </Header>
             <p className="text-xs text-gray-400 font-bold uppercase tracking-[0.2em] mt-2">Operational Analytics & Patient Tracking</p>
           </div>
@@ -842,8 +854,8 @@ const ReportsPage = () => {
                 <span className="text-lg font-black text-gray-900">{advancedStats.avgWeight} kg</span>
               </div>
               <div className="flex justify-between items-center text-[10px] text-gray-400 font-bold uppercase">
-                <span>H: {advancedStats.highestWeight}</span>
-                <span>L: {advancedStats.lowestWeight}</span>
+                <span>High: {advancedStats.highestWeight}</span>
+                <span>Low: {advancedStats.lowestWeight}</span>
               </div>
               <div className="h-0.5 bg-gray-50 mt-1"></div>
               <div className="flex justify-between items-center mt-1">
@@ -954,7 +966,7 @@ const ReportsPage = () => {
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-[9px] font-black text-blue-600 uppercase tracking-widest px-1">Source</label>
-                <Dropdown options={[{ label: "All Sources", value: "" }, ...appReferences.map(r => ({ label: r.name, value: r.name }))]} value={selectedAppReference} onChange={setSelectedAppReference} />
+                <Dropdown options={appReferenceOptions} value={selectedAppReference} onChange={setSelectedAppReference} />
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-[9px] font-black text-blue-600 uppercase tracking-widest px-1">Status</label>
@@ -1017,12 +1029,12 @@ const ReportsPage = () => {
               </div>
               <div className="lg:col-span-3 flex flex-col gap-1">
                 <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Daily Checklist Report</label>
-                <Dropdown 
+                <Dropdown
                   options={[
                     { label: "Normal (Disabled)", value: "disabled" },
                     { label: "Show Daily Checklist Data", value: "enabled" }
-                  ]} 
-                  value={checklistReportEnabled ? "enabled" : "disabled"} 
+                  ]}
+                  value={checklistReportEnabled ? "enabled" : "disabled"}
                   onChange={(val) => {
                     setChecklistReportEnabled(val === "enabled");
                     if (val !== "enabled") {
@@ -1032,7 +1044,7 @@ const ReportsPage = () => {
                       setFilterPranayama("");
                       setFilterSleep("");
                     }
-                  }} 
+                  }}
                 />
               </div>
               <div className="lg:col-span-2 flex flex-col gap-1">
@@ -1052,23 +1064,23 @@ const ReportsPage = () => {
             {checklistReportEnabled && (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-3 pt-3 mt-3 border-t border-gray-100 border-dashed">
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-teal-600 uppercase tracking-widest px-1 flex items-center gap-1"><MdWaterDrop/> Water Intake</label>
+                  <label className="text-[9px] font-black text-teal-600 uppercase tracking-widest px-1 flex items-center gap-1"><MdWaterDrop /> Water Intake</label>
                   <input type="number" placeholder="Exact times..." value={filterWater} onChange={(e) => setFilterWater(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-teal-500/10 focus:bg-white transition-all" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-orange-600 uppercase tracking-widest px-1 flex items-center gap-1"><MdFitnessCenter/> Exercise</label>
+                  <label className="text-[9px] font-black text-orange-600 uppercase tracking-widest px-1 flex items-center gap-1"><MdFitnessCenter /> Exercise</label>
                   <input type="number" placeholder="Exact mins..." value={filterExercise} onChange={(e) => setFilterExercise(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:bg-white transition-all" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-emerald-600 uppercase tracking-widest px-1 flex items-center gap-1"><MdLocalDrink/> Green Juice</label>
+                  <label className="text-[9px] font-black text-emerald-600 uppercase tracking-widest px-1 flex items-center gap-1"><MdLocalDrink /> Green Juice</label>
                   <input type="number" placeholder="Exact times..." value={filterJuice} onChange={(e) => setFilterJuice(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-cyan-600 uppercase tracking-widest px-1 flex items-center gap-1"><MdSelfImprovement/> Pranayama</label>
+                  <label className="text-[9px] font-black text-cyan-600 uppercase tracking-widest px-1 flex items-center gap-1"><MdSelfImprovement /> Pranayama</label>
                   <input type="number" placeholder="Exact mins..." value={filterPranayama} onChange={(e) => setFilterPranayama(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:bg-white transition-all" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1 flex items-center gap-1"><MdBedtime/> Sleep Hours</label>
+                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1 flex items-center gap-1"><MdBedtime /> Sleep Hours</label>
                   <input type="number" placeholder="Exact hours..." value={filterSleep} onChange={(e) => setFilterSleep(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all" />
                 </div>
               </div>
@@ -1076,94 +1088,94 @@ const ReportsPage = () => {
           </div>
         </div>
 
-      <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden min-h-[400px]">
-        <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-gradient-to-r from-gray-50/50 to-transparent">
-          <h2 className="font-black text-gray-900 flex items-center gap-3 text-lg">
-            <div className={`p-2 rounded-xl bg-white shadow-sm border border-gray-50`}>
-              {reportType === 'users' && !checklistReportEnabled && <MdPerson className="text-indigo-500" />}
-              {reportType === 'appointments' && !checklistReportEnabled && <MdCalendarMonth className="text-blue-500" />}
-              {reportType === 'orders' && !checklistReportEnabled && <MdShoppingCart className="text-green-500" />}
-              {reportType === 'video' && !checklistReportEnabled && <MdVideoLibrary className="text-purple-500" />}
-              {reportType === 'reschedule' && !checklistReportEnabled && <MdHistory className="text-amber-500" />}
-              {checklistReportEnabled && <MdSummarize className="text-teal-500" />}
-            </div>
-            {checklistReportEnabled ? "Daily Checklist" : reportOptions.find(o => o.value === reportType)?.label} Data
-          </h2>
-          <div className="flex items-center gap-4">
-            <span className="text-[10px] font-black text-gray-400 bg-gray-100/80 px-4 py-2 rounded-full uppercase tracking-widest border border-gray-50">
-              {filteredData.length} Results Found
-            </span>
-          </div>
-        </div>
-
-        <div className="p-0">
-          {/* Active Filters Bar */}
-          <div className="px-8 py-3 bg-white border-b border-gray-50 flex items-center gap-3 overflow-x-auto no-scrollbar">
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Active Filters:</span>
-            <div className="flex items-center gap-2">
-              <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-bold border border-indigo-100/50 flex items-center gap-1.5 whitespace-nowrap">
-                <span className="opacity-50">Type:</span> {reportOptions.find(o => o.value === reportType)?.label}
+        <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden min-h-[400px]">
+          <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-gradient-to-r from-gray-50/50 to-transparent">
+            <h2 className="font-black text-gray-900 flex items-center gap-3 text-lg">
+              <div className={`p-2 rounded-xl bg-white shadow-sm border border-gray-50`}>
+                {reportType === 'users' && !checklistReportEnabled && <MdPerson className="text-indigo-500" />}
+                {reportType === 'appointments' && !checklistReportEnabled && <MdCalendarMonth className="text-blue-500" />}
+                {reportType === 'orders' && !checklistReportEnabled && <MdShoppingCart className="text-green-500" />}
+                {reportType === 'video' && !checklistReportEnabled && <MdVideoLibrary className="text-purple-500" />}
+                {reportType === 'reschedule' && !checklistReportEnabled && <MdHistory className="text-amber-500" />}
+                {checklistReportEnabled && <MdSummarize className="text-teal-500" />}
+              </div>
+              {checklistReportEnabled ? "Daily Checklist" : reportOptions.find(o => o.value === reportType)?.label} Data
+            </h2>
+            <div className="flex items-center gap-4">
+              <span className="text-[10px] font-black text-gray-400 bg-gray-100/80 px-4 py-2 rounded-full uppercase tracking-widest border border-gray-50">
+                {filteredData.length} Results Found
               </span>
-              {selectedBranchId && (
-                <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold border border-blue-100/50 flex items-center gap-1.5 whitespace-nowrap">
-                  <span className="opacity-50">Branch:</span> {allBranches.find(b => b._id === selectedBranchId)?.name}
-                </span>
-              )}
-              {selectedDoctorId && (
-                <span className="px-3 py-1 bg-purple-50 text-purple-600 rounded-full text-[10px] font-bold border border-purple-100/50 flex items-center gap-1.5 whitespace-nowrap">
-                  <span className="opacity-50">Doctor:</span> {allDoctors.find(d => d._id === selectedDoctorId)?.username || "Selected Doctor"}
-                </span>
-              )}
-              {selectedMedicalCondition && (
-                <span className="px-3 py-1 bg-rose-50 text-rose-600 rounded-full text-[10px] font-bold border border-rose-100/50 flex items-center gap-1.5 whitespace-nowrap">
-                  <span className="opacity-50">Disease:</span> {selectedMedicalCondition}
-                </span>
-              )}
-              {selectedCity && (
-                <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-bold border border-emerald-100/50 flex items-center gap-1.5 whitespace-nowrap">
-                  <span className="opacity-50">City:</span> {selectedCity}
-                </span>
-              )}
-              {selectedState && (
-                <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-bold border border-emerald-100/50 flex items-center gap-1.5 whitespace-nowrap">
-                  <span className="opacity-50">State:</span> {selectedState}
-                </span>
-              )}
-              {statusFilter !== "all" && (
-                <span className="px-3 py-1 bg-green-50 text-green-600 rounded-full text-[10px] font-bold border border-green-100/50 flex items-center gap-1.5 whitespace-nowrap">
-                  <span className="opacity-50">Status:</span> {statusFilter}
-                </span>
-              )}
-              {localOnlineFilter === "local_online" && (
-                <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold border border-blue-100/50 flex items-center gap-1.5 whitespace-nowrap">
-                  <span className="opacity-50">Booking:</span> Local Online
-                </span>
-              )}
-              {selectedGender && (
-                <span className="px-3 py-1 bg-pink-50 text-pink-600 rounded-full text-[10px] font-bold border border-pink-100/50 flex items-center gap-1.5 whitespace-nowrap">
-                  <span className="opacity-50">Gender:</span> {selectedGender}
-                </span>
-              )}
-              {selectedAge && (
-                <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-bold border border-indigo-100/50 flex items-center gap-1.5 whitespace-nowrap">
-                  <span className="opacity-50">Age:</span> {selectedAge}
-                </span>
-              )}
-              {selectedVideoWatchStatus && (
-                <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-[10px] font-bold border border-amber-100/50 flex items-center gap-1.5 whitespace-nowrap">
-                  <span className="opacity-50">Video:</span> {selectedVideoWatchStatus}
-                </span>
-              )}
-              {searchTerm && (
-                <span className="px-3 py-1 bg-slate-50 text-slate-600 rounded-full text-[10px] font-bold border border-slate-100/50 flex items-center gap-1.5 whitespace-nowrap">
-                  <span className="opacity-50">Search:</span> "{searchTerm}"
-                </span>
-              )}
             </div>
           </div>
-          {renderTable()}
+
+          <div className="p-0">
+            {/* Active Filters Bar */}
+            <div className="px-8 py-3 bg-white border-b border-gray-50 flex items-center gap-3 overflow-x-auto no-scrollbar">
+              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Active Filters:</span>
+              <div className="flex items-center gap-2">
+                <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-bold border border-indigo-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                  <span className="opacity-50">Type:</span> {reportOptions.find(o => o.value === reportType)?.label}
+                </span>
+                {selectedBranchId && (
+                  <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold border border-blue-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="opacity-50">Branch:</span> {allBranches.find(b => b._id === selectedBranchId)?.name}
+                  </span>
+                )}
+                {selectedDoctorId && (
+                  <span className="px-3 py-1 bg-purple-50 text-purple-600 rounded-full text-[10px] font-bold border border-purple-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="opacity-50">Doctor:</span> {allDoctors.find(d => d._id === selectedDoctorId)?.username || "Selected Doctor"}
+                  </span>
+                )}
+                {selectedMedicalCondition && (
+                  <span className="px-3 py-1 bg-rose-50 text-rose-600 rounded-full text-[10px] font-bold border border-rose-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="opacity-50">Disease:</span> {selectedMedicalCondition}
+                  </span>
+                )}
+                {selectedCity && (
+                  <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-bold border border-emerald-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="opacity-50">City:</span> {selectedCity}
+                  </span>
+                )}
+                {selectedState && (
+                  <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-bold border border-emerald-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="opacity-50">State:</span> {selectedState}
+                  </span>
+                )}
+                {statusFilter !== "all" && (
+                  <span className="px-3 py-1 bg-green-50 text-green-600 rounded-full text-[10px] font-bold border border-green-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="opacity-50">Status:</span> {statusFilter}
+                  </span>
+                )}
+                {localOnlineFilter === "local_online" && (
+                  <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold border border-blue-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="opacity-50">Booking:</span> Local Online
+                  </span>
+                )}
+                {selectedGender && (
+                  <span className="px-3 py-1 bg-pink-50 text-pink-600 rounded-full text-[10px] font-bold border border-pink-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="opacity-50">Gender:</span> {selectedGender}
+                  </span>
+                )}
+                {selectedAge && (
+                  <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-bold border border-indigo-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="opacity-50">Age:</span> {selectedAge}
+                  </span>
+                )}
+                {selectedVideoWatchStatus && (
+                  <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-[10px] font-bold border border-amber-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="opacity-50">Video:</span> {selectedVideoWatchStatus}
+                  </span>
+                )}
+                {searchTerm && (
+                  <span className="px-3 py-1 bg-slate-50 text-slate-600 rounded-full text-[10px] font-bold border border-slate-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="opacity-50">Search:</span> "{searchTerm}"
+                  </span>
+                )}
+              </div>
+            </div>
+            {renderTable()}
+          </div>
         </div>
-      </div>
       </div>
     </RoleGuard>
   );
