@@ -1736,4 +1736,35 @@ export const rejectBranchTimeRequest = async (requestId, adminComment = "") => {
   return res.data.data;
 };
 
+/* -------------------- COMPLAINT APIs -------------------- */
+export const addComplaint = async (payload) => {
+  const res = await axios.post(`${API_BASE}/admin/complaint/add-complaint`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+export const getComplaints = async () => {
+  const res = await axios.get(`${API_BASE}/admin/complaint/get-complaints`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const deleteComplaint = async (id) => {
+  const res = await axios.delete(`${API_BASE}/admin/complaint/delete-complaint/${id}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+/* -------------------- DAILY CHECKLIST APIs -------------------- */
+export const getDailyChecklists = async (params = {}) => {
+  const res = await axios.get(`${API_BASE}/admin/dailyCheckList/all`, {
+    params,
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
 

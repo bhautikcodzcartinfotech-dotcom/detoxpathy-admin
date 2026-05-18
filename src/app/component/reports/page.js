@@ -11,7 +11,8 @@ import {
   getLogs,
   listSubAdmins,
   getAllMedicalConditions,
-  getAllAppReferences
+  getAllAppReferences,
+  getDailyChecklists
 } from "@/Api/AllApi";
 import Dropdown from "@/utils/dropdown";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,7 +30,15 @@ import {
   MdPerson,
   MdTimer,
   MdHealthAndSafety,
-  MdVideoSettings
+  MdVideoSettings,
+  MdWaterDrop,
+  MdFitnessCenter,
+  MdLocalDrink,
+  MdSelfImprovement,
+  MdBedtime,
+  MdMonitorWeight,
+  MdWarning,
+  MdRefresh
 } from "react-icons/md";
 
 const ReportsPage = () => {
@@ -55,7 +64,7 @@ const ReportsPage = () => {
   const [selectedGender, setSelectedGender] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
   const [selectedState, setSelectedState] = useState("");
-  const [selectedAgeRange, setSelectedAgeRange] = useState("");
+  const [selectedAge, setSelectedAge] = useState("");
   const [selectedReferrer, setSelectedReferrer] = useState("");
   const [skipBodyMeasurement, setSkipBodyMeasurement] = useState("");
   const [allDoctors, setAllDoctors] = useState([]);
@@ -69,8 +78,16 @@ const ReportsPage = () => {
   const [selectedVideoLanguage, setSelectedVideoLanguage] = useState("");
   const [selectedConsultingType, setSelectedConsultingType] = useState(""); // online | offline
   const [selectedVideoWatchStatus, setSelectedVideoWatchStatus] = useState(""); // watched | not_watched
-  const [selectedBirthdayMonth, setSelectedBirthdayMonth] = useState("");
   const [selectedResultStatus, setSelectedResultStatus] = useState("");
+  const [localOnlineFilter, setLocalOnlineFilter] = useState("");
+  const [checklistReportEnabled, setChecklistReportEnabled] = useState(false);
+
+  // Daily Checklist Specific Filters
+  const [filterWater, setFilterWater] = useState("");
+  const [filterExercise, setFilterExercise] = useState("");
+  const [filterJuice, setFilterJuice] = useState("");
+  const [filterPranayama, setFilterPranayama] = useState("");
+  const [filterSleep, setFilterSleep] = useState("");
 
   useEffect(() => {
     fetchInitialData();
@@ -88,7 +105,7 @@ const ReportsPage = () => {
         if (!matchesBranch || !matchesCity) setSelectedDoctorId("");
       }
     }
-  }, [reportType, selectedBranchId, selectedPlanId, startDate, endDate, selectedCity]);
+  }, [reportType, selectedBranchId, selectedPlanId, startDate, endDate, selectedCity, checklistReportEnabled]);
 
   const fetchInitialData = async () => {
     try {
@@ -153,41 +170,46 @@ const ReportsPage = () => {
       let result = [];
       const branchToFetch = selectedBranchId || "all";
 
-      switch (reportType) {
-        case "users":
-          const allUserList = await getAllUsers();
-          result = allUserList || [];
-          break;
-        case "reschedule":
-          const logs = await getLogs({
-            action: "update appointment",
-            branchId: selectedBranchId,
-            startDate,
-            endDate
-          });
-          result = logs || [];
-          break;
-        case "orders":
-          const orderData = await getAllOrders({
-            search: "",
-            status: "",
-            limit: 1000
-          });
-          result = orderData?.orders || [];
-          break;
-        case "video":
-          const users = await getAllUsers();
-          result = users || [];
-          break;
-        case "appointments":
-        default:
-          const appointmentParams = {
-            startDate,
-            endDate,
-            search: ""
-          };
-          result = await getAppointmentsByBranch(branchToFetch, appointmentParams);
-          break;
+      if (checklistReportEnabled) {
+        const checklists = await getDailyChecklists({ limit: 10000 });
+        result = checklists || [];
+      } else {
+        switch (reportType) {
+          case "users":
+            const allUserList = await getAllUsers();
+            result = allUserList || [];
+            break;
+          case "reschedule":
+            const logs = await getLogs({
+              action: "update appointment",
+              branchId: selectedBranchId,
+              startDate,
+              endDate
+            });
+            result = logs || [];
+            break;
+          case "orders":
+            const orderData = await getAllOrders({
+              search: "",
+              status: "",
+              limit: 1000
+            });
+            result = orderData?.orders || [];
+            break;
+          case "video":
+            const users = await getAllUsers();
+            result = users || [];
+            break;
+          case "appointments":
+          default:
+            const appointmentParams = {
+              startDate,
+              endDate,
+              search: ""
+            };
+            result = await getAppointmentsByBranch(branchToFetch, appointmentParams);
+            break;
+        }
       }
       setRawData(Array.isArray(result) ? result : []);
     } catch (e) {
@@ -228,7 +250,7 @@ const ReportsPage = () => {
 
     return data.filter(item => {
       let user = null;
-      if (reportType === 'appointments' || reportType === 'orders') user = item.userId;
+      if (checklistReportEnabled || reportType === 'appointments' || reportType === 'orders') user = item.userId;
       else if (reportType === 'video' || reportType === 'users') user = item;
       else if (reportType === 'reschedule') user = item.user;
 
@@ -280,20 +302,14 @@ const ReportsPage = () => {
         if (statusFilter === "inactive" && !isInactive) return false;
       }
 
-      if (selectedGender && user?.gender !== selectedGender) return false;
+      if (selectedGender && user?.gender?.toLowerCase() !== selectedGender.toLowerCase()) return false;
       if (selectedLanguage && user?.language?.toLowerCase() !== selectedLanguage.toLowerCase()) return false;
       if (selectedCity && !user?.city?.toLowerCase().includes(selectedCity.toLowerCase())) return false;
       if (selectedState && !user?.state?.toLowerCase().includes(selectedState.toLowerCase())) return false;
 
-      if (selectedAgeRange) {
+      if (selectedAge) {
         const age = calculateAge(user?.dob);
-        const range = selectedAgeRange.replace(/\s+/g, "");
-        if (range.endsWith("+")) {
-          if (age < parseInt(range)) return false;
-        } else if (range.includes("-")) {
-          const [min, max] = range.split("-").map(Number);
-          if (age < min || age > max) return false;
-        }
+        if (age !== parseInt(selectedAge)) return false;
       }
 
       if (selectedReferrer && user?.usedReferralCode !== selectedReferrer && user?.referralCode !== selectedReferrer) return false;
@@ -330,30 +346,37 @@ const ReportsPage = () => {
       if (selectedVideoWatchStatus === "not_watched" && user?.seeVideo) return false;
       if (selectedVideoWatchStatus === "watched" && !user?.seeVideo) return false;
 
-      if (selectedBirthdayMonth) {
-        const dob = user?.dob; // "29/03/2000"
-        if (dob && dob.includes("/")) {
-          const month = dob.split("/")[1];
-          if (month !== selectedBirthdayMonth) return false;
-        } else {
-          return false;
-        }
+      if (localOnlineFilter === "local_online") {
+        const appType = String(item.appointmentType || user?.appointmentType || "");
+        if (appType !== "1") return false; // 1 is Online
+        const userCity = (user?.city || "").trim().toLowerCase();
+        if (!userCity) return false;
+        const hasBranchInCity = allBranches.some(b => b.city && b.city.trim().toLowerCase() === userCity);
+        if (!hasBranchInCity) return false;
+      }
+
+      if (checklistReportEnabled) {
+        if (filterWater && String(item.waterIntake || 0) !== String(filterWater)) return false;
+        if (filterExercise && String(item.exerciseMinutes || 0) !== String(filterExercise)) return false;
+        if (filterJuice && String(item.greenJuice || 0) !== String(filterJuice)) return false;
+        if (filterPranayama && String(item.pranayamaMinutes || 0) !== String(filterPranayama)) return false;
+        if (filterSleep && String(item.sleepHours || 0) !== String(filterSleep)) return false;
       }
 
       return true;
     });
-  }, [rawData, reportType, viewType, searchTerm, selectedBranchId, selectedPlanId, statusFilter, selectedGender, selectedLanguage, selectedCity, selectedState, selectedAgeRange, selectedReferrer, skipBodyMeasurement, selectedDoctorId, allDoctors, selectedMedicalCondition, selectedAppReference, selectedVideoLanguage, selectedConsultingType, selectedVideoWatchStatus, selectedBirthdayMonth, selectedResultStatus, startDate, endDate]);
+  }, [rawData, reportType, viewType, searchTerm, selectedBranchId, selectedPlanId, statusFilter, selectedGender, selectedLanguage, selectedCity, selectedState, selectedAge, selectedReferrer, skipBodyMeasurement, selectedDoctorId, allDoctors, selectedMedicalCondition, selectedAppReference, selectedVideoLanguage, selectedConsultingType, selectedVideoWatchStatus, selectedResultStatus, startDate, endDate, checklistReportEnabled, filterWater, filterExercise, filterJuice, filterPranayama, filterSleep, localOnlineFilter, allBranches]);
 
   const { activeCount, inactiveCount } = useMemo(() => {
     let active = 0;
     let inactive = 0;
     filteredData.forEach(item => {
-      const user = reportType === 'appointments' || reportType === 'orders' ? item.userId : (reportType === 'reschedule' ? item.user : item);
+      const user = checklistReportEnabled || reportType === 'appointments' || reportType === 'orders' ? item.userId : (reportType === 'reschedule' ? item.user : item);
       if (user?.isDeleted || user?.isBlocked) inactive++;
       else active++;
     });
     return { activeCount: active, inactiveCount: inactive };
-  }, [filteredData, reportType]);
+  }, [filteredData, reportType, checklistReportEnabled]);
 
   // Advanced Stats Calculation
   const advancedStats = useMemo(() => {
@@ -372,7 +395,7 @@ const ReportsPage = () => {
     const refCounts = {};
 
     filteredData.forEach(item => {
-      const u = reportType === 'appointments' || reportType === 'orders' ? item.userId : (reportType === 'reschedule' ? item.user : item);
+      const u = checklistReportEnabled || reportType === 'appointments' || reportType === 'orders' ? item.userId : (reportType === 'reschedule' ? item.user : item);
       if (!u) return;
 
       // Weight stats
@@ -435,6 +458,65 @@ const ReportsPage = () => {
   const renderTable = () => {
     if (loading) return <div className="flex justify-center p-10"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-yellow-600"></div></div>;
     if (filteredData.length === 0) return <div className="text-center p-10 text-gray-500 font-medium">No records found matching your filters.</div>;
+
+    if (checklistReportEnabled) {
+      return (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="text-[11px] text-gray-400 uppercase bg-gray-50/50 font-bold tracking-wider">
+              <tr>
+                <th className="px-6 py-4 whitespace-nowrap">Patient</th>
+                <th className="px-6 py-4 whitespace-nowrap">Assigned Plan</th>
+                <th className="px-4 py-4 text-center whitespace-nowrap">Day</th>
+                <th className="px-4 py-4 text-center whitespace-nowrap">Water Intake</th>
+                <th className="px-4 py-4 text-center whitespace-nowrap">Exercise</th>
+                <th className="px-4 py-4 text-center whitespace-nowrap">Green Juice</th>
+                <th className="px-4 py-4 text-center whitespace-nowrap">Pranayama</th>
+                <th className="px-4 py-4 text-center whitespace-nowrap">Sleep Hours</th>
+                <th className="px-4 py-4 text-center whitespace-nowrap">Weight</th>
+                <th className="px-6 py-4 whitespace-nowrap">Mistakes</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {filteredData.map((item) => (
+                <tr key={item._id} className="bg-white hover:bg-gray-50/80 transition-colors text-xs">
+                  <td className="px-6 py-4 font-semibold text-gray-900 whitespace-nowrap">
+                    {item.userId?.name || "Unknown"} {item.userId?.surname || ""}
+                  </td>
+                  <td className="px-6 py-4 text-indigo-600 font-bold whitespace-nowrap">
+                    {item.planId?.name || "N/A"}
+                  </td>
+                  <td className="px-4 py-4 text-gray-500 font-bold text-center whitespace-nowrap">
+                    Day {item.day}
+                  </td>
+                  <td className="px-4 py-4 text-gray-700 text-center whitespace-nowrap">
+                    {item.waterIntake || 0} times
+                  </td>
+                  <td className="px-4 py-4 text-gray-700 text-center whitespace-nowrap">
+                    {item.exerciseMinutes || 0} mins
+                  </td>
+                  <td className="px-4 py-4 text-gray-700 text-center whitespace-nowrap">
+                    {item.greenJuice || 0} times
+                  </td>
+                  <td className="px-4 py-4 text-gray-700 text-center whitespace-nowrap">
+                    {item.pranayamaMinutes || 0} mins
+                  </td>
+                  <td className="px-4 py-4 text-gray-700 text-center whitespace-nowrap">
+                    {item.sleepHours || 0} hrs
+                  </td>
+                  <td className="px-4 py-4 text-gray-500 text-center whitespace-nowrap">
+                    {item.todayWeight ? `${item.todayWeight} kg` : "-"}
+                  </td>
+                  <td className="px-6 py-4 text-rose-600 italic font-medium max-w-[150px] truncate" title={item.dietMistake}>
+                    {item.dietMistake || "-"}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+    }
 
     switch (reportType) {
       case "users":
@@ -618,6 +700,35 @@ const ReportsPage = () => {
     }
   };
 
+  const resetAllFilters = () => {
+    setSearchTerm("");
+    setSelectedBranchId("");
+    setSelectedDoctorId("");
+    setSelectedPlanId("");
+    setSelectedMedicalCondition("");
+    setSelectedGender("");
+    setSelectedAge("");
+    setSelectedCity("");
+    setSelectedState("");
+    setSelectedAppReference("");
+    setStatusFilter("all");
+    setSelectedVideoWatchStatus("");
+    setSelectedVideoLanguage("");
+    setSelectedConsultingType("");
+    setSkipBodyMeasurement("");
+    setSelectedResultStatus("");
+    setSelectedLanguage("");
+    setStartDate("");
+    setEndDate("");
+    setChecklistReportEnabled(false);
+    setFilterWater("");
+    setFilterExercise("");
+    setFilterJuice("");
+    setFilterPranayama("");
+    setFilterSleep("");
+    setLocalOnlineFilter("");
+  };
+
   return (
     <RoleGuard allow={["Admin", "subadmin"]}>
       <div className="w-full h-full px-6 py-6 flex flex-col gap-6 bg-gray-50/30">
@@ -780,7 +891,7 @@ const ReportsPage = () => {
                 <span className="text-[10px] text-gray-400 font-bold uppercase">Video Viewers</span>
                 <span className="text-lg font-black text-rose-500">
                   {filteredData.filter(item => {
-                    const u = reportType === 'appointments' || reportType === 'orders' ? item.userId : (reportType === 'reschedule' ? item.user : item);
+                    const u = checklistReportEnabled || reportType === 'appointments' || reportType === 'orders' ? item.userId : (reportType === 'reschedule' ? item.user : item);
                     return u?.seeVideo;
                   }).length}
                 </span>
@@ -789,7 +900,7 @@ const ReportsPage = () => {
                 <span className="text-[10px] text-gray-400 font-bold uppercase">Answered Qs</span>
                 <span className="text-lg font-black text-rose-500">
                   {filteredData.filter(item => {
-                    const u = reportType === 'appointments' || reportType === 'orders' ? item.userId : (reportType === 'reschedule' ? item.user : item);
+                    const u = checklistReportEnabled || reportType === 'appointments' || reportType === 'orders' ? item.userId : (reportType === 'reschedule' ? item.user : item);
                     return u?.giveAnswer;
                   }).length}
                 </span>
@@ -831,11 +942,7 @@ const ReportsPage = () => {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-3">
               <div className="flex flex-col gap-1">
                 <label className="text-[9px] font-black text-teal-600 uppercase tracking-widest px-1">Age</label>
-                <Dropdown options={[{ label: "All Ages", value: "" }, { label: "0-20", value: "0-20" }, { label: "20-40", value: "20-40" }, { label: "40-60", value: "40-60" }, { label: "60+", value: "60+" }]} value={selectedAgeRange} onChange={setSelectedAgeRange} />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[9px] font-black text-teal-600 uppercase tracking-widest px-1">Birthday</label>
-                <Dropdown options={[{ label: "All Months", value: "" }, ...["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"].map((m, i) => ({ label: m, value: (i + 1).toString().padStart(2, '0') }))]} value={selectedBirthdayMonth} onChange={setSelectedBirthdayMonth} />
+                <input type="number" placeholder="Exact Age..." value={selectedAge} onChange={(e) => setSelectedAge(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-teal-500/10 focus:bg-white transition-all" />
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-[9px] font-black text-blue-600 uppercase tracking-widest px-1">City</label>
@@ -852,6 +959,10 @@ const ReportsPage = () => {
               <div className="flex flex-col gap-1">
                 <label className="text-[9px] font-black text-blue-600 uppercase tracking-widest px-1">Status</label>
                 <Dropdown options={[{ label: "All Status", value: "all" }, { label: "Active", value: "active" }, { label: "Inactive", value: "inactive" }]} value={statusFilter} onChange={setStatusFilter} />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label className="text-[9px] font-black text-blue-600 uppercase tracking-widest px-1">Branch City Online</label>
+                <Dropdown options={[{ label: "All Bookings", value: "" }, { label: "Local Online Only", value: "local_online" }]} value={localOnlineFilter} onChange={setLocalOnlineFilter} />
               </div>
             </div>
 
@@ -879,20 +990,20 @@ const ReportsPage = () => {
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Language</label>
-                <Dropdown options={[{ label: "All", value: "" }, { label: "English", value: "en" }, { label: "Hindi", value: "hi" }]} value={selectedLanguage} onChange={setSelectedLanguage} />
+                <Dropdown options={[{ label: "All", value: "" }, { label: "English", value: "en" }, { label: "Hindi", value: "hi" }, { label: "Gujarati", value: "gu" }]} value={selectedLanguage} onChange={setSelectedLanguage} />
               </div>
             </div>
 
-            {/* Row 4: Search & Timeline (Wide Row) */}
+            {/* Row 4: Search, Timeline & Checklist Report */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
-              <div className="lg:col-span-5 flex flex-col gap-1">
+              <div className="lg:col-span-3 flex flex-col gap-1">
                 <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Global Patient Search</label>
                 <div className="relative">
                   <input type="text" placeholder="Name, mobile or ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-[40px] pl-10 pr-4 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all" />
                   <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                 </div>
               </div>
-              <div className="lg:col-span-7 flex flex-col gap-1">
+              <div className="lg:col-span-4 flex flex-col gap-1">
                 <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Timeline Scope</label>
                 <div className="flex items-center gap-3">
                   <div className="flex-1 relative">
@@ -904,22 +1015,79 @@ const ReportsPage = () => {
                   </div>
                 </div>
               </div>
+              <div className="lg:col-span-3 flex flex-col gap-1">
+                <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Daily Checklist Report</label>
+                <Dropdown 
+                  options={[
+                    { label: "Normal (Disabled)", value: "disabled" },
+                    { label: "Show Daily Checklist Data", value: "enabled" }
+                  ]} 
+                  value={checklistReportEnabled ? "enabled" : "disabled"} 
+                  onChange={(val) => {
+                    setChecklistReportEnabled(val === "enabled");
+                    if (val !== "enabled") {
+                      setFilterWater("");
+                      setFilterExercise("");
+                      setFilterJuice("");
+                      setFilterPranayama("");
+                      setFilterSleep("");
+                    }
+                  }} 
+                />
+              </div>
+              <div className="lg:col-span-2 flex flex-col gap-1">
+                <button
+                  type="button"
+                  onClick={resetAllFilters}
+                  title="Reset All Filters"
+                  className="w-full h-[40px] bg-gray-50 text-gray-600 border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm"
+                >
+                  <MdRefresh size={18} className="transition-transform group-hover:rotate-180" />
+                  <span>Reset</span>
+                </button>
+              </div>
             </div>
+
+            {/* Row 5: Dynamic Checklist Filters */}
+            {checklistReportEnabled && (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-3 pt-3 mt-3 border-t border-gray-100 border-dashed">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] font-black text-teal-600 uppercase tracking-widest px-1 flex items-center gap-1"><MdWaterDrop/> Water Intake</label>
+                  <input type="number" placeholder="Exact times..." value={filterWater} onChange={(e) => setFilterWater(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-teal-500/10 focus:bg-white transition-all" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] font-black text-orange-600 uppercase tracking-widest px-1 flex items-center gap-1"><MdFitnessCenter/> Exercise</label>
+                  <input type="number" placeholder="Exact mins..." value={filterExercise} onChange={(e) => setFilterExercise(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:bg-white transition-all" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] font-black text-emerald-600 uppercase tracking-widest px-1 flex items-center gap-1"><MdLocalDrink/> Green Juice</label>
+                  <input type="number" placeholder="Exact times..." value={filterJuice} onChange={(e) => setFilterJuice(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] font-black text-cyan-600 uppercase tracking-widest px-1 flex items-center gap-1"><MdSelfImprovement/> Pranayama</label>
+                  <input type="number" placeholder="Exact mins..." value={filterPranayama} onChange={(e) => setFilterPranayama(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:bg-white transition-all" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1 flex items-center gap-1"><MdBedtime/> Sleep Hours</label>
+                  <input type="number" placeholder="Exact hours..." value={filterSleep} onChange={(e) => setFilterSleep(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all" />
+                </div>
+              </div>
+            )}
           </div>
         </div>
-
 
       <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden min-h-[400px]">
         <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-gradient-to-r from-gray-50/50 to-transparent">
           <h2 className="font-black text-gray-900 flex items-center gap-3 text-lg">
             <div className={`p-2 rounded-xl bg-white shadow-sm border border-gray-50`}>
-              {reportType === 'users' && <MdPerson className="text-indigo-500" />}
-              {reportType === 'appointments' && <MdCalendarMonth className="text-blue-500" />}
-              {reportType === 'orders' && <MdShoppingCart className="text-green-500" />}
-              {reportType === 'video' && <MdVideoLibrary className="text-purple-500" />}
-              {reportType === 'reschedule' && <MdHistory className="text-amber-500" />}
+              {reportType === 'users' && !checklistReportEnabled && <MdPerson className="text-indigo-500" />}
+              {reportType === 'appointments' && !checklistReportEnabled && <MdCalendarMonth className="text-blue-500" />}
+              {reportType === 'orders' && !checklistReportEnabled && <MdShoppingCart className="text-green-500" />}
+              {reportType === 'video' && !checklistReportEnabled && <MdVideoLibrary className="text-purple-500" />}
+              {reportType === 'reschedule' && !checklistReportEnabled && <MdHistory className="text-amber-500" />}
+              {checklistReportEnabled && <MdSummarize className="text-teal-500" />}
             </div>
-            {reportOptions.find(o => o.value === reportType)?.label} Data
+            {checklistReportEnabled ? "Daily Checklist" : reportOptions.find(o => o.value === reportType)?.label} Data
           </h2>
           <div className="flex items-center gap-4">
             <span className="text-[10px] font-black text-gray-400 bg-gray-100/80 px-4 py-2 rounded-full uppercase tracking-widest border border-gray-50">
@@ -966,14 +1134,19 @@ const ReportsPage = () => {
                   <span className="opacity-50">Status:</span> {statusFilter}
                 </span>
               )}
+              {localOnlineFilter === "local_online" && (
+                <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold border border-blue-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                  <span className="opacity-50">Booking:</span> Local Online
+                </span>
+              )}
               {selectedGender && (
                 <span className="px-3 py-1 bg-pink-50 text-pink-600 rounded-full text-[10px] font-bold border border-pink-100/50 flex items-center gap-1.5 whitespace-nowrap">
                   <span className="opacity-50">Gender:</span> {selectedGender}
                 </span>
               )}
-              {selectedAgeRange && (
+              {selectedAge && (
                 <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-bold border border-indigo-100/50 flex items-center gap-1.5 whitespace-nowrap">
-                  <span className="opacity-50">Age:</span> {selectedAgeRange}
+                  <span className="opacity-50">Age:</span> {selectedAge}
                 </span>
               )}
               {selectedVideoWatchStatus && (

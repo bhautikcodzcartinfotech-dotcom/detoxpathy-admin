@@ -22,7 +22,8 @@ import {
   MdInventory,
   MdReceipt,
   MdTransferWithinAStation,
-  MdSummarize
+  MdSummarize,
+  MdReportProblem
 } from "react-icons/md";
 
 import { MdChevronLeft, MdChevronRight } from "react-icons/md";
@@ -309,6 +310,13 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
           >
             <FiMessageCircle size={20} />
             {!isCollapsed && <span>Quick Replies</span>}
+          </Link>
+          <Link
+            href="/component/complaints"
+            className={linkClasses("/component/complaints")}
+          >
+            <MdReportProblem size={20} />
+            {!isCollapsed && <span>Complaints</span>}
           </Link>
           {(role === "Admin" || (role === "subadmin" && permissions?.includes("show feedback page"))) && (
             <Link
