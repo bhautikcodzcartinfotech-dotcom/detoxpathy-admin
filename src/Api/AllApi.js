@@ -1736,6 +1736,36 @@ export const rejectBranchTimeRequest = async (requestId, adminComment = "") => {
   return res.data.data;
 };
 
+/* -------------------- EXPENSE APIs -------------------- */
+export const createExpense = async (payload) => {
+  const res = await axios.post(`${API_BASE}/admin/expense/create`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const getAllExpenses = async (params = {}) => {
+  const res = await axios.get(`${API_BASE}/admin/expense/get-all`, {
+    params,
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const deleteExpense = async (id) => {
+  const res = await axios.delete(`${API_BASE}/admin/expense/delete/${id}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+export const createAccount = async (payload) => {
+  const res = await axios.post(`${API_BASE}/admin/expense/create-account`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
 /* -------------------- COMPLAINT APIs -------------------- */
 export const addComplaint = async (payload) => {
   const res = await axios.post(`${API_BASE}/admin/complaint/add-complaint`, payload, {

@@ -242,6 +242,13 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
               {!isCollapsed && <span>Purchase Entry</span>}
             </Link>
             <Link
+              href="/component/inventory/expense-entry"
+              className={linkClasses("/component/inventory/expense-entry")}
+            >
+              <MdReceipt size={20} />
+              {!isCollapsed && <span>Expense Entry</span>}
+            </Link>
+            <Link
               href="/component/inventory/stock-transfer"
               className={linkClasses("/component/inventory/stock-transfer")}
             >
