@@ -157,6 +157,7 @@ const ReportsPage = () => {
     return `${year}-${month}-${day}`;
   });
   const [localOnlineFilter, setLocalOnlineFilter] = useState("");
+  const [rescheduleFilter, setRescheduleFilter] = useState(""); // "" (All) | "rescheduled" | "non_rescheduled"
   const [checklistReportEnabled, setChecklistReportEnabled] = useState(false);
 
   // Daily Checklist Specific Filters
@@ -520,6 +521,7 @@ const ReportsPage = () => {
         if (reportType === 'reschedule' && !["sub admin", "sub doctor"].includes(String(item.user?.adminType || "").toLowerCase())) return false;
         if (reportType === 'orders' || reportType === 'video' || reportType === 'screen') return false;
       } else if (viewType === "user") {
+        if (!user && reportType !== 'reschedule' && reportType !== 'appointments' && reportType !== 'orders') return false;
         if (!user && (reportType === 'users' || reportType === 'video' || reportType === 'screen')) return false;
         if (reportType === 'reschedule' && !user) return true;
       }
@@ -615,6 +617,12 @@ const ReportsPage = () => {
         if (!userCity) return false;
         const hasBranchInCity = allBranches.some(b => b.city && b.city.trim().toLowerCase() === userCity);
         if (!hasBranchInCity) return false;
+      }
+
+      if (reportType === 'appointments' && rescheduleFilter) {
+        const isAppRescheduled = !!item.isRescheduled;
+        if (rescheduleFilter === 'rescheduled' && !isAppRescheduled) return false;
+        if (rescheduleFilter === 'non_rescheduled' && isAppRescheduled) return false;
       }
 
       if (checklistReportEnabled) {
@@ -763,7 +771,6 @@ const ReportsPage = () => {
   const reportOptions = [
     { label: "All Users", value: "users" },
     { label: "Appointments", value: "appointments" },
-    { label: "Reschedule Appointments", value: "reschedule" },
     { label: "Orders", value: "orders" },
     { label: "User Video Watch", value: "video" },
     { label: "Screen Usage", value: "screen" },
@@ -981,6 +988,8 @@ const ReportsPage = () => {
                     <td className="px-6 py-4 font-bold text-gray-900 text-xs">#{item._id.slice(-6).toUpperCase()}</td>
                     <td className="px-6 py-4 font-semibold">{item.userId ? `${item.userId.name || ""} ${item.userId.surname || ""}` : "Deleted User"}</td>
                     <td className="px-6 py-4 text-gray-500">{item.userId?.mobileNumber || "N/A"}</td>
+                    <td className="px-6 py-4 font-semibold">{item.userId ? `${item.userId.name} ${item.userId.surname || ""}` : "Unknown Patient (Deleted)"}</td>
+                    <td className="px-6 py-4 text-gray-500">{item.userId?.mobileNumber || "N/A"}</td>
                     <td className="px-6 py-4 font-black text-gray-900">₹{item.totalAmount}</td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${item.orderStatus === "delivered" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
@@ -1121,7 +1130,16 @@ const ReportsPage = () => {
                         <span className="text-[10px] text-gray-400 uppercase">{item.startTime} - {item.endTime}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 capitalize font-bold text-xs">{item.status}</td>
+                    <td className="px-6 py-4 capitalize font-bold text-xs">
+                      <div className="flex flex-col gap-1">
+                        <span>{item.status}</span>
+                        {item.isRescheduled && (
+                          <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-600 text-[9px] font-black uppercase w-max tracking-tighter">
+                            Rescheduled
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${item.type === 1 ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"
                         }`}>
@@ -1173,6 +1191,7 @@ const ReportsPage = () => {
     setFilterPranayama("");
     setFilterSleep("");
     setLocalOnlineFilter("");
+    setRescheduleFilter("");
   };
 
   return (
@@ -1295,286 +1314,291 @@ const ReportsPage = () => {
         </div>
 
         {/* New Analytics Boxes - Row 2 */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
-          <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all hover:shadow-md">
-            <div className="absolute top-0 left-0 w-full h-1 bg-blue-400"></div>
-            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Avg Weight & Height</span>
-            <div className="mt-3 flex flex-col gap-1">
-              <div className="flex justify-between items-center">
-                <span className="text-xs font-bold text-gray-600">Weight</span>
-                <span className="text-lg font-black text-gray-900">{advancedStats.avgWeight} kg</span>
-              </div>
-              <div className="flex justify-between items-center text-[10px] text-gray-400 font-bold uppercase">
-                <span>High: {advancedStats.highestWeight}</span>
-                <span>Low: {advancedStats.lowestWeight}</span>
-              </div>
-              <div className="h-0.5 bg-gray-50 mt-1"></div>
-              <div className="flex justify-between items-center mt-1">
-                <span className="text-xs font-bold text-gray-600">Height</span>
-                <span className="text-lg font-black text-gray-900">{advancedStats.avgHeight} cm</span>
+        {reportType === "users" && !checklistReportEnabled && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
+            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all hover:shadow-md">
+              <div className="absolute top-0 left-0 w-full h-1 bg-blue-400"></div>
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Avg Weight & Height</span>
+              <div className="mt-3 flex flex-col gap-1">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs font-bold text-gray-600">Weight</span>
+                  <span className="text-lg font-black text-gray-900">{advancedStats.avgWeight} kg</span>
+                </div>
+                <div className="flex justify-between items-center text-[10px] text-gray-400 font-bold uppercase">
+                  <span>High: {advancedStats.highestWeight}</span>
+                  <span>Low: {advancedStats.lowestWeight}</span>
+                </div>
+                <div className="h-0.5 bg-gray-50 mt-1"></div>
+                <div className="flex justify-between items-center mt-1">
+                  <span className="text-xs font-bold text-gray-600">Height</span>
+                  <span className="text-lg font-black text-gray-900">{advancedStats.avgHeight} cm</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all hover:shadow-md">
-            <div className="absolute top-0 left-0 w-full h-1 bg-purple-400"></div>
-            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Ideal Weight & Geography</span>
-            <div className="mt-3 flex flex-col gap-2">
-              <div>
-                <span className="text-[10px] text-gray-400 font-bold uppercase block">Avg Ideal Weight</span>
-                <span className="text-xl font-black text-purple-600">{advancedStats.avgIdealWeight} kg</span>
-              </div>
-              <div>
-                <span className="text-[10px] text-gray-400 font-bold uppercase block">Top Booking State</span>
-                <span className="text-sm font-black text-gray-800 truncate">{advancedStats.topState}</span>
+            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all hover:shadow-md">
+              <div className="absolute top-0 left-0 w-full h-1 bg-purple-400"></div>
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Ideal Weight & Geography</span>
+              <div className="mt-3 flex flex-col gap-2">
+                <div>
+                  <span className="text-[10px] text-gray-400 font-bold uppercase block">Avg Ideal Weight</span>
+                  <span className="text-xl font-black text-purple-600">{advancedStats.avgIdealWeight} kg</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-gray-400 font-bold uppercase block">Top Booking State</span>
+                  <span className="text-sm font-black text-gray-800 truncate">{advancedStats.topState}</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all hover:shadow-md">
-            <div className="absolute top-0 left-0 w-full h-1 bg-amber-400"></div>
-            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Referral Performance</span>
-            <div className="mt-3 flex flex-col gap-2">
-              <div>
-                <span className="text-[10px] text-gray-400 font-bold uppercase block text-amber-600">Highest Source</span>
-                <span className="text-sm font-black text-gray-800 truncate">{advancedStats.refPerformance.highest}</span>
-              </div>
-              <div>
-                <span className="text-[10px] text-gray-400 font-bold uppercase block text-gray-400">Lowest Source</span>
-                <span className="text-sm font-black text-gray-600 truncate">{advancedStats.refPerformance.lowest}</span>
+            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all hover:shadow-md">
+              <div className="absolute top-0 left-0 w-full h-1 bg-amber-400"></div>
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Referral Performance</span>
+              <div className="mt-3 flex flex-col gap-2">
+                <div>
+                  <span className="text-[10px] text-gray-400 font-bold uppercase block text-amber-600">Highest Source</span>
+                  <span className="text-sm font-black text-gray-800 truncate">{advancedStats.refPerformance.highest}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-gray-400 font-bold uppercase block text-gray-400">Lowest Source</span>
+                  <span className="text-sm font-black text-gray-600 truncate">{advancedStats.refPerformance.lowest}</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all hover:shadow-md">
-            <div className="absolute top-0 left-0 w-full h-1 bg-rose-400"></div>
-            <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Engagement Overview</span>
-            <div className="mt-3 flex flex-col gap-2">
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] text-gray-400 font-bold uppercase">Video Viewers</span>
-                <span className="text-lg font-black text-rose-500">
-                  {filteredData.filter(item => {
-                    const u = checklistReportEnabled || reportType === 'appointments' || reportType === 'orders' ? item.userId : (reportType === 'reschedule' ? item.user : item);
-                    return u?.seeVideo;
-                  }).length}
-                </span>
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-[10px] text-gray-400 font-bold uppercase">Answered Qs</span>
-                <span className="text-lg font-black text-rose-500">
-                  {filteredData.filter(item => {
-                    const u = checklistReportEnabled || reportType === 'appointments' || reportType === 'orders' ? item.userId : (reportType === 'reschedule' ? item.user : item);
-                    return u?.giveAnswer;
-                  }).length}
-                </span>
+            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all hover:shadow-md">
+              <div className="absolute top-0 left-0 w-full h-1 bg-rose-400"></div>
+              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Engagement Overview</span>
+              <div className="mt-3 flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] text-gray-400 font-bold uppercase">Video Viewers</span>
+                  <span className="text-lg font-black text-rose-500">
+                    {filteredData.filter(item => {
+                      const u = checklistReportEnabled || reportType === 'appointments' || reportType === 'orders' ? item.userId : (reportType === 'reschedule' ? item.user : item);
+                      return u?.seeVideo;
+                    }).length}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-[10px] text-gray-400 font-bold uppercase">Answered Qs</span>
+                  <span className="text-lg font-black text-rose-500">
+                    {filteredData.filter(item => {
+                      const u = checklistReportEnabled || reportType === 'appointments' || reportType === 'orders' ? item.userId : (reportType === 'reschedule' ? item.user : item);
+                      return u?.giveAnswer;
+                    }).length}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-          </>
         )}
-        
-        {/* Ultra-Compact 6-Column Precision Grid */}
+        </>
+        )}        {/* Ultra-Compact 6-Column Precision Grid */}
         <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm relative overflow-visible">
           <div className="px-6 py-5 flex flex-col gap-5">
-            {viewType !== "highest_selling_products" && (
-              <>
-                {/* Row 1: Core & Identity */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-3">
-              <div className="flex flex-col gap-1">
-                <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Report</label>
-                <Dropdown options={reportOptions} value={reportType} onChange={(val) => { setReportType(val); setRawData([]); setSearchTerm(""); }} placeholder="Report" />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Branch</label>
-                <Dropdown options={[{ label: "All Branches", value: "" }, ...(allBranches || []).map(b => ({ label: b.name, value: b._id }))]} value={selectedBranchId} onChange={setSelectedBranchId} placeholder="Branch" />
-              </div>
-              {reportType !== "orders" && (
+            {reportType === "appointments" ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-x-6 gap-y-3 items-end">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Report</label>
+                  <Dropdown options={reportOptions} value={reportType} onChange={(val) => { setReportType(val); setRawData([]); setSearchTerm(""); }} placeholder="Report" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Branch</label>
+                  <Dropdown options={[{ label: "All Branches", value: "" }, ...(allBranches || []).map(b => ({ label: b.name, value: b._id }))]} value={selectedBranchId} onChange={setSelectedBranchId} placeholder="Branch" />
+                </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Doctor</label>
                   <Dropdown options={[{ label: "All Doctors", value: "" }, ...(allDoctors || []).filter(d => { const docBranches = Array.isArray(d.fullBranches) ? d.fullBranches : []; return !selectedBranchId || docBranches.some(b => String(b._id || b) === String(selectedBranchId)); }).map(d => ({ label: d.username || d.name || "Unknown", value: d._id }))]} value={selectedDoctorId} onChange={setSelectedDoctorId} placeholder="Doctor" />
                 </div>
-              )}
-              <div className="flex flex-col gap-1">
-                <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Plan</label>
-                <Dropdown options={[{ label: "All Plans", value: "" }, ...(allPlans || []).map(p => ({ label: p.name, value: p._id }))]} value={selectedPlanId} onChange={setSelectedPlanId} placeholder="Plan" />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[9px] font-black text-teal-600 uppercase tracking-widest px-1">Medical</label>
-                <Dropdown options={[{ label: "All Conditions", value: "" }, ...medicalConditions.map(m => ({ label: m.name, value: m.name }))]} value={selectedMedicalCondition} onChange={setSelectedMedicalCondition} placeholder="Condition" />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[9px] font-black text-teal-600 uppercase tracking-widest px-1">Gender</label>
-                <Dropdown options={[{ label: "All Genders", value: "" }, { label: "Male", value: "male" }, { label: "Female", value: "female" }]} value={selectedGender} onChange={setSelectedGender} />
-              </div>
-            </div>
-
-            {/* Row 2: Demographics & Geography */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-3">
-              <div className="flex flex-col gap-1">
-                <label className="text-[9px] font-black text-teal-600 uppercase tracking-widest px-1">Age</label>
-                <input type="number" placeholder="Exact Age..." value={selectedAge} onChange={(e) => setSelectedAge(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-teal-500/10 focus:bg-white transition-all" />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[9px] font-black text-blue-600 uppercase tracking-widest px-1">City</label>
-                <input type="text" placeholder="City..." value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:bg-white transition-all" />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[9px] font-black text-blue-600 uppercase tracking-widest px-1">State</label>
-                <input type="text" placeholder="State..." value={selectedState} onChange={(e) => setSelectedState(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:bg-white transition-all" />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[9px] font-black text-blue-600 uppercase tracking-widest px-1">Source</label>
-                <Dropdown options={appReferenceOptions} value={selectedAppReference} onChange={setSelectedAppReference} />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[9px] font-black text-blue-600 uppercase tracking-widest px-1">Status</label>
-                <Dropdown options={[{ label: "All Status", value: "all" }, { label: "Active", value: "active" }, { label: "Inactive", value: "inactive" }]} value={statusFilter} onChange={setStatusFilter} />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[9px] font-black text-blue-600 uppercase tracking-widest px-1">Branch City Online</label>
-                <Dropdown options={[{ label: "All Bookings", value: "" }, { label: "Local Online Only", value: "local_online" }]} value={localOnlineFilter} onChange={setLocalOnlineFilter} />
-              </div>
-            </div>
-
-            {/* Row 3: Engagement & Metrics */}
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-3">
-              {reportType === "appointments" ? (
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Appoint. Status</label>
+                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Appoint. Type</label>
+                  <Dropdown options={[{ label: "All Types", value: "" }, { label: "Online", value: "1" }, { label: "Offline", value: "2" }]} value={selectedConsultingType} onChange={setSelectedConsultingType} />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] font-black text-amber-600 uppercase tracking-widest px-1">Reschedule</label>
                   <Dropdown
                     options={[
-                      { label: "All Status", value: "" },
-                      { label: "Scheduled", value: "scheduled" },
-                      { label: "Cancelled", value: "cancelled" }
+                      { label: "All", value: "" },
+                      { label: "Rescheduled Only", value: "rescheduled" },
+                      { label: "Not Rescheduled", value: "non_rescheduled" }
                     ]}
-                    value={selectedAppointmentStatus}
-                    onChange={setSelectedAppointmentStatus}
+                    value={rescheduleFilter}
+                    onChange={setRescheduleFilter}
                   />
                 </div>
-              ) : reportType === "screen" ? (
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Screen Date</label>
-                  <input
-                    type="date"
-                    value={screenDateFilter}
-                    onChange={(e) => setScreenDateFilter(e.target.value)}
-                    className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-violet-500/10 focus:bg-white transition-all"
-                  />
+                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Global Patient Search</label>
+                  <div className="relative">
+                    <input type="text" placeholder="Name, mobile or ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-[40px] pl-10 pr-4 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all" />
+                    <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                  </div>
                 </div>
-              ) : (
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Video Watch</label>
-                  <Dropdown options={[{ label: "All", value: "" }, { label: "Watched", value: "watched" }, { label: "Not Watched", value: "not_watched" }]} value={selectedVideoWatchStatus} onChange={setSelectedVideoWatchStatus} />
+                  <button
+                    type="button"
+                    onClick={resetAllFilters}
+                    title="Reset All Filters"
+                    className="w-full h-[40px] bg-gray-50 text-gray-600 border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm"
+                  >
+                    <MdRefresh size={18} className="transition-transform group-hover:rotate-180" />
+                    <span>Reset</span>
+                  </button>
                 </div>
-              )}
-              <div className="flex flex-col gap-1">
-                <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Video Lang.</label>
-                <Dropdown options={[{ label: "All Lang", value: "" }, { label: "English", value: "en" }, { label: "Hindi", value: "hi" }, { label: "Gujarati", value: "gu" }]} value={selectedVideoLanguage} onChange={setSelectedVideoLanguage} />
               </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Appoint. Type</label>
-                <Dropdown options={[{ label: "All Types", value: "" }, { label: "Online", value: "1" }, { label: "Offline", value: "2" }]} value={selectedConsultingType} onChange={setSelectedConsultingType} />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Body Stats</label>
-                <Dropdown options={[{ label: "Show All", value: "" }, { label: "With Data", value: "with" }, { label: "Missing Data", value: "skip" }]} value={skipBodyMeasurement} onChange={setSkipBodyMeasurement} />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Ans Status</label>
-                <Dropdown options={[{ label: "All", value: "" }, { label: "Passed", value: "passed" }, { label: "Failed", value: "failed" }]} value={selectedResultStatus} onChange={setSelectedResultStatus} />
-              </div>
-              <div className="flex flex-col gap-1">
-                <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Language</label>
-                <Dropdown options={[{ label: "All", value: "" }, { label: "English", value: "en" }, { label: "Hindi", value: "hi" }, { label: "Gujarati", value: "gu" }]} value={selectedLanguage} onChange={setSelectedLanguage} />
-              </div>
-            </div>
+            ) : (
+              <>
+                {/* Row 1: Core & Identity */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Report</label>
+                    <Dropdown options={reportOptions} value={reportType} onChange={(val) => { setReportType(val); setRawData([]); setSearchTerm(""); }} placeholder="Report" />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Branch</label>
+                    <Dropdown options={[{ label: "All Branches", value: "" }, ...(allBranches || []).map(b => ({ label: b.name, value: b._id }))]} value={selectedBranchId} onChange={setSelectedBranchId} placeholder="Branch" />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Doctor</label>
+                    <Dropdown options={[{ label: "All Doctors", value: "" }, ...(allDoctors || []).filter(d => { const docBranches = Array.isArray(d.fullBranches) ? d.fullBranches : []; return !selectedBranchId || docBranches.some(b => String(b._id || b) === String(selectedBranchId)); }).map(d => ({ label: d.username || d.name || "Unknown", value: d._id }))]} value={selectedDoctorId} onChange={setSelectedDoctorId} placeholder="Doctor" />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Plan</label>
+                    <Dropdown options={[{ label: "All Plans", value: "" }, ...(allPlans || []).map(p => ({ label: p.name, value: p._id }))]} value={selectedPlanId} onChange={setSelectedPlanId} placeholder="Plan" />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-black text-teal-600 uppercase tracking-widest px-1">Medical</label>
+                    <Dropdown options={[{ label: "All Conditions", value: "" }, ...medicalConditions.map(m => ({ label: m.name, value: m.name }))]} value={selectedMedicalCondition} onChange={setSelectedMedicalCondition} placeholder="Condition" />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-black text-teal-600 uppercase tracking-widest px-1">Gender</label>
+                    <Dropdown options={[{ label: "All Genders", value: "" }, { label: "Male", value: "male" }, { label: "Female", value: "female" }]} value={selectedGender} onChange={setSelectedGender} />
+                  </div>
+                </div>
+
+                {/* Row 2: Demographics & Geography */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-black text-teal-600 uppercase tracking-widest px-1">Age</label>
+                    <input type="number" placeholder="Exact Age..." value={selectedAge} onChange={(e) => setSelectedAge(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-teal-500/10 focus:bg-white transition-all" />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-black text-blue-600 uppercase tracking-widest px-1">City</label>
+                    <input type="text" placeholder="City..." value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:bg-white transition-all" />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-black text-blue-600 uppercase tracking-widest px-1">State</label>
+                    <input type="text" placeholder="State..." value={selectedState} onChange={(e) => setSelectedState(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:bg-white transition-all" />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-black text-blue-600 uppercase tracking-widest px-1">Source</label>
+                    <Dropdown options={appReferenceOptions} value={selectedAppReference} onChange={setSelectedAppReference} />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-black text-blue-600 uppercase tracking-widest px-1">Status</label>
+                    <Dropdown options={[{ label: "All Status", value: "all" }, { label: "Active", value: "active" }, { label: "Inactive", value: "inactive" }]} value={statusFilter} onChange={setStatusFilter} />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-black text-blue-600 uppercase tracking-widest px-1">Branch City Online</label>
+                    <Dropdown options={[{ label: "All Bookings", value: "" }, { label: "Local Online Only", value: "local_online" }]} value={localOnlineFilter} onChange={setLocalOnlineFilter} />
+                  </div>
+                </div>
+
+                {/* Row 3: Engagement & Metrics */}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-3">
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Video Watch</label>
+                    <Dropdown options={[{ label: "All", value: "" }, { label: "Watched", value: "watched" }, { label: "Not Watched", value: "not_watched" }]} value={selectedVideoWatchStatus} onChange={setSelectedVideoWatchStatus} />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Video Lang.</label>
+                    <Dropdown options={[{ label: "All Lang", value: "" }, { label: "English", value: "en" }, { label: "Hindi", value: "hi" }, { label: "Gujarati", value: "gu" }]} value={selectedVideoLanguage} onChange={setSelectedVideoLanguage} />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Appoint. Type</label>
+                    <Dropdown options={[{ label: "All Types", value: "" }, { label: "Online", value: "1" }, { label: "Offline", value: "2" }]} value={selectedConsultingType} onChange={setSelectedConsultingType} />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Body Stats</label>
+                    <Dropdown options={[{ label: "Show All", value: "" }, { label: "With Data", value: "with" }, { label: "Missing Data", value: "skip" }]} value={skipBodyMeasurement} onChange={setSkipBodyMeasurement} />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Ans Status</label>
+                    <Dropdown options={[{ label: "All", value: "" }, { label: "Passed", value: "passed" }, { label: "Failed", value: "failed" }]} value={selectedResultStatus} onChange={setSelectedResultStatus} />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Language</label>
+                    <Dropdown options={[{ label: "All", value: "" }, { label: "English", value: "en" }, { label: "Hindi", value: "hi" }, { label: "Gujarati", value: "gu" }]} value={selectedLanguage} onChange={setSelectedLanguage} />
+                  </div>
+                  {reportType === "appointments" && (
+                    <div className="flex flex-col gap-1">
+                      <label className="text-[9px] font-black text-amber-600 uppercase tracking-widest px-1">Reschedule Appointments</label>
+                      <Dropdown
+                        options={[
+                          { label: "All", value: "" },
+                          { label: "Reschedule", value: "rescheduled" }
+                        ]}
+                        value={rescheduleFilter}
+                        onChange={setRescheduleFilter}
+                      />
+                    </div>
+                  )}
+                </div>
+
+                {/* Row 4: Search, Timeline & Checklist Report */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
+                  <div className="lg:col-span-3 flex flex-col gap-1">
+                    <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Global Patient Search</label>
+                    <div className="relative">
+                      <input type="text" placeholder="Name, mobile or ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-[40px] pl-10 pr-4 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all" />
+                      <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                    </div>
+                  </div>
+                  <div className="lg:col-span-4 flex flex-col gap-1">
+                    <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Timeline Scope</label>
+                    <div className="flex items-center gap-3">
+                      <div className="flex-1 relative">
+                        <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-[10px] font-bold focus:outline-none focus:bg-white transition-all" />
+                      </div>
+                      <span className="text-gray-300 font-bold text-[10px] uppercase">To</span>
+                      <div className="flex-1 relative">
+                        <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-[10px] font-bold focus:outline-none focus:bg-white transition-all" />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="lg:col-span-3 flex flex-col gap-1">
+                    <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Daily Checklist Report</label>
+                    <Dropdown
+                      options={[
+                        { label: "Normal (Disabled)", value: "disabled" },
+                        { label: "Show Daily Checklist Data", value: "enabled" }
+                      ]}
+                      value={checklistReportEnabled ? "enabled" : "disabled"}
+                      onChange={(val) => {
+                        setChecklistReportEnabled(val === "enabled");
+                        if (val !== "enabled") {
+                          setFilterWater("");
+                          setFilterExercise("");
+                          setFilterJuice("");
+                          setFilterPranayama("");
+                          setFilterSleep("");
+                        }
+                      }}
+                    />
+                  </div>
+                  <div className="lg:col-span-2 flex flex-col gap-1">
+                    <button
+                      type="button"
+                      onClick={resetAllFilters}
+                      title="Reset All Filters"
+                      className="w-full h-[40px] bg-gray-50 text-gray-600 border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm"
+                    >
+                      <MdRefresh size={18} className="transition-transform group-hover:rotate-180" />
+                      <span>Reset</span>
+                    </button>
+                  </div>
+                </div>
               </>
             )}
-
-            {/* Row 4: Search, Timeline & Checklist Report */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
-              <div className="lg:col-span-3 flex flex-col gap-1">
-                <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Global Search..</label>
-                <div className="relative">
-                  <input type="text" placeholder="Name, mobile or ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-[40px] pl-10 pr-4 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all" />
-                  <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
-                </div>
-              </div>
-              <div className={viewType === "highest_selling_products" ? "lg:col-span-3 flex flex-col gap-1" : "lg:col-span-4 flex flex-col gap-1"}>
-                <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Timeline Scope</label>
-                <div className="flex items-center gap-3">
-                  <div className="flex-1 relative">
-                    <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-[10px] font-bold focus:outline-none focus:bg-white transition-all" />
-                  </div>
-                  <span className="text-gray-300 font-bold text-[10px] uppercase">To</span>
-                  <div className="flex-1 relative">
-                    <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-[10px] font-bold focus:outline-none focus:bg-white transition-all" />
-                  </div>
-                </div>
-              </div>
-              {viewType === "highest_selling_products" ? (
-                <>
-                  <div className="lg:col-span-2 flex flex-col gap-1">
-                    <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Branch</label>
-                    <Dropdown
-                      options={[
-                        { label: "All Branches", value: "" },
-                        ...(allBranches || []).map(b => ({ label: b.name, value: b._id }))
-                      ]}
-                      value={selectedBranchId}
-                      onChange={setSelectedBranchId}
-                      placeholder="Branch"
-                    />
-                  </div>
-                  <div className="lg:col-span-2 flex flex-col gap-1">
-                    <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Item Type</label>
-                    <Dropdown
-                      options={[
-                        { label: "All", value: "all" },
-                        { label: "Products", value: "Product" },
-                        { label: "Plans", value: "Plan" }
-                      ]}
-                      value={itemTypeFilter}
-                      onChange={setItemTypeFilter}
-                      placeholder="Item Type"
-                    />
-                  </div>
-                </>
-              ) : (
-                <div className="lg:col-span-3 flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Daily Checklist Report</label>
-                  <Dropdown
-                    options={[
-                      { label: "Normal (Disabled)", value: "disabled" },
-                      { label: "Show Daily Checklist Data", value: "enabled" }
-                    ]}
-                    value={checklistReportEnabled ? "enabled" : "disabled"}
-                    onChange={(val) => {
-                      setChecklistReportEnabled(val === "enabled");
-                      if (val !== "enabled") {
-                        setFilterWater("");
-                        setFilterExercise("");
-                        setFilterJuice("");
-                        setFilterPranayama("");
-                        setFilterSleep("");
-                      }
-                    }}
-                  />
-                </div>
-              )}
-              <div className="lg:col-span-2 flex flex-col gap-1">
-                <button
-                  type="button"
-                  onClick={resetAllFilters}
-                  title="Reset All Filters"
-                  className="w-full h-[40px] bg-gray-50 text-gray-600 border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm"
-                >
-                  <MdRefresh size={18} className="transition-transform group-hover:rotate-180" />
-                  <span>Reset</span>
-                </button>
-              </div>
-            </div>
 
             {/* Row 5: Dynamic Checklist Filters */}
             {checklistReportEnabled && (
@@ -1676,6 +1700,11 @@ const ReportsPage = () => {
                     <span className="opacity-50">Booking:</span> Local Online
                   </span>
                 )}
+                {rescheduleFilter && (
+                  <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-[10px] font-bold border border-amber-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="opacity-50">Reschedule:</span> Reschedule
+                  </span>
+                )}
                 {selectedGender && (
                   <span className="px-3 py-1 bg-pink-50 text-pink-600 rounded-full text-[10px] font-bold border border-pink-100/50 flex items-center gap-1.5 whitespace-nowrap">
                     <span className="opacity-50">Gender:</span> {selectedGender}
@@ -1714,10 +1743,10 @@ const ReportsPage = () => {
               </div>
             </div>
             {renderTable()}
-            
-            {/* Standard Pagination UI matching other pages */}
-            {totalPages > 1 && (
-              <div className="mt-8 mb-4 flex justify-center items-center gap-4">
+
+            {/* Pagination Controls like Order Page type */}
+            {filteredData.length > 20 && (
+              <div className="mt-8 flex justify-center items-center gap-4 py-6 bg-white rounded-b-[2rem] border-t border-gray-50">
                 <Button
                   variant="secondary"
                   disabled={currentPage === 1 || loading}
@@ -1726,12 +1755,12 @@ const ReportsPage = () => {
                   Previous
                 </Button>
                 <span className="text-sm font-bold text-gray-700">
-                  Page {currentPage} of {totalPages}
+                  Page {currentPage} of {Math.ceil(filteredData.length / 20)}
                 </span>
                 <Button
                   variant="secondary"
-                  disabled={currentPage === totalPages || loading}
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  disabled={currentPage === Math.ceil(filteredData.length / 20) || loading}
+                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, Math.ceil(filteredData.length / 20)))}
                 >
                   Next
                 </Button>
