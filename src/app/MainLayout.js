@@ -174,16 +174,20 @@ export default function MainLayout({ children }) {
   // For protected routes, wrap with AuthGuard
   return (
     <AuthGuard>
-      <div className="flex min-h-screen bg-[#F5F5F5]">
+      <div className="flex min-h-screen bg-[#F5F5F5] overflow-x-hidden">
         <Sidebar isCollapsed={isCollapsed} setIsCollapsed={setIsCollapsed} />
         <div
-          className="flex-1 flex flex-col transition-all duration-300"
-          style={{ marginLeft: isCollapsed ? "64px" : "256px" }}
+          className="flex-1 flex flex-col transition-all duration-300 min-w-0 overflow-x-hidden"
+          style={{
+            marginLeft: isCollapsed ? "64px" : "256px",
+            width: isCollapsed ? "calc(100vw - 64px)" : "calc(100vw - 256px)",
+            maxWidth: isCollapsed ? "calc(100vw - 64px)" : "calc(100vw - 256px)"
+          }}
         >
           <div className="p-4">
             <Navbar />
           </div>
-          <main className="p-4 flex-1">{children}</main>
+          <main className="p-4 flex-1 min-w-0 overflow-x-hidden">{children}</main>
         </div>
       </div>
       

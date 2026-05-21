@@ -69,7 +69,7 @@ const ProductTable = ({ items, loading, onEdit, onDelete, currency = "₹" }) =>
 
   if (!items || items.length === 0) {
     return (
-      <div className="overflow-x-auto shadow-md rounded-2xl border border-gray-200 bg-white">
+      <div className="w-full overflow-x-auto shadow-md rounded-2xl border border-gray-200 bg-white">
         <NotFoundCard
           title="No Products"
           subtitle="Create a product to get started."
@@ -80,32 +80,32 @@ const ProductTable = ({ items, loading, onEdit, onDelete, currency = "₹" }) =>
 
   return (
     <>
-      <div className="overflow-x-auto shadow-md rounded-2xl border border-gray-200 bg-white">
+      <div className="w-full overflow-x-auto shadow-md rounded-2xl border border-gray-200 bg-white">
         <table className="min-w-full table-auto divide-y divide-gray-200">
-          <thead className="bg-gradient-to-r from-yellow-400 to-amber-300">
+          <thead className="bg-linear-to-r from-yellow-400 to-amber-300">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th className="px-3 py-2.5 lg:px-4 lg:py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Product
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th className="hidden md:table-cell px-3 py-2.5 lg:px-4 lg:py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Description
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th className="px-3 py-2.5 lg:px-4 lg:py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Base Price
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th className="px-3 py-2.5 lg:px-4 lg:py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Discounted Price
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th className="hidden sm:table-cell px-3 py-2.5 lg:px-4 lg:py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Bulk Discount (%)
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th className="px-3 py-2.5 lg:px-4 lg:py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Images
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th className="hidden lg:table-cell px-3 py-2.5 lg:px-4 lg:py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Created
               </th>
-              <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th className="px-3 py-2.5 lg:px-4 lg:py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -116,32 +116,32 @@ const ProductTable = ({ items, loading, onEdit, onDelete, currency = "₹" }) =>
                 key={product._id}
                 className="hover:bg-yellow-50 transition-all duration-200 cursor-pointer"
               >
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-3 py-3 lg:px-4 whitespace-normal text-xs lg:text-sm">
                   <div className="font-semibold text-gray-800">
                     {product.name}
                   </div>
                 </td>
-                <td className="px-6 py-4">
-                  <div className="text-gray-600 text-sm">
+                <td className="hidden md:table-cell px-3 py-3 lg:px-4 whitespace-normal text-xs lg:text-sm">
+                  <div className="text-gray-600">
                     {truncateText(product.description)}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-3 py-3 lg:px-4 whitespace-nowrap text-xs lg:text-sm">
                   <div className="font-medium text-gray-800">
                     {formatPrice(product.basePrice)}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-3 py-3 lg:px-4 whitespace-nowrap text-xs lg:text-sm">
                   <div className="font-medium text-green-600">
                     {formatPrice(product.discountedPrice)}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="hidden sm:table-cell px-3 py-3 lg:px-4 whitespace-nowrap text-xs lg:text-sm">
                   <div className="font-medium text-blue-600">
                     {product.bulkDiscount}%
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-3 py-3 lg:px-4 whitespace-nowrap text-xs lg:text-sm">
                   <div className="flex items-center">
                     {product.images && product.images.length > 0 ? (
                       <div className="flex items-center">
@@ -160,16 +160,16 @@ const ProductTable = ({ items, loading, onEdit, onDelete, currency = "₹" }) =>
                         )}
                       </div>
                     ) : (
-                      <span className="text-gray-400 text-sm">No image</span>
+                      <span className="text-gray-400">No image</span>
                     )}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-xs text-gray-500">
+                <td className="hidden lg:table-cell px-3 py-3 lg:px-4 whitespace-nowrap text-xs lg:text-sm">
+                  <div className="text-gray-500">
                     {formatDate(product.createdAt)}
                   </div>
                 </td>
-                <td className="px-6 py-4 text-center space-x-2">
+                <td className="px-3 py-3 lg:px-4 text-center space-x-1 lg:space-x-2 text-xs lg:text-sm">
                   <ActionButton type="edit" onClick={() => onEdit(product)} />
                   <ActionButton
                     type="delete"

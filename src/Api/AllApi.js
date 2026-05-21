@@ -1796,5 +1796,11 @@ export const getDailyChecklists = async (params = {}) => {
   });
   return res.data.data;
 };
-
-
+/* -------------------- SCREEN USAGE APIs -------------------- */
+export const getScreenUsages = async (params = {}) => {
+  const res = await axios.get(`${API_BASE}/admin/screenUsage/getAll`, {
+    params,
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+}

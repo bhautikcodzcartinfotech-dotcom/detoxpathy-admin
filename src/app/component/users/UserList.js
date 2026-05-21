@@ -144,7 +144,7 @@ const UserList = ({ users, loading, onEdit, onDelete, onBulkDelete, onSuggest })
 
   if (!users || users.length === 0) {
     return (
-      <div className="overflow-x-auto shadow-md rounded-2xl border border-gray-200 bg-white">
+      <div className="w-full overflow-x-auto shadow-md rounded-2xl border border-gray-200 bg-white">
         <NotFoundCard
           title="No Users Found"
           subtitle="No users match your search criteria. Try adjusting your search or create a new user."
@@ -155,7 +155,7 @@ const UserList = ({ users, loading, onEdit, onDelete, onBulkDelete, onSuggest })
 
   return (
     <>
-      <div className="overflow-x-auto shadow-xl shadow-teal-900/5 rounded-2xl border border-gray-100 bg-white h-full">
+      <div className="w-full overflow-x-auto shadow-xl shadow-teal-900/5 rounded-2xl border border-gray-100 bg-white h-full">
         {selectedIds.size > 0 && (
           <div className="flex items-center justify-between px-4 py-3 border-b border-teal-100 bg-teal-50/30">
             <p className="text-sm text-teal-800 font-semibold">
@@ -173,7 +173,7 @@ const UserList = ({ users, loading, onEdit, onDelete, onBulkDelete, onSuggest })
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gradient-to-r from-yellow-400 to-amber-300">
             <tr>
-              <th className="px-4 py-3 text-left">
+              <th className="px-2 py-3 lg:px-3 text-left">
                 <ThemedCheckbox
                   checked={
                     selectedIds.size ===
@@ -185,25 +185,25 @@ const UserList = ({ users, loading, onEdit, onDelete, onBulkDelete, onSuggest })
                 />
               </th>
 
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th className="px-2 py-3 lg:px-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Name
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th className="px-2 py-3 lg:px-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Mobile
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th className="hidden md:table-cell px-2 py-3 lg:px-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 GSTIN
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th className="hidden sm:table-cell px-2 py-3 lg:px-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Branch
               </th>
-              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th className="hidden sm:table-cell px-2 py-3 lg:px-4 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Plan
               </th>
-              <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th className="px-2 py-3 lg:px-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Plan Status
               </th>
-              <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th className="px-2 py-3 lg:px-4 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Actions
               </th>
             </tr>
@@ -243,7 +243,7 @@ const UserList = ({ users, loading, onEdit, onDelete, onBulkDelete, onSuggest })
                   className={`relative hover:bg-yellow-50 transition-all duration-200 cursor-pointer ${isDeleted ? "bg-red-50" : ""
                     }`}
                 >
-                  <td className="px-4 py-4">
+                  <td className="px-2 py-3 lg:px-3">
                     <ThemedCheckbox
                       checked={selectedIds.has(u._id)}
                       onChange={() => toggleOne(u._id)}
@@ -252,30 +252,30 @@ const UserList = ({ users, loading, onEdit, onDelete, onBulkDelete, onSuggest })
                     />
                   </td>
 
-                  <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-800">
+                  <td className="px-2 py-3 lg:px-4 whitespace-normal text-xs lg:text-sm font-semibold text-gray-800">
                     {u.name}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                  <td className="px-2 py-3 lg:px-4 whitespace-nowrap text-xs lg:text-sm text-gray-700">
                     {u.mobilePrefix} {u.mobileNumber}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                  <td className="hidden md:table-cell px-2 py-3 lg:px-4 whitespace-nowrap text-xs lg:text-sm text-gray-700">
                     {u.gstin || "-"}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                  <td className="hidden sm:table-cell px-2 py-3 lg:px-4 whitespace-normal text-xs lg:text-sm text-gray-700">
                     {u.branch?.name || u.branch || "-"}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                  <td className="hidden sm:table-cell px-2 py-3 lg:px-4 whitespace-normal text-xs lg:text-sm text-gray-700">
                     {u.plan?.name ? `${u.plan.name} (₹${u.plan.price || 0})` : u.plan || "-"}
                   </td>
-                  <td className="px-6 py-4 text-center">
+                  <td className="px-2 py-3 lg:px-4 text-center text-xs lg:text-sm">
                     <span
                       className={`inline-flex px-3 py-1 rounded-full text-xs font-semibold ${planStatus.color}`}
                     >
                       {planStatus.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center justify-center gap-2">
+                  <td className="px-2 py-3 lg:px-4 text-xs lg:text-sm">
+                    <div className="flex items-center justify-center gap-1.5 lg:gap-2">
                       <ActionButton
                         type="suggest"
                         onClick={() => onSuggest(u)}
