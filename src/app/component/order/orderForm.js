@@ -15,6 +15,8 @@ const OrderForm = ({ onCancel, onSuccess }) => {
   const [selectedPlans, setSelectedPlans] = useState([]); // [{planId, name, price}]
   const [currency, setCurrency] = useState("₹");
   const [paymentMethod, setPaymentMethod] = useState("Offline");
+  const [onlineAmount, setOnlineAmount] = useState("");
+  const [offlineAmount, setOfflineAmount] = useState("");
   const [shippingAddress, setShippingAddress] = useState({
     name: "",
     mobile: "",
@@ -108,19 +110,46 @@ const OrderForm = ({ onCancel, onSuccess }) => {
     if (!selectedUser) return toast.error("Please select a user");
     if (selectedProducts.length === 0 && selectedPlans.length === 0) return toast.error("Please add at least one product or a plan");
 
+    const onlinePay = paymentMethod === "Split" ? Number(onlineAmount) || 0 : 0;
+    const offlinePay = paymentMethod === "Split" ? Number(offlineAmount) || 0 : 0;
+
+    if (paymentMethod === "Split") {
+      if (Math.abs(onlinePay + offlinePay - totalAmount) > 0.02) {
+        return toast.error(`Online + Offline must equal total (${currency}${totalAmount.toLocaleString()})`);
+      }
+      if (onlinePay <= 0 && offlinePay <= 0) {
+        return toast.error("Enter online and/or offline amounts for split payment");
+      }
+    }
+
     try {
       setLoading(true);
       const payload = {
         userId: selectedUser,
         products: selectedProducts.map(({ productId, quantity }) => ({ productId, quantity })),
         plans: selectedPlans.map(p => p.planId),
-        type: paymentMethod === "Online" ? 1 : 2,
+        type: paymentMethod === "Offline" ? 2 : 1,
         shippingAddress: shippingAddress.name ? shippingAddress : undefined,
-        paymentMethod: paymentMethod === "Online" ? 'Razorpay' : 'Offline'
+        paymentMethod:
+          paymentMethod === "Online"
+            ? "Razorpay"
+            : paymentMethod === "Split"
+              ? "Split"
+              : "Offline",
       };
+
+      if (paymentMethod === "Split") {
+        payload.onlineAmount = onlinePay;
+        payload.offlineAmount = offlinePay;
+      }
+
       const res = await createOrder(payload);
 
-      if (paymentMethod === "Online") {
+      const needsRazorpay =
+        paymentMethod === "Online" ||
+        (paymentMethod === "Split" && onlinePay > 0);
+
+      if (needsRazorpay) {
         const { order, razorpayOrder, razorpayKey } = res;
 
         const options = {
@@ -177,7 +206,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
     } catch (err) {
       toast.error(err?.response?.data?.error || err?.response?.data?.message || "Failed to create order");
     } finally {
-      if (paymentMethod === "Offline") {
+      if (paymentMethod === "Offline" || (paymentMethod === "Split" && !(Number(onlineAmount) > 0))) {
         setLoading(false);
       }
     }
@@ -247,11 +276,61 @@ const OrderForm = ({ onCancel, onSuccess }) => {
         placeholder="-- Select Payment Method --"
         options={[
           { value: "Offline", label: "Offline" },
-          { value: "Online", label: "Online" }
+          { value: "Online", label: "Online" },
+          { value: "Split", label: "Hybrid" },
         ]}
         value={paymentMethod}
-        onChange={(val) => setPaymentMethod(val)}
+        onChange={(val) => {
+          setPaymentMethod(val);
+          if (val !== "Split") {
+            setOnlineAmount("");
+            setOfflineAmount("");
+          }
+        }}
       />
+
+      {paymentMethod === "Split" && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 bg-[#134D41]/5 rounded-xl border border-[#134D41]/20">
+          <div>
+            <label className="block mb-1 text-sm font-semibold text-gray-700">
+              Online Amount ({currency}) *
+            </label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={onlineAmount}
+              onChange={(e) => setOnlineAmount(e.target.value)}
+              placeholder="e.g. 75"
+              className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            />
+          </div>
+          <div>
+            <label className="block mb-1 text-sm font-semibold text-gray-700">
+              Offline Amount ({currency}) *
+            </label>
+            <input
+              type="number"
+              min="0"
+              step="0.01"
+              value={offlineAmount}
+              onChange={(e) => setOfflineAmount(e.target.value)}
+              placeholder="e.g. 25"
+              className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400"
+            />
+          </div>
+          {totalAmount > 0 && (
+            <p className="sm:col-span-2 text-xs text-gray-600">
+              Order total: <span className="font-bold text-[#134D41]">{currency}{totalAmount.toLocaleString()}</span>
+              {onlineAmount !== "" && offlineAmount !== "" && (
+                <span className="ml-2">
+                  (Online + Offline = {currency}{(Number(onlineAmount) + Number(offlineAmount)).toLocaleString()})
+                </span>
+              )}
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Selected Products & Plans List */}
       <div className="space-y-2">
@@ -331,10 +410,18 @@ const OrderForm = ({ onCancel, onSuccess }) => {
           />
           <input
             type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={10}
             placeholder="Mobile Number"
             className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400"
             value={shippingAddress.mobile}
-            onChange={(e) => setShippingAddress({ ...shippingAddress, mobile: e.target.value })}
+            onChange={(e) => {
+              const onlyDigits = e.target.value.replace(/\D/g, "");
+              if (onlyDigits.length <= 10) {
+                setShippingAddress({ ...shippingAddress, mobile: onlyDigits });
+              }
+            }}
           />
         </div>
 

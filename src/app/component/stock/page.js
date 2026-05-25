@@ -199,12 +199,12 @@ const StockManagementPage = () => {
                       <input type="file" className="hidden" accept=".pdf" onChange={handleFileUpload} disabled={loading} />
                       <span>+ Upload PDF</span>
                     </label>
-                    <button 
+                    {/* <button 
                       onClick={handleAddProduct}
                       className="bg-gradient-to-r from-yellow-400 to-amber-500 text-white font-black text-[10px] uppercase tracking-widest flex items-center gap-1.5 px-4 py-2 rounded-xl shadow-lg shadow-yellow-200 transition-all hover:from-yellow-500 hover:to-amber-600 active:scale-95"
                     >
                       + Add Product
-                    </button>
+                    </button> */}
                   </>
                 )}
               </div>

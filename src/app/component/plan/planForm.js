@@ -13,7 +13,14 @@ const PlanForm = ({
   title = "Plan",
 }) => {
   const [currency, setCurrency] = useState("₹");
-  const [form, setForm] = useState({ name: "", description: "", days: "", price: "", bulkDiscount: "", notificationDays: [] });
+  const [form, setForm] = useState({
+    name: "",
+    description: "",
+    days: "",
+    price: "",
+    bulkDiscount: "",
+    notificationDays: [],
+  });
   const [errors, setErrors] = useState({});
 
   useEffect(() => {
@@ -49,16 +56,30 @@ const PlanForm = ({
         notificationDays: initialData.notificationDays || [],
       });
     } else {
-      setForm({ name: "", description: "", days: "", price: "", bulkDiscount: "", notificationDays: [] });
+      setForm({
+        name: "",
+        description: "",
+        days: "",
+        price: "",
+        bulkDiscount: "",
+        notificationDays: [],
+      });
     }
     setErrors({});
   }, [initialData]);
 
   const validate = () => {
-    const required = (label) => (v) => !v ? `${label} is required` : null;
+    const required = (label) => (v) => (!v ? `${label} is required` : null);
     const positiveNumberRule = (label) => (v) => {
-      // Allow 0 for price if it's not strictly required to be > 0, but usually we want some validation
-      if (v === undefined || v === null || v === "") return `${label} is required`;
+      if (v === undefined || v === null || v === "")
+        return `${label} is required`;
+      const num = Number(v);
+      if (isNaN(num)) return `${label} must be a valid number`;
+      if (num < 0) return `${label} cannot be negative`;
+      return null;
+    };
+    const optionalNonNegativeNumber = (label) => (v) => {
+      if (v === undefined || v === null || v === "") return null;
       const num = Number(v);
       if (isNaN(num)) return `${label} must be a valid number`;
       if (num < 0) return `${label} cannot be negative`;
@@ -72,7 +93,10 @@ const PlanForm = ({
       },
       days: { value: form.days, rules: [positiveNumberRule("Days")] },
       price: { value: form.price, rules: [positiveNumberRule("Price")] },
-      bulkDiscount: { value: form.bulkDiscount, rules: [positiveNumberRule("Bulk Discount")] },
+      bulkDiscount: {
+        value: form.bulkDiscount,
+        rules: [optionalNonNegativeNumber("Bulk Discount")],
+      },
     });
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -81,12 +105,13 @@ const PlanForm = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
-    await onSubmit({ 
-      ...form, 
+    await onSubmit({
+      ...form,
       days: Number(form.days),
       price: Number(form.price),
-      bulkDiscount: Number(form.bulkDiscount),
-      notificationDays: form.notificationDays
+      bulkDiscount:
+        form.bulkDiscount === "" ? 0 : Number(form.bulkDiscount),
+      notificationDays: form.notificationDays,
     });
   };
 
@@ -129,7 +154,9 @@ const PlanForm = ({
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
-          <label className="block mb-1 font-semibold text-gray-700">Days *</label>
+          <label className="block mb-1 font-semibold text-gray-700">
+            Days *
+          </label>
           <input
             type="number"
             value={form.days}
@@ -148,43 +175,60 @@ const PlanForm = ({
           )}
         </div>
 
-       <div className="col-span-full">
-         <label className="block mb-2 font-bold text-gray-800 text-sm">
-           Select which days trigger an appointment reminder (24 hours before each):
-         </label>
-         <div className="bg-[#e9f5f2] p-6 rounded-[20px] border border-[#d1e9e3] shadow-sm">
-           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-y-6 gap-x-4">
-             {Array.from({ length: Number(form.days) || 0 }, (_, i) => i + 1).map(day => (
-               <label key={day} className="flex items-start gap-3 cursor-pointer group">
-                 <div className="relative flex items-center">
-                   <input
-                     type="checkbox"
-                     checked={form.notificationDays?.includes(day)}
-                     onChange={(e) => {
-                       const checked = e.target.checked;
-                       const newDays = checked 
-                         ? [...(form.notificationDays || []), day].sort((a, b) => a - b)
-                         : (form.notificationDays || []).filter(d => d !== day);
-                       setForm({ ...form, notificationDays: newDays });
-                     }}
-                     className="w-5 h-5 border-2 border-gray-300 rounded bg-white checked:bg-green-600 checked:border-green-600 focus:ring-green-500 transition-all cursor-pointer"
-                   />
-                 </div>
-                 <div className="flex flex-col -mt-1">
-                   {/* <span className="text-[15px] font-semibold text-gray-600 group-hover:text-green-700 transition-colors">Day</span> */}
-                   <span className="text-[15px] font-bold text-gray-800 group-hover:text-green-700 transition-colors">{day}</span>
-                 </div>
-               </label>
-             ))}
-           </div>
-           {(Number(form.days) || 0) === 0 && (
-             <p className="text-sm text-gray-500 italic text-center py-4">Enter plan days above to configure reminders</p>
-           )}
-         </div>
-       </div>
+        <div className="col-span-full">
+          <label className="block mb-2 font-bold text-gray-800 text-sm">
+            Select which days trigger an appointment reminder (24 hours before
+            each):
+          </label>
+          <div className="bg-[#e9f5f2] p-6 rounded-[20px] border border-[#d1e9e3] shadow-sm">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-y-6 gap-x-4">
+              {Array.from(
+                { length: Number(form.days) || 0 },
+                (_, i) => i + 1,
+              ).map((day) => (
+                <label
+                  key={day}
+                  className="flex items-start gap-3 cursor-pointer group"
+                >
+                  <div className="relative flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={form.notificationDays?.includes(day)}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        const newDays = checked
+                          ? [...(form.notificationDays || []), day].sort(
+                              (a, b) => a - b,
+                            )
+                          : (form.notificationDays || []).filter(
+                              (d) => d !== day,
+                            );
+                        setForm({ ...form, notificationDays: newDays });
+                      }}
+                      className="w-5 h-5 border-2 border-gray-300 rounded bg-white checked:bg-green-600 checked:border-green-600 focus:ring-green-500 transition-all cursor-pointer"
+                    />
+                  </div>
+                  <div className="flex flex-col -mt-1">
+                    {/* <span className="text-[15px] font-semibold text-gray-600 group-hover:text-green-700 transition-colors">Day</span> */}
+                    <span className="text-[15px] font-bold text-gray-800 group-hover:text-green-700 transition-colors">
+                      {day}
+                    </span>
+                  </div>
+                </label>
+              ))}
+            </div>
+            {(Number(form.days) || 0) === 0 && (
+              <p className="text-sm text-gray-500 italic text-center py-4">
+                Enter plan days above to configure reminders
+              </p>
+            )}
+          </div>
+        </div>
 
         <div>
-          <label className="block mb-1 font-semibold text-gray-700">Price ({currency}) *</label>
+          <label className="block mb-1 font-semibold text-gray-700">
+            Price ({currency}) *
+          </label>
           <input
             type="number"
             value={form.price}
@@ -205,15 +249,19 @@ const PlanForm = ({
       </div>
 
       <div>
-        <label className="block mb-1 font-semibold text-gray-700">Bulk Discount (%) *</label>
+        <label className="block mb-1 font-semibold text-gray-700">
+          Bulk Discount (%) (optional)
+        </label>
         <input
           type="number"
           value={form.bulkDiscount}
           onChange={(e) => {
             const value = e.target.value;
-            if (value === "" || (!isNaN(value) && Number(value) >= 0)) {
-              setForm((f) => ({ ...f, bulkDiscount: value }));
-            }
+
+            setForm((f) => ({
+              ...f,
+              bulkDiscount: value === "" ? "" : Number(value),
+            }));
           }}
           className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
           placeholder="e.g. 10"

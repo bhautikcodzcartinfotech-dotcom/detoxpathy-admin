@@ -108,7 +108,13 @@ const ExpenseEntry = () => {
 
   // Accounts filtering
   const expenseAccounts = accounts.filter(acc => acc.type === "Expense");
-  const assetAccounts = accounts.filter(acc => acc.type === "Asset");
+  const assetAccounts = accounts.filter(
+    (acc) =>
+      acc.type === "Asset" &&
+      !/^Customer:/i.test(acc.name || "") &&
+      !/^CUSTOMER_/i.test(acc.code || "") &&
+      !/^USER_/i.test(acc.code || "")
+  );
 
   const handleSubmit = async (e) => {
     e.preventDefault();

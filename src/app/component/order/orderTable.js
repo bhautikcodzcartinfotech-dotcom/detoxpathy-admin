@@ -116,13 +116,27 @@ const OrderTable = ({ items, loading, onRefresh, selectedIds = [], onToggleSelec
               </td>
 
               <td className="px-4 py-5 whitespace-nowrap">
-                <span className={`px-2.5 py-1 rounded text-[11px] font-bold ${order.type === 2 ? "bg-gray-100 text-gray-500" : "bg-blue-100 text-blue-600"}`}>
-                  {order.type === 2 ? "Branch" : "Online"}
+                <span
+                  className={`px-2.5 py-1 rounded text-[11px] font-bold ${
+                    order.paymentMethod === "Split"
+                      ? "bg-blue-100 text-blue-600"
+                      : order.type === 2
+                        ? "bg-gray-100 text-gray-500"
+                        : "bg-blue-100 text-blue-600"
+                  }`}
+                >
+                  {order.paymentMethod === "Split"
+                    ? "Hybrid"
+                    : order.type === 2
+                      ? "Branch"
+                      : "Online"}
                 </span>
               </td>
 
               <td className="px-4 py-5 whitespace-nowrap text-[13px] text-gray-500">
-                {order.paymentMethod || "Razorpay"}
+                {order.paymentMethod === "Split"
+                  ? "Hybrid"
+                  : order.paymentMethod || "Razorpay"}
               </td>
 
               <td className="px-4 py-5 whitespace-nowrap text-[13px] text-gray-500">

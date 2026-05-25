@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import {
     getComplaints,
@@ -9,25 +9,52 @@ import {
     deleteComplaint
 } from "@/Api/AllApi";
 import { toast } from "react-hot-toast";
-import { FiTrash2 } from "react-icons/fi";
+import { FiTrash2, FiCheck } from "react-icons/fi";
+import Dropdown from "@/utils/dropdown";
+import ConfirmationDialog from "@/components/ConfirmationDialog";
 
-export default function ComplaintsPage() {
-    const { role, user, branches } = useAuth();
+const NOTE_STATUS_KEY = "detoxpathy_note_statuses";
+
+const loadNoteStatuses = () => {
+    if (typeof window === "undefined") return {};
+    try {
+        return JSON.parse(localStorage.getItem(NOTE_STATUS_KEY) || "{}");
+    } catch {
+        return {};
+    }
+};
+
+const saveNoteStatuses = (map) => {
+    if (typeof window === "undefined") return;
+    localStorage.setItem(NOTE_STATUS_KEY, JSON.stringify(map));
+};
+
+const getNoteStatus = (id, statusMap) =>
+    statusMap[id] === "completed" ? "completed" : "pending";
+
+export default function NotesPage() {
+    const { role, branches } = useAuth();
     const isDoctor = role === "subadmin";
     const isAdmin = role === "Admin";
 
     const [complaints, setComplaints] = useState([]);
+    const [statusMap, setStatusMap] = useState({});
     const [loading, setLoading] = useState(true);
+    const [statusFilter, setStatusFilter] = useState("all");
 
-    // Form states for adding complaint
     const [userId, setUserId] = useState("");
     const [complaintText, setComplaintText] = useState("");
     const [usersList, setUsersList] = useState([]);
     const [submitting, setSubmitting] = useState(false);
 
-    // States for custom searchable dropdown
     const [searchQuery, setSearchQuery] = useState("");
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+
+    const [deleteDialog, setDeleteDialog] = useState({
+        isOpen: false,
+        itemId: null,
+        itemName: "",
+    });
 
     const filteredUsers = (usersList || []).filter((u) => {
         if (!u) return false;
@@ -38,6 +65,7 @@ export default function ComplaintsPage() {
     });
 
     useEffect(() => {
+        setStatusMap(loadNoteStatuses());
         fetchComplaints();
         if (isDoctor) {
             fetchUsers();
@@ -48,13 +76,9 @@ export default function ComplaintsPage() {
         try {
             setLoading(true);
             const data = await getComplaints();
-            // Admins see all. Doctors could see all or maybe only theirs, 
-            // but the API currently returns all complaints. 
-            // We filter them on frontend for doctors just to be safe, 
-            // or let them see all if intended. Assuming API provides all.
             setComplaints(data || []);
         } catch (error) {
-            toast.error("Failed to fetch complaints");
+            toast.error("Failed to fetch notes");
             console.error(error);
         } finally {
             setLoading(false);
@@ -65,7 +89,6 @@ export default function ComplaintsPage() {
         try {
             let userData = [];
             if (isDoctor) {
-                // Doctors only see users from their assigned branches
                 const branchIds = Array.isArray(branches) ? branches : [];
                 if (branchIds.length > 0) {
                     const chunks = await Promise.all(
@@ -84,71 +107,142 @@ export default function ComplaintsPage() {
         }
     };
 
-    const handleDelete = async (id) => {
-        if (!window.confirm("Are you sure you want to delete this complaint?")) {
-            return;
-        }
+    const markAsCompleted = (id) => {
+        const next = { ...statusMap, [id]: "completed" };
+        setStatusMap(next);
+        saveNoteStatuses(next);
+        toast.success("Marked as completed");
+    };
 
+    const handleDelete = async (id) => {
         try {
             await deleteComplaint(id);
-            toast.success("Complaint deleted successfully");
+            const next = { ...statusMap };
+            delete next[id];
+            setStatusMap(next);
+            saveNoteStatuses(next);
+            toast.success("Note deleted successfully");
             fetchComplaints();
         } catch (error) {
-            console.error("Failed to delete complaint:", error);
-            const errMsg = error?.response?.data?.message || error?.message || "Failed to delete complaint";
+            console.error("Failed to delete note:", error);
+            const errMsg = error?.response?.data?.message || error?.message || "Failed to delete note";
             toast.error(`Error: ${errMsg}`);
         }
     };
 
     const handleAddComplaint = async (e) => {
         e.preventDefault();
-        if (!userId || !complaintText) {
-            toast.error("Please fill all fields");
+        if (!complaintText.trim()) {
+            toast.error("Please enter note details");
             return;
         }
 
         try {
             setSubmitting(true);
-            await addComplaint({ userId, complaint: complaintText });
-            toast.success("Complaint submitted successfully");
+            const payload = { complaint: complaintText.trim() };
+            if (userId) payload.userId = userId;
+            await addComplaint(payload);
+            toast.success("Note submitted successfully");
             setUserId("");
             setComplaintText("");
             setSearchQuery("");
             fetchComplaints();
         } catch (error) {
-            console.error("COMPLAINT ERROR:", error);
-            const errMsg = error?.response?.data?.message || error?.message || "Failed to submit complaint";
+            console.error("NOTE ERROR:", error);
+            const errMsg = error?.response?.data?.message || error?.message || "Failed to submit note";
             toast.error(`Error: ${errMsg}`);
         } finally {
             setSubmitting(false);
         }
     };
 
+    const complaintsWithStatus = useMemo(
+        () =>
+            (complaints || []).map((c) => ({
+                ...c,
+                noteStatus: getNoteStatus(c._id, statusMap),
+            })),
+        [complaints, statusMap]
+    );
+
+    const filteredComplaints = useMemo(() => {
+        if (statusFilter === "all") return complaintsWithStatus;
+        return complaintsWithStatus.filter((c) => c.noteStatus === statusFilter);
+    }, [complaintsWithStatus, statusFilter]);
+
+    const statusFilterOptions = [
+        { label: "All Notes", value: "all" },
+        { label: "Pending Notes", value: "pending" },
+        { label: "Completed Notes", value: "completed" },
+    ];
+
+    const handleDeleteClick = (id, userName) => {
+        setDeleteDialog({
+            isOpen: true,
+            itemId: id,
+            itemName: userName || "this note",
+        });
+    };
+
+    const handleDeleteConfirm = async () => {
+        if (deleteDialog.itemId) {
+            await handleDelete(deleteDialog.itemId);
+        }
+        setDeleteDialog({ isOpen: false, itemId: null, itemName: "" });
+    };
+
+    const handleDeleteCancel = () => {
+        setDeleteDialog({ isOpen: false, itemId: null, itemName: "" });
+    };
+
     return (
         <div className="p-6">
-            <h1 className="text-2xl font-bold text-[#134D41] mb-6">Complaints</h1>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                <h1 className="text-2xl font-bold text-[#134D41]">Notes</h1>
+                <div className="w-full sm:w-64">
+                    <Dropdown
+                        label="Filter"
+                        options={statusFilterOptions}
+                        value={statusFilter}
+                        onChange={setStatusFilter}
+                        placeholder="All Notes"
+                        labelClassName="text-gray-700"
+                    />
+                </div>
+            </div>
 
             {isDoctor && (
                 <div className="bg-white rounded-xl shadow-md p-6 mb-8 border border-gray-100">
-                    <h2 className="text-lg font-semibold text-gray-800 mb-4">Submit a New Complaint</h2>
+                    <h2 className="text-lg font-semibold text-gray-800 mb-4">Submit a New Note</h2>
                     <form onSubmit={handleAddComplaint} className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                Note Details *
+                            </label>
+                            <textarea
+                                value={complaintText}
+                                onChange={(e) => setComplaintText(e.target.value)}
+                                rows={4}
+                                placeholder="Write your note..."
+                                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:border-[#134D41] focus:ring-1 focus:ring-[#134D41] outline-none resize-none"
+                                required
+                            />
+                        </div>
                         <div className="relative">
                             <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Select User
+                                Select User <span className="text-gray-400 font-normal">(optional)</span>
                             </label>
-                            
-                            {/* Selected user / Input Display */}
-                            <div 
+                            <div
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                                 className="w-full px-4 py-2 rounded-lg border border-gray-200 focus-within:border-[#134D41] focus-within:ring-1 focus-within:ring-[#134D41] outline-none bg-white cursor-pointer flex justify-between items-center transition-all"
                             >
                                 <input
                                     type="text"
-                                    placeholder="Search and select user..."
+                                    placeholder="Search and select user (optional)..."
                                     value={searchQuery}
                                     onChange={(e) => {
                                         setSearchQuery(e.target.value);
-                                        setUserId(""); // Reset selected user ID while typing to search
+                                        setUserId("");
                                         setIsDropdownOpen(true);
                                     }}
                                     onClick={(e) => {
@@ -162,15 +256,13 @@ export default function ComplaintsPage() {
                                 </span>
                             </div>
 
-                            {/* Dropdown Backdrop to close on click outside */}
                             {isDropdownOpen && (
-                                <div 
-                                    className="fixed inset-0 z-40 bg-transparent" 
+                                <div
+                                    className="fixed inset-0 z-40 bg-transparent"
                                     onClick={() => setIsDropdownOpen(false)}
                                 />
                             )}
 
-                            {/* Dropdown List */}
                             {isDropdownOpen && (
                                 <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-y-auto divide-y divide-gray-50">
                                     {filteredUsers.length === 0 ? (
@@ -186,7 +278,7 @@ export default function ComplaintsPage() {
                                                     setSearchQuery(`${u.name || "Unnamed"} (${u.mobileNumber || "No Phone"})`);
                                                     setIsDropdownOpen(false);
                                                 }}
-                                                className={`px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors flex justify-between items-center ${userId === u._id ? 'bg-[#134D41]/5 text-[#134D41] font-semibold' : ''}`}
+                                                className={`px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors flex justify-between items-center ${userId === u._id ? "bg-[#134D41]/5 text-[#134D41] font-semibold" : ""}`}
                                             >
                                                 <span>{u.name || "Unnamed"}</span>
                                                 <span className="text-xs text-gray-400">{u.mobileNumber || "No Phone"}</span>
@@ -196,26 +288,13 @@ export default function ComplaintsPage() {
                                 </div>
                             )}
                         </div>
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                Complaint Details
-                            </label>
-                            <textarea
-                                value={complaintText}
-                                onChange={(e) => setComplaintText(e.target.value)}
-                                rows={4}
-                                placeholder="Describe the complaint regarding the user..."
-                                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:border-[#134D41] focus:ring-1 focus:ring-[#134D41] outline-none resize-none"
-                                required
-                            />
-                        </div>
                         <div className="flex justify-end">
                             <button
                                 type="submit"
                                 disabled={submitting}
                                 className="px-6 py-2 bg-[#134D41] text-white rounded-lg hover:bg-[#134D41]/90 transition-colors disabled:opacity-50"
                             >
-                                {submitting ? "Submitting..." : "Submit Complaint"}
+                                {submitting ? "Submitting..." : "Submit Note"}
                             </button>
                         </div>
                     </form>
@@ -225,13 +304,13 @@ export default function ComplaintsPage() {
             <div className="bg-white rounded-xl shadow-md border border-gray-100 overflow-hidden">
                 <div className="p-4 border-b border-gray-100">
                     <h2 className="text-lg font-semibold text-gray-800">
-                        {isAdmin ? "All Complaints" : "Complaint History"}
+                        {isAdmin ? "All Notes" : "Note History"}
                     </h2>
                 </div>
                 {loading ? (
-                    <div className="p-8 text-center text-gray-500">Loading complaints...</div>
-                ) : complaints.length === 0 ? (
-                    <div className="p-8 text-center text-gray-500">No complaints found.</div>
+                    <div className="p-8 text-center text-gray-500">Loading notes...</div>
+                ) : filteredComplaints.length === 0 ? (
+                    <div className="p-8 text-center text-gray-500">No notes found.</div>
                 ) : (
                     <div className="overflow-x-auto">
                         <table className="w-full text-left text-sm">
@@ -239,19 +318,20 @@ export default function ComplaintsPage() {
                                 <tr>
                                     <th className="px-6 py-4 font-medium">User Name</th>
                                     <th className="px-6 py-4 font-medium">User Mobile</th>
-                                    <th className="px-6 py-4 font-medium">Complaint</th>
+                                    <th className="px-6 py-4 font-medium">Note</th>
                                     <th className="px-6 py-4 font-medium">Date</th>
-                                    {isAdmin && <th className="px-6 py-4 font-medium">Action</th>}
+                                    <th className="px-6 py-4 font-medium">Status</th>
+                                    <th className="px-6 py-4 font-medium text-center">Action</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 text-gray-800">
-                                {complaints.map((c) => (
+                                {filteredComplaints.map((c) => (
                                     <tr key={c._id} className="hover:bg-gray-50/50">
                                         <td className="px-6 py-4 font-medium">
-                                            {c.userId && typeof c.userId === 'object' ? c.userId.name : 'Unknown User'}
+                                            {c.userId && typeof c.userId === "object" ? c.userId.name : "—"}
                                         </td>
                                         <td className="px-6 py-4 text-gray-600">
-                                            {c.userId && typeof c.userId === 'object' ? c.userId.mobileNumber : '-'}
+                                            {c.userId && typeof c.userId === "object" ? c.userId.mobileNumber : "—"}
                                         </td>
                                         <td className="px-6 py-4 max-w-md truncate" title={c.complaint}>
                                             {c.complaint}
@@ -259,17 +339,48 @@ export default function ComplaintsPage() {
                                         <td className="px-6 py-4 whitespace-nowrap text-gray-500">
                                             {new Date(c.createdAt).toLocaleDateString()}
                                         </td>
-                                        {isAdmin && (
-                                            <td className="px-6 py-4 whitespace-nowrap">
-                                                <button
-                                                    onClick={() => handleDelete(c._id)}
-                                                    className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors inline-flex items-center justify-center"
-                                                    title="Delete Complaint"
-                                                >
-                                                    <FiTrash2 size={18} />
-                                                </button>
-                                            </td>
-                                        )}
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <span
+                                                className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold ${
+                                                    c.noteStatus === "completed"
+                                                        ? "bg-green-100 text-green-700"
+                                                        : "bg-amber-100 text-amber-700"
+                                                }`}
+                                            >
+                                                {c.noteStatus === "completed" ? "Completed" : "Pending"}
+                                            </span>
+                                        </td>
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="flex items-center justify-center gap-2">
+                                                {c.noteStatus !== "completed" && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => markAsCompleted(c._id)}
+                                                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors inline-flex items-center justify-center border border-green-100"
+                                                        title="Mark as completed"
+                                                    >
+                                                        <FiCheck size={18} />
+                                                    </button>
+                                                )}
+                                                {isAdmin && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            handleDeleteClick(
+                                                                c._id,
+                                                                c.userId && typeof c.userId === "object"
+                                                                    ? c.userId.name
+                                                                    : "Note"
+                                                            )
+                                                        }
+                                                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors inline-flex items-center justify-center border border-red-100"
+                                                        title="Delete Note"
+                                                    >
+                                                        <FiTrash2 size={18} />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </td>
                                     </tr>
                                 ))}
                             </tbody>
@@ -277,6 +388,17 @@ export default function ComplaintsPage() {
                     </div>
                 )}
             </div>
+
+            <ConfirmationDialog
+                isOpen={deleteDialog.isOpen}
+                onClose={handleDeleteCancel}
+                onConfirm={handleDeleteConfirm}
+                title="Delete Note"
+                message={`Are you sure you want to delete note for "${deleteDialog.itemName}"? This action cannot be undone.`}
+                confirmText="Delete"
+                cancelText="Cancel"
+                type="danger"
+            />
         </div>
     );
 }

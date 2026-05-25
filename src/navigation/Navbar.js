@@ -6,11 +6,31 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useAuth } from "../contexts/AuthContext";
 
+const getRoleDisplayLabel = (user, role) => {
+  const adminType = String(user?.adminType || "").trim();
+  const adminTypeLower = adminType.toLowerCase();
+
+  if (role === "Admin" || adminTypeLower === "admin") return "Super Admin";
+
+  if (adminTypeLower === "sub admin" || adminTypeLower === "sub doctor") {
+    return "Doctor";
+  }
+
+  if (adminTypeLower.includes("account")) return "Accounted";
+
+  if (adminType) {
+    return adminType;
+  }
+
+  return "User";
+};
+
 const Navbar = () => {
   const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
   const router = useRouter();
   const { logout, user, role } = useAuth();
+  const roleLabel = getRoleDisplayLabel(user, role);
 
   // close dropdown when clicked outside
   useEffect(() => {
@@ -37,8 +57,13 @@ const Navbar = () => {
         <span className="absolute left-0 -bottom-1 w-0 h-0.5 bg-gradient-to-r from-yellow-400 to-orange-500 transition-all duration-300 group-hover:w-full"></span>
       </h2>
 
-      {/* User Dropdown */}
-      <div className="relative" ref={dropdownRef}>
+      <div className="flex items-center gap-4">
+        <span className="text-sm font-bold text-[#134D41] tracking-wide hidden sm:inline">
+          {roleLabel}
+        </span>
+
+        {/* User Dropdown */}
+        <div className="relative" ref={dropdownRef}>
         <button
           onClick={() => setOpen(!open)}
           className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-tr from-yellow-200 to-yellow-400 hover:from-yellow-300 hover:to-yellow-500 transition-colors duration-300 text-gray-800 shadow-md"
@@ -89,6 +114,7 @@ const Navbar = () => {
             </ul>
           </div>
         )}
+        </div>
       </div>
     </header>
   );

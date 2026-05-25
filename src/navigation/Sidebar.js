@@ -323,7 +323,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
             className={linkClasses("/component/complaints")}
           >
             <MdReportProblem size={20} />
-            {!isCollapsed && <span>Complaints</span>}
+            {!isCollapsed && <span>Notes</span>}
           </Link>
           {(role === "Admin" || (role === "subadmin" && permissions?.includes("show feedback page"))) && (
             <Link

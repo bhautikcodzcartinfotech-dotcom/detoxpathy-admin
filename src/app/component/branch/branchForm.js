@@ -1,7 +1,23 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import TimeButton from "@/utils/timebutton";
 import { validateForm, validateEmail } from "@/utils/validation";
+import Dropdown from "@/utils/dropdown";
+import { State, City } from "country-state-city";
+
+const INDIAN_STATES = State.getStatesOfCountry("IN");
+
+const findIndianState = (stateName) => {
+  const normalized = (stateName || "").trim().toLowerCase();
+  if (!normalized) return null;
+  return (
+    INDIAN_STATES.find((s) => s.name.toLowerCase() === normalized) ||
+    INDIAN_STATES.find((s) => s.name.toLowerCase().includes(normalized))
+  );
+};
+
+const fieldInputClass =
+  "w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition disabled:bg-gray-50 disabled:cursor-not-allowed";
 
 const BranchForm = ({
   onSubmit,
@@ -66,7 +82,7 @@ const BranchForm = ({
   }, [initialValues]);
 
   const validate = () => {
-    const required = (label) => (v) => !v ? `${label} is required.` : null;
+    const required = (label) => (v) => (!v ? `${label} is required.` : null);
     const numberRule = (label) => (v) => {
       if (!v) return null; // Allow empty for optional fields
       const num = Number(v);
@@ -137,11 +153,26 @@ const BranchForm = ({
     await onSubmit(form);
   };
 
+  const matchedState = useMemo(
+    () => findIndianState(form.state),
+    [form.state],
+  );
+
+  const cityOptions = useMemo(() => {
+    if (!matchedState) return [];
+    return City.getCitiesOfState("IN", matchedState.isoCode).map((city) => ({
+      label: city.name,
+      value: city.name,
+    }));
+  }, [matchedState]);
+
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
-          <label className="block mb-1 font-semibold text-gray-700">Name *</label>
+          <label className="block mb-1 font-semibold text-gray-700">
+            Name *
+          </label>
           <input
             type="text"
             value={form.name}
@@ -168,9 +199,7 @@ const BranchForm = ({
       </div>
 
       <div>
-        <label className="block mb-1 font-semibold text-gray-700">
-          GSTIN
-        </label>
+        <label className="block mb-1 font-semibold text-gray-700">GSTIN</label>
         <input
           type="text"
           value={form.gstin}
@@ -195,13 +224,19 @@ const BranchForm = ({
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <div>
-          <label className="block mb-1 font-semibold text-gray-700">City *</label>
-          <input
-            type="text"
+          <Dropdown
+            label="City *"
+            options={cityOptions}
             value={form.city}
-            onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}
-            className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
-            placeholder="City"
+            onChange={(val) => setForm((f) => ({ ...f, city: val }))}
+            disabled={!matchedState}
+            showSearch
+            placeholder={
+              matchedState ? "Search and select city" : "Enter state first"
+            }
+            labelClassName="font-semibold text-gray-700"
+            menuMaxHeight="min(70vh, 480px)"
+            menuMinWidth="min(100vw - 3rem, 20rem)"
           />
           {errors.city && (
             <p className="text-red-500 text-sm mt-1">{errors.city}</p>
@@ -214,12 +249,24 @@ const BranchForm = ({
           <input
             type="text"
             value={form.state}
-            onChange={(e) => setForm((f) => ({ ...f, state: e.target.value }))}
-            className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
-            placeholder="State"
+            onChange={(e) =>
+              setForm((f) => ({
+                ...f,
+                state: e.target.value,
+                city: "",
+              }))
+            }
+            className={fieldInputClass}
+            placeholder="e.g. Gujarat"
+            autoComplete="off"
           />
           {errors.state && (
             <p className="text-red-500 text-sm mt-1">{errors.state}</p>
+          )}
+          {form.state.trim() && !matchedState && (
+            <p className="text-amber-600 text-xs mt-1">
+              Type a valid Indian state name (e.g. Gujarat) to load cities.
+            </p>
           )}
         </div>
         <div>
@@ -331,43 +378,43 @@ const BranchForm = ({
         </div>
       </div>
 
-        <div className="flex flex-wrap items-center gap-6">
-          <div className="flex items-center gap-3">
-            <label className="block mb-1 font-semibold text-gray-700">
-              isFranchise
-            </label>
-            <input
-              type="checkbox"
-              checked={form.isFranchise}
-              onChange={(e) => {
-                const checked = e.target.checked;
-                setForm((f) => ({
-                  ...f,
-                  isFranchise: checked,
-                }));
-              }}
-              className="w-5 h-5 text-yellow-500 rounded border-gray-300 focus:ring-yellow-500 focus:ring-2"
-            />
-          </div>
-
-          <div className="flex items-center gap-3">
-            <label className="block mb-1 font-semibold text-gray-700">
-              isMainBranch
-            </label>
-            <input
-              type="checkbox"
-              checked={form.isMainBranch}
-              onChange={(e) => {
-                const checked = e.target.checked;
-                setForm((f) => ({
-                  ...f,
-                  isMainBranch: checked,
-                }));
-              }}
-              className="w-5 h-5 text-green-500 rounded border-gray-300 focus:ring-green-500 focus:ring-2"
-            />
-          </div>
+      <div className="flex flex-wrap items-center gap-6">
+        <div className="flex items-center gap-3">
+          <label className="block mb-1 font-semibold text-gray-700">
+            isFranchise
+          </label>
+          <input
+            type="checkbox"
+            checked={form.isFranchise}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setForm((f) => ({
+                ...f,
+                isFranchise: checked,
+              }));
+            }}
+            className="w-5 h-5 text-yellow-500 rounded border-gray-300 focus:ring-yellow-500 focus:ring-2"
+          />
         </div>
+
+        <div className="flex items-center gap-3">
+          <label className="block mb-1 font-semibold text-gray-700">
+            isMainBranch
+          </label>
+          <input
+            type="checkbox"
+            checked={form.isMainBranch}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              setForm((f) => ({
+                ...f,
+                isMainBranch: checked,
+              }));
+            }}
+            className="w-5 h-5 text-green-500 rounded border-gray-300 focus:ring-green-500 focus:ring-2"
+          />
+        </div>
+      </div>
 
       <div className="flex justify-end gap-3 mt-6">
         <button

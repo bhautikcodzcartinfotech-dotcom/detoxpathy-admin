@@ -87,6 +87,7 @@ const ProductForm = ({
     const required = (label) => (v) => !v ? `${label} is required.` : null;
     const number = (label) => (v) => (v !== "" && v !== null && v !== undefined) && isNaN(Number(v)) ? `${label} must be a number.` : null;
     const positive = (label) => (v) => (v !== "" && v !== null && v !== undefined) && Number(v) <= 0 ? `${label} must be positive.` : null;
+    const nonNegative = (label) => (v) => (v !== "" && v !== null && v !== undefined) && Number(v) < 0 ? `${label} cannot be negative.` : null;
 
     const errs = validateForm({
       name: {
@@ -107,7 +108,7 @@ const ProductForm = ({
       },
       bulkDiscount: {
         value: form.bulkDiscount,
-        rules: [number("Bulk Discount"), positive("Bulk Discount")],
+        rules: [number("Bulk Discount"), nonNegative("Bulk Discount")],
       },
       hsnCode: {
         value: form.hsnCode,

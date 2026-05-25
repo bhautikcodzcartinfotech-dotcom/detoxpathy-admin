@@ -235,7 +235,9 @@ const OrderDetailsPage = () => {
                 <CreditCard className="w-5 h-5 text-gray-400" />
                 <div>
                   <p className="text-[10px] font-bold text-gray-400 uppercase">Payment Method</p>
-                  <p className="text-sm font-bold text-gray-700">{order.paymentMethod || 'Razorpay'}</p>
+                  <p className="text-sm font-bold text-gray-700">
+                    {order.paymentMethod === "Split" ? "Hybrid" : (order.paymentMethod || "Razorpay")}
+                  </p>
                 </div>
               </div>
 

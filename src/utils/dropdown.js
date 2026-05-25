@@ -13,6 +13,8 @@ const Dropdown = ({
   disabledValues = [],
   labelClassName = "text-gray-700",
   placeholder = "",
+  menuMaxHeight = "320px",
+  menuMinWidth,
 }) => {
   const [open, setOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
@@ -83,7 +85,10 @@ const Dropdown = ({
       </div>
 
       {open && !disabled && (
-        <div className="absolute z-[999] w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300 flex flex-col max-h-[320px]">
+        <div
+          className="absolute left-0 z-[999] w-full mt-2 bg-white border border-gray-100 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-top-2 duration-300 flex flex-col"
+          style={{ maxHeight: menuMaxHeight, minWidth: menuMinWidth || "100%" }}
+        >
           {showSearch && (
             <div className="p-3 border-b border-gray-50 sticky top-0 bg-white/80 backdrop-blur-md z-10">
               <div className="relative">
@@ -111,7 +116,7 @@ const Dropdown = ({
               </div>
             </div>
           )}
-          <ul className="overflow-y-auto flex-1 py-1 custom-scrollbar">
+          <ul className="overflow-y-auto overflow-x-hidden flex-1 py-1 custom-scrollbar" style={{ overflowX: 'hidden' }}>
             {filteredOptions.length > 0 ? (
               filteredOptions.map((opt, idx) => {
                 const isOptionDisabled = disabledValues.includes(opt.value);
@@ -124,7 +129,7 @@ const Dropdown = ({
                       onChange(opt.value);
                       setOpen(false);
                     }}
-                    className={`px-4 py-3 transition-all flex items-center justify-between border-l-4 ${
+                    className={`px-4 py-3 transition-all flex items-center justify-between border-l-4 min-w-0 ${
                       isOptionDisabled
                         ? "opacity-30 cursor-not-allowed bg-gray-50 border-transparent"
                         : isSelected
@@ -132,7 +137,7 @@ const Dropdown = ({
                         : "hover:bg-gray-50 border-transparent hover:border-gray-200 cursor-pointer text-gray-600"
                     }`}
                   >
-                    <span className="flex items-center gap-3">
+                    <span className="flex items-center gap-3 min-w-0">
                       {showCheckbox && (
                         <ThemedCheckbox
                           checked={isSelected}
@@ -141,7 +146,7 @@ const Dropdown = ({
                           disabled={isOptionDisabled}
                         />
                       )}
-                      <span className="text-sm leading-tight">
+                      <span className="text-sm leading-tight break-words">
                         {opt.label}
                       </span>
                     </span>
