@@ -8,6 +8,7 @@ import { Button } from "@/utils/header";
 
 import { useRouter } from "next/navigation";
 import { getUserOverview } from "@/Api/AllApi";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ThemedCheckbox = ({ checked, onChange, ariaLabel, disabled = false }) => {
   return (
@@ -47,6 +48,7 @@ const ThemedCheckbox = ({ checked, onChange, ariaLabel, disabled = false }) => {
 
 const UserList = ({ users, loading, onEdit, onDelete, onBulkDelete, onSuggest }) => {
   const router = useRouter();
+  const { role, permissions } = useAuth();
   const [deleteDialog, setDeleteDialog] = useState({
     isOpen: false,
     userId: null,
@@ -282,16 +284,20 @@ const UserList = ({ users, loading, onEdit, onDelete, onBulkDelete, onSuggest })
                         disabled={isDeleted}
                         title="Suggest Program"
                       />
+                      {(role === "Admin" || permissions?.includes("edit user")) && (
                       <ActionButton
                         type="edit"
                         onClick={() => onEdit(u)}
                         disabled={isDeleted}
                       />
+                      )}
+                      {(role === "Admin" || permissions?.includes("delete user")) && (
                       <ActionButton
                         type="delete"
                         onClick={() => handleDeleteClick(u._id, u.name)}
                         disabled={isDeleted}
                       />
+                      )}
                       <ActionButton
                         type="view"
                         onClick={() => router.push(`/component/users/${u._id}/profile`)}

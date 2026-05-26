@@ -7,17 +7,30 @@ import { ActionButton } from "@/utils/actionbutton";
 import { getRolePermissionsApi, updateRolePermissionsApi, deleteRolePermissionApi } from "@/Api/AllApi";
 import TimeButton from "@/utils/timebutton";
 import toast from "react-hot-toast";
+import ConfirmationDialog from "@/components/ConfirmationDialog";
 
 const PERMISSION_GROUPS = [
   {
     category: "User Management",
     permissions: [
       { label: "Create User", value: "create user" },
+      { label: "Edit User", value: "edit user" },
+      { label: "Delete User", value: "delete user" },
     ]
   },
   {
     category: "Page Access",
     permissions: [
+      { label: "Show Users Page", value: "show users page" },
+      { label: "Show Appointments Page", value: "show appointments page" },
+      { label: "Show Branch Time Page", value: "show branch time page" },
+      { label: "Show Reports Page", value: "show reports page" },
+      { label: "Show Supports Page", value: "show supports page" },
+      { label: "Show Notes Page", value: "show notes page" },
+      { label: "Show Videos Page", value: "show videos page" },
+      { label: "Show Categories Page", value: "show categories page" },
+      { label: "Show Stock Page", value: "show stock page" },
+      { label: "Show Supplier Page", value: "show supplier page" },
       { label: "Show Logs Page", value: "show Logs page" },
       { label: "Show Contact Page", value: "show contact page" },
       { label: "Show Contact Categories", value: "show contact categories" },
@@ -26,6 +39,42 @@ const PERMISSION_GROUPS = [
       { label: "Show Order Page", value: "show order page" },
       { label: "Show Branches Page", value: "show branches page" },
       { label: "Show Staff Page", value: "show staff page" },
+      { label: "Show Accounting Page", value: "show accounting page" },
+      { label: "Show Complaints Page", value: "show complaints page" },
+      { label: "Show GST Reports Page", value: "show gst reports page" },
+      { label: "Show Medical Condition Page", value: "show medical condition page" },
+      { label: "Show Messages Page", value: "show messages page" },
+      { label: "Show Party Page", value: "show party page" },
+      { label: "Show Permissions Page", value: "show permissions page" },
+      { label: "Show Plans Page", value: "show plans page" },
+      { label: "Show Products Page", value: "show products page" },
+      { label: "Show Questions Page", value: "show questions page" },
+      { label: "Show Settings Page", value: "show settings page" },
+      { label: "Show Subadmin Page", value: "show subadmin page" },
+      { label: "Show User Chat Page", value: "show user chat page" },
+    ]
+  },
+  {
+    category: "Inventory",
+    permissions: [
+      { label: "Manage Inventory", value: "manage inventory" },
+      { label: "Manage Video", value: "manage video" },
+      { label: "Manage Category", value: "manage category" },
+      { label: "Manage Supplier", value: "manage supplier" },
+      { label: "Edit Supplier", value: "edit supplier" },
+      { label: "Delete Supplier", value: "delete supplier" },
+      { label: "Manage Expense Entry", value: "manage expense entry" },
+      { label: "Manage Purchase Entry", value: "manage purchase entry" },
+      { label: "Manage Stock Transfer", value: "manage stock transfer" },
+    ]
+  },
+  {
+    category: "Orders",
+    permissions: [
+      { label: "Create Order", value: "create order" },
+      { label: "Update Order Status", value: "update order status" },
+      { label: "Edit Order", value: "edit order" },
+      { label: "Delete Order", value: "delete order" },
     ]
   },
   {
@@ -34,12 +83,139 @@ const PERMISSION_GROUPS = [
       { label: "Add Staff", value: "add staff" },
       { label: "Edit Staff", value: "edit staff" },
       { label: "Delete Staff", value: "delete staff" },
+      { label: "Manage Staff Leave", value: "manage staff leave" },
     ]
   },
   {
     category: "Appointment Management",
     permissions: [
       { label: "Join Appointment Call", value: "join appointment call" },
+      { label: "Reschedule Appointment", value: "reschedule appointment" },
+      { label: "Cancel Appointment", value: "cancel appointment" },
+      { label: "Create Appointment", value: "create appointment" },
+      { label: "Edit Appointment", value: "edit appointment" },
+      { label: "Approve Appointment", value: "approve appointment" },
+    ]
+  },
+  {
+    category: "Branch Time",
+    permissions: [
+      { label: "Manage Branch Time", value: "manage branch time" },
+      { label: "Approve Branch Time Requests", value: "approve branch time requests" },
+    ]
+  },
+  {
+    category: "Branch Management",
+    permissions: [
+      { label: "Create Branch", value: "create branch" },
+      { label: "Edit Branch", value: "edit branch" },
+      { label: "Delete Branch", value: "delete branch" },
+    ]
+  },
+  {
+    category: "Category Management",
+    permissions: [
+      { label: "Create Category", value: "create category" },
+      { label: "Edit Category", value: "edit category" },
+      { label: "Delete Category", value: "delete category" },
+    ]
+  },
+  {
+    category: "Contact Management",
+    permissions: [
+      { label: "Create Contact", value: "create contact" },
+      { label: "Edit Contact", value: "edit contact" },
+      { label: "Delete Contact", value: "delete contact" },
+      { label: "Create Contact Category", value: "create contact category" },
+      { label: "Edit Contact Category", value: "edit contact category" },
+      { label: "Delete Contact Category", value: "delete contact category" },
+    ]
+  },
+  {
+    category: "FAQ Management",
+    permissions: [
+      { label: "Create FAQ", value: "create faq" },
+      { label: "Edit FAQ", value: "edit faq" },
+      { label: "Delete FAQ", value: "delete faq" },
+    ]
+  },
+  {
+    category: "Medical Condition Management",
+    permissions: [
+      { label: "Create Medical Condition", value: "create medical condition" },
+      { label: "Edit Medical Condition", value: "edit medical condition" },
+      { label: "Delete Medical Condition", value: "delete medical condition" },
+    ]
+  },
+  {
+    category: "Message Management",
+    permissions: [
+      { label: "Create Message", value: "create message" },
+      { label: "Edit Message", value: "edit message" },
+      { label: "Delete Message", value: "delete message" },
+    ]
+  },
+  {
+    category: "Party Management",
+    permissions: [
+      { label: "Create Party", value: "create party" },
+      { label: "Edit Party", value: "edit party" },
+      { label: "Delete Party", value: "delete party" },
+    ]
+  },
+  {
+    category: "Plan Management",
+    permissions: [
+      { label: "Create Plan", value: "create plan" },
+      { label: "Edit Plan", value: "edit plan" },
+      { label: "Delete Plan", value: "delete plan" },
+    ]
+  },
+  {
+    category: "Product Management",
+    permissions: [
+      { label: "Create Product", value: "create product" },
+      { label: "Edit Product", value: "edit product" },
+      { label: "Delete Product", value: "delete product" },
+    ]
+  },
+  {
+    category: "Question Management",
+    permissions: [
+      { label: "Create Question", value: "create question" },
+      { label: "Edit Question", value: "edit question" },
+      { label: "Delete Question", value: "delete question" },
+    ]
+  },
+  {
+    category: "Subadmin Management",
+    permissions: [
+      { label: "Create Subadmin", value: "create subadmin" },
+      { label: "Edit Subadmin", value: "edit subadmin" },
+      { label: "Delete Subadmin", value: "delete subadmin" },
+      { label: "Manage Subadmin Leave", value: "manage subadmin leave" },
+    ]
+  },
+  {
+    category: "User Chat Management",
+    permissions: [
+      { label: "Send Chat Message", value: "send chat message" },
+      { label: "Transfer Appointment", value: "transfer appointment" },
+      { label: "Delete Chat Message", value: "delete chat message" },
+    ]
+  },
+  {
+    category: "Accounting & Reports",
+    permissions: [
+      { label: "Manage Accounting", value: "manage accounting" },
+      { label: "Manage GST Reports", value: "manage gst reports" },
+      { label: "Manage Complaints", value: "manage complaints" },
+    ]
+  },
+  {
+    category: "Settings",
+    permissions: [
+      { label: "Manage Settings", value: "manage settings" },
     ]
   },
 ];
@@ -54,6 +230,10 @@ const PermissionPage = () => {
   const [saveLoading, setSaveLoading] = useState(false);
   const [newRoleName, setNewRoleName] = useState("");
   const [isAddingRole, setIsAddingRole] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState({
+    isOpen: false,
+    roleName: null,
+  });
 
   const fetchList = async () => {
     try {
@@ -111,6 +291,36 @@ const PermissionPage = () => {
     } finally {
       setSaveLoading(false);
     }
+  };
+
+  const handleDeleteClick = (roleName) => {
+    setDeleteDialog({
+      isOpen: true,
+      roleName,
+    });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (deleteDialog.roleName) {
+      try {
+        await deleteRolePermissionApi(deleteDialog.roleName);
+        await fetchList();
+        toast.success("Role deleted successfully");
+      } catch (err) {
+        toast.error("Failed to delete role");
+      }
+    }
+    setDeleteDialog({
+      isOpen: false,
+      roleName: null,
+    });
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialog({
+      isOpen: false,
+      roleName: null,
+    });
   };
 
   return (
@@ -195,17 +405,7 @@ const PermissionPage = () => {
                         {!['Sub Admin', 'Sub Doctor'].includes(roleObj.role) && (
                           <ActionButton
                             type="delete"
-                            onClick={async () => {
-                              if (window.confirm(`Are you sure you want to delete the role "${roleObj.role}"?`)) {
-                                try {
-                                  await deleteRolePermissionApi(roleObj.role);
-                                  await fetchList();
-                                  toast.success("Role deleted successfully");
-                                } catch (err) {
-                                  toast.error("Failed to delete role");
-                                }
-                              }
-                            }}
+                            onClick={() => handleDeleteClick(roleObj.role)}
                             title="Delete Role"
                           />
                         )}
@@ -268,6 +468,17 @@ const PermissionPage = () => {
             </div>
           </form>
         </Drawer>
+
+        <ConfirmationDialog
+          isOpen={deleteDialog.isOpen}
+          onClose={handleDeleteCancel}
+          onConfirm={handleDeleteConfirm}
+          title="Delete Role"
+          message={`Are you sure you want to delete the role "${deleteDialog.roleName}"? This action cannot be undone.`}
+          confirmText="Delete"
+          cancelText="Cancel"
+          type="danger"
+        />
       </div>
     </RoleGuard>
   );

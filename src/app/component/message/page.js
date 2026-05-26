@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
+import RoleGuard from "@/components/RoleGuard";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   getCommands,
@@ -79,62 +80,64 @@ const CommandPage = () => {
   }, []);
 
   return (
-    <div className="px-18 py-6">
-      <div className="flex justify-between items-center mb-6">
-        <Header size="3xl">Quick Replies</Header>
-        <Button
-          onClick={() => {
-            setEditingCommand(null);
-            setDrawerOpen(true);
-          }}
-        >
-          + Create
-        </Button>
-      </div>
-
-      {loading ? (
-        <div className="flex justify-center items-center min-h-[60vh]">
-          <Loader />
+    <RoleGuard permission="show messages page">
+      <div className="px-18 py-6">
+        <div className="flex justify-between items-center mb-6">
+          <Header size="3xl">Quick Replies</Header>
+          <Button
+            onClick={() => {
+              setEditingCommand(null);
+              setDrawerOpen(true);
+            }}
+          >
+            + Create
+          </Button>
         </div>
-      ) : (
-        <CommandTable
-          commands={commands}
-          currentRole={role}
-          currentAdminId={currentAdminId}
-          onEdit={(cmd) => {
-            // Guard: subadmin may only edit own commands
-            if (
-              role === "subadmin" &&
-              String(cmd.createdBy) !== String(currentAdminId)
-            ) {
-              return;
-            }
-            setEditingCommand(cmd);
-            setDrawerOpen(true);
-          }}
-          onDelete={async (id) => {
-            const cmd = commands.find((c) => c._id === id);
-            if (
-              cmd &&
-              role === "subadmin" &&
-              String(cmd.createdBy) !== String(currentAdminId)
-            ) {
-              return;
-            }
-            await handleDelete(id);
-          }}
-          onApprove={handleApprove}
-        />
-      )}
 
-      <FormaAnimation isOpen={drawerOpen} onClose={() => setDrawerOpen(false)}>
-        <CommandForm
-          initialData={editingCommand}
-          onSubmit={handleSubmit}
-          onClose={() => setDrawerOpen(false)}
-        />
-      </FormaAnimation>
-    </div>
+        {loading ? (
+          <div className="flex justify-center items-center min-h-[60vh]">
+            <Loader />
+          </div>
+        ) : (
+          <CommandTable
+            commands={commands}
+            currentRole={role}
+            currentAdminId={currentAdminId}
+            onEdit={(cmd) => {
+              // Guard: subadmin may only edit own commands
+              if (
+                role === "subadmin" &&
+                String(cmd.createdBy) !== String(currentAdminId)
+              ) {
+                return;
+              }
+              setEditingCommand(cmd);
+              setDrawerOpen(true);
+            }}
+            onDelete={async (id) => {
+              const cmd = commands.find((c) => c._id === id);
+              if (
+                cmd &&
+                role === "subadmin" &&
+                String(cmd.createdBy) !== String(currentAdminId)
+              ) {
+                return;
+              }
+              await handleDelete(id);
+            }}
+            onApprove={handleApprove}
+          />
+        )}
+
+        <FormaAnimation isOpen={drawerOpen} onClose={() => setDrawerOpen(false)}>
+          <CommandForm
+            initialData={editingCommand}
+            onSubmit={handleSubmit}
+            onClose={() => setDrawerOpen(false)}
+          />
+        </FormaAnimation>
+      </div>
+    </RoleGuard>
   );
 };
 

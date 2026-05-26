@@ -18,7 +18,7 @@ import BranchTimeForm from "./branchTimeForm";
 import Dropdown from "@/utils/dropdown";
 
 const BranchTimePage = () => {
-  const { role, branches } = useAuth();
+  const { role, branches, permissions } = useAuth();
   const [loading, setLoading] = useState(true);
   const [formLoading, setFormLoading] = useState(false);
   const [branchTimeData, setBranchTimeData] = useState(null);
@@ -185,7 +185,7 @@ const BranchTimePage = () => {
   };
 
   return (
-    <RoleGuard allow={["Admin", "subadmin"]}>
+    <RoleGuard allow={["Admin", "subadmin"]} permission="show branch time page">
       <div className="flex flex-col gap-6 px-4 sm:px-6 lg:px-10 xl:px-18">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 bg-white rounded-3xl border border-gray-100 shadow-sm">
           <div className="flex flex-col">
@@ -239,12 +239,12 @@ const BranchTimePage = () => {
                 </div>
               </div>
             )}
-            {selectedBranchId && !selectedRequestId && (
+            {selectedBranchId && !selectedRequestId && (role === "Admin" || permissions?.includes("manage branch time")) && (
               <Button onClick={() => setIsOpen(true)}>
                 {branchTimeData ? "Update Time" : "Initialize Time"}
               </Button>
             )}
-            {selectedRequestId && (
+            {selectedRequestId && (role === "Admin" || permissions?.includes("approve branch time requests")) && (
               <div className="flex items-center gap-2">
                 <Button
                   variant="primary"

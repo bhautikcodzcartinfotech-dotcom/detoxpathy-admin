@@ -24,7 +24,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import RoleGuard from "@/components/RoleGuard";
 
 const OrderPage = () => {
-  const { role } = useAuth();
+  const { role, permissions } = useAuth();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -262,12 +262,14 @@ const OrderPage = () => {
                 Company Order
               </Button>
             )}
+            {(role === "Admin" || permissions?.includes("create order")) && (
             <Button
               onClick={() => setIsDrawerOpen(true)}
               variant="primary"
             >
               Create New Order
             </Button>
+            )}
           </div>
         </div>
 

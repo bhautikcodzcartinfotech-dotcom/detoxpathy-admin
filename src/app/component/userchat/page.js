@@ -71,6 +71,7 @@ import {
 import Loader from "../../../utils/loader";
 import Dropdown from "../../../utils/dropdown";
 import TransferAppointmentModal from "./TransferAppointmentModal";
+import RoleGuard from "@/components/RoleGuard";
 
 // This will be replaced with customerCareId from chat data
 
@@ -717,6 +718,7 @@ export default function ChatPage() {
   }, [messages]);
 
   return (
+    <RoleGuard allow={["Admin", "subadmin"]} permission="show supports page">
     <div className="flex justify-center items-center">
       <div className="flex h-[800px] w-[91%]  bg-gradient-to-br from-yellow-50 via-amber-50 to-yellow-100">
         {/* Modern Sidebar */}
@@ -1298,5 +1300,6 @@ export default function ChatPage() {
         allBranches={allBranches}
       />
     </div>
+    </RoleGuard>
   );
 }

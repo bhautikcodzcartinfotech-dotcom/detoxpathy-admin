@@ -20,7 +20,24 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess }) => {
     const [formData, setFormData] = useState({
         appointmentId: appointment?._id,
         userId: appointment?.userId?._id,
-        isFirstConsultation: false,
+        name: "",
+        mobileNo: "",
+        gender: "",
+        drName: "",
+        height: "",
+        weight: "",
+        idealWeight: "",
+        requiredLossWeight: "",
+        consultationDate: "",
+        consultationTime: "",
+        reference: "",
+        occupation: "",
+        bloodReport: "",
+        patientNote: "",
+        patientMostWant: "",
+        co: "",
+        consultationVisit: "first",
+        isFirstConsultation: true,
         patientComplaint: "",
         advice: "",
         patientHistory: [],
@@ -37,6 +54,43 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess }) => {
         ]
     });
     const [customHistory, setCustomHistory] = useState("");
+
+    useEffect(() => {
+        const u = appointment?.userId;
+        const dr = appointment?.doctor;
+        if (!u) return;
+
+        const fullName = `${u.name || ""} ${u.surname || ""}`.trim();
+        const weightVal = u.weight != null && u.weight !== "" ? String(u.weight) : "";
+        const idealVal = u.idealWeight != null && u.idealWeight !== "" ? String(u.idealWeight) : "";
+        let requiredLoss = "";
+        if (weightVal && idealVal && !isNaN(Number(weightVal)) && !isNaN(Number(idealVal))) {
+            const diff = Number(weightVal) - Number(idealVal);
+            if (diff > 0) requiredLoss = String(diff);
+        }
+
+        const timeLabel = appointment?.startTime
+            ? `${appointment.startTime}${appointment?.endTime ? ` - ${appointment.endTime}` : ""}`
+            : "";
+
+        setFormData((prev) => ({
+            ...prev,
+            appointmentId: appointment?._id,
+            userId: u._id,
+            name: fullName,
+            mobileNo: u.mobileNumber || "",
+            gender: u.gender || "",
+            drName: dr?.username || dr?.name || "",
+            height: u.height != null && u.height !== "" ? String(u.height) : "",
+            weight: weightVal,
+            idealWeight: idealVal,
+            requiredLossWeight: requiredLoss,
+            consultationDate: appointment?.date || "",
+            consultationTime: timeLabel,
+            reference: u.appReferer || u.usedReferralCode || "",
+            occupation: u.occupation || "",
+        }));
+    }, [appointment?._id]);
 
     useEffect(() => {
         const userId = appointment?.userId?._id;
@@ -117,6 +171,14 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess }) => {
             clearTimeout(timer);
         };
     }, [formData.currentMedicine, showMedicineSuggestions]);
+
+    const setConsultationVisit = (visit) => {
+        setFormData((prev) => ({
+            ...prev,
+            consultationVisit: visit,
+            isFirstConsultation: visit === "first",
+        }));
+    };
 
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
@@ -252,6 +314,85 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess }) => {
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar pb-24">
+
+                {/* Patient Details */}
+                <div className="space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="h-4 w-1 bg-teal-500 rounded-full" />
+                        <h3 className="text-base font-extrabold text-slate-800 uppercase tracking-wider">Patient Details</h3>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Name</label>
+                            <input name="name" value={formData.name} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Mobile No</label>
+                            <input name="mobileNo" value={formData.mobileNo} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Gender</label>
+                            <select name="gender" value={formData.gender} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm">
+                                <option value="">Select</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Dr Name</label>
+                            <input name="drName" value={formData.drName} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Height</label>
+                            <input name="height" value={formData.height} onChange={handleChange} placeholder="e.g. 170" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Weight</label>
+                            <input name="weight" value={formData.weight} onChange={handleChange} placeholder="e.g. 75" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Ideal Weight</label>
+                            <input name="idealWeight" value={formData.idealWeight} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Required Loss Weight</label>
+                            <input name="requiredLossWeight" value={formData.requiredLossWeight} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Date</label>
+                            <input name="consultationDate" value={formData.consultationDate} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Time</label>
+                            <input name="consultationTime" value={formData.consultationTime} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Reference</label>
+                            <input name="reference" value={formData.reference} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Occupation</label>
+                            <input name="occupation" value={formData.occupation} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm" />
+                        </div>
+                        <div className="space-y-1.5 md:col-span-2">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">C/O</label>
+                            <textarea name="co" value={formData.co} onChange={handleChange} placeholder="Chief complaint..." className="w-full h-20 p-4 rounded-2xl bg-white border border-slate-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all text-sm font-medium resize-none shadow-sm" />
+                        </div>
+                        <div className="space-y-1.5 md:col-span-2">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Blood Report</label>
+                            <textarea name="bloodReport" value={formData.bloodReport} onChange={handleChange} placeholder="Blood report details..." className="w-full h-20 p-4 rounded-2xl bg-white border border-slate-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all text-sm font-medium resize-none shadow-sm" />
+                        </div>
+                        <div className="space-y-1.5 md:col-span-2">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Patient Note</label>
+                            <textarea name="patientNote" value={formData.patientNote} onChange={handleChange} className="w-full h-20 p-4 rounded-2xl bg-white border border-slate-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all text-sm font-medium resize-none shadow-sm" />
+                        </div>
+                        <div className="space-y-1.5 md:col-span-2">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Patient Most Want</label>
+                            <textarea name="patientMostWant" value={formData.patientMostWant} onChange={handleChange} className="w-full h-20 p-4 rounded-2xl bg-white border border-slate-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all text-sm font-medium resize-none shadow-sm" />
+                        </div>
+                    </div>
+                </div>
                 
                 {/* Basic Info */}
                 <div className="space-y-4">
@@ -259,16 +400,39 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess }) => {
                         <div className="h-4 w-1 bg-teal-500 rounded-full" />
                         <h3 className="text-base font-extrabold text-slate-800 uppercase tracking-wider">Basic Assessment</h3>
                     </div>
-                    <label className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 cursor-pointer hover:bg-white transition-all group">
-                        <input 
-                            type="checkbox" 
-                            name="isFirstConsultation" 
-                            checked={formData.isFirstConsultation}
-                            onChange={handleChange}
-                            className="w-5 h-5 rounded-lg border-slate-300 text-teal-600 focus:ring-teal-500"
-                        />
-                        <span className="text-xs font-semibold text-slate-700 tracking-wide uppercase">First Time Consultation?</span>
-                    </label>
+                    <div className="space-y-3">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <label className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 cursor-pointer hover:bg-white transition-all group">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.consultationVisit === "first"}
+                                    onChange={() => setConsultationVisit("first")}
+                                    className="w-5 h-5 rounded-lg border-slate-300 text-teal-600 focus:ring-teal-500"
+                                />
+                                <span className="text-xs font-semibold text-slate-700 tracking-wide uppercase">First Time</span>
+                            </label>
+                            <label className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 cursor-pointer hover:bg-white transition-all group">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.consultationVisit === "second"}
+                                    onChange={() => setConsultationVisit("second")}
+                                    className="w-5 h-5 rounded-lg border-slate-300 text-teal-600 focus:ring-teal-500"
+                                />
+                                <span className="text-xs font-semibold text-slate-700 tracking-wide uppercase">Second Time</span>
+                            </label>
+                        </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <label className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-100 cursor-pointer hover:bg-white transition-all group">
+                                <input
+                                    type="checkbox"
+                                    checked={formData.consultationVisit === "third"}
+                                    onChange={() => setConsultationVisit("third")}
+                                    className="w-5 h-5 rounded-lg border-slate-300 text-teal-600 focus:ring-teal-500"
+                                />
+                                <span className="text-xs font-semibold text-slate-700 tracking-wide uppercase">Third Time</span>
+                            </label>
+                        </div>
+                    </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5 focus-within:transform focus-within:scale-[1.01] transition-transform">

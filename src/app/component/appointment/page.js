@@ -1268,7 +1268,7 @@ const AppointmentPage = () => {
   };
 
   return (
-    <RoleGuard allow={["Admin", "subadmin"]}>
+    <RoleGuard allow={["Admin", "subadmin"]} permission="show appointments page">
       <div className="w-full h-full px-4 sm:px-6 lg:px-8 bg-[#F8FAFC] min-h-screen pb-10">
         <div className="flex flex-col gap-1 mb-8 pt-6">
           <h1 className="text-3xl font-black text-gray-900 tracking-tight">Appointments</h1>
@@ -1546,9 +1546,11 @@ const AppointmentPage = () => {
                                 <MdVideocam size={16} /> Join
                               </button>
                             )}
+                            {(role === "Admin" || permissions?.includes("reschedule appointment")) && (
                             <button className="h-9 px-4 bg-teal-50 text-teal-700 hover:bg-teal-100 rounded-xl text-xs font-bold transition-all" onClick={() => handleOpenRescheduleModal(item)}>Reschedule</button>
+                            )}
                             <button className="h-9 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-bold shadow-sm transition-all" onClick={() => router.push(`/component/users/${item.userId?._id}/profile`)}>View</button>
-                            {statusLabel === 'upcoming' && (
+                            {statusLabel === 'upcoming' && (role === "Admin" || permissions?.includes("cancel appointment")) && (
                               <button onClick={() => openDeleteModal(item._id)} className="h-9 px-4 bg-white border border-red-100 hover:bg-red-50 text-red-600 rounded-xl text-xs font-bold shadow-sm transition-all">Cancel</button>
                             )}
                           </div>
@@ -1635,9 +1637,11 @@ const AppointmentPage = () => {
                           <MdVideocam size={20} /> Join Live Call
                         </button>
                       )}
+                      {(role === "Admin" || permissions?.includes("reschedule appointment")) && (
                       <button className="h-11 bg-teal-50 text-teal-700 rounded-xl text-[11px] font-black uppercase" onClick={() => handleOpenRescheduleModal(item)}>Reschedule</button>
+                      )}
                       <button className="h-11 bg-slate-100 text-slate-700 rounded-xl text-[11px] font-black uppercase" onClick={() => router.push(`/component/users/${item.userId?._id}/profile`)}>View Profile</button>
-                      {statusLabel === 'upcoming' && (
+                      {statusLabel === 'upcoming' && (role === "Admin" || permissions?.includes("cancel appointment")) && (
                         <button onClick={() => openDeleteModal(item._id)} className="h-11 border border-red-100 text-red-600 rounded-xl text-[11px] font-black uppercase col-span-2 mt-1">Cancel Appointment</button>
                       )}
                     </div>

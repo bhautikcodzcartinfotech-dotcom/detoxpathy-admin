@@ -26,8 +26,8 @@ const STATUS_COLORS = {
 };
 
 const OrderTable = ({ items, loading, onRefresh, selectedIds = [], onToggleSelection, onSelectAll }) => {
-  const { role } = useAuth();
-  const isDoctor = role === "subadmin";
+  const { role, permissions } = useAuth();
+  const canUpdateOrderStatus = role === "Admin" || (role === "subadmin" && permissions?.includes("update order status"));
   const [updatingId, setUpdatingId] = useState(null);
 
   if (loading) return <div className="p-10 flex justify-center"><Loader /></div>;
@@ -149,7 +149,7 @@ const OrderTable = ({ items, loading, onRefresh, selectedIds = [], onToggleSelec
 
               <td className="px-4 py-5 whitespace-nowrap">
                 <div className="flex items-center gap-2">
-                  {isDoctor ? (
+                  {!canUpdateOrderStatus ? (
                     // Doctor (subadmin): read-only badge, cannot change status
                     <span className={`text-[12px] font-bold px-3 py-1 rounded-lg ${STATUS_COLORS[Number(order.orderStatus)] || "bg-gray-100 text-gray-700"}`}>
                       {STATUS_LABELS[Number(order.orderStatus)] || "Unknown"}

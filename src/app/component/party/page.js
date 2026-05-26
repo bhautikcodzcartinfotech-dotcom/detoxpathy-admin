@@ -7,6 +7,7 @@ import PartyForm from "./partyForm";
 import Drawer from "@/utils/formanimation";
 import { toast } from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import RoleGuard from "@/components/RoleGuard";
 
 const PartyPage = () => {
   const { role, permissions } = useAuth();
@@ -71,6 +72,7 @@ const PartyPage = () => {
   );
 
   return (
+    <RoleGuard allow={["Admin", "subadmin"]} permission="show supplier page">
     <div className="px-6 py-6">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
@@ -130,6 +132,7 @@ const PartyPage = () => {
         />
       </Drawer>
     </div>
+    </RoleGuard>
   );
 };
 

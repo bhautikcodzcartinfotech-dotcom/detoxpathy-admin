@@ -12,6 +12,7 @@ import { toast } from "react-hot-toast";
 import { FiTrash2, FiCheck } from "react-icons/fi";
 import Dropdown from "@/utils/dropdown";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
+import RoleGuard from "@/components/RoleGuard";
 
 const NOTE_STATUS_KEY = "detoxpathy_note_statuses";
 
@@ -196,6 +197,7 @@ export default function NotesPage() {
     };
 
     return (
+        <RoleGuard allow={["Admin", "subadmin"]} permission="show notes page">
         <div className="p-6">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                 <h1 className="text-2xl font-bold text-[#134D41]">Notes</h1>
@@ -400,5 +402,6 @@ export default function NotesPage() {
                 type="danger"
             />
         </div>
+        </RoleGuard>
     );
 }

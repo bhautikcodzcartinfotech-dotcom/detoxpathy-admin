@@ -178,7 +178,7 @@ const StockManagementPage = () => {
     : [];
 
   return (
-    <RoleGuard allow={["Admin", "subadmin"]}>
+    <RoleGuard allow={["Admin", "subadmin"]} permission="show stock page">
       <div className="w-full h-full px-6 py-6 pb-20">
         <div className="mb-8">
           <Header size="3xl">Stock Management</Header>

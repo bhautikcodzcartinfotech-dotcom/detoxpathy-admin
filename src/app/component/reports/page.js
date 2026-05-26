@@ -1195,7 +1195,7 @@ const ReportsPage = () => {
   };
 
   return (
-    <RoleGuard allow={["Admin", "subadmin"]}>
+    <RoleGuard allow={["Admin", "subadmin"]} permission="show reports page">
       <div className="w-full h-full px-6 py-6 flex flex-col gap-6 bg-gray-50/30">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-8 bg-white rounded-[2rem] border border-gray-100 shadow-sm relative z-40 overflow-visible">
           <div className="absolute inset-0 overflow-hidden rounded-[2rem] pointer-events-none">

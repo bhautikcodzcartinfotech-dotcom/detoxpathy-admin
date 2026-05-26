@@ -10,7 +10,6 @@ import { useAuth } from "../contexts/AuthContext";
  */
 const RoleGuard = ({ allow = [], permission = null, fallback = null, children }) => {
   const { role, permissions, loading, isAuthenticated } = useAuth();
-  console.log('user role-----------------------', role)
   const router = useRouter();
 
   const isRoleAllowed = allow.length === 0 || (role && allow.includes(role));
