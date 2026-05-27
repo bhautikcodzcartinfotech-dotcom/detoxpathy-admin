@@ -10,7 +10,7 @@ import Dropdown from "@/utils/dropdown";
 
 const MultiLangTextarea = ({ label, value, onChange, placeholder, rows = 4 }) => {
   const [activeLang, setActiveLang] = useState('english');
-  
+
   const langs = [
     { id: 'english', label: 'English' },
     { id: 'hindi', label: 'Hindi' },
@@ -58,11 +58,10 @@ const MultiLangTextarea = ({ label, value, onChange, placeholder, rows = 4 }) =>
                 key={lang.id}
                 type="button"
                 onClick={() => setActiveLang(lang.id)}
-                className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${
-                  activeLang === lang.id
+                className={`px-3 py-1 text-[10px] font-black uppercase tracking-widest rounded-md transition-all ${activeLang === lang.id
                     ? "bg-gradient-to-r from-yellow-500 to-amber-500 text-white shadow-md"
                     : "text-amber-700 hover:text-amber-900"
-                }`}
+                  }`}
               >
                 {lang.label}
               </button>
@@ -126,15 +125,16 @@ const SettingsPage = () => {
 
       const finalData = {
         ...settingsData,
+        screenshotProtectionActive: typeof settingsData.screenshotProtectionActive !== 'undefined' ? settingsData.screenshotProtectionActive : true,
         currency: settingsData.currency || "₹",
-        appoinmentDescription: typeof settingsData.appoinmentDescription === 'object' && settingsData.appoinmentDescription !== null 
-          ? settingsData.appoinmentDescription 
+        appoinmentDescription: typeof settingsData.appoinmentDescription === 'object' && settingsData.appoinmentDescription !== null
+          ? settingsData.appoinmentDescription
           : { english: settingsData.appoinmentDescription || "", hindi: "", gujarati: "" },
-        testimonialDescription: typeof settingsData.testimonialDescription === 'object' && settingsData.testimonialDescription !== null 
-          ? settingsData.testimonialDescription 
+        testimonialDescription: typeof settingsData.testimonialDescription === 'object' && settingsData.testimonialDescription !== null
+          ? settingsData.testimonialDescription
           : { english: settingsData.testimonialDescription || "", hindi: "", gujarati: "" },
-        productScreenDescription: typeof settingsData.productScreenDescription === 'object' && settingsData.productScreenDescription !== null 
-          ? settingsData.productScreenDescription 
+        productScreenDescription: typeof settingsData.productScreenDescription === 'object' && settingsData.productScreenDescription !== null
+          ? settingsData.productScreenDescription
           : { english: settingsData.productScreenDescription || "", hindi: "", gujarati: "" }
       };
       setSettings(finalData);
@@ -170,14 +170,7 @@ const SettingsPage = () => {
   // Update settings
   const handleUpdate = async () => {
     try {
-      // Validation: Testimonial Description and Image cannot both be present
-      const hasTestimonialDesc = formData.testimonialDescription && 
-        (formData.testimonialDescription.english || formData.testimonialDescription.hindi || formData.testimonialDescription.gujarati);
-      
-      if (hasTestimonialDesc && formData.testimonialImage) {
-        toast.error("Please provide either a Testimonial Description or an Image, not both.");
-        return;
-      }
+      // Validation: Testimonial Description and Image can both be present, since testimonialShowType determines which to display.
 
       setSaving(true);
 
@@ -185,7 +178,7 @@ const SettingsPage = () => {
       const { _id, createdAt, updatedAt, __v, ...updateData } = formData;
 
       console.log("Updating settings with data:", updateData);
-      
+
       if (formData.bannerFile) {
         const data = new FormData();
         Object.keys(updateData).forEach(key => {
@@ -256,7 +249,7 @@ const SettingsPage = () => {
   const handleBannerUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    
+
     // Preview the banner locally
     const reader = new FileReader();
     reader.onloadend = () => {
@@ -481,6 +474,40 @@ const SettingsPage = () => {
               </div>
             </div>
 
+            {/* Screenshot Protection */}
+            <div className="bg-gradient-to-br from-white to-amber-50 rounded-2xl shadow-lg border border-amber-200 p-6">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-2">
+                    Screenshot Protection
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    Secure Admin Panel from capturing, printing & DevTools inspection
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={formData.screenshotProtectionActive ?? true}
+                    onChange={(e) =>
+                      handleInputChange("screenshotProtectionActive", e.target.checked)
+                    }
+                    className="sr-only peer"
+                  />
+                  <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-yellow-500"></div>
+                </label>
+              </div>
+              <div
+                className={`px-4 py-2 rounded-full text-sm font-medium inline-block ${
+                  (formData.screenshotProtectionActive ?? true)
+                    ? "bg-amber-200 text-yellow-900"
+                    : "bg-red-100 text-red-800"
+                }`}
+              >
+                {(formData.screenshotProtectionActive ?? true) ? "Active" : "Inactive"}
+              </div>
+            </div>
+
             {/* Version */}
             <div className="bg-gradient-to-br from-white to-amber-50 rounded-2xl shadow-lg border border-amber-200 p-6">
               <h3 className="text-sm font-bold text-gray-700 mb-4 tracking-wide">
@@ -675,8 +702,50 @@ const SettingsPage = () => {
                 <p className="text-sm text-gray-500">Upload a prominent banner for your mobile application</p>
               </div>
             </div>
-            
+
             <div className="space-y-6">
+              {/* Toggle selection between Banner (1) and Product (2) */}
+              <div className="space-y-3">
+                <label className="block text-sm font-bold text-gray-700">
+                  Banner Display Option
+                </label>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => handleInputChange("bannerShowType", 1)}
+                    className={`flex items-center justify-center gap-3 px-6 py-4 rounded-2xl border-2 transition-all duration-300 font-semibold shadow-sm ${Number(formData.bannerShowType || 1) === 1
+                        ? "border-amber-500 bg-amber-50 text-amber-900 shadow-amber-100/50"
+                        : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300"
+                      }`}
+                  >
+                    <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${Number(formData.bannerShowType || 1) === 1 ? "border-amber-500 bg-amber-500" : "border-gray-300"
+                      }`}>
+                      {Number(formData.bannerShowType || 1) === 1 && (
+                        <span className="w-2 h-2 rounded-full bg-white" />
+                      )}
+                    </span>
+                    <span>Banner</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleInputChange("bannerShowType", 2)}
+                    className={`flex items-center justify-center gap-3 px-6 py-4 rounded-2xl border-2 transition-all duration-300 font-semibold shadow-sm ${Number(formData.bannerShowType || 1) === 2
+                        ? "border-amber-500 bg-amber-50 text-amber-900 shadow-amber-100/50"
+                        : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300"
+                      }`}
+                  >
+                    <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${Number(formData.bannerShowType || 1) === 2 ? "border-amber-500 bg-amber-500" : "border-gray-300"
+                      }`}>
+                      {Number(formData.bannerShowType || 1) === 2 && (
+                        <span className="w-2 h-2 rounded-full bg-white" />
+                      )}
+                    </span>
+                    <span>Product</span>
+                  </button>
+                </div>
+              </div>
+
               <div className="relative group w-full">
                 <div className="w-full aspect-[4/1] md:aspect-[5/1] rounded-[2rem] bg-gray-50 border-4 border-dashed border-gray-200 flex items-center justify-center overflow-hidden transition-all duration-300 group-hover:border-amber-300 group-hover:bg-amber-50/30 shadow-inner">
                   {formData.banner ? (
@@ -699,7 +768,7 @@ const SettingsPage = () => {
                     </label>
                   )}
                 </div>
-                
+
                 {formData.banner && (
                   <button
                     type="button"
@@ -713,7 +782,7 @@ const SettingsPage = () => {
                   </button>
                 )}
               </div>
-              
+
               <div className="flex justify-center pt-2">
                 <input
                   type="file"
@@ -834,6 +903,48 @@ const SettingsPage = () => {
               Testimonial Management
             </h3>
             <div className="space-y-8">
+              {/* Toggle selection between Image (1) and Description (2) */}
+              <div className="space-y-3">
+                <label className="block text-sm font-bold text-gray-700">
+                  Testimonial Display Option
+                </label>
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    type="button"
+                    onClick={() => handleInputChange("testimonialShowType", 1)}
+                    className={`flex items-center justify-center gap-3 px-6 py-4 rounded-2xl border-2 transition-all duration-300 font-semibold shadow-sm ${Number(formData.testimonialShowType || 1) === 1
+                        ? "border-amber-500 bg-amber-50 text-amber-900 shadow-amber-100/50"
+                        : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300"
+                      }`}
+                  >
+                    <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${Number(formData.testimonialShowType || 1) === 1 ? "border-amber-500 bg-amber-500" : "border-gray-300"
+                      }`}>
+                      {Number(formData.testimonialShowType || 1) === 1 && (
+                        <span className="w-2 h-2 rounded-full bg-white" />
+                      )}
+                    </span>
+                    <span>Image</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleInputChange("testimonialShowType", 2)}
+                    className={`flex items-center justify-center gap-3 px-6 py-4 rounded-2xl border-2 transition-all duration-300 font-semibold shadow-sm ${Number(formData.testimonialShowType || 1) === 2
+                        ? "border-amber-500 bg-amber-50 text-amber-900 shadow-amber-100/50"
+                        : "border-gray-200 bg-white text-gray-600 hover:bg-gray-50 hover:border-gray-300"
+                      }`}
+                  >
+                    <span className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all ${Number(formData.testimonialShowType || 1) === 2 ? "border-amber-500 bg-amber-500" : "border-gray-300"
+                      }`}>
+                      {Number(formData.testimonialShowType || 1) === 2 && (
+                        <span className="w-2 h-2 rounded-full bg-white" />
+                      )}
+                    </span>
+                    <span>Description</span>
+                  </button>
+                </div>
+              </div>
+
               {/* Testimonial Description */}
 
               <MultiLangTextarea

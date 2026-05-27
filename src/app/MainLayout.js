@@ -9,7 +9,7 @@ import AuthGuard from "../components/AuthGuard";
 import EmergencyAlertModal from "../components/EmergencyAlertModal";
 import { useRouter } from "next/navigation";
 import Loader from "@/utils/loader";
-import { trackPanelOpen, trackPanelClose, API_BASE, API_HOST } from "@/Api/AllApi";
+import { trackPanelOpen, trackPanelClose, API_BASE, API_HOST, getSetting } from "@/Api/AllApi";
 import { io } from "socket.io-client";
 import toast from "react-hot-toast";
 
@@ -19,6 +19,7 @@ export default function MainLayout({ children }) {
   const { isAuthenticated, loading } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [emergencyModal, setEmergencyModal] = useState({ isOpen: false, data: null });
+
 
   // Track panel open/close with refresh detection
   useEffect(() => {
@@ -121,7 +122,7 @@ export default function MainLayout({ children }) {
       socket.on("new_popup", (data) => {
         console.log("New pop-up received:", data);
         const isEmergency = data.type === 'emergency';
-        
+
         if (isEmergency) {
           setEmergencyModal({ isOpen: true, data });
         } else {
@@ -190,7 +191,7 @@ export default function MainLayout({ children }) {
           <main className="p-4 flex-1 min-w-0 overflow-x-hidden">{children}</main>
         </div>
       </div>
-      
+
       <EmergencyAlertModal
         isOpen={emergencyModal.isOpen}
         data={emergencyModal.data}
