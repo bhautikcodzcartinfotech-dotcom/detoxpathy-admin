@@ -81,7 +81,7 @@ const FaqPage = () => {
   };
 
   return (
-    <RoleGuard allow={["Admin"]}>
+    <RoleGuard permission="show faq page">
       <div className="w-full h-full px-6 py-4">
         <div className="flex items-center justify-between mb-4 px-8">
           <Header size="3xl">Frequently Asked Questions (FAQ)</Header>

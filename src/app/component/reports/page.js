@@ -14,7 +14,9 @@ import {
   getAllAppReferences,
   getDailyChecklists,
   getScreenUsages,
-  getStocks
+  getStocks,
+  getVideoReports,
+  listVideos
 } from "@/Api/AllApi";
 import Dropdown from "@/utils/dropdown";
 import { useAuth } from "@/contexts/AuthContext";
@@ -169,6 +171,11 @@ const ReportsPage = () => {
   const [productReportSubView, setProductReportSubView] = useState("highest_revenue"); // highest_revenue | normal_stock
   const [itemTypeFilter, setItemTypeFilter] = useState("all"); // all | Product | Plan
 
+  // Video Reports Specific State
+  const [allVideos, setAllVideos] = useState([]);
+  const [selectedVideoId, setSelectedVideoId] = useState("");
+  const [selectedMinPercentageOption, setSelectedMinPercentageOption] = useState("");
+
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 20;
@@ -191,18 +198,20 @@ const ReportsPage = () => {
     }
     // Reset page to 1 when filters change
     setCurrentPage(1);
-  }, [reportType, selectedBranchId, selectedPlanId, startDate, endDate, selectedCity, checklistReportEnabled, screenDateFilter, viewType, productReportSubView, allPlans]);
+  }, [reportType, selectedBranchId, selectedPlanId, startDate, endDate, selectedCity, checklistReportEnabled, screenDateFilter, viewType, productReportSubView, allPlans, selectedVideoId, selectedMinPercentageOption]);
 
   const fetchInitialData = async () => {
     try {
-      const [branchList, planList, subAdmins, allUsers, medicalList, referenceList] = await Promise.all([
+      const [branchList, planList, subAdmins, allUsers, medicalList, referenceList, videoList] = await Promise.all([
         getAllBranches().catch((e) => { console.error("Error loading branches", e); return []; }),
         getAllPlans().catch((e) => { console.error("Error loading plans", e); return []; }),
         listSubAdmins().catch((e) => { console.error("Error loading doctors", e); return []; }),
         getAllUsers().catch((e) => { console.error("Error loading users", e); return []; }),
         getAllMedicalConditions().catch((e) => { console.error("Error loading medical conditions", e); return []; }),
-        getAllAppReferences().catch((e) => { console.error("Error loading app references", e); return []; })
+        getAllAppReferences().catch((e) => { console.error("Error loading app references", e); return []; }),
+        listVideos().catch((e) => { console.error("Error loading videos", e); return []; })
       ]);
+      setAllVideos(videoList || []);
 
       setMedicalConditions(medicalList || []);
       setAppReferences(referenceList || []);
@@ -257,7 +266,13 @@ const ReportsPage = () => {
       let result = [];
       const branchToFetch = selectedBranchId || "all";
 
-      if (viewType === "highest_selling_products") {
+      if (viewType === "videoReports") {
+        const params = {};
+        if (selectedVideoId) params.videoId = selectedVideoId;
+        if (selectedMinPercentageOption) params.minPercentage = selectedMinPercentageOption;
+        const videoReportsData = await getVideoReports(params);
+        result = videoReportsData || [];
+      } else if (viewType === "highest_selling_products") {
         const [orderData, stockList] = await Promise.all([
           getAllOrders({ search: "", status: "", limit: 10000 }).catch(e => ({ orders: [] })),
           getStocks(selectedBranchId ? { branchId: selectedBranchId } : {}).catch(e => [])
@@ -438,6 +453,10 @@ const ReportsPage = () => {
             const users = await getAllUsers();
             result = users || [];
             break;
+          case "videoReports":
+            const videoReportsData = await getVideoReports({ minPercentage: videoReportMinPercentage });
+            result = videoReportsData || [];
+            break;
           case "appointments":
           default:
             const appointmentParams = {
@@ -487,10 +506,29 @@ const ReportsPage = () => {
       : [];
 
     return data.filter(item => {
+      if (viewType === "videoReports") {
+        const matchesSearch = !searchTerm || 
+          (item.userName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+           item.userSurname?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+           (item.videoTitle?.english && item.videoTitle.english.toLowerCase().includes(searchTerm.toLowerCase())) ||
+           (item.videoTitle?.hindi && item.videoTitle.hindi.toLowerCase().includes(searchTerm.toLowerCase())) ||
+           (item.videoTitle?.gujarati && item.videoTitle.gujarati.toLowerCase().includes(searchTerm.toLowerCase())));
+        return matchesSearch;
+      }
+      
       if (viewType === "highest_selling_products") {
         const matchesSearch = !searchTerm || item.name.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesType = itemTypeFilter === "all" || item.type === itemTypeFilter;
         return matchesSearch && matchesType;
+      }
+
+      if (reportType === 'videoReports') {
+        const matchesSearch = !searchTerm || 
+          (item.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+           item.surname?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+           item.mobileNumber?.includes(searchTerm) || 
+           item.email?.toLowerCase().includes(searchTerm.toLowerCase()));
+        return matchesSearch;
       }
       
       let user = null;
@@ -774,13 +812,54 @@ const ReportsPage = () => {
     { label: "Orders", value: "orders" },
     { label: "User Video Watch", value: "video" },
     { label: "Screen Usage", value: "screen" },
+    { label: "Video Reports", value: "videoReports" },
   ];
 
   const renderTable = () => {
     if (loading) return <div className="flex justify-center p-10"><div className="animate-spin rounded-full h-10 w-10 border-b-2 border-yellow-600"></div></div>;
     if (filteredData.length === 0) return <div className="text-center p-10 text-gray-500 font-medium">No records found matching your filters.</div>;
 
-    if (viewType === "highest_selling_products") {
+    if (viewType === "videoReports") {
+        return (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="text-[11px] text-gray-400 uppercase bg-gray-50/50 font-bold tracking-wider">
+                <tr>
+                  <th className="px-6 py-4">Rank</th>
+                  <th className="px-6 py-4">User</th>
+                  <th className="px-6 py-4">Video</th>
+                  <th className="px-6 py-4">Watched Seconds</th>
+                  <th className="px-6 py-4">Total Seconds</th>
+                  <th className="px-6 py-4">Watch Percentage</th>
+                  <th className="px-6 py-4">Completed</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {paginatedData.map((item, index) => {
+                  const globalIndex = (currentPage - 1) * itemsPerPage + index + 1;
+                  return (
+                    <tr key={`${item.userId}-${item.videoId}-${index}`} className="bg-white hover:bg-gray-50/80 transition-colors">
+                      <td className="px-6 py-4 text-center font-bold text-gray-400">#{globalIndex}</td>
+                      <td className="px-6 py-4 font-semibold text-gray-900">{item.userName} {item.userSurname}</td>
+                      <td className="px-6 py-4 text-gray-600">{item.videoTitle?.english || item.videoTitle || "Unknown Video"}</td>
+                      <td className="px-6 py-4 text-center font-bold text-indigo-600">{item.watchedSeconds}s</td>
+                      <td className="px-6 py-4 text-center font-bold text-gray-600">{item.totalSeconds}s</td>
+                      <td className="px-6 py-4 text-center font-bold text-indigo-600">
+                        {(typeof item.watchPercentage === 'number' ? item.watchPercentage : 0).toFixed(1)}%
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase ${item.isCompleted ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
+                          {item.isCompleted ? "Yes" : "No"}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        );
+    } else if (viewType === "highest_selling_products") {
       return (
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
@@ -1039,6 +1118,47 @@ const ReportsPage = () => {
             </table>
           </div>
         );
+      case "videoReports":
+        return (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left">
+              <thead className="text-[11px] text-gray-400 uppercase bg-gray-50/50 font-bold tracking-wider">
+                <tr>
+                  <th className="px-6 py-4">Rank</th>
+                  <th className="px-6 py-4">Patient</th>
+                  <th className="px-6 py-4">Mobile</th>
+                  <th className="px-6 py-4">Email</th>
+                  <th className="px-6 py-4">Total Videos Watched</th>
+                  <th className="px-6 py-4">Completed Videos</th>
+                  <th className="px-6 py-4">Watch Percentage</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {paginatedData.map((item, index) => {
+                  const globalIndex = (currentPage - 1) * itemsPerPage + index + 1;
+                  return (
+                    <tr key={item.userId || index} className="bg-white hover:bg-gray-50/80 transition-colors">
+                      <td className="px-6 py-4 text-center font-bold text-gray-400">#{globalIndex}</td>
+                      <td className="px-6 py-4 font-semibold text-gray-900">{item.name} {item.surname}</td>
+                      <td className="px-6 py-4 text-gray-600">{item.mobileNumber}</td>
+                      <td className="px-6 py-4 text-gray-600">{item.email}</td>
+                      <td className="px-6 py-4 text-center font-bold text-indigo-600">{item.totalVideos}</td>
+                      <td className="px-6 py-4 text-center font-bold text-green-600">{item.completedVideos}</td>
+                      <td className="px-6 py-4 text-center">
+                        <div className="flex items-center justify-center gap-2">
+                          <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-indigo-500" style={{ width: `${Math.min(100, typeof item.watchPercentage === 'number' ? item.watchPercentage : 0)}%` }}></div>
+                          </div>
+                          <span className="text-[10px] font-black text-indigo-600 uppercase">{(typeof item.watchPercentage === 'number' ? item.watchPercentage : 0).toFixed(1)}%</span>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        );
 
       case "reschedule":
         return (
@@ -1192,6 +1312,9 @@ const ReportsPage = () => {
     setFilterSleep("");
     setLocalOnlineFilter("");
     setRescheduleFilter("");
+    setVideoReportMinPercentage("");
+    setSelectedMinPercentageOption("");
+    setSelectedVideoId("");
   };
 
   return (
@@ -1227,7 +1350,8 @@ const ReportsPage = () => {
                 options={[
                   { label: "User", value: "user" },
                   { label: "Doctor", value: "doctor" },
-                  { label: "Products", value: "highest_selling_products" }
+                  { label: "Products", value: "highest_selling_products" },
+                  { label: "Videos", value: "videoReports" }
                 ]}
                 value={viewType}
                 onChange={setViewType}
@@ -1238,7 +1362,7 @@ const ReportsPage = () => {
         </div>
 
         {/* Summary Stat Cards - Row 1 */}
-        {viewType !== "highest_selling_products" && (
+        {viewType !== "highest_selling_products" && viewType !== "videoReports" && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all hover:shadow-md">
@@ -1396,7 +1520,59 @@ const ReportsPage = () => {
         )}        {/* Ultra-Compact 6-Column Precision Grid */}
         <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm relative overflow-visible">
           <div className="px-6 py-5 flex flex-col gap-5">
-            {reportType === "appointments" ? (
+            {viewType === "videoReports" ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-3 items-end">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Watch Percentage</label>
+                  <Dropdown
+                    options={[
+                      { label: "All", value: "" },
+                      { label: "20%", value: "20" },
+                      { label: "40%", value: "40" },
+                      { label: "60%", value: "60" },
+                      { label: "80%", value: "80" },
+                      { label: "100%", value: "100" }
+                    ]}
+                    value={selectedMinPercentageOption}
+                    onChange={setSelectedMinPercentageOption}
+                    placeholder="Select Percentage"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Specific Video</label>
+                  <Dropdown
+                    options={[
+                      { label: "All Videos", value: "" },
+                      ...(allVideos || []).map(v => ({
+                        label: v.title?.english || v.title || "Unknown Video",
+                        value: v._id
+                      }))
+                    ]}
+                    value={selectedVideoId}
+                    onChange={setSelectedVideoId}
+                    placeholder="Select Video"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Global Search</label>
+                  <div className="relative">
+                    <input type="text" placeholder="Search user or video..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-[40px] pl-10 pr-4 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all" />
+                    <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <button
+                    type="button"
+                    onClick={resetAllFilters}
+                    title="Reset All Filters"
+                    className="w-full h-[40px] bg-gray-50 text-gray-600 border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm"
+                  >
+                    <MdRefresh size={18} className="transition-transform group-hover:rotate-180" />
+                    <span>Reset</span>
+                  </button>
+                </div>
+              </div>
+            ) : reportType === "appointments" ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-x-6 gap-y-3 items-end">
                 <div className="flex flex-col gap-1">
                   <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Report</label>
@@ -1430,6 +1606,35 @@ const ReportsPage = () => {
                   <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Global Patient Search</label>
                   <div className="relative">
                     <input type="text" placeholder="Name, mobile or ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-[40px] pl-10 pr-4 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all" />
+                    <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+                  </div>
+                </div>
+                <div className="flex flex-col gap-1">
+                  <button
+                    type="button"
+                    onClick={resetAllFilters}
+                    title="Reset All Filters"
+                    className="w-full h-[40px] bg-gray-50 text-gray-600 border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm"
+                  >
+                    <MdRefresh size={18} className="transition-transform group-hover:rotate-180" />
+                    <span>Reset</span>
+                  </button>
+                </div>
+              </div>
+            ) : reportType === "videoReports" ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-3 items-end">
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Report</label>
+                  <Dropdown options={reportOptions} value={reportType} onChange={(val) => { setReportType(val); setRawData([]); setSearchTerm(""); }} placeholder="Report" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Min Watch Percentage</label>
+                  <input type="number" placeholder="0-100" value={videoReportMinPercentage} onChange={(e) => setVideoReportMinPercentage(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all" />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Global Search</label>
+                  <div className="relative">
+                    <input type="text" placeholder="Name, mobile or email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-[40px] pl-10 pr-4 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all" />
                     <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                   </div>
                 </div>
@@ -1632,7 +1837,9 @@ const ReportsPage = () => {
           <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-gradient-to-r from-gray-50/50 to-transparent">
             <h2 className="font-black text-gray-900 flex items-center gap-3 text-lg">
               <div className={`p-2 rounded-xl bg-white shadow-sm border border-gray-50`}>
-                {viewType === "highest_selling_products" ? (
+                {viewType === "videoReports" ? (
+                  <MdVideoLibrary className="text-indigo-500" />
+                ) : viewType === "highest_selling_products" ? (
                   itemTypeFilter === "Plan" ? <MdSummarize className="text-teal-500" /> : <MdShoppingCart className="text-green-500" />
                 ) : (
                   <>
@@ -1640,13 +1847,16 @@ const ReportsPage = () => {
                     {reportType === 'appointments' && !checklistReportEnabled && <MdCalendarMonth className="text-blue-500" />}
                     {reportType === 'orders' && !checklistReportEnabled && <MdShoppingCart className="text-green-500" />}
                     {reportType === 'video' && !checklistReportEnabled && <MdVideoLibrary className="text-purple-500" />}
+                    {reportType === 'videoReports' && <MdVideoLibrary className="text-indigo-500" />}
                     {reportType === 'reschedule' && !checklistReportEnabled && <MdHistory className="text-amber-500" />}
                     {reportType === 'screen' && !checklistReportEnabled && <MdVideoSettings className="text-violet-500" />}
                     {checklistReportEnabled && <MdSummarize className="text-teal-500" />}
                   </>
                 )}
               </div>
-              {viewType === "highest_selling_products"
+              {viewType === "videoReports"
+                ? "Video Reports"
+                : viewType === "highest_selling_products"
                 ? (itemTypeFilter === "Plan" ? "Plan" : "Product")
                 : (checklistReportEnabled ? "Daily Checklist" : reportOptions.find(o => o.value === reportType)?.label)} Data
             </h2>

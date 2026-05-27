@@ -409,15 +409,6 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                   {!isCollapsed && <span>Medical Conditions</span>}
                 </Link>
               )}
-              {(role === "Admin" || can("show app reference page")) && (
-                <Link
-                  href="/component/faq"
-                  className={linkClasses("/component/faq")}
-                >
-                  <MdQuiz size={20} />
-                  {!isCollapsed && <span>FAQs</span>}
-                </Link>
-              )}
               <Link
                 href="/component/permission"
                 className={linkClasses("/component/permission")}
@@ -426,6 +417,15 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                 {!isCollapsed && <span>Permissions</span>}
               </Link>
             </>
+          )}
+          {(role === "Admin" || can("show faq page")) && (
+            <Link
+              href="/component/faq"
+              className={linkClasses("/component/faq")}
+            >
+              <MdQuiz size={20} />
+              {!isCollapsed && <span>FAQs</span>}
+            </Link>
           )}
         </div>
 

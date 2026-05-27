@@ -43,6 +43,7 @@ const PERMISSION_GROUPS = [
       { label: "Show Complaints Page", value: "show complaints page" },
       { label: "Show GST Reports Page", value: "show gst reports page" },
       { label: "Show Medical Condition Page", value: "show medical condition page" },
+      { label: "Show FAQ Page", value: "show faq page" },
       { label: "Show Messages Page", value: "show messages page" },
       { label: "Show Party Page", value: "show party page" },
       { label: "Show Permissions Page", value: "show permissions page" },
@@ -148,11 +149,11 @@ const PERMISSION_GROUPS = [
     ]
   },
   {
-    category: "Message Management",
+    category: "Command Management",
     permissions: [
-      { label: "Create Message", value: "create message" },
-      { label: "Edit Message", value: "edit message" },
-      { label: "Delete Message", value: "delete message" },
+      { label: "Create Command", value: "create command" },
+      { label: "Edit Command", value: "edit command" },     
+      { label: "Delete Command", value: "delete command" },
     ]
   },
   {
@@ -196,14 +197,7 @@ const PERMISSION_GROUPS = [
       { label: "Manage Subadmin Leave", value: "manage subadmin leave" },
     ]
   },
-  {
-    category: "User Chat Management",
-    permissions: [
-      { label: "Send Chat Message", value: "send chat message" },
-      { label: "Transfer Appointment", value: "transfer appointment" },
-      { label: "Delete Chat Message", value: "delete chat message" },
-    ]
-  },
+
   {
     category: "Accounting & Reports",
     permissions: [
