@@ -2,7 +2,8 @@ import axios from "axios";
 
 // export const API_BASE = "http://192.168.29.204:3002/api/v1";
 // export const API_BASE = "http://69.62.73.194:4009/api/v1";
-  export const API_BASE = "https://admin.detoxpathy.com/api/v1";
+export const API_BASE = "https://admin.detoxpathy.com/api/v1";
+// export const API_BASE = "https://backend.fatendfit.com/api/v1";
 // Host base used to resolve file URLs coming from multer (e.g., uploads/..)
 export const API_HOST = API_BASE.replace(/\/?api\/?v1\/?$/, "").replace(
   /\/$/,
@@ -607,6 +608,14 @@ export const createVideoApi = async (payload) => {
       data.append("video_gujarati_url", payload.video_gujarati_url);
     if (payload.video_hindi_url)
       data.append("video_hindi_url", payload.video_hindi_url);
+  } else if (payload.videoType === 3) {
+    // Zoom URLs for each language
+    if (payload.video_english_url)
+      data.append("video_english_url", payload.video_english_url);
+    if (payload.video_gujarati_url)
+      data.append("video_gujarati_url", payload.video_gujarati_url);
+    if (payload.video_hindi_url)
+      data.append("video_hindi_url", payload.video_hindi_url);
   }
 
   if (typeof payload.videoSecond !== "undefined")
@@ -659,6 +668,9 @@ export const createVideoApi = async (payload) => {
     data.append("requiredCorrectAnswer", String(payload.requiredCorrectAnswer));
 
   if (payload.plan) data.append("plan", payload.plan);
+  if (typeof payload.zoomStartUrl !== "undefined") {
+    data.append("zoomStartUrl", payload.zoomStartUrl);
+  }
 
   const res = await axios.post(`${API_BASE}/admin/video/create`, data, {
     headers: { ...getAuthHeaders(), "Content-Type": "multipart/form-data" },
@@ -690,6 +702,14 @@ export const updateVideoById = async (id, payload) => {
     if (payload.video_hindi) data.append("video_hindi", payload.video_hindi);
   } else if (payload.videoType === 2) {
     // URLs for each language
+    if (payload.video_english_url)
+      data.append("video_english_url", payload.video_english_url);
+    if (payload.video_gujarati_url)
+      data.append("video_gujarati_url", payload.video_gujarati_url);
+    if (payload.video_hindi_url)
+      data.append("video_hindi_url", payload.video_hindi_url);
+  } else if (payload.videoType === 3) {
+    // Zoom URLs for each language
     if (payload.video_english_url)
       data.append("video_english_url", payload.video_english_url);
     if (payload.video_gujarati_url)
@@ -748,6 +768,9 @@ export const updateVideoById = async (id, payload) => {
     data.append("requiredCorrectAnswer", String(payload.requiredCorrectAnswer));
 
   if (payload.plan) data.append("plan", payload.plan);
+  if (typeof payload.zoomStartUrl !== "undefined") {
+    data.append("zoomStartUrl", payload.zoomStartUrl);
+  }
 
   const res = await axios.put(`${API_BASE}/admin/video/update/${id}`, data, {
     headers: { ...getAuthHeaders(), "Content-Type": "multipart/form-data" },
@@ -759,6 +782,15 @@ export const deleteVideoById = async (id) => {
   const res = await axios.delete(`${API_BASE}/admin/video/${id}`, {
     headers: getAuthHeaders(),
   });
+  return res.data;
+};
+
+export const generateZoomMeetingApi = async (topic) => {
+  const res = await axios.post(
+    `${API_BASE}/admin/video/generate-zoom-meeting`,
+    { topic },
+    { headers: getAuthHeaders() }
+  );
   return res.data;
 };
 

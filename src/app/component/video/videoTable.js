@@ -126,18 +126,25 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                           7: "Body Detoxification",
                           8: "Instruction",
                           9: "Hold Video",
-                        }[video.type] || video.type}
+                          10: "Zoom Session",
+                        }[video.type] || (video.videoType === 3 ? "Zoom Session" : video.type)}
                       </span>
-                      <span>Day: {video.day ?? "N/A"}</span>
-                      <span>Duration: {video.videoSec || 0}s</span>
-                      <span>Size: {video.videoSize || 0} MB</span>
+                      {video.videoType !== 3 && video.type !== 10 && (
+                        <>
+                          <span>Day: {video.day ?? "N/A"}</span>
+                          <span>Duration: {video.videoSec || 0}s</span>
+                          <span>Size: {video.videoSize || 0} MB</span>
+                        </>
+                      )}
                       {video.category && (
                         <span>Category: {video.category.categoryTitle}</span>
                       )}
                       {video.plan && (
                         <span>Plan: {video.plan.name}</span>
                       )}
-                      <span>Required Answers: {video.requiredCorrectAnswer || 0}</span>
+                      {video.videoType !== 3 && video.type !== 10 && (
+                        <span>Required Answers: {video.requiredCorrectAnswer || 0}</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -229,31 +236,65 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                       )}
                     </div>
 
-                    {/* Video */}
+                    {/* Video / Zoom Session */}
                     <div>
                       <p className="text-xs font-medium text-gray-600 mb-2">
-                        Video
+                        {video.videoType === 3 ? "Zoom URL" : "Video"}
                       </p>
-                      {getTextInLanguage(
-                        video.videoMultiLang || video.video,
-                        "english"
-                      ) ? (
-                        <video
-                          src={toAbsolute(
-                            getTextInLanguage(
-                              video.videoMultiLang || video.video,
-                              "english"
-                            )
-                          )}
-                          controls
-                          className="w-full h-40 rounded-xl border border-yellow-200 object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center border border-yellow-200">
-                          <span className="text-gray-400 text-xs">
-                            No Video
+                      {video.videoType === 3 ? (
+                        <div className="flex flex-col justify-between items-center bg-white p-3 h-auto min-h-40 rounded-xl border border-yellow-200 gap-2">
+                          <span className="text-xs text-gray-500 break-all overflow-y-auto w-full max-h-16 text-center">
+                            {getTextInLanguage(video.videoMultiLang || video.video, "english")}
                           </span>
+                          <div className="w-full space-y-2">
+                            <a
+                              href={getTextInLanguage(video.videoMultiLang || video.video, "english")}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-full py-2 bg-[#134D41] hover:bg-[#0f3d33] text-white rounded-xl transition duration-300 font-semibold text-xs flex items-center justify-center gap-1.5 shadow-md"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                              Join Session
+                            </a>
+                            {video.zoomStartUrl && (
+                              <a
+                                href={video.zoomStartUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl transition duration-300 font-semibold text-xs flex items-center justify-center gap-1.5 shadow-md"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                                Join as Host
+                              </a>
+                            )}
+                          </div>
                         </div>
+                      ) : (
+                        getTextInLanguage(
+                          video.videoMultiLang || video.video,
+                          "english"
+                        ) ? (
+                          <video
+                            src={toAbsolute(
+                              getTextInLanguage(
+                                video.videoMultiLang || video.video,
+                                "english"
+                              )
+                            )}
+                            controls
+                            className="w-full h-40 rounded-xl border border-yellow-200 object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center border border-yellow-200">
+                            <span className="text-gray-400 text-xs">
+                              No Video
+                            </span>
+                          </div>
+                        )
                       )}
                     </div>
 
@@ -324,31 +365,65 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                       )}
                     </div>
 
-                    {/* Video */}
+                    {/* Video / Zoom Session */}
                     <div>
                       <p className="text-xs font-medium text-gray-600 mb-2">
-                        Video
+                        {video.videoType === 3 ? "Zoom URL" : "Video"}
                       </p>
-                      {getTextInLanguage(
-                        video.videoMultiLang || video.video,
-                        "gujarati"
-                      ) ? (
-                        <video
-                          src={toAbsolute(
-                            getTextInLanguage(
-                              video.videoMultiLang || video.video,
-                              "gujarati"
-                            )
-                          )}
-                          controls
-                          className="w-full h-40 rounded-xl border border-amber-200 object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center border border-amber-200">
-                          <span className="text-gray-400 text-xs">
-                            No Video
+                      {video.videoType === 3 ? (
+                        <div className="flex flex-col justify-between items-center bg-white p-3 h-auto min-h-40 rounded-xl border border-amber-200 gap-2">
+                          <span className="text-xs text-gray-500 break-all overflow-y-auto w-full max-h-16 text-center">
+                            {getTextInLanguage(video.videoMultiLang || video.video, "gujarati")}
                           </span>
+                          <div className="w-full space-y-2">
+                            <a
+                              href={getTextInLanguage(video.videoMultiLang || video.video, "gujarati")}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-full py-2 bg-[#134D41] hover:bg-[#0f3d33] text-white rounded-xl transition duration-300 font-semibold text-xs flex items-center justify-center gap-1.5 shadow-md"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                              Join Session
+                            </a>
+                            {video.zoomStartUrl && (
+                              <a
+                                href={video.zoomStartUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl transition duration-300 font-semibold text-xs flex items-center justify-center gap-1.5 shadow-md"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                                Join as Host
+                              </a>
+                            )}
+                          </div>
                         </div>
+                      ) : (
+                        getTextInLanguage(
+                          video.videoMultiLang || video.video,
+                          "gujarati"
+                        ) ? (
+                          <video
+                            src={toAbsolute(
+                              getTextInLanguage(
+                                video.videoMultiLang || video.video,
+                                "gujarati"
+                              )
+                            )}
+                            controls
+                            className="w-full h-40 rounded-xl border border-amber-200 object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center border border-amber-200">
+                            <span className="text-gray-400 text-xs">
+                              No Video
+                            </span>
+                          </div>
+                        )
                       )}
                     </div>
 
@@ -419,31 +494,65 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                       )}
                     </div>
 
-                    {/* Video */}
+                    {/* Video / Zoom Session */}
                     <div>
                       <p className="text-xs font-medium text-gray-600 mb-2">
-                        Video
+                        {video.videoType === 3 ? "Zoom URL" : "Video"}
                       </p>
-                      {getTextInLanguage(
-                        video.videoMultiLang || video.video,
-                        "hindi"
-                      ) ? (
-                        <video
-                          src={toAbsolute(
-                            getTextInLanguage(
-                              video.videoMultiLang || video.video,
-                              "hindi"
-                            )
-                          )}
-                          controls
-                          className="w-full h-40 rounded-xl border border-yellow-200 object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center border border-yellow-200">
-                          <span className="text-gray-400 text-xs">
-                            No Video
+                      {video.videoType === 3 ? (
+                        <div className="flex flex-col justify-between items-center bg-white p-3 h-auto min-h-40 rounded-xl border border-yellow-200 gap-2">
+                          <span className="text-xs text-gray-500 break-all overflow-y-auto w-full max-h-16 text-center">
+                            {getTextInLanguage(video.videoMultiLang || video.video, "hindi")}
                           </span>
+                          <div className="w-full space-y-2">
+                            <a
+                              href={getTextInLanguage(video.videoMultiLang || video.video, "hindi")}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="w-full py-2 bg-[#134D41] hover:bg-[#0f3d33] text-white rounded-xl transition duration-300 font-semibold text-xs flex items-center justify-center gap-1.5 shadow-md"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                              Join Session
+                            </a>
+                            {video.zoomStartUrl && (
+                              <a
+                                href={video.zoomStartUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl transition duration-300 font-semibold text-xs flex items-center justify-center gap-1.5 shadow-md"
+                              >
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                                Join as Host
+                              </a>
+                            )}
+                          </div>
                         </div>
+                      ) : (
+                        getTextInLanguage(
+                          video.videoMultiLang || video.video,
+                          "hindi"
+                        ) ? (
+                          <video
+                            src={toAbsolute(
+                              getTextInLanguage(
+                                video.videoMultiLang || video.video,
+                                "hindi"
+                              )
+                            )}
+                            controls
+                            className="w-full h-40 rounded-xl border border-yellow-200 object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center border border-yellow-200">
+                            <span className="text-gray-400 text-xs">
+                              No Video
+                            </span>
+                          </div>
+                        )
                       )}
                     </div>
 

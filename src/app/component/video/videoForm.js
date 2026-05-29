@@ -4,7 +4,7 @@ import TimeButton from "@/utils/timebutton";
 import toast from "react-hot-toast";
 import { validateForm } from "@/utils/validation";
 import Dropdown from "@/utils/dropdown";
-import { getAllCategoriesApi, getAllPlans } from "@/Api/AllApi";
+import { getAllCategoriesApi, getAllPlans, generateZoomMeetingApi } from "@/Api/AllApi";
 import MultiLanguageInput from "@/components/MultiLanguageInput";
 
 const VideoForm = ({
@@ -46,13 +46,16 @@ const VideoForm = ({
     category: "",
     plan: "",
     requiredCorrectAnswer: "",
+    zoomStartUrl: "",
   });
   const [errors, setErrors] = useState({});
   const [categories, setCategories] = useState([]);
   const [plans, setPlans] = useState([]);
+  const [generatingMeeting, setGeneratingMeeting] = useState(false);
 
   useEffect(() => {
     if (initialValues) {
+      const resolvedVideoType = initialValues.videoType ?? (Number(initialValues.type) === 10 ? 3 : 1);
       setForm((prev) => ({
         ...prev,
         // Multi-language titles
@@ -69,30 +72,30 @@ const VideoForm = ({
           initialValues.title?.hindi ??
           "",
         // Video settings
-        videoType: initialValues.videoType ?? 1,
+        videoType: resolvedVideoType,
         video_english: null,
         video_gujarati: null,
         video_hindi: null,
         video_english_url:
-          initialValues.videoType === 2
+          resolvedVideoType === 2 || resolvedVideoType === 3
             ? initialValues.videoMultiLang?.english ??
               initialValues.video?.english ??
               ""
             : "",
         video_gujarati_url:
-          initialValues.videoType === 2
+          resolvedVideoType === 2 || resolvedVideoType === 3
             ? initialValues.videoMultiLang?.gujarati ??
               initialValues.video?.gujarati ??
               ""
             : "",
         video_hindi_url:
-          initialValues.videoType === 2
+          resolvedVideoType === 2 || resolvedVideoType === 3
             ? initialValues.videoMultiLang?.hindi ??
               initialValues.video?.hindi ??
               ""
             : "",
         videoSecond:
-          initialValues.videoType === 2 ? initialValues.videoSec ?? "" : "",
+          resolvedVideoType === 2 ? initialValues.videoSec ?? "" : "",
         // Thumbnail settings
         thumbnailType: initialValues.thumbnailType ?? 1,
         thumbnail_english: null,
@@ -141,6 +144,7 @@ const VideoForm = ({
             ? initialValues.plan
             : initialValues.plan?._id ?? "",
         requiredCorrectAnswer: initialValues.requiredCorrectAnswer ?? "",
+        zoomStartUrl: initialValues.zoomStartUrl ?? "",
       }));
       setErrors({});
     } else {
@@ -171,6 +175,7 @@ const VideoForm = ({
         category: "",
         plan: "",
         requiredCorrectAnswer: "",
+        zoomStartUrl: "",
       });
       setErrors({});
     }
@@ -230,6 +235,7 @@ const VideoForm = ({
     const videoTypeNum = Number(form.videoType);
     const thumbTypeNum = Number(form.thumbnailType);
     const typeNum = Number(form.type);
+    const isZoomSession = videoTypeNum === 3;
 
     let errs = validateForm({
       title_english: {
@@ -245,16 +251,16 @@ const VideoForm = ({
         rules: isUpdate ? [] : [required("Hindi Title")],
       },
       video_english_url: {
-        value: videoTypeNum === 2 ? form.video_english_url : "ok",
-        rules: isUpdate ? [] : [required("English Video URL")],
+        value: videoTypeNum === 2 || videoTypeNum === 3 ? form.video_english_url : "ok",
+        rules: isUpdate ? [] : [required(isZoomSession ? "Zoom Meeting URL" : "English Video URL")],
       },
       video_gujarati_url: {
-        value: videoTypeNum === 2 ? form.video_gujarati_url : "ok",
-        rules: isUpdate ? [] : [required("Gujarati Video URL")],
+        value: videoTypeNum === 2 || videoTypeNum === 3 ? form.video_gujarati_url : "ok",
+        rules: isUpdate ? [] : [required(isZoomSession ? "Zoom Meeting URL" : "Gujarati Video URL")],
       },
       video_hindi_url: {
-        value: videoTypeNum === 2 ? form.video_hindi_url : "ok",
-        rules: isUpdate ? [] : [required("Hindi Video URL")],
+        value: videoTypeNum === 2 || videoTypeNum === 3 ? form.video_hindi_url : "ok",
+        rules: isUpdate ? [] : [required(isZoomSession ? "Zoom Meeting URL" : "Hindi Video URL")],
       },
       video_english: {
         value: videoTypeNum === 1 ? form.video_english : "ok",
@@ -296,21 +302,21 @@ const VideoForm = ({
         value: thumbTypeNum === 1 ? form.thumbnail_hindi : "ok",
         rules: isUpdate ? [] : [required("Hindi Thumbnail file")],
       },
-      type: { value: typeNum, rules: [required("Type")] },
+      type: { value: isZoomSession ? 10 : typeNum, rules: [required("Type")] },
       day: {
-        value: typeNum === 1 ? form.day : "ok",
+        value: isZoomSession ? "ok" : (typeNum === 1 ? form.day : "ok"),
         rules: isUpdate ? [numberRule("Day")] : [required("Day"), numberRule("Day")],
       },
       category: {
-        value: [2, 4].includes(typeNum) ? (form.category ? "ok" : "") : "ok",
+        value: isZoomSession ? "ok" : ([2, 4].includes(typeNum) ? (form.category ? "ok" : "") : "ok"),
         rules: isUpdate ? [] : [required("Category")],
       },
       plan: {
-        value: typeNum === 8 ? (form.plan ? "ok" : "") : "ok",
+        value: isZoomSession ? "ok" : (typeNum === 8 ? (form.plan ? "ok" : "") : "ok"),
         rules: [required("Plan")],
       },
       requiredCorrectAnswer: {
-        value: form.requiredCorrectAnswer,
+        value: isZoomSession ? "0" : form.requiredCorrectAnswer,
         rules: isUpdate ? [numberRule("Required Correct Answer")] : [required("Required Correct Answer"), numberRule("Required Correct Answer")],
       },
     });
@@ -327,12 +333,15 @@ const VideoForm = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
+    const isZoomSession = Number(form.videoType) === 3;
     await onSubmit({
       ...form,
-      videoSecond: form.videoSecond ? Number(form.videoSecond) : undefined,
-      day: form.day ? Number(form.day) : undefined,
-      plan: Number(form.type) === 8 ? form.plan : undefined,
-      requiredCorrectAnswer: form.requiredCorrectAnswer ? Number(form.requiredCorrectAnswer) : 0,
+      type: isZoomSession ? 10 : Number(form.type),
+      videoSecond: isZoomSession ? 0 : (form.videoSecond ? Number(form.videoSecond) : undefined),
+      day: isZoomSession ? undefined : (form.day ? Number(form.day) : undefined),
+      plan: !isZoomSession && Number(form.type) === 8 ? form.plan : undefined,
+      requiredCorrectAnswer: isZoomSession ? 0 : (form.requiredCorrectAnswer ? Number(form.requiredCorrectAnswer) : 0),
+      zoomStartUrl: isZoomSession ? form.zoomStartUrl : undefined,
     });
   };
 
@@ -350,6 +359,7 @@ const VideoForm = ({
   const videoTypeOptions = [
     { label: "Upload File", value: 1 },
     { label: "Video URL", value: 2 },
+    { label: "Zoom session", value: 3 },
   ];
 
   const thumbTypeOptions = [
@@ -395,6 +405,7 @@ const VideoForm = ({
               video_gujarati_url: "",
               video_hindi_url: "",
               videoSecond: "",
+              zoomStartUrl: "",
             }))
           }
         />
@@ -417,7 +428,7 @@ const VideoForm = ({
         />
       </div>
 
-      {Number(form.videoType) === 1 ? (
+      {Number(form.videoType) === 1 && (
         <MultiLanguageInput
           key="video-files"
           label="Video Files"
@@ -439,7 +450,9 @@ const VideoForm = ({
           type="file"
           accept="video/*"
         />
-      ) : (
+      )}
+
+      {Number(form.videoType) === 2 && (
         <>
           <MultiLanguageInput
             key="video-urls"
@@ -473,6 +486,63 @@ const VideoForm = ({
             {errors.videoSecond && <p className="text-red-500 text-sm mt-1">{errors.videoSecond}</p>}
           </div>
         </>
+      )}
+
+      {Number(form.videoType) === 3 && (
+        <div className="space-y-2">
+          <label className="block mb-1 font-semibold text-gray-700">Zoom Meeting URL</label>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={form.video_english_url || ""}
+              onChange={(e) => {
+                const url = e.target.value;
+                setForm((f) => ({
+                  ...f,
+                  video_english_url: url,
+                  video_gujarati_url: url,
+                  video_hindi_url: url,
+                }));
+              }}
+              className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition bg-gray-50"
+              placeholder="https://zoom.us/j/1234567890?pwd=xxxx"
+            />
+            <button
+              type="button"
+              disabled={generatingMeeting}
+              onClick={async () => {
+                try {
+                  setGeneratingMeeting(true);
+                  const topic = form.title_english || "Detoxpathy Session Meeting";
+                  const result = await generateZoomMeetingApi(topic);
+                  if (result && result.joinUrl) {
+                    setForm((f) => ({
+                      ...f,
+                      video_english_url: result.joinUrl,
+                      video_gujarati_url: result.joinUrl,
+                      video_hindi_url: result.joinUrl,
+                      zoomStartUrl: result.startUrl || "",
+                    }));
+                    toast.success("Zoom meeting generated successfully!");
+                  } else {
+                    toast.error("Failed to generate Zoom meeting. Invalid response.");
+                  }
+                } catch (err) {
+                  const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || "Failed to generate meeting";
+                  toast.error(errorMsg);
+                } finally {
+                  setGeneratingMeeting(false);
+                }
+              }}
+              className={`px-6 py-3 text-white rounded-xl transition duration-300 font-semibold text-xs uppercase tracking-wider whitespace-nowrap shadow-md hover:shadow-lg ${
+                generatingMeeting ? "bg-gray-400 cursor-not-allowed" : "bg-[#134D41] hover:bg-[#0f3d33]"
+              }`}
+            >
+              {generatingMeeting ? "Generating..." : "Generate Zoom URL"}
+            </button>
+          </div>
+          {errors.video_english_url && <p className="text-red-500 text-sm mt-1">{errors.video_english_url}</p>}
+        </div>
       )}
 
       {Number(form.thumbnailType) === 1 ? (
@@ -520,79 +590,83 @@ const VideoForm = ({
         />
       )}
 
-      <div>
-        <label className="block mb-1 font-semibold text-gray-700">Type</label>
-        <Dropdown
-          options={typeOptions}
-          value={form.type}
-          onChange={(v) =>
-            setForm((f) => ({
-              ...f,
-              type: v,
-              day: "",
-              category: "",
-              plan: "",
-            }))
-          }
-          disabled={Boolean(initialValues)}
-        />
-      </div>
+      {Number(form.videoType) !== 3 && (
+        <>
+          <div>
+            <label className="block mb-1 font-semibold text-gray-700">Type</label>
+            <Dropdown
+              options={typeOptions}
+              value={form.type}
+              onChange={(v) =>
+                setForm((f) => ({
+                  ...f,
+                  type: v,
+                  day: "",
+                  category: "",
+                  plan: "",
+                }))
+              }
+              disabled={Boolean(initialValues)}
+            />
+          </div>
 
-      {shouldShowCategory && (
-        <div>
-          <Dropdown
-            label="Category"
-            options={filteredCategories.map((c) => ({
-              label: c.categoryTitle,
-              value: c._id,
-            }))}
-            value={form.category}
-            onChange={(val) => setForm((f) => ({ ...f, category: val }))}
-          />
-          {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
-        </div>
+          {shouldShowCategory && (
+            <div>
+              <Dropdown
+                label="Category"
+                options={filteredCategories.map((c) => ({
+                  label: c.categoryTitle,
+                  value: c._id,
+                }))}
+                value={form.category}
+                onChange={(val) => setForm((f) => ({ ...f, category: val }))}
+              />
+              {errors.category && <p className="text-red-500 text-sm mt-1">{errors.category}</p>}
+            </div>
+          )}
+
+          {shouldShowPlan && (
+            <div>
+              <Dropdown
+                label="Plan"
+                options={plans.map((p) => ({
+                  label: p.name,
+                  value: p._id,
+                }))}
+                value={form.plan}
+                onChange={(val) => setForm((f) => ({ ...f, plan: val }))}
+              />
+              {errors.plan && <p className="text-red-500 text-sm mt-1">{errors.plan}</p>}
+            </div>
+          )}
+
+          {Number(form.type) === 1 && (
+            <div>
+              <label className="block mb-1 font-semibold text-gray-700">Day</label>
+              <input
+                type="text"
+                value={form.day}
+                onChange={(e) => setForm((f) => ({ ...f, day: e.target.value }))}
+                className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition bg-gray-50"
+                placeholder="1"
+              />
+              {errors.day && <p className="text-red-500 text-sm mt-1">{errors.day}</p>}
+            </div>
+          )}
+
+          <div>
+            <label className="block mb-1 font-semibold text-gray-700">Required Correct Answer Count</label>
+            <input
+              type="text"
+              value={form.requiredCorrectAnswer}
+              onChange={(e) => setForm((f) => ({ ...f, requiredCorrectAnswer: e.target.value }))}
+              className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition bg-gray-50"
+              placeholder="e.g. 8"
+            />
+            {errors.requiredCorrectAnswer && <p className="text-red-500 text-sm mt-1">{errors.requiredCorrectAnswer}</p>}
+          </div>
+        </>
       )}
-
-      {shouldShowPlan && (
-        <div>
-          <Dropdown
-            label="Plan"
-            options={plans.map((p) => ({
-              label: p.name,
-              value: p._id,
-            }))}
-            value={form.plan}
-            onChange={(val) => setForm((f) => ({ ...f, plan: val }))}
-          />
-          {errors.plan && <p className="text-red-500 text-sm mt-1">{errors.plan}</p>}
-        </div>
-      )}
-
-      {Number(form.type) === 1 && (
-        <div>
-          <label className="block mb-1 font-semibold text-gray-700">Day</label>
-          <input
-            type="text"
-            value={form.day}
-            onChange={(e) => setForm((f) => ({ ...f, day: e.target.value }))}
-            className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition bg-gray-50"
-            placeholder="1"
-          />
-          {errors.day && <p className="text-red-500 text-sm mt-1">{errors.day}</p>}
-        </div>
-      )}
-
-      <div>
-        <label className="block mb-1 font-semibold text-gray-700">Required Correct Answer Count</label>
-        <input
-          type="text"
-          value={form.requiredCorrectAnswer}
-          onChange={(e) => setForm((f) => ({ ...f, requiredCorrectAnswer: e.target.value }))}
-          className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition bg-gray-50"
-          placeholder="e.g. 8"
-        />
-        {errors.requiredCorrectAnswer && <p className="text-red-500 text-sm mt-1">{errors.requiredCorrectAnswer}</p>}
-      </div>
 
       <MultiLanguageInput
         label="Video Description"
