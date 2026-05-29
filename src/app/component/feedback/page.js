@@ -46,8 +46,8 @@ const FeedbackPage = () => {
     if (selectedIds.length === 0) return;
     try {
       setLoading(true);
-      await bulkApproveFeedbacks(selectedIds, true);
-      toast.success(`${selectedIds.length} feedbacks approved!`);
+      await bulkApproveFeedbacks(selectedIds, "product", true);
+      toast.success(`${selectedIds.length} product feedbacks approved!`);
       setSelectedIds([]);
       await fetchData();
     } catch (e) {
@@ -59,7 +59,7 @@ const FeedbackPage = () => {
     }
   };
 
-  const filteredItems = items.filter(item => item.isApproved === showApproved);
+  const filteredItems = items.filter(item => item.isProductApproved === showApproved);
 
   return (
     <RoleGuard allow={["Admin"]}>
@@ -76,13 +76,13 @@ const FeedbackPage = () => {
                         onClick={() => { setShowApproved(false); setSelectedIds([]); }}
                         className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${!showApproved ? "bg-white shadow-sm text-[#134D41]" : "text-gray-500 hover:text-gray-700"}`}
                     >
-                        Pending
+                        Pending Product
                     </button>
                     <button 
                         onClick={() => { setShowApproved(true); setSelectedIds([]); }}
                         className={`px-4 py-1.5 rounded-md text-sm font-medium transition-all ${showApproved ? "bg-white shadow-sm text-[#134D41]" : "text-gray-500 hover:text-gray-700"}`}
                     >
-                        Approved
+                        Approved Product
                     </button>
                 </div>
 

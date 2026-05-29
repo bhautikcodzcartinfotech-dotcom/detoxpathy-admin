@@ -15,6 +15,18 @@ const FeedbackTable = ({ items, loading, selectedIds, onSelectChange, onSelectAl
     );
   };
 
+  const renderApprovalBadge = (isApproved) => {
+    return isApproved ? (
+      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-blue-100 text-blue-800">
+        Approved
+      </span>
+    ) : (
+      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-medium bg-yellow-100 text-yellow-800">
+        Pending
+      </span>
+    );
+  };
+
   if (loading) {
     return (
       <div className="w-full flex justify-center py-10">
@@ -40,14 +52,13 @@ const FeedbackTable = ({ items, loading, selectedIds, onSelectChange, onSelectAl
               <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">User</th>
               <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Ratings</th>
               <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Avg</th>
-              <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
               <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
             {items.length === 0 ? (
               <tr>
-                <td colSpan="6" className="px-6 py-10 text-center text-gray-400">
+                <td colSpan="5" className="px-6 py-10 text-center text-gray-400">
                   No feedback found
                 </td>
               </tr>
@@ -67,22 +78,26 @@ const FeedbackTable = ({ items, loading, selectedIds, onSelectChange, onSelectAl
                     <div className="text-xs text-gray-500">{item.userId?.mobileNo || ""}</div>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="space-y-1">
+                    <div className="space-y-2">
                         <div className="flex items-center gap-2">
                             <span className="text-[10px] text-gray-400 w-16">App:</span>
                             {renderStars(item.appExperience)}
+                            {renderApprovalBadge(item.isAppExperienceApproved)}
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="text-[10px] text-gray-400 w-16">Doctor:</span>
                             {renderStars(item.doctorCostultant)}
+                            {renderApprovalBadge(item.isDoctorCostultantApproved)}
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="text-[10px] text-gray-400 w-16">Product:</span>
                             {renderStars(item.product)}
+                            {renderApprovalBadge(item.isProductApproved)}
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="text-[10px] text-gray-400 w-16">Support:</span>
                             {renderStars(item.support)}
+                            {renderApprovalBadge(item.isSupportApproved)}
                         </div>
                     </div>
                   </td>
@@ -90,17 +105,6 @@ const FeedbackTable = ({ items, loading, selectedIds, onSelectChange, onSelectAl
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-100">
                       {item.averageRating}
                     </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    {item.isApproved ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            Approved
-                        </span>
-                    ) : (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
-                            Pending
-                        </span>
-                    )}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-500">
                     {new Date(item.createdAt).toLocaleDateString()}

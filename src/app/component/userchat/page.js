@@ -1024,14 +1024,11 @@ export default function ChatPage() {
                                   )}
                                   alt="Shared image"
                                   className="max-w-full max-h-64 rounded-2xl shadow-lg object-cover cursor-pointer hover:scale-105 transition-transform"
-                                  onClick={() =>
-                                    window.open(
-                                      resolveAudioUrl(
-                                        msg.audioUrl || msg.mediaUrl
-                                      ),
-                                      "_blank"
-                                    )
-                                  }
+                                   onClick={() => {
+                                     window.location.href = resolveAudioUrl(
+                                       msg.audioUrl || msg.mediaUrl
+                                     );
+                                   }}
                                 />
                                 {msg.fileName && (
                                   <p className="text-xs opacity-75 truncate">

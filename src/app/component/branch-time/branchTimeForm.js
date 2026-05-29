@@ -148,11 +148,11 @@ const BranchTimeForm = ({
                     />
                  </div>
              </div>
-             {availability.length > 1 && (
+             {availability.length > 0 && (
                <button
                  type="button"
                  onClick={() => handleRemoveRow(index)}
-                 className="absolute -top-2 -right-2 bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200 transition opacity-0 group-hover:opacity-100"
+                 className="absolute top-2 right-2 bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200 transition opacity-0 group-hover:opacity-100"
                >
                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
