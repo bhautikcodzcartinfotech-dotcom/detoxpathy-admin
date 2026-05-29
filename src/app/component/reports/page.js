@@ -21,6 +21,8 @@ import {
 import Dropdown from "@/utils/dropdown";
 import { useAuth } from "@/contexts/AuthContext";
 import toast from "react-hot-toast";
+import { exportToExcel } from "@/utils/excelExport";
+import { FiDownload } from "react-icons/fi";
 import {
   MdSummarize,
   MdCalendarMonth,
@@ -806,6 +808,38 @@ const ReportsPage = () => {
     };
   }, [filteredData, reportType]);
 
+  // Video Report Stats Calculation
+  const videoReportStats = useMemo(() => {
+    if (viewType !== "videoReports" || !filteredData.length) {
+      return {
+        totalUsers: 0,
+        avgWatchPercentage: 0,
+        completedCount: 0,
+        totalWatchedSeconds: 0
+      };
+    }
+
+    let totalWatchPercentage = 0;
+    let completedCount = 0;
+    let totalWatchedSeconds = 0;
+    const uniqueUserIds = new Set();
+
+    filteredData.forEach(item => {
+      const percentage = typeof item.watchPercentage === 'number' ? item.watchPercentage : 0;
+      totalWatchPercentage += percentage;
+      if (item.isCompleted) completedCount++;
+      totalWatchedSeconds += item.watchedSeconds || 0;
+      if (item.userId) uniqueUserIds.add(String(item.userId));
+    });
+
+    return {
+      totalUsers: uniqueUserIds.size,
+      avgWatchPercentage: filteredData.length > 0 ? (totalWatchPercentage / filteredData.length).toFixed(1) : 0,
+      completedCount,
+      totalWatchedSeconds
+    };
+  }, [viewType, filteredData]);
+
   const reportOptions = [
     { label: "All Users", value: "users" },
     { label: "Appointments", value: "appointments" },
@@ -1275,6 +1309,508 @@ const ReportsPage = () => {
     }
   };
 
+  const exportFilteredDataToExcel = () => {
+    try {
+      const dataToExport = sortedFilteredData;
+      if (!dataToExport || dataToExport.length === 0) {
+        toast.error("No data available to export");
+        return;
+      }
+
+      let sheetName = "";
+      let titleText = "";
+      let columns = [];
+      let rows = [];
+
+      const subtitleText = `Exported on: ${new Date().toLocaleString()}`;
+
+      if (viewType === "videoReports") {
+        sheetName = "Video Reports";
+        titleText = "Video Watch Progress Report";
+        columns = [
+          { width: 60 },
+          { width: 180 },
+          { width: 220 },
+          { width: 120 },
+          { width: 120 },
+          { width: 130 },
+          { width: 100 }
+        ];
+
+        rows = [
+          { height: 25, cells: [{ value: titleText, styleId: "Title", mergeAcross: 6 }] },
+          { height: 18, cells: [{ value: subtitleText, styleId: "SubTitle", mergeAcross: 6 }] },
+          { height: 10, cells: [] },
+          {
+            height: 25,
+            cells: [
+              { value: "Rank", styleId: "HeaderB2B" },
+              { value: "Patient Name", styleId: "HeaderB2B" },
+              { value: "Video Title", styleId: "HeaderB2B" },
+              { value: "Watched (s)", styleId: "HeaderB2B" },
+              { value: "Total (s)", styleId: "HeaderB2B" },
+              { value: "Watch %", styleId: "HeaderB2B" },
+              { value: "Completed", styleId: "HeaderB2B" }
+            ]
+          }
+        ];
+
+        dataToExport.forEach((item, index) => {
+          rows.push({
+            height: 20,
+            cells: [
+              { value: index + 1, type: "Number", styleId: "CellCenter" },
+              { value: `${item.userName || ""} ${item.userSurname || ""}`.trim(), styleId: "CellNormal" },
+              { value: item.videoTitle?.english || item.videoTitle || "Unknown Video", styleId: "CellNormal" },
+              { value: item.watchedSeconds || 0, type: "Number", styleId: "CellRight" },
+              { value: item.totalSeconds || 0, type: "Number", styleId: "CellRight" },
+              { value: Number((typeof item.watchPercentage === 'number' ? item.watchPercentage : 0).toFixed(1)), type: "Number", styleId: "CellRight" },
+              { value: item.isCompleted ? "Yes" : "No", styleId: "CellCenter" }
+            ]
+          });
+        });
+
+      } else if (viewType === "highest_selling_products") {
+        sheetName = "Products Report";
+        titleText = productReportSubView === "highest_sold"
+          ? "Highest Selling Products (By Qty)"
+          : productReportSubView === "highest_revenue"
+          ? "Highest Revenue Products"
+          : "Products Stock Inventory";
+
+        if (productReportSubView === "highest_sold") {
+          columns = [{ width: 220 }, { width: 120 }, { width: 120 }, { width: 130 }];
+          rows = [
+            { height: 25, cells: [{ value: titleText, styleId: "Title", mergeAcross: 3 }] },
+            { height: 18, cells: [{ value: subtitleText, styleId: "SubTitle", mergeAcross: 3 }] },
+            { height: 10, cells: [] },
+            {
+              height: 25,
+              cells: [
+                { value: "Product Name", styleId: "HeaderB2C" },
+                { value: "Total Stock", styleId: "HeaderB2C" },
+                { value: "Sold Quantity", styleId: "HeaderB2C" },
+                { value: "Percentage Sold (%)", styleId: "HeaderB2C" }
+              ]
+            }
+          ];
+
+          dataToExport.forEach(item => {
+            const tQty = Number(item.totalQty || 0);
+            const sQty = Number(item.soldQty || 0);
+            const pct = tQty > 0 ? Number(((sQty / tQty) * 100).toFixed(1)) : 0;
+            rows.push({
+              height: 20,
+              cells: [
+                { value: item.name || "Unknown", styleId: "CellNormal" },
+                { value: tQty, type: "Number", styleId: "CellRight" },
+                { value: sQty, type: "Number", styleId: "CellRight" },
+                { value: pct, type: "Number", styleId: "CellRight" }
+              ]
+            });
+          });
+
+        } else if (productReportSubView === "highest_revenue") {
+          columns = [{ width: 80 }, { width: 250 }, { width: 150 }];
+          rows = [
+            { height: 25, cells: [{ value: titleText, styleId: "Title", mergeAcross: 2 }] },
+            { height: 18, cells: [{ value: subtitleText, styleId: "SubTitle", mergeAcross: 2 }] },
+            { height: 10, cells: [] },
+            {
+              height: 25,
+              cells: [
+                { value: "Rank", styleId: "HeaderB2C" },
+                { value: "Product Name", styleId: "HeaderB2C" },
+                { value: "Total Revenue (INR)", styleId: "HeaderB2C" }
+              ]
+            }
+          ];
+
+          dataToExport.forEach((item, index) => {
+            rows.push({
+              height: 20,
+              cells: [
+                { value: index + 1, type: "Number", styleId: "CellCenter" },
+                { value: item.name || "Unknown", styleId: "CellNormal" },
+                { value: Number(item.totalRevenue || 0), type: "Number", styleId: "CellRight" }
+              ]
+            });
+          });
+
+        } else {
+          columns = [{ width: 220 }, { width: 120 }, { width: 120 }, { width: 150 }];
+          rows = [
+            { height: 25, cells: [{ value: titleText, styleId: "Title", mergeAcross: 3 }] },
+            { height: 18, cells: [{ value: subtitleText, styleId: "SubTitle", mergeAcross: 3 }] },
+            { height: 10, cells: [] },
+            {
+              height: 25,
+              cells: [
+                { value: "Product Name", styleId: "HeaderB2C" },
+                { value: "Stock Left", styleId: "HeaderB2C" },
+                { value: "Total Stock", styleId: "HeaderB2C" },
+                { value: "Stock Left (%)", styleId: "HeaderB2C" }
+              ]
+            }
+          ];
+
+          dataToExport.forEach(item => {
+            const pct = item.totalQty > 0 ? Number(((item.availableQty / item.totalQty) * 100).toFixed(1)) : 0;
+            rows.push({
+              height: 20,
+              cells: [
+                { value: item.name || "Unknown", styleId: "CellNormal" },
+                { value: Number(item.availableQty || 0), type: "Number", styleId: "CellRight" },
+                { value: Number(item.totalQty || 0), type: "Number", styleId: "CellRight" },
+                { value: pct, type: "Number", styleId: "CellRight" }
+              ]
+            });
+          });
+        }
+
+      } else if (checklistReportEnabled) {
+        sheetName = "Checklist Report";
+        titleText = "Daily Patients Checklist Report";
+        columns = [
+          { width: 180 },
+          { width: 180 },
+          { width: 80 },
+          { width: 100 },
+          { width: 100 },
+          { width: 100 },
+          { width: 100 },
+          { width: 100 },
+          { width: 100 },
+          { width: 250 }
+        ];
+
+        rows = [
+          { height: 25, cells: [{ value: titleText, styleId: "Title", mergeAcross: 9 }] },
+          { height: 18, cells: [{ value: subtitleText, styleId: "SubTitle", mergeAcross: 9 }] },
+          { height: 10, cells: [] },
+          {
+            height: 25,
+            cells: [
+              { value: "Patient", styleId: "HeaderHSN" },
+              { value: "Assigned Plan", styleId: "HeaderHSN" },
+              { value: "Day", styleId: "HeaderHSN" },
+              { value: "Water Intake", styleId: "HeaderHSN" },
+              { value: "Exercise", styleId: "HeaderHSN" },
+              { value: "Green Juice", styleId: "HeaderHSN" },
+              { value: "Pranayama", styleId: "HeaderHSN" },
+              { value: "Sleep Hours", styleId: "HeaderHSN" },
+              { value: "Weight", styleId: "HeaderHSN" },
+              { value: "Diet Mistakes", styleId: "HeaderHSN" }
+            ]
+          }
+        ];
+
+        dataToExport.forEach(item => {
+          rows.push({
+            height: 20,
+            cells: [
+              { value: `${item.userId?.name || "Unknown"} ${item.userId?.surname || ""}`.trim(), styleId: "CellNormal" },
+              { value: item.planId?.name || "N/A", styleId: "CellNormal" },
+              { value: `Day ${item.day || 0}`, styleId: "CellCenter" },
+              { value: `${item.waterIntake || 0} times`, styleId: "CellCenter" },
+              { value: `${item.exerciseMinutes || 0} mins`, styleId: "CellCenter" },
+              { value: `${item.greenJuice || 0} times`, styleId: "CellCenter" },
+              { value: `${item.pranayamaMinutes || 0} mins`, styleId: "CellCenter" },
+              { value: `${item.sleepHours || 0} hrs`, styleId: "CellCenter" },
+              { value: item.todayWeight ? `${item.todayWeight} kg` : "-", styleId: "CellCenter" },
+              { value: item.dietMistake || "-", styleId: "CellNormal" }
+            ]
+          });
+        });
+
+      } else {
+        switch (reportType) {
+          case "users":
+            sheetName = "Users Report";
+            titleText = "Registered Patients Report";
+            columns = [
+              { width: 180 },
+              { width: 120 },
+              { width: 220 },
+              { width: 150 },
+              { width: 150 },
+              { width: 100 },
+              { width: 100 }
+            ];
+
+            rows = [
+              { height: 25, cells: [{ value: titleText, styleId: "Title", mergeAcross: 6 }] },
+              { height: 18, cells: [{ value: subtitleText, styleId: "SubTitle", mergeAcross: 6 }] },
+              { height: 10, cells: [] },
+              {
+                height: 25,
+                cells: [
+                  { value: "Patient Name", styleId: "HeaderB2B" },
+                  { value: "Mobile Number", styleId: "HeaderB2B" },
+                  { value: "Responsible Doctor(s)", styleId: "HeaderB2B" },
+                  { value: "City", styleId: "HeaderB2B" },
+                  { value: "State", styleId: "HeaderB2B" },
+                  { value: "DOB", styleId: "HeaderB2B" },
+                  { value: "Status", styleId: "HeaderB2B" }
+                ]
+              }
+            ];
+
+            dataToExport.forEach(item => {
+              const userBranchId = String(item.branch?._id || item.branch || "");
+              const assignedDoctors = allDoctors.filter(d =>
+                (Array.isArray(d.fullBranches) ? d.fullBranches : []).some(b => String(b._id) === userBranchId)
+              ).map(d => d.username).join(", ") || "No Doctor Assigned";
+
+              rows.push({
+                height: 20,
+                cells: [
+                  { value: `${item.name || ""} ${item.surname || ""}`.trim(), styleId: "CellNormal" },
+                  { value: item.mobileNumber || "N/A", styleId: "CellCenter" },
+                  { value: assignedDoctors, styleId: "CellNormal" },
+                  { value: item.city || "N/A", styleId: "CellNormal" },
+                  { value: item.state || "N/A", styleId: "CellNormal" },
+                  { value: item.dob || "N/A", styleId: "CellCenter" },
+                  { value: (item.isDeleted || item.isBlocked) ? "Inactive" : "Active", styleId: "CellCenter" }
+                ]
+              });
+            });
+            break;
+
+          case "orders":
+            sheetName = "Orders Report";
+            titleText = "Sales Orders Report";
+            columns = [
+              { width: 100 },
+              { width: 180 },
+              { width: 120 },
+              { width: 130 },
+              { width: 100 },
+              { width: 110 }
+            ];
+
+            rows = [
+              { height: 25, cells: [{ value: titleText, styleId: "Title", mergeAcross: 5 }] },
+              { height: 18, cells: [{ value: subtitleText, styleId: "SubTitle", mergeAcross: 5 }] },
+              { height: 10, cells: [] },
+              {
+                height: 25,
+                cells: [
+                  { value: "Order ID", styleId: "HeaderHSN" },
+                  { value: "Patient Name", styleId: "HeaderHSN" },
+                  { value: "Contact No", styleId: "HeaderHSN" },
+                  { value: "Amount (INR)", styleId: "HeaderHSN" },
+                  { value: "Status", styleId: "HeaderHSN" },
+                  { value: "Order Date", styleId: "HeaderHSN" }
+                ]
+              }
+            ];
+
+            dataToExport.forEach(item => {
+              const patientName = item.userId ? `${item.userId.name || ""} ${item.userId.surname || ""}`.trim() : "Deleted User";
+              const contact = item.userId?.mobileNumber || "N/A";
+              rows.push({
+                height: 20,
+                cells: [
+                  { value: `ORD-${item._id.slice(-6).toUpperCase()}`, styleId: "CellCenter" },
+                  { value: patientName, styleId: "CellNormal" },
+                  { value: contact, styleId: "CellCenter" },
+                  { value: Number(item.totalAmount || 0), type: "Number", styleId: "CellRight" },
+                  { value: String(item.orderStatus || "").toUpperCase(), styleId: "CellCenter" },
+                  { value: new Date(item.createdAt).toLocaleDateString(), styleId: "CellCenter" }
+                ]
+              });
+            });
+            break;
+
+          case "video":
+            sheetName = "Video Watch Progress";
+            titleText = "Patient Program Video Watch Progress";
+            columns = [
+              { width: 180 },
+              { width: 100 },
+              { width: 180 },
+              { width: 150 },
+              { width: 120 }
+            ];
+
+            rows = [
+              { height: 25, cells: [{ value: titleText, styleId: "Title", mergeAcross: 4 }] },
+              { height: 18, cells: [{ value: subtitleText, styleId: "SubTitle", mergeAcross: 4 }] },
+              { height: 10, cells: [] },
+              {
+                height: 25,
+                cells: [
+                  { value: "Patient Name", styleId: "HeaderB2B" },
+                  { value: "Watch Progress", styleId: "HeaderB2B" },
+                  { value: "Program Plan", styleId: "HeaderB2B" },
+                  { value: "Assigned Branch", styleId: "HeaderB2B" },
+                  { value: "Language", styleId: "HeaderB2B" }
+                ]
+              }
+            ];
+
+            dataToExport.forEach(item => {
+              rows.push({
+                height: 20,
+                cells: [
+                  { value: `${item.name || ""} ${item.surname || ""}`.trim(), styleId: "CellNormal" },
+                  { value: `Day ${item.planCurrentDay || 0}`, styleId: "CellCenter" },
+                  { value: item.plan?.name || "N/A", styleId: "CellNormal" },
+                  { value: item.branch?.name || "N/A", styleId: "CellNormal" },
+                  { value: String(item.language || "N/A").toUpperCase(), styleId: "CellCenter" }
+                ]
+              });
+            });
+            break;
+
+          case "reschedule":
+            sheetName = "Reschedule Logs";
+            titleText = "Doctor Appointment Reschedule Log";
+            columns = [
+              { width: 150 },
+              { width: 280 },
+              { width: 150 },
+              { width: 120 },
+              { width: 150 }
+            ];
+
+            rows = [
+              { height: 25, cells: [{ value: titleText, styleId: "Title", mergeAcross: 4 }] },
+              { height: 18, cells: [{ value: subtitleText, styleId: "SubTitle", mergeAcross: 4 }] },
+              { height: 10, cells: [] },
+              {
+                height: 25,
+                cells: [
+                  { value: "Admin / Doctor", styleId: "HeaderHSN" },
+                  { value: "Event Details", styleId: "HeaderHSN" },
+                  { value: "Branch Context", styleId: "HeaderHSN" },
+                  { value: "IP Address", styleId: "HeaderHSN" },
+                  { value: "Timestamp", styleId: "HeaderHSN" }
+                ]
+              }
+            ];
+
+            dataToExport.forEach(item => {
+              rows.push({
+                height: 20,
+                cells: [
+                  { value: item.user?.username || "System", styleId: "CellNormal" },
+                  { value: item.action || "", styleId: "CellNormal" },
+                  { value: item.branch?.name || "Global", styleId: "CellNormal" },
+                  { value: item.ipAddress || "N/A", styleId: "CellCenter" },
+                  { value: new Date(item.timestamp).toLocaleString(), styleId: "CellCenter" }
+                ]
+              });
+            });
+            break;
+
+          case "screen":
+            sheetName = "Screen Usage";
+            titleText = "Detailed Screen Usage Statistics";
+            columns = [{ width: 180 }];
+            screenFields.forEach(() => columns.push({ width: 120 }));
+
+            const screenHeaders = [{ value: "Patient Name", styleId: "HeaderB2B" }];
+            screenFields.forEach(f => {
+              screenHeaders.push({ value: f.label, styleId: "HeaderB2B" });
+            });
+
+            rows = [
+              { height: 25, cells: [{ value: titleText, styleId: "Title", mergeAcross: screenFields.length }] },
+              { height: 18, cells: [{ value: subtitleText, styleId: "SubTitle", mergeAcross: screenFields.length }] },
+              { height: 10, cells: [] },
+              {
+                height: 25,
+                cells: screenHeaders
+              }
+            ];
+
+            dataToExport.forEach(item => {
+              const userUsage = screenUsages.find(su => String(su.userId?._id || su.userId) === String(item._id));
+              const usageCells = [{ value: `${item.name || ""} ${item.surname || ""}`.trim(), styleId: "CellNormal" }];
+
+              screenFields.forEach(f => {
+                const count = userUsage ? (userUsage[f.key] || 0) : 0;
+                usageCells.push({
+                  value: count > 0 ? count : 0,
+                  type: "Number",
+                  styleId: "CellCenter"
+                });
+              });
+
+              rows.push({
+                height: 20,
+                cells: usageCells
+              });
+            });
+            break;
+
+          case "appointments":
+          default:
+            sheetName = "Appointments Report";
+            titleText = "Doctor Consultations Appointments Report";
+            columns = [
+              { width: 180 },
+              { width: 150 },
+              { width: 130 },
+              { width: 120 },
+              { width: 100 }
+            ];
+
+            rows = [
+              { height: 25, cells: [{ value: titleText, styleId: "Title", mergeAcross: 4 }] },
+              { height: 18, cells: [{ value: subtitleText, styleId: "SubTitle", mergeAcross: 4 }] },
+              { height: 10, cells: [] },
+              {
+                height: 25,
+                cells: [
+                  { value: "Patient Name", styleId: "HeaderB2C" },
+                  { value: "Assigned Doctor", styleId: "HeaderB2C" },
+                  { value: "Appointment Date & Time", styleId: "HeaderB2C" },
+                  { value: "Status", styleId: "HeaderB2C" },
+                  { value: "Type", styleId: "HeaderB2C" }
+                ]
+              }
+            ];
+
+            dataToExport.forEach(item => {
+              const patientName = item.userId ? `${item.userId.name || ""} ${item.userId.surname || ""}`.trim() : "Deleted User";
+              const doctorName = item.doctor?.username || "Unassigned";
+              const statusLabel = item.isRescheduled ? `${item.status || ""} (RESCHEDULED)` : (item.status || "");
+              rows.push({
+                height: 20,
+                cells: [
+                  { value: patientName, styleId: "CellNormal" },
+                  { value: doctorName, styleId: "CellNormal" },
+                  { value: `${item.date || ""} ${item.startTime || ""} - ${item.endTime || ""}`, styleId: "CellCenter" },
+                  { value: statusLabel.toUpperCase(), styleId: "CellCenter" },
+                  { value: item.type === 1 ? "Online" : "Offline", styleId: "CellCenter" }
+                ]
+              });
+            });
+            break;
+        }
+      }
+
+      exportToExcel({
+        filename: `${sheetName.replace(/\s+/g, "_")}_Export_${new Date().toISOString().split("T")[0]}.xls`,
+        sheets: [
+          {
+            name: sheetName,
+            columns: columns,
+            rows: rows
+          }
+        ]
+      });
+
+      toast.success(`Successfully exported ${sheetName} Excel file!`);
+    } catch (err) {
+      console.error("Failed to export Excel report:", err);
+      toast.error("An error occurred during Excel export");
+    }
+  };
+
   const resetAllFilters = () => {
     setSearchTerm("");
     setSelectedBranchId("");
@@ -1362,7 +1898,83 @@ const ReportsPage = () => {
         </div>
 
         {/* Summary Stat Cards - Row 1 */}
-        {viewType !== "highest_selling_products" && viewType !== "videoReports" && (
+        {viewType === "videoReports" ? (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all hover:shadow-md">
+              <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500"></div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Users</span>
+                <div className="flex items-end gap-2 mt-2">
+                  <span className="text-4xl font-black text-gray-900 leading-none">{videoReportStats.totalUsers}</span>
+                </div>
+                <div className="mt-4 flex items-center gap-2">
+                  <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
+                    <div className="h-full bg-indigo-500 w-full opacity-20"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all hover:shadow-md">
+              <div className="absolute top-0 left-0 w-full h-1 bg-purple-500"></div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Avg Watch Percentage</span>
+                <div className="flex items-end gap-2 mt-2">
+                  <span className="text-4xl font-black text-purple-600 leading-none">{videoReportStats.avgWatchPercentage}%</span>
+                </div>
+                <div className="mt-4 flex items-center gap-2">
+                  <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
+                    <div className="h-full bg-purple-500 transition-all duration-500" style={{
+                      width: `${Math.min(100, Number(videoReportStats.avgWatchPercentage))}%`
+                    }}></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all hover:shadow-md">
+              <div className="absolute top-0 left-0 w-full h-1 bg-green-500"></div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Completed</span>
+                <div className="flex items-end gap-2 mt-2">
+                  <span className="text-4xl font-black text-green-600 leading-none">{videoReportStats.completedCount}</span>
+                  <div className="flex flex-col ml-2">
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter leading-tight">
+                      {filteredData.length > 0 ? ((videoReportStats.completedCount / filteredData.length) * 100).toFixed(1) : 0}%
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center gap-2">
+                  <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
+                    <div className="h-full bg-green-500 transition-all duration-500" style={{
+                      width: `${filteredData.length > 0 ? (videoReportStats.completedCount / filteredData.length) * 100 : 0}%`
+                    }}></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all hover:shadow-md">
+              <div className="absolute top-0 left-0 w-full h-1 bg-amber-500"></div>
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Watch Time</span>
+                <div className="flex items-end gap-2 mt-2">
+                  <span className="text-4xl font-black text-amber-600 leading-none">
+                    {Math.floor(videoReportStats.totalWatchedSeconds / 60)}m
+                  </span>
+                  <span className="text-lg font-bold text-gray-500">
+                    {videoReportStats.totalWatchedSeconds % 60}s
+                  </span>
+                </div>
+                <div className="mt-4 flex items-center gap-2">
+                  <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
+                    <div className="h-full bg-amber-500 w-full opacity-20"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : viewType !== "highest_selling_products" && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all hover:shadow-md">
@@ -1628,8 +2240,35 @@ const ReportsPage = () => {
                   <Dropdown options={reportOptions} value={reportType} onChange={(val) => { setReportType(val); setRawData([]); setSearchTerm(""); }} placeholder="Report" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Min Watch Percentage</label>
-                  <input type="number" placeholder="0-100" value={videoReportMinPercentage} onChange={(e) => setVideoReportMinPercentage(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all" />
+                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Watch Percentage</label>
+                  <Dropdown
+                    options={[
+                      { label: "All", value: "" },
+                      { label: "20%", value: "20" },
+                      { label: "40%", value: "40" },
+                      { label: "60%", value: "60" },
+                      { label: "80%", value: "80" },
+                      { label: "100%", value: "100" }
+                    ]}
+                    value={selectedMinPercentageOption}
+                    onChange={setSelectedMinPercentageOption}
+                    placeholder="Select Percentage"
+                  />
+                </div>
+                <div className="flex flex-col gap-1">
+                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Specific Video</label>
+                  <Dropdown
+                    options={[
+                      { label: "All Videos", value: "" },
+                      ...(allVideos || []).map(v => ({
+                        label: v.title?.english || v.title || "Unknown Video",
+                        value: v._id
+                      }))
+                    ]}
+                    value={selectedVideoId}
+                    onChange={setSelectedVideoId}
+                    placeholder="Select Video"
+                  />
                 </div>
                 <div className="flex flex-col gap-1">
                   <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Global Search</label>
@@ -1861,9 +2500,22 @@ const ReportsPage = () => {
                 : (checklistReportEnabled ? "Daily Checklist" : reportOptions.find(o => o.value === reportType)?.label)} Data
             </h2>
             <div className="flex items-center gap-4">
+              {viewType === "videoReports" && selectedVideoId && (
+                <span className="text-[10px] font-black text-purple-600 bg-purple-50 px-4 py-2 rounded-full uppercase tracking-widest border border-purple-100/50 flex items-center gap-1.5">
+                  <span className="opacity-60">Avg Watch:</span> {videoReportStats.avgWatchPercentage}%
+                </span>
+              )}
               <span className="text-[10px] font-black text-gray-400 bg-gray-100/80 px-4 py-2 rounded-full uppercase tracking-widest border border-gray-50">
                 {filteredData.length} Results Found
               </span>
+              <button
+                type="button"
+                onClick={exportFilteredDataToExcel}
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 hover:text-emerald-800 border border-emerald-100 hover:border-emerald-200 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95"
+              >
+                <FiDownload size={12} />
+                Export to Excel
+              </button>
             </div>
           </div>
 
@@ -1875,6 +2527,16 @@ const ReportsPage = () => {
                 <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-bold border border-indigo-100/50 flex items-center gap-1.5 whitespace-nowrap">
                   <span className="opacity-50">Type:</span> {viewType === "highest_selling_products" ? (itemTypeFilter === "Plan" ? "Plans" : "Products") : reportOptions.find(o => o.value === reportType)?.label}
                 </span>
+                {viewType === "videoReports" && selectedMinPercentageOption && (
+                  <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-bold border border-indigo-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="opacity-50">Min Watch %:</span> {selectedMinPercentageOption}%
+                  </span>
+                )}
+                {viewType === "videoReports" && selectedVideoId && (
+                  <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold border border-blue-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="opacity-50">Video:</span> {allVideos.find(v => v._id === selectedVideoId)?.title?.english || "Selected Video"}
+                  </span>
+                )}
                 {selectedBranchId && (
                   <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold border border-blue-100/50 flex items-center gap-1.5 whitespace-nowrap">
                     <span className="opacity-50">Branch:</span> {allBranches.find(b => b._id === selectedBranchId)?.name}

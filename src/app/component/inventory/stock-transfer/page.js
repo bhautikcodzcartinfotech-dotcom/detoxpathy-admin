@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { FiPlus, FiDownload, FiSave } from "react-icons/fi";
+import { FiPlus, FiDownload, FiSave, FiPrinter } from "react-icons/fi";
 import { getAllBranches, getAllProducts, createPurchase } from "@/Api/AllApi"; // I need to add createStockTransfer to AllApi
 import { toast } from "react-hot-toast";
 import Dropdown from "@/utils/dropdown";
@@ -68,26 +68,258 @@ const StockTransferPage = () => {
     }
   };
 
-  const downloadChallan = async (id) => {
-    try {
-      setLoading(true);
-      const res = await axios.get(`${API_BASE}/admin/stock-transfer/download-challan/${id}`, {
-        headers: getAuthHeaders(),
-        responseType: 'blob'
-      });
-      
-      const url = window.URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `Challan_${id.slice(-6).toUpperCase()}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (error) {
-      toast.error("Failed to download challan");
-    } finally {
-      setLoading(false);
+  const handlePrintChallan = (t) => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Popup blocker prevented opening print window");
+      return;
     }
+
+    const transferDate = new Date(t.transferDate || t.createdAt).toLocaleDateString("en-GB");
+    const transferId = `TRF-${t._id.slice(-6).toUpperCase()}`;
+    const transferType = t.transferType || "Delivery Challan";
+
+    // Find full branch details from branches state
+    const fromBranchIdStr = t.fromBranchId?._id || t.fromBranchId;
+    const toBranchIdStr = t.toBranchId?._id || t.toBranchId;
+    
+    const fromBranchFull = branches.find(b => b._id === fromBranchIdStr) || {};
+    const toBranchFull = branches.find(b => b._id === toBranchIdStr) || {};
+
+    const fromBranchName = fromBranchFull.name || t.fromBranchId?.name || "N/A";
+    const fromAddress = fromBranchFull.address || "";
+    const fromGstin = fromBranchFull.gstin || "N/A";
+    const fromMobile = fromBranchFull.mobile || "N/A";
+    
+    const fromContact = [
+      fromGstin && fromGstin !== "N/A" ? `GSTIN: ${fromGstin}` : null,
+      fromMobile && fromMobile !== "N/A" ? `Mob: ${fromMobile}` : null,
+      fromAddress || null
+    ].filter(Boolean).join(" | ");
+    const billFrom = `${fromBranchName.toUpperCase()} | ${fromContact}`;
+
+    const toBranchName = toBranchFull.name || t.toBranchId?.name || "N/A";
+    const toAddress = toBranchFull.address || "";
+    const toGstin = toBranchFull.gstin || "N/A";
+    const toMobile = toBranchFull.mobile || "N/A";
+    
+    const toContact = [
+      toGstin && toGstin !== "N/A" ? `GSTIN: ${toGstin}` : null,
+      toMobile && toMobile !== "N/A" ? `Mob: ${toMobile}` : null,
+      toAddress || null
+    ].filter(Boolean).join(" | ");
+    const billTo = `${toBranchName.toUpperCase()} | ${toContact}`;
+
+    let itemsHtml = "";
+    if (t.items && t.items.length > 0) {
+      t.items.forEach(item => {
+        const prodId = item.productId?._id || item.productId;
+        const productObj = products.find(p => p._id === prodId) || {};
+        const productName = productObj.name || item.productId?.name || "Product";
+        const hsn = productObj.hsnCode || "-";
+        const rate = `₹${Number(item.rate || 0).toLocaleString("en-IN")}`;
+        const qty = item.quantity || "0";
+        const gst = `${item.gstPercentage || 0}%`;
+        const total = `₹${Number(item.totalAmount || (item.rate * item.quantity) || 0).toLocaleString("en-IN")}`;
+        
+        itemsHtml += `
+          <tr>
+            <td>${productName}</td>
+            <td class="text-center">${hsn}</td>
+            <td class="text-right">${rate}</td>
+            <td class="text-center">${qty}</td>
+            <td class="text-center">${gst}</td>
+            <td class="text-right font-bold">${total}</td>
+          </tr>
+        `;
+      });
+    }
+
+    const subTotalVal = `₹${Number(t.subTotal || 0).toLocaleString("en-IN")}`;
+    const taxVal = `₹${Number(t.totalTax || 0).toLocaleString("en-IN")}`;
+    const grandTotalVal = `₹${Number(t.grandTotal || 0).toLocaleString("en-IN")}`;
+
+    const summaryLine = `<strong>Sub Total:</strong> ${subTotalVal} | <strong>Tax Total:</strong> ${taxVal} | <strong>Grand Total:</strong> ${grandTotalVal}`;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${transferType} - ${transferId}</title>
+        <meta charset="utf-8">
+        <style>
+          body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #1e293b;
+            font-size: 13px;
+            line-height: 1.5;
+            margin: 0;
+            padding: 40px;
+          }
+          .container {
+            max-width: 800px;
+            margin: 0 auto;
+          }
+          h1 {
+            color: #0d9488;
+            font-size: 28px;
+            margin: 0 0 5px 0;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          .subtitle {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #1e293b;
+            margin-bottom: 25px;
+            letter-spacing: 1px;
+          }
+          h2 {
+            font-size: 18px;
+            font-weight: 800;
+            margin: 0 0 12px 0;
+            color: #1e293b;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+          }
+          .metadata {
+            font-size: 12px;
+            margin-bottom: 12px;
+            color: #1e293b;
+          }
+          .metadata strong {
+            font-weight: 700;
+          }
+          hr {
+            border: 0;
+            border-top: 1px solid #cbd5e1;
+            margin: 15px 0;
+          }
+          .info-section {
+            margin: 15px 0;
+            font-size: 12px;
+            line-height: 1.6;
+          }
+          .info-section p {
+            margin: 4px 0;
+          }
+          .info-section strong {
+            font-weight: 700;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+          }
+          th {
+            background-color: #f8fafc;
+            color: #1e293b;
+            font-weight: 700;
+            text-align: left;
+            padding: 8px 12px;
+            font-size: 11px;
+            border-top: 1px solid #cbd5e1;
+            border-bottom: 1px solid #cbd5e1;
+            text-transform: uppercase;
+          }
+          td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 12px;
+          }
+          .text-center {
+            text-align: center;
+          }
+          .text-right {
+            text-align: right;
+          }
+          .summary-line {
+            font-size: 12px;
+            margin: 15px 0;
+            color: #1e293b;
+            padding: 5px 0;
+          }
+          .footer {
+            text-align: center;
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 40px;
+          }
+          @media print {
+            body {
+              padding: 20px;
+            }
+            button {
+              display: none;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>DETOXPATHY</h1>
+          <div class="subtitle">HEALTH & WELLNESS SOLUTIONS</div>
+          
+          <h2>${transferType.toUpperCase()}</h2>
+          
+          <div class="metadata">
+            <strong>Transfer ID:</strong> ${transferId} | <strong>Date:</strong> ${transferDate}
+          </div>
+          
+          <hr />
+          
+          <div class="info-section">
+            <p><strong>FROM (SOURCE):</strong> ${billFrom}</p>
+            <p style="margin-top: 8px;"><strong>TO (DESTINATION):</strong> ${billTo}</p>
+          </div>
+          
+          <hr />
+          
+          <table>
+            <thead>
+              <tr>
+                <th>DESCRIPTION</th>
+                <th class="text-center" style="width: 80px;">HSN</th>
+                <th class="text-right" style="width: 100px;">RATE</th>
+                <th class="text-center" style="width: 60px;">QTY</th>
+                <th class="text-center" style="width: 80px;">GST</th>
+                <th class="text-right" style="width: 120px;">TOTAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+          
+          <hr />
+          
+          <div class="summary-line">
+            ${summaryLine}
+          </div>
+          
+          <hr />
+          
+          <div class="footer">
+            Thank you | www.detoxpathy.com | Computer generated stock transfer document.
+          </div>
+        </div>
+        
+        <script>
+          window.onload = function() {
+            window.print();
+            setTimeout(function() {
+              window.close();
+            }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
   };
 
   return (
@@ -203,10 +435,10 @@ const StockTransferPage = () => {
                   <td className="p-4">Rs. {t.grandTotal.toLocaleString()}</td>
                   <td className="p-4 text-center">
                     <button
-                      onClick={() => downloadChallan(t._id)}
+                      onClick={() => handlePrintChallan(t)}
                       className="text-blue-600 hover:text-blue-800 flex items-center gap-1 mx-auto"
                     >
-                      <FiDownload /> Challan
+                      <FiPrinter /> Challan
                     </button>
                   </td>
                 </tr>

@@ -44,6 +44,292 @@ const OrderDetailsPage = () => {
     }
   };
 
+  const handlePrintInvoice = () => {
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Popup blocker prevented opening print window");
+      return;
+    }
+
+    const STATUS_LABELS = {
+      1: "Pending",
+      2: "Packed",
+      3: "Processing",
+      4: "In Transit",
+      5: "Delivered",
+      6: "Cancelled",
+    };
+
+    const statusLabel = STATUS_LABELS[order.orderStatus] || "Pending";
+    const orderDate = new Date(order.createdAt).toLocaleDateString("en-GB");
+    const orderId = `ORD-${order._id.slice(-6).toUpperCase()}`;
+
+    const branchName = order.branch?.name || "Detoxpathy Corporate Office";
+    const billFrom = `${branchName}, Surat, Gujarat - 400001`;
+
+    const customerName = (order.shippingAddress?.name || `${order.user?.name || ""} ${order.user?.surname || ""}`).trim().toUpperCase();
+    const mobile = order.shippingAddress?.mobile || order.user?.mobileNumber || "N/A";
+    const addressParts = [
+      order.shippingAddress?.addressLine1,
+      order.shippingAddress?.addressLine2,
+      order.shippingAddress?.city,
+      order.shippingAddress?.state ? `${order.shippingAddress.state} ${order.shippingAddress.postalCode || ""}` : order.shippingAddress?.postalCode,
+      order.shippingAddress?.country || "India"
+    ].filter(p => p && p.trim().length > 0);
+    const billTo = `${customerName} | Mob: ${mobile} | ${addressParts.join(", ")}`;
+
+    let itemsHtml = "";
+    
+    if (order.plans && order.plans.length > 0) {
+      order.plans.forEach(planItem => {
+        const hsn = planItem.hsnCode || "-";
+        const rate = `₹${Number(planItem.price || 0).toLocaleString("en-IN")}`;
+        const qty = planItem.quantity || "1";
+        const gst = `${planItem.gstPercentage || 0}%`;
+        const total = `₹${Number(planItem.totalWithTax || planItem.price || 0).toLocaleString("en-IN")}`;
+        itemsHtml += `
+          <tr>
+            <td>${planItem.name || "Membership Plan"}</td>
+            <td class="text-center">${hsn}</td>
+            <td class="text-right">${rate}</td>
+            <td class="text-center">${qty}</td>
+            <td class="text-center">${gst}</td>
+            <td class="text-right font-bold">${total}</td>
+          </tr>
+        `;
+      });
+    } else if (order.plan) {
+      const hsn = order.plan.hsnCode || "-";
+      const rate = `₹${Number(order.plan.price || 0).toLocaleString("en-IN")}`;
+      const qty = "1";
+      const gst = `${order.plan.gstPercentage || 0}%`;
+      const total = `₹${Number(order.plan.totalWithTax || order.plan.price || 0).toLocaleString("en-IN")}`;
+      itemsHtml += `
+        <tr>
+          <td>${order.plan.name || "Membership Plan"}</td>
+          <td class="text-center">${hsn}</td>
+          <td class="text-right">${rate}</td>
+          <td class="text-center">${qty}</td>
+          <td class="text-center">${gst}</td>
+          <td class="text-right font-bold">${total}</td>
+        </tr>
+      `;
+    }
+
+    if (order.products && order.products.length > 0) {
+      order.products.forEach(prod => {
+        const hsn = prod.hsnCode || "-";
+        const rate = `₹${Number(prod.price || 0).toLocaleString("en-IN")}`;
+        const qty = prod.quantity || "1";
+        const gst = `${prod.gstPercentage || 0}%`;
+        const total = `₹${Number(prod.totalWithTax || (prod.price * prod.quantity) || 0).toLocaleString("en-IN")}`;
+        itemsHtml += `
+          <tr>
+            <td>${prod.name || "Product"}</td>
+            <td class="text-center">${hsn}</td>
+            <td class="text-right">${rate}</td>
+            <td class="text-center">${qty}</td>
+            <td class="text-center">${gst}</td>
+            <td class="text-right font-bold">${total}</td>
+          </tr>
+        `;
+      });
+    }
+
+    const cgstVal = `₹${Number(order.cgst || 0).toLocaleString("en-IN")}`;
+    const sgstVal = `₹${Number(order.sgst || 0).toLocaleString("en-IN")}`;
+    const igstVal = order.igst > 0 ? `₹${Number(order.igst).toLocaleString("en-IN")}` : null;
+    const totalVal = `₹${Number(order.totalAmount || 0).toLocaleString("en-IN")}`;
+    const subTotalVal = `₹${Number(order.subTotal || order.totalAmount || 0).toLocaleString("en-IN")}`;
+
+    let taxSummary = `<strong>CGST:</strong> ${cgstVal} | <strong>SGST:</strong> ${sgstVal}`;
+    if (igstVal) {
+      taxSummary = `<strong>IGST:</strong> ${igstVal}`;
+    }
+
+    const summaryLine = `<strong>Sub Total:</strong> ${subTotalVal} | ${taxSummary} | <strong>Grand Total:</strong> ${totalVal}`;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Invoice - ${orderId}</title>
+        <meta charset="utf-8">
+        <style>
+          body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #1e293b;
+            font-size: 13px;
+            line-height: 1.5;
+            margin: 0;
+            padding: 40px;
+          }
+          .container {
+            max-width: 800px;
+            margin: 0 auto;
+          }
+          h1 {
+            color: #0d9488;
+            font-size: 28px;
+            margin: 0 0 5px 0;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          .subtitle {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #1e293b;
+            margin-bottom: 25px;
+            letter-spacing: 1px;
+          }
+          h2 {
+            font-size: 18px;
+            font-weight: 800;
+            margin: 0 0 12px 0;
+            color: #1e293b;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+          }
+          .metadata {
+            font-size: 12px;
+            margin-bottom: 12px;
+            color: #1e293b;
+          }
+          .metadata strong {
+            font-weight: 700;
+          }
+          hr {
+            border: 0;
+            border-top: 1px solid #cbd5e1;
+            margin: 15px 0;
+          }
+          .info-section {
+            margin: 15px 0;
+            font-size: 12px;
+            line-height: 1.6;
+          }
+          .info-section p {
+            margin: 4px 0;
+          }
+          .info-section strong {
+            font-weight: 700;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+          }
+          th {
+            background-color: #f8fafc;
+            color: #1e293b;
+            font-weight: 700;
+            text-align: left;
+            padding: 8px 12px;
+            font-size: 11px;
+            border-top: 1px solid #cbd5e1;
+            border-bottom: 1px solid #cbd5e1;
+            text-transform: uppercase;
+          }
+          td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 12px;
+          }
+          .text-center {
+            text-align: center;
+          }
+          .text-right {
+            text-align: right;
+          }
+          .summary-line {
+            font-size: 12px;
+            margin: 15px 0;
+            color: #1e293b;
+            padding: 5px 0;
+          }
+          .footer {
+            text-align: center;
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 40px;
+          }
+          @media print {
+            body {
+              padding: 20px;
+            }
+            button {
+              display: none;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>DETOXPATHY</h1>
+          <div class="subtitle">HEALTH & WELLNESS SOLUTIONS</div>
+          
+          <h2>INVOICE</h2>
+          
+          <div class="metadata">
+            <strong>Order ID:</strong> ${orderId} | <strong>Date:</strong> ${orderDate} | <strong>Status:</strong> ${statusLabel}
+          </div>
+          
+          <hr />
+          
+          <div class="info-section">
+            <p><strong>BILL FROM:</strong> ${billFrom}</p>
+            <p style="margin-top: 8px;"><strong>BILL TO:</strong> ${billTo}</p>
+          </div>
+          
+          <hr />
+          
+          <table>
+            <thead>
+              <tr>
+                <th>DESCRIPTION</th>
+                <th class="text-center" style="width: 80px;">HSN</th>
+                <th class="text-right" style="width: 100px;">RATE</th>
+                <th class="text-center" style="width: 60px;">QTY</th>
+                <th class="text-center" style="width: 80px;">GST</th>
+                <th class="text-right" style="width: 120px;">TOTAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+          
+          <hr />
+          
+          <div class="summary-line">
+            ${summaryLine}
+          </div>
+          
+          <hr />
+          
+          <div class="footer">
+            Thank you | www.detoxpathy.com | Computer generated invoice. No signature required.
+          </div>
+        </div>
+        
+        <script>
+          window.onload = function() {
+            window.print();
+            setTimeout(function() {
+              window.close();
+            }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
+
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader /></div>;
   if (!order) return <div className="p-10 text-center">Order not found</div>;
 
@@ -259,7 +545,7 @@ const OrderDetailsPage = () => {
             </div>
 
             <button
-              onClick={() => downloadOrderInvoiceApi(order._id)}
+              onClick={handlePrintInvoice}
               className="w-full py-2.5 border border-teal-600 text-teal-600 rounded-xl text-sm font-bold hover:bg-teal-50 transition"
             >
               Print Invoice

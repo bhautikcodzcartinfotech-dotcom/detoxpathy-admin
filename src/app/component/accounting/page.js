@@ -6,6 +6,7 @@ import { API_BASE, getAuthHeaders } from "@/Api/AllApi";
 import Dropdown from "@/utils/dropdown";
 import { toast } from "react-hot-toast";
 import RoleGuard from "@/components/RoleGuard";
+import { exportToExcel } from "@/utils/excelExport";
 
 const AccountingPage = () => {
   const [activeTab, setActiveTab] = useState("ledger");
@@ -54,11 +55,30 @@ const AccountingPage = () => {
       return;
     }
 
-    let csvContent = "";
-    let filename = `${activeTab}_report_${new Date().toISOString().split('T')[0]}.csv`;
+    const todayStr = new Date().toLocaleDateString();
+    let sheets = [];
+    let filename = `${activeTab}_report_${new Date().toISOString().split('T')[0]}.xls`;
 
     if (activeTab === 'ledger') {
-      csvContent += "Date,Description,Account,Debit,Credit\n";
+      const rows = [
+        { height: 25, cells: [{ value: "General Ledger Report", styleId: "Title", mergeAcross: 4 }] },
+        { height: 18, cells: [{ value: `Generated on ${todayStr}`, styleId: "SubTitle", mergeAcross: 4 }] },
+        { height: 10, cells: [] },
+        {
+          height: 25,
+          cells: [
+            { value: "Date", styleId: "HeaderLedger" },
+            { value: "Description", styleId: "HeaderLedger" },
+            { value: "Account Name", styleId: "HeaderLedger" },
+            { value: "Debit (INR)", styleId: "HeaderLedger" },
+            { value: "Credit (INR)", styleId: "HeaderLedger" }
+          ]
+        }
+      ];
+
+      let debitSum = 0;
+      let creditSum = 0;
+
       data.forEach(transaction => {
         const relevantEntries = selectedAccountId
           ? transaction.entries?.filter(e => (e.accountId?._id || e.accountId) === selectedAccountId)
@@ -66,45 +86,257 @@ const AccountingPage = () => {
         
         relevantEntries.forEach((entry, j) => {
           const date = j === 0 ? new Date(transaction.transactionDate).toLocaleDateString() : "";
-          const desc = j === 0 ? `"${transaction.description.replace(/"/g, '""')}"` : "";
-          const account = `"${entry.accountId?.name || 'N/A'}"`;
-          const debit = entry.debit > 0 ? entry.debit : "";
-          const credit = entry.credit > 0 ? entry.credit : "";
-          csvContent += `${date},${desc},${account},${debit},${credit}\n`;
+          const desc = j === 0 ? transaction.description : "";
+          const account = entry.accountId?.name || 'N/A';
+          const debit = entry.debit > 0 ? entry.debit : 0;
+          const credit = entry.credit > 0 ? entry.credit : 0;
+          
+          debitSum += debit;
+          creditSum += credit;
+
+          rows.push({
+            height: 20,
+            cells: [
+              { value: date, styleId: "CellCenter" },
+              { value: desc, styleId: "CellNormal" },
+              { value: account, styleId: "CellNormal" },
+              { value: debit > 0 ? debit : "", type: debit > 0 ? "Number" : "String", styleId: "CellRight" },
+              { value: credit > 0 ? credit : "", type: credit > 0 ? "Number" : "String", styleId: "CellRight" }
+            ]
+          });
+        });
+
+        // Insert a blank separator row after each transaction to avoid mixing them up
+        if (relevantEntries.length > 0) {
+          rows.push({
+            height: 12,
+            cells: [
+              { value: "" },
+              { value: "" },
+              { value: "" },
+              { value: "" },
+              { value: "" }
+            ]
+          });
+        }
+      });
+
+      rows.push({
+        height: 22,
+        cells: [
+          { value: "Total", styleId: "CellTotal" },
+          { value: "", styleId: "CellTotal" },
+          { value: "", styleId: "CellTotal" },
+          { value: debitSum, type: "Number", styleId: "CellTotalRight" },
+          { value: creditSum, type: "Number", styleId: "CellTotalRight" }
+        ]
+      });
+
+      sheets.push({
+        name: "General Ledger",
+        columns: [{ width: 90 }, { width: 250 }, { width: 180 }, { width: 110 }, { width: 110 }],
+        rows
+      });
+
+    } else if (activeTab === 'trial') {
+      const rows = [
+        { height: 25, cells: [{ value: "Trial Balance Report", styleId: "Title", mergeAcross: 2 }] },
+        { height: 18, cells: [{ value: `Generated on ${todayStr}`, styleId: "SubTitle", mergeAcross: 2 }] },
+        { height: 10, cells: [] },
+        {
+          height: 25,
+          cells: [
+            { value: "Account Name", styleId: "HeaderTrial" },
+            { value: "Account Type", styleId: "HeaderTrial" },
+            { value: "Balance (INR)", styleId: "HeaderTrial" }
+          ]
+        }
+      ];
+
+      data.forEach(acc => {
+        const balance = acc.balance || 0;
+        rows.push({
+          height: 20,
+          cells: [
+            { value: acc.name, styleId: "CellNormal" },
+            { value: acc.type ? String(acc.type).toUpperCase() : "N/A", styleId: "CellCenter" },
+            { value: balance, type: "Number", styleId: "CellRight" }
+          ]
         });
       });
-    } else if (activeTab === 'trial') {
-      csvContent += "Account Name,Type,Balance\n";
-      data.forEach(acc => {
-        const balance = (acc.balance || 0) >= 0 ? acc.balance : `-${Math.abs(acc.balance)}`;
-        csvContent += `"${acc.name}","${acc.type}",${balance}\n`;
+
+      sheets.push({
+        name: "Trial Balance",
+        columns: [{ width: 250 }, { width: 130 }, { width: 130 }],
+        rows
       });
+
     } else if (activeTab === 'pnl') {
-      csvContent += "Category,Name,Balance\n";
-      data.revenues?.forEach(r => csvContent += `Revenue,"${r.name}",${r.balance}\n`);
-      csvContent += `Revenue,"Total Revenue",${data.totalRevenue}\n`;
-      data.expenses?.forEach(e => csvContent += `Expense,"${e.name}",${e.balance}\n`);
-      csvContent += `Expense,"Total Expenses",${data.totalExpense}\n`;
-      csvContent += `Result,"Net Profit",${data.netProfit}\n`;
+      const rows = [
+        { height: 25, cells: [{ value: "Profit & Loss Statement", styleId: "Title", mergeAcross: 2 }] },
+        { height: 18, cells: [{ value: `Generated on ${todayStr}`, styleId: "SubTitle", mergeAcross: 2 }] },
+        { height: 10, cells: [] },
+        {
+          height: 25,
+          cells: [
+            { value: "Category", styleId: "HeaderPnL" },
+            { value: "Name", styleId: "HeaderPnL" },
+            { value: "Balance (INR)", styleId: "HeaderPnL" }
+          ]
+        },
+        // Revenue Section
+        { height: 22, cells: [{ value: "REVENUE", styleId: "CellRevenueHeader", mergeAcross: 2 }] }
+      ];
+
+      data.revenues?.forEach(r => {
+        rows.push({
+          height: 20,
+          cells: [
+            { value: "", styleId: "CellNormal" },
+            { value: r.name, styleId: "CellNormal" },
+            { value: r.balance || 0, type: "Number", styleId: "CellRight" }
+          ]
+        });
+      });
+
+      rows.push({
+        height: 22,
+        cells: [
+          { value: "", styleId: "CellBoldLeft" },
+          { value: "Total Revenue", styleId: "CellBoldLeft" },
+          { value: data.totalRevenue || 0, type: "Number", styleId: "CellBoldRight" }
+        ]
+      });
+
+      rows.push({ height: 10, cells: [] }); // Space
+
+      // Expense Section
+      rows.push({ height: 22, cells: [{ value: "EXPENSES", styleId: "CellExpenseHeader", mergeAcross: 2 }] });
+
+      data.expenses?.forEach(e => {
+        rows.push({
+          height: 20,
+          cells: [
+            { value: "", styleId: "CellNormal" },
+            { value: e.name, styleId: "CellNormal" },
+            { value: e.balance || 0, type: "Number", styleId: "CellRight" }
+          ]
+        });
+      });
+
+      rows.push({
+        height: 22,
+        cells: [
+          { value: "", styleId: "CellBoldLeft" },
+          { value: "Total Expenses", styleId: "CellBoldLeft" },
+          { value: data.totalExpense || 0, type: "Number", styleId: "CellBoldRight" }
+        ]
+      });
+
+      rows.push({ height: 15, cells: [] }); // Space
+
+      // Net Profit Row
+      rows.push({
+        height: 25,
+        cells: [
+          { value: "Net Profit", styleId: "CellNetProfit" },
+          { value: "", styleId: "CellNetProfit" },
+          { value: data.netProfit || 0, type: "Number", styleId: "CellNetProfitRight" }
+        ]
+      });
+
+      sheets.push({
+        name: "Profit & Loss",
+        columns: [{ width: 130 }, { width: 250 }, { width: 130 }],
+        rows
+      });
+
     } else if (activeTab === 'balance') {
-      csvContent += "Category,Name,Balance\n";
-      data.assets?.forEach(a => csvContent += `Asset,"${a.name}",${a.balance}\n`);
-      csvContent += `Asset,"Total Assets",${data.totalAssets}\n`;
-      data.liabilities?.forEach(l => csvContent += `Liability,"${l.name}",${l.balance}\n`);
-      data.equity?.forEach(e => csvContent += `Equity,"${e.name}",${e.balance}\n`);
+      const rows = [
+        { height: 25, cells: [{ value: "Balance Sheet", styleId: "Title", mergeAcross: 2 }] },
+        { height: 18, cells: [{ value: `Generated on ${todayStr}`, styleId: "SubTitle", mergeAcross: 2 }] },
+        { height: 10, cells: [] },
+        {
+          height: 25,
+          cells: [
+            { value: "Category", styleId: "HeaderBalance" },
+            { value: "Account Name", styleId: "HeaderBalance" },
+            { value: "Balance (INR)", styleId: "HeaderBalance" }
+          ]
+        },
+        // Assets Section
+        { height: 22, cells: [{ value: "ASSETS", styleId: "CellAssetHeader", mergeAcross: 2 }] }
+      ];
+
+      data.assets?.forEach(a => {
+        rows.push({
+          height: 20,
+          cells: [
+            { value: "", styleId: "CellNormal" },
+            { value: a.name, styleId: "CellNormal" },
+            { value: a.balance || 0, type: "Number", styleId: "CellRight" }
+          ]
+        });
+      });
+
+      rows.push({
+        height: 22,
+        cells: [
+          { value: "", styleId: "CellBoldLeft" },
+          { value: "Total Assets", styleId: "CellBoldLeft" },
+          { value: data.totalAssets || 0, type: "Number", styleId: "CellBoldRight" }
+        ]
+      });
+
+      rows.push({ height: 10, cells: [] }); // Space
+
+      // Liabilities & Equity Section
+      rows.push({ height: 22, cells: [{ value: "LIABILITIES & EQUITY", styleId: "CellLiabilityHeader", mergeAcross: 2 }] });
+
+      data.liabilities?.forEach(l => {
+        rows.push({
+          height: 20,
+          cells: [
+            { value: "", styleId: "CellNormal" },
+            { value: l.name, styleId: "CellNormal" },
+            { value: l.balance || 0, type: "Number", styleId: "CellRight" }
+          ]
+        });
+      });
+
+      data.equity?.forEach(e => {
+        rows.push({
+          height: 20,
+          cells: [
+            { value: "", styleId: "CellNormal" },
+            { value: e.name, styleId: "CellNormal" },
+            { value: e.balance || 0, type: "Number", styleId: "CellRight" }
+          ]
+        });
+      });
+
       const totalLiabEquity = (data.totalLiabilities || 0) + (data.totalEquity || 0);
-      csvContent += `Total,"Total Liab. & Equity",${totalLiabEquity}\n`;
+      rows.push({
+        height: 22,
+        cells: [
+          { value: "", styleId: "CellBoldLeft" },
+          { value: "Total Liabilities & Equity", styleId: "CellBoldLeft" },
+          { value: totalLiabEquity, type: "Number", styleId: "CellBoldRight" }
+        ]
+      });
+
+      sheets.push({
+        name: "Balance Sheet",
+        columns: [{ width: 160 }, { width: 220 }, { width: 130 }],
+        rows
+      });
     }
 
-    const blob = new Blob(["\ufeff" + csvContent], { type: 'text/csv;charset=utf-8;' }); // Add BOM for Excel UTF-8
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", filename);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    exportToExcel({
+      filename,
+      sheets
+    });
+
     toast.success("Downloaded successfully!");
   };
 

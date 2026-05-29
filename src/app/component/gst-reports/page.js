@@ -5,6 +5,7 @@ import axios from "axios";
 import { API_BASE, getAuthHeaders } from "@/Api/AllApi";
 import { toast } from "react-hot-toast";
 import RoleGuard from "@/components/RoleGuard";
+import { exportToExcel } from "@/utils/excelExport";
 
 import { Header, Button } from "@/utils/header";
 
@@ -37,20 +38,192 @@ const GstReportsPage = () => {
       setLoading(true);
       const res = await axios.get(`${API_BASE}/admin/gst/gstr1-export`, {
         headers: getAuthHeaders(),
-        params: { type: 'CSV', startDate: dates.start, endDate: dates.end },
-        responseType: 'blob'
+        params: { type: 'JSON', startDate: dates.start, endDate: dates.end }
       });
       
-      const url = window.URL.createObjectURL(new Blob([res.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `GSTR1_Full_Report_${new Date().toISOString().split('T')[0]}.xlsx`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
+      const { b2b = [], b2c = [], hsnSummary = [] } = res.data.data || {};
+      
+      const periodStr = `Period: ${dates.start || "All Time"} to ${dates.end || "All Time"}`;
+      
+      // 1. B2B Sheet
+      const b2bRows = [
+        { height: 25, cells: [{ value: "B2B Transactions Report", styleId: "Title", mergeAcross: 5 }] },
+        { height: 18, cells: [{ value: periodStr, styleId: "SubTitle", mergeAcross: 5 }] },
+        { height: 10, cells: [] }, // Space
+        {
+          height: 25,
+          cells: [
+            { value: "Date", styleId: "HeaderB2B" },
+            { value: "Customer Name", styleId: "HeaderB2B" },
+            { value: "GSTIN", styleId: "HeaderB2B" },
+            { value: "Taxable Value (INR)", styleId: "HeaderB2B" },
+            { value: "GST Amount (INR)", styleId: "HeaderB2B" },
+            { value: "Total Amount (INR)", styleId: "HeaderB2B" }
+          ]
+        }
+      ];
+      
+      let b2bTaxableSum = 0, b2bGstSum = 0, b2bTotalSum = 0;
+      b2b.forEach(o => {
+        const taxable = o.subTotal || 0;
+        const gst = o.totalGst || 0;
+        const total = o.totalAmount || 0;
+        b2bTaxableSum += taxable;
+        b2bGstSum += gst;
+        b2bTotalSum += total;
+        
+        b2bRows.push({
+          height: 20,
+          cells: [
+            { value: new Date(o.createdAt).toLocaleDateString(), styleId: "CellCenter" },
+            { value: o.shippingAddress?.name || ((o.userId?.name || '') + ' ' + (o.userId?.surname || '')), styleId: "CellNormal" },
+            { value: o.customerGstin || "-", styleId: "CellCenter" },
+            { value: taxable, type: "Number", styleId: "CellRight" },
+            { value: gst, type: "Number", styleId: "CellRight" },
+            { value: total, type: "Number", styleId: "CellRight" }
+          ]
+        });
+      });
+      
+      b2bRows.push({
+        height: 22,
+        cells: [
+          { value: "Total", styleId: "CellTotal" },
+          { value: "", styleId: "CellTotal" },
+          { value: "", styleId: "CellTotal" },
+          { value: b2bTaxableSum, type: "Number", styleId: "CellTotalRight" },
+          { value: b2bGstSum, type: "Number", styleId: "CellTotalRight" },
+          { value: b2bTotalSum, type: "Number", styleId: "CellTotalRight" }
+        ]
+      });
+
+      // 2. B2C Sheet
+      const b2cRows = [
+        { height: 25, cells: [{ value: "B2C Transactions Report", styleId: "Title", mergeAcross: 4 }] },
+        { height: 18, cells: [{ value: periodStr, styleId: "SubTitle", mergeAcross: 4 }] },
+        { height: 10, cells: [] }, // Space
+        {
+          height: 25,
+          cells: [
+            { value: "Date", styleId: "HeaderB2C" },
+            { value: "Customer Name", styleId: "HeaderB2C" },
+            { value: "Taxable Value (INR)", styleId: "HeaderB2C" },
+            { value: "GST Amount (INR)", styleId: "HeaderB2C" },
+            { value: "Total Amount (INR)", styleId: "HeaderB2C" }
+          ]
+        }
+      ];
+      
+      let b2cTaxableSum = 0, b2cGstSum = 0, b2cTotalSum = 0;
+      b2c.forEach(o => {
+        const taxable = o.subTotal || 0;
+        const gst = o.totalGst || 0;
+        const total = o.totalAmount || 0;
+        b2cTaxableSum += taxable;
+        b2cGstSum += gst;
+        b2cTotalSum += total;
+        
+        b2cRows.push({
+          height: 20,
+          cells: [
+            { value: new Date(o.createdAt).toLocaleDateString(), styleId: "CellCenter" },
+            { value: o.shippingAddress?.name || ((o.userId?.name || '') + ' ' + (o.userId?.surname || '')), styleId: "CellNormal" },
+            { value: taxable, type: "Number", styleId: "CellRight" },
+            { value: gst, type: "Number", styleId: "CellRight" },
+            { value: total, type: "Number", styleId: "CellRight" }
+          ]
+        });
+      });
+      
+      b2cRows.push({
+        height: 22,
+        cells: [
+          { value: "Total", styleId: "CellTotal" },
+          { value: "", styleId: "CellTotal" },
+          { value: b2cTaxableSum, type: "Number", styleId: "CellTotalRight" },
+          { value: b2cGstSum, type: "Number", styleId: "CellTotalRight" },
+          { value: b2cTotalSum, type: "Number", styleId: "CellTotalRight" }
+        ]
+      });
+
+      // 3. HSN Sheet
+      const hsnRows = [
+        { height: 25, cells: [{ value: "HSN Summary Report", styleId: "Title", mergeAcross: 5 }] },
+        { height: 18, cells: [{ value: periodStr, styleId: "SubTitle", mergeAcross: 5 }] },
+        { height: 10, cells: [] }, // Space
+        {
+          height: 25,
+          cells: [
+            { value: "HSN Code", styleId: "HeaderHSN" },
+            { value: "Description", styleId: "HeaderHSN" },
+            { value: "Quantity", styleId: "HeaderHSN" },
+            { value: "Taxable Value (INR)", styleId: "HeaderHSN" },
+            { value: "GST Amount (INR)", styleId: "HeaderHSN" },
+            { value: "Total Amount (INR)", styleId: "HeaderHSN" }
+          ]
+        }
+      ];
+      
+      let hsnQtySum = 0, hsnTaxableSum = 0, hsnGstSum = 0, hsnTotalSum = 0;
+      hsnSummary.forEach(h => {
+        const qty = h.qty || 0;
+        const taxable = h.taxable || 0;
+        const gst = h.gst || 0;
+        const total = h.total || 0;
+        hsnQtySum += qty;
+        hsnTaxableSum += taxable;
+        hsnGstSum += gst;
+        hsnTotalSum += total;
+        
+        hsnRows.push({
+          height: 20,
+          cells: [
+            { value: h.hsn || "-", styleId: "CellCenter" },
+            { value: h.description || "-", styleId: "CellNormal" },
+            { value: qty, type: "Number", styleId: "CellRight" },
+            { value: taxable, type: "Number", styleId: "CellRight" },
+            { value: gst, type: "Number", styleId: "CellRight" },
+            { value: total, type: "Number", styleId: "CellRight" }
+          ]
+        });
+      });
+      
+      hsnRows.push({
+        height: 22,
+        cells: [
+          { value: "Total", styleId: "CellTotal" },
+          { value: "", styleId: "CellTotal" },
+          { value: hsnQtySum, type: "Number", styleId: "CellTotalRight" },
+          { value: hsnTaxableSum, type: "Number", styleId: "CellTotalRight" },
+          { value: hsnGstSum, type: "Number", styleId: "CellTotalRight" },
+          { value: hsnTotalSum, type: "Number", styleId: "CellTotalRight" }
+        ]
+      });
+
+      exportToExcel({
+        filename: `GSTR1_Full_Report_${new Date().toISOString().split('T')[0]}.xls`,
+        sheets: [
+          {
+            name: "B2B Transactions",
+            columns: [{ width: 100 }, { width: 220 }, { width: 130 }, { width: 130 }, { width: 130 }, { width: 130 }],
+            rows: b2bRows
+          },
+          {
+            name: "B2C Transactions",
+            columns: [{ width: 100 }, { width: 220 }, { width: 130 }, { width: 130 }, { width: 130 }],
+            rows: b2cRows
+          },
+          {
+            name: "HSN Summary",
+            columns: [{ width: 100 }, { width: 220 }, { width: 80 }, { width: 130 }, { width: 130 }, { width: 130 }],
+            rows: hsnRows
+          }
+        ]
+      });
       
       toast.success("Downloading GSTR-1 Report (B2B, B2C, HSN)");
     } catch (error) {
+      console.error(error);
       toast.error("Export failed");
     } finally {
       setLoading(false);

@@ -226,17 +226,265 @@ const OrderPage = () => {
     }
   };
 
-  const handleBulkDownload = async () => {
+  const handleBulkDownload = () => {
     if (selectedIds.length === 0) return toast.error("No orders selected");
-    try {
-      setLoading(true);
-      await bulkDownloadInvoicesApi(selectedIds);
-      toast.success("Downloading invoices...");
-    } catch (err) {
-      toast.error("Failed to download invoices");
-    } finally {
-      setLoading(false);
+
+    const selectedOrders = orders.filter(o => selectedIds.includes(o._id));
+    if (selectedOrders.length === 0) {
+      toast.error("Selected orders data not found");
+      return;
     }
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Popup blocker prevented opening print window");
+      return;
+    }
+
+    const STATUS_LABELS = {
+      1: "Pending",
+      2: "Packed",
+      3: "Processing",
+      4: "In Transit",
+      5: "Delivered",
+      6: "Cancelled",
+    };
+
+    let rowsHtml = "";
+    let totalSum = 0;
+
+    selectedOrders.forEach((order) => {
+      const statusLabel = STATUS_LABELS[order.orderStatus] || "Pending";
+      const statusClass = {
+        1: "badge-pending",
+        2: "badge-packed",
+        3: "badge-processing",
+        4: "badge-transit",
+        5: "badge-delivered",
+        6: "badge-cancelled",
+      }[order.orderStatus] || "badge-pending";
+
+      const orderDate = new Date(order.createdAt).toLocaleDateString("en-GB");
+      const orderId = `ORD-${order._id.slice(-6).toUpperCase()}`;
+
+      const customerName = (order.shippingAddress?.name || `${order.user?.name || ""} ${order.user?.surname || ""}`).trim().toUpperCase();
+      const mobile = order.shippingAddress?.mobile || order.user?.mobileNumber || "N/A";
+      const addressParts = [
+        order.shippingAddress?.addressLine1,
+        order.shippingAddress?.addressLine2,
+        order.shippingAddress?.city,
+        order.shippingAddress?.state ? `${order.shippingAddress.state} ${order.shippingAddress.postalCode || ""}` : order.shippingAddress?.postalCode,
+        order.shippingAddress?.country || "India"
+      ].filter(p => p && p.trim().length > 0);
+      const billTo = `${customerName} | Mob: ${mobile}<br/><span class="text-muted">${addressParts.join(", ")}</span>`;
+
+      let itemsText = [];
+      if (order.plans && order.plans.length > 0) {
+        order.plans.forEach(p => itemsText.push(`${p.quantity || 1}x ${p.name || 'Membership Plan'}`));
+      } else if (order.plan) {
+        itemsText.push(`1x ${order.plan.name || 'Membership Plan'}`);
+      }
+      if (order.products && order.products.length > 0) {
+        order.products.forEach(p => itemsText.push(`${p.quantity}x ${p.name || 'Product'}`));
+      }
+      const itemsString = itemsText.join("<br/>");
+      const amountVal = order.totalAmount || 0;
+      totalSum += amountVal;
+
+      rowsHtml += `
+        <tr>
+          <td><strong>${orderId}</strong><br/><span class="text-muted">${orderDate}</span></td>
+          <td>${billTo}</td>
+          <td>${itemsString}</td>
+          <td class="text-center"><span class="badge ${statusClass}">${statusLabel}</span></td>
+          <td class="text-right"><strong>₹${amountVal.toLocaleString("en-IN")}</strong></td>
+        </tr>
+      `;
+    });
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Order Manifest</title>
+        <meta charset="utf-8">
+        <style>
+          body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #1e293b;
+            font-size: 12px;
+            line-height: 1.5;
+            margin: 0;
+            padding: 40px;
+            background-color: #ffffff;
+          }
+          .container {
+            max-width: 1000px;
+            margin: 0 auto;
+          }
+          .header {
+            margin-bottom: 25px;
+          }
+          .header h1 {
+            color: #0d9488;
+            font-size: 26px;
+            margin: 0 0 5px 0;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          .header .subtitle {
+            font-size: 9px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #1e293b;
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+          }
+          .header h2 {
+            font-size: 16px;
+            font-weight: 800;
+            margin: 0 0 8px 0;
+            color: #1e293b;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+          }
+          .header .metadata {
+            font-size: 11px;
+            color: #64748b;
+          }
+          hr {
+            border: 0;
+            border-top: 1px solid #cbd5e1;
+            margin: 15px 0;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+          }
+          th {
+            background-color: #f8fafc;
+            color: #1e293b;
+            font-weight: 700;
+            text-align: left;
+            padding: 10px 12px;
+            font-size: 10px;
+            border-top: 1px solid #cbd5e1;
+            border-bottom: 1px solid #cbd5e1;
+            text-transform: uppercase;
+          }
+          td {
+            padding: 12px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 11.5px;
+            vertical-align: top;
+          }
+          .text-center {
+            text-align: center;
+          }
+          .text-right {
+            text-align: right;
+          }
+          .text-muted {
+            color: #64748b;
+            font-size: 10.5px;
+            display: inline-block;
+            margin-top: 2px;
+          }
+          .badge {
+            display: inline-block;
+            padding: 3px 8px;
+            font-size: 9px;
+            font-weight: 700;
+            border-radius: 4px;
+            text-transform: uppercase;
+          }
+          .badge-pending { background-color: #f1f5f9; color: #475569; }
+          .badge-packed { background-color: #dbeafe; color: #1e40af; }
+          .badge-processing { background-color: #fef9c3; color: #854d0e; }
+          .badge-transit { background-color: #ffedd5; color: #9a3412; }
+          .badge-delivered { background-color: #dcfce7; color: #166534; }
+          .badge-cancelled { background-color: #fee2e2; color: #991b1b; }
+          
+          .summary-row {
+            font-weight: 700;
+            background-color: #f8fafc;
+          }
+          .summary-row td {
+            border-top: 2px solid #cbd5e1;
+            border-bottom: 2px solid #cbd5e1;
+            font-size: 12px;
+            vertical-align: middle;
+          }
+          .footer {
+            text-align: center;
+            font-size: 10px;
+            color: #64748b;
+            margin-top: 40px;
+          }
+          @media print {
+            body {
+              padding: 20px;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <h1>DETOXPATHY</h1>
+            <div class="subtitle">HEALTH & WELLNESS SOLUTIONS</div>
+            <h2>ORDER MANIFEST</h2>
+            <div class="metadata">
+              <strong>Total Orders:</strong> ${selectedOrders.length} | <strong>Date:</strong> ${new Date().toLocaleDateString("en-GB")}
+            </div>
+          </div>
+          
+          <hr />
+          
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 120px;">ORDER ID</th>
+                <th>CUSTOMER & SHIPPING</th>
+                <th>ITEMS</th>
+                <th class="text-center" style="width: 100px;">STATUS</th>
+                <th class="text-right" style="width: 120px;">TOTAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHtml}
+              <tr class="summary-row">
+                <td colspan="3">TOTAL SUMMARY</td>
+                <td class="text-center">${selectedOrders.length} Orders</td>
+                <td class="text-right">₹${totalSum.toLocaleString("en-IN")}</td>
+              </tr>
+            </tbody>
+          </table>
+          
+          <hr />
+          
+          <div class="footer">
+            Thank you | www.detoxpathy.com | Computer generated invoice manifest. No signature required.
+          </div>
+        </div>
+        
+        <script>
+          window.onload = function() {
+            window.print();
+            setTimeout(function() {
+              window.close();
+            }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    setSelectedIds([]);
   };
 
   const handleCreateSuccess = () => {
