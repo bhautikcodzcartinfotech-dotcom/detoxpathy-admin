@@ -572,6 +572,20 @@ const SettingsPage = () => {
               </p>
             </div>
 
+            {/* Razorpay Key */}
+            <div className="bg-gradient-to-br from-white to-yellow-50 rounded-2xl shadow-lg border border-yellow-200 p-6">
+              <h3 className="text-sm font-bold text-gray-700 mb-4 tracking-wide">
+                Razorpay Key
+              </h3>
+              <input
+                type="text"
+                value={formData.razorpayKey || ""}
+                onChange={(e) => handleInputChange("razorpayKey", e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-yellow-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
+                placeholder="Enter Razorpay Key"
+              />
+            </div>
+
             {/* Video Language */}
             <div className="bg-gradient-to-br from-white to-amber-50 rounded-2xl shadow-lg border border-amber-200 p-6 flex flex-col justify-between h-full">
               <div className="flex-1">

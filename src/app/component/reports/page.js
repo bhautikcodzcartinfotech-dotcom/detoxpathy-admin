@@ -137,6 +137,7 @@ const ReportsPage = () => {
   const [appReferences, setAppReferences] = useState([]);
   const [selectedMedicalCondition, setSelectedMedicalCondition] = useState("");
   const [selectedAppReference, setSelectedAppReference] = useState("");
+  const [usedReferralFilter, setUsedReferralFilter] = useState(""); // "" | "has_used" | "not_used"
   const appReferenceOptions = useMemo(() => {
     const options = [{ label: "All Sources", value: "" }];
     appReferences.forEach(r => {
@@ -506,6 +507,13 @@ const ReportsPage = () => {
     const docBranchIds = selectedDoc
       ? (Array.isArray(selectedDoc.fullBranches) ? selectedDoc.fullBranches : []).map(b => String(b._id))
       : [];
+    // Precompute used referral codes for "Sent Referrals" filter
+    const allUsedReferralCodes = new Set();
+    allUsersList.forEach(u => {
+      if (u.usedReferralCode) {
+        allUsedReferralCodes.add(u.usedReferralCode);
+      }
+    });
 
     return data.filter(item => {
       if (viewType === "videoReports") {
@@ -622,6 +630,10 @@ const ReportsPage = () => {
 
       if (selectedReferrer && user?.usedReferralCode !== selectedReferrer && user?.referralCode !== selectedReferrer) return false;
 
+      if (usedReferralFilter === "has_used" && !user?.usedReferralCode) return false;
+      if (usedReferralFilter === "sent_referrals" && !allUsedReferralCodes.has(user?.referralCode)) return false;
+      if (usedReferralFilter === "not_used" && user?.usedReferralCode) return false;
+
       if (selectedResultStatus === "passed" && !user?.giveAnswer) return false;
       if (selectedResultStatus === "failed" && user?.giveAnswer) return false;
 
@@ -675,7 +687,7 @@ const ReportsPage = () => {
 
       return true;
     });
-  }, [rawData, reportType, viewType, searchTerm, selectedBranchId, selectedPlanId, statusFilter, selectedGender, selectedLanguage, selectedCity, selectedState, selectedAge, selectedReferrer, skipBodyMeasurement, selectedDoctorId, allDoctors, selectedMedicalCondition, selectedAppReference, selectedVideoLanguage, selectedConsultingType, selectedVideoWatchStatus, selectedResultStatus, selectedAppointmentStatus, screenDateFilter, startDate, endDate, checklistReportEnabled, filterWater, filterExercise, filterJuice, filterPranayama, filterSleep, localOnlineFilter, allBranches, allUsersList, itemTypeFilter]);
+  }, [rawData, reportType, viewType, searchTerm, selectedBranchId, selectedPlanId, statusFilter, selectedGender, selectedLanguage, selectedCity, selectedState, selectedAge, selectedReferrer, skipBodyMeasurement, selectedDoctorId, allDoctors, selectedMedicalCondition, selectedAppReference, selectedVideoLanguage, selectedConsultingType, selectedVideoWatchStatus, selectedResultStatus, selectedAppointmentStatus, screenDateFilter, startDate, endDate, checklistReportEnabled, filterWater, filterExercise, filterJuice, filterPranayama, filterSleep, localOnlineFilter, allBranches, allUsersList, itemTypeFilter, usedReferralFilter]);
 
   // Reset page when any dependency of filteredData changes (i.e. filteredData itself updates)
   useEffect(() => {
@@ -1050,6 +1062,8 @@ const ReportsPage = () => {
                   <th className="px-6 py-4">Responsible Doctor</th>
                   <th className="px-6 py-4">City / State</th>
                   <th className="px-6 py-4">DOB</th>
+                  <th className="px-6 py-4">Referrer</th>
+                  <th className="px-6 py-4 text-center">Referrals Sent</th>
                   <th className="px-6 py-4">Status</th>
                 </tr>
               </thead>
@@ -1059,7 +1073,11 @@ const ReportsPage = () => {
                   const assignedDoctors = allDoctors.filter(d =>
                     (Array.isArray(d.fullBranches) ? d.fullBranches : []).some(b => String(b._id) === userBranchId)
                   ).map(d => d.username).join(", ") || "No Doctor Assigned";
-
+                  const referrerUser = item.usedReferralCode 
+                    ? allUsersList.find(u => u.referralCode === item.usedReferralCode) 
+                    : null;
+                  // Calculate how many referrals this user has sent
+                  const referralsSentCount = allUsersList.filter(u => u.usedReferralCode === item.referralCode).length;
                   return (
                     <tr key={item._id} className="bg-white hover:bg-gray-50/80 transition-colors text-xs">
                       <td className="px-6 py-4 font-semibold text-gray-900">{item.name} {item.surname}</td>
@@ -1067,6 +1085,17 @@ const ReportsPage = () => {
                       <td className="px-6 py-4 text-indigo-600 font-bold">{assignedDoctors}</td>
                       <td className="px-6 py-4 text-gray-500">{item.city || 'N/A'}, {item.state || 'N/A'}</td>
                       <td className="px-6 py-4 text-gray-500">{item.dob || 'N/A'}</td>
+                      <td className="px-6 py-4 text-violet-600 font-medium">
+                        {referrerUser 
+                          ? `${referrerUser.name} ${referrerUser.surname || ""}`.trim() 
+                          : item.usedReferralCode 
+                            ? "Referral Code Used" 
+                            : "N/A"
+                        }
+                      </td>
+                      <td className="px-6 py-4 text-center text-indigo-600 font-bold">
+                        {referralsSentCount}
+                      </td>
                       <td className="px-6 py-4">
                         <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase ${item.isDeleted || item.isBlocked ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"
                           }`}>
@@ -1535,12 +1564,14 @@ const ReportsPage = () => {
               { width: 150 },
               { width: 150 },
               { width: 100 },
+              { width: 180 },
+              { width: 120 },
               { width: 100 }
             ];
 
             rows = [
-              { height: 25, cells: [{ value: titleText, styleId: "Title", mergeAcross: 6 }] },
-              { height: 18, cells: [{ value: subtitleText, styleId: "SubTitle", mergeAcross: 6 }] },
+              { height: 25, cells: [{ value: titleText, styleId: "Title", mergeAcross: 8 }] },
+              { height: 18, cells: [{ value: subtitleText, styleId: "SubTitle", mergeAcross: 8 }] },
               { height: 10, cells: [] },
               {
                 height: 25,
@@ -1551,6 +1582,8 @@ const ReportsPage = () => {
                   { value: "City", styleId: "HeaderB2B" },
                   { value: "State", styleId: "HeaderB2B" },
                   { value: "DOB", styleId: "HeaderB2B" },
+                  { value: "Referrer", styleId: "HeaderB2B" },
+                  { value: "Referrals Sent", styleId: "HeaderB2B" },
                   { value: "Status", styleId: "HeaderB2B" }
                 ]
               }
@@ -1561,6 +1594,15 @@ const ReportsPage = () => {
               const assignedDoctors = allDoctors.filter(d =>
                 (Array.isArray(d.fullBranches) ? d.fullBranches : []).some(b => String(b._id) === userBranchId)
               ).map(d => d.username).join(", ") || "No Doctor Assigned";
+              const referrerUser = item.usedReferralCode 
+                ? allUsersList.find(u => u.referralCode === item.usedReferralCode) 
+                : null;
+              const referrerName = referrerUser 
+                ? `${referrerUser.name} ${referrerUser.surname || ""}`.trim() 
+                : item.usedReferralCode 
+                  ? "Referral Code Used" 
+                  : "N/A";
+              const referralsSentCount = allUsersList.filter(u => u.usedReferralCode === item.referralCode).length;
 
               rows.push({
                 height: 20,
@@ -1571,6 +1613,8 @@ const ReportsPage = () => {
                   { value: item.city || "N/A", styleId: "CellNormal" },
                   { value: item.state || "N/A", styleId: "CellNormal" },
                   { value: item.dob || "N/A", styleId: "CellCenter" },
+                  { value: referrerName, styleId: "CellNormal" },
+                  { value: referralsSentCount, type: "Number", styleId: "CellCenter" },
                   { value: (item.isDeleted || item.isBlocked) ? "Inactive" : "Active", styleId: "CellCenter" }
                 ]
               });
@@ -1831,6 +1875,7 @@ const ReportsPage = () => {
     setSelectedResultStatus("");
     setSelectedLanguage("");
     setSelectedAppointmentStatus("");
+    setUsedReferralFilter("");
     setScreenDateFilter(() => {
       const d = new Date();
       const year = d.getFullYear();
@@ -2342,13 +2387,18 @@ const ReportsPage = () => {
                     <Dropdown options={[{ label: "All Status", value: "all" }, { label: "Active", value: "active" }, { label: "Inactive", value: "inactive" }]} value={statusFilter} onChange={setStatusFilter} />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-black text-blue-600 uppercase tracking-widest px-1">Branch City Online</label>
-                    <Dropdown options={[{ label: "All Bookings", value: "" }, { label: "Local Online Only", value: "local_online" }]} value={localOnlineFilter} onChange={setLocalOnlineFilter} />
+                    <label className="text-[9px] font-black text-blue-600 uppercase tracking-widest px-1">Referral</label>
+                    <Dropdown options={[
+                      { label: "All Users", value: "" },
+                      { label: "Used Referral (Referred Users)", value: "has_used" },
+                      { label: "Sent Referrals (Referrers)", value: "sent_referrals" },
+                      { label: "No Referral", value: "not_used" }
+                    ]} value={usedReferralFilter} onChange={setUsedReferralFilter} />
                   </div>
                 </div>
 
                 {/* Row 3: Engagement & Metrics */}
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-3">
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-x-6 gap-y-3">
                   <div className="flex flex-col gap-1">
                     <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Video Watch</label>
                     <Dropdown options={[{ label: "All", value: "" }, { label: "Watched", value: "watched" }, { label: "Not Watched", value: "not_watched" }]} value={selectedVideoWatchStatus} onChange={setSelectedVideoWatchStatus} />
@@ -2362,6 +2412,10 @@ const ReportsPage = () => {
                     <Dropdown options={[{ label: "All Types", value: "" }, { label: "Online", value: "1" }, { label: "Offline", value: "2" }]} value={selectedConsultingType} onChange={setSelectedConsultingType} />
                   </div>
                   <div className="flex flex-col gap-1">
+                    <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Branch City Online</label>
+                    <Dropdown options={[{ label: "All Bookings", value: "" }, { label: "Local Online Only", value: "local_online" }]} value={localOnlineFilter} onChange={setLocalOnlineFilter} />
+                  </div>
+                  <div className="flex flex-col gap-1">
                     <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Body Stats</label>
                     <Dropdown options={[{ label: "Show All", value: "" }, { label: "With Data", value: "with" }, { label: "Missing Data", value: "skip" }]} value={skipBodyMeasurement} onChange={setSkipBodyMeasurement} />
                   </div>
@@ -2373,7 +2427,8 @@ const ReportsPage = () => {
                     <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Language</label>
                     <Dropdown options={[{ label: "All", value: "" }, { label: "English", value: "en" }, { label: "Hindi", value: "hi" }, { label: "Gujarati", value: "gu" }]} value={selectedLanguage} onChange={setSelectedLanguage} />
                   </div>
-                  {reportType === "appointments" && (
+                </div>
+                {reportType === "appointments" && (
                     <div className="flex flex-col gap-1">
                       <label className="text-[9px] font-black text-amber-600 uppercase tracking-widest px-1">Reschedule Appointments</label>
                       <Dropdown
@@ -2386,7 +2441,6 @@ const ReportsPage = () => {
                       />
                     </div>
                   )}
-                </div>
 
                 {/* Row 4: Search, Timeline & Checklist Report */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
@@ -2585,6 +2639,17 @@ const ReportsPage = () => {
                 {selectedAge && (
                   <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-bold border border-indigo-100/50 flex items-center gap-1.5 whitespace-nowrap">
                     <span className="opacity-50">Age:</span> {selectedAge}
+                  </span>
+                )}
+                {usedReferralFilter && (
+                  <span className="px-3 py-1 bg-violet-50 text-violet-600 rounded-full text-[10px] font-bold border border-violet-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                    <span className="opacity-50">Referral:</span> {
+                      usedReferralFilter === 'has_used' 
+                        ? 'Used Referral (Referred Users)' 
+                        : usedReferralFilter === 'sent_referrals' 
+                          ? 'Sent Referrals (Referrers)' 
+                          : 'No Referral'
+                    }
                   </span>
                 )}
                 {selectedVideoWatchStatus && (
