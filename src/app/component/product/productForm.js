@@ -21,6 +21,7 @@ const ProductForm = ({
     hsnCode: "",
     gstPercentage: "",
     unit: "",
+    weight: "",
     images: null, // FileList for new uploads
   });
   const [existingImages, setExistingImages] = useState([]); // For displaying existing images when editing
@@ -54,12 +55,13 @@ const ProductForm = ({
       setForm({
         name: initialValues.name || "",
         description: initialValues.description || "",
-        basePrice: initialValues.basePrice || "",
-        discountedPrice: initialValues.discountedPrice || "",
-        bulkDiscount: initialValues.bulkDiscount || "",
+        basePrice: initialValues.basePrice ?? "",
+        discountedPrice: initialValues.discountedPrice ?? "",
+        bulkDiscount: initialValues.bulkDiscount ?? "",
         hsnCode: initialValues.hsnCode || "",
-        gstPercentage: initialValues.gstPercentage || "",
+        gstPercentage: initialValues.gstPercentage ?? "",
         unit: initialValues.unit || "",
+        weight: initialValues.weight ?? 0,
         images: null,
       });
       setExistingImages(Array.isArray(initialValues.images) ? initialValues.images : []);
@@ -75,6 +77,7 @@ const ProductForm = ({
         hsnCode: "",
         gstPercentage: "",
         unit: "",
+        weight: "",
         images: null,
       });
       setExistingImages([]);
@@ -84,7 +87,7 @@ const ProductForm = ({
   }, [initialValues]);
 
   const validate = () => {
-    const required = (label) => (v) => !v ? `${label} is required.` : null;
+    const required = (label) => (v) => (v === undefined || v === null || v === "") ? `${label} is required.` : null;
     const number = (label) => (v) => (v !== "" && v !== null && v !== undefined) && isNaN(Number(v)) ? `${label} must be a number.` : null;
     const positive = (label) => (v) => (v !== "" && v !== null && v !== undefined) && Number(v) <= 0 ? `${label} must be positive.` : null;
     const nonNegative = (label) => (v) => (v !== "" && v !== null && v !== undefined) && Number(v) < 0 ? `${label} cannot be negative.` : null;
@@ -122,6 +125,10 @@ const ProductForm = ({
         value: form.unit,
         rules: [required("Unit")],
       },
+      weight: {
+        value: form.weight,
+        rules: [required("Weight"), number("Weight"), nonNegative("Weight")],
+      },
     });
 
     // Validate images - at least one image required (new upload or existing after removal)
@@ -154,6 +161,7 @@ const ProductForm = ({
     formData.append('hsnCode', form.hsnCode);
     formData.append('gstPercentage', form.gstPercentage);
     formData.append('unit', form.unit);
+    formData.append('weight', form.weight);
 
     // Add images to remove
     if (imagesToRemove.length > 0) {
@@ -311,6 +319,24 @@ const ProductForm = ({
           )}
         </div>
 
+        <div>
+          <label className="block mb-1 font-semibold text-gray-700">
+            Weight (grams)
+          </label>
+          <input
+            type="number"
+            value={form.weight}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, weight: e.target.value }))
+            }
+            className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+            placeholder="e.g. 500"
+            min="0"
+          />
+          {errors.weight && (
+            <p className="text-red-500 text-sm mt-1">{errors.weight}</p>
+          )}
+        </div>
       </div>
 
       <div>

@@ -66,6 +66,7 @@ import {
   getCommands,
   API_BASE,
   getAllBranches,
+  sendNotificationToUserApi,
 } from "../../../Api/AllApi";
 
 import Loader from "../../../utils/loader";
@@ -233,6 +234,16 @@ export default function ChatPage() {
 
       await addDoc(collection(chatRef, "messages"), msg);
       await updateDoc(chatRef, { lastMessage: msg, updatedAt: nowMs });
+
+      // Send push notification
+      try {
+        let notifMsg = "📁 Sent an attachment";
+        if (fileType === "image") notifMsg = "📷 Sent an image";
+        else if (fileType === "video") notifMsg = "🎥 Sent a video";
+        await sendNotificationToUserApi(selectedUser.id, "Support Message", notifMsg, false);
+      } catch (err) {
+        console.error("Failed to send push notification:", err);
+      }
 
       setUploadProgress(0);
       setIsUploading(false);
@@ -539,6 +550,13 @@ export default function ChatPage() {
         console.log("audioUrl---------msg---------:", msg.audioUrl);
         await addDoc(collection(chatRef, "messages"), msg);
         await updateDoc(chatRef, { lastMessage: msg, updatedAt: nowMs });
+
+        // Send push notification
+        try {
+          await sendNotificationToUserApi(selectedUser.id, "Support Message", "🎤 Sent a voice message", false);
+        } catch (err) {
+          console.error("Failed to send push notification:", err);
+        }
       } else {
         startVoiceRecording();
       }
@@ -606,6 +624,13 @@ export default function ChatPage() {
       await addDoc(collection(chatRef, "messages"), msg);
       await updateDoc(chatRef, { lastMessage: msg, updatedAt: nowMs });
 
+      // Send push notification
+      try {
+        await sendNotificationToUserApi(selectedUser.id, "Support Message", "🎤 Sent a voice message", false);
+      } catch (err) {
+        console.error("Failed to send push notification:", err);
+      }
+
       setAudioBlob(null);
       setUploadProgress(0);
       setIsUploading(false);
@@ -643,10 +668,18 @@ export default function ChatPage() {
       createdAt: nowMs,
     };
 
+    const textToSend = newMessage;
     setNewMessage("");
 
     await addDoc(collection(chatRef, "messages"), msg);
     await updateDoc(chatRef, { lastMessage: msg, updatedAt: nowMs });
+
+    // Send push notification
+    try {
+      await sendNotificationToUserApi(selectedUser.id, "Support Message", textToSend, false);
+    } catch (err) {
+      console.error("Failed to send push notification:", err);
+    }
   };
 
   // Recording
@@ -916,9 +949,9 @@ export default function ChatPage() {
                   >
                     Transfer Appointment
                   </button>
-                  <button className="p-3 rounded-full hover:bg-gray-100 transition-colors">
+                  {/* <button className="p-3 rounded-full hover:bg-gray-100 transition-colors">
                     <BsThreeDotsVertical className="text-gray-600" size={20} />
-                  </button>
+                  </button> */}
                 </div>
               </div>
 

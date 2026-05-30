@@ -19,7 +19,9 @@ const PlanForm = ({
     days: "",
     price: "",
     bulkDiscount: "",
+    weight: "",
     notificationDays: [],
+    planCode: "",
   });
   const [errors, setErrors] = useState({});
 
@@ -53,7 +55,9 @@ const PlanForm = ({
         days: initialData.days ?? "",
         price: initialData.price ?? "",
         bulkDiscount: initialData.bulkDiscount ?? "",
+        weight: initialData.weight ?? 0,
         notificationDays: initialData.notificationDays || [],
+        planCode: initialData.planCode || "",
       });
     } else {
       setForm({
@@ -62,7 +66,9 @@ const PlanForm = ({
         days: "",
         price: "",
         bulkDiscount: "",
+        weight: "",
         notificationDays: [],
+        planCode: "",
       });
     }
     setErrors({});
@@ -85,6 +91,11 @@ const PlanForm = ({
       if (num < 0) return `${label} cannot be negative`;
       return null;
     };
+    const optionalFourDigitRule = (label) => (v) => {
+      if (!v) return null;
+      if (!/^\d{4}$/.test(v)) return `${label} must be exactly 4 digits`;
+      return null;
+    };
     const errs = validateForm({
       name: { value: form.name, rules: [required("Name")] },
       description: {
@@ -97,6 +108,8 @@ const PlanForm = ({
         value: form.bulkDiscount,
         rules: [optionalNonNegativeNumber("Bulk Discount")],
       },
+      weight: { value: form.weight, rules: [positiveNumberRule("Weight")] },
+      planCode: { value: form.planCode, rules: [optionalFourDigitRule("Plan Code")] },
     });
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -111,6 +124,7 @@ const PlanForm = ({
       price: Number(form.price),
       bulkDiscount:
         form.bulkDiscount === "" ? 0 : Number(form.bulkDiscount),
+      weight: Number(form.weight) || 0,
       notificationDays: form.notificationDays,
     });
   };
@@ -120,18 +134,35 @@ const PlanForm = ({
       <h2 className="text-3xl font-bold text-yellow-600 mb-6 text-center">
         {initialData ? `Update ${title}` : `Create ${title}`}
       </h2>
-      <div>
-        <label className="block mb-1 font-semibold text-gray-700">Name</label>
-        <input
-          type="text"
-          value={form.name}
-          onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-          className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
-          placeholder="Plan name"
-        />
-        {errors.name && (
-          <p className="text-red-500 text-sm mt-1">{errors.name}</p>
-        )}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block mb-1 font-semibold text-gray-700">Name *</label>
+          <input
+            type="text"
+            value={form.name}
+            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+            placeholder="Plan name"
+          />
+          {errors.name && (
+            <p className="text-red-500 text-sm mt-1">{errors.name}</p>
+          )}
+        </div>
+
+        <div>
+          <label className="block mb-1 font-semibold text-gray-700">Plan Code (optional)</label>
+          <input
+            type="text"
+            maxLength={4}
+            value={form.planCode}
+            onChange={(e) => setForm((f) => ({ ...f, planCode: e.target.value }))}
+            className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+            placeholder="e.g. 1234"
+          />
+          {errors.planCode && (
+            <p className="text-red-500 text-sm mt-1">{errors.planCode}</p>
+          )}
+        </div>
       </div>
 
       <div>
@@ -248,28 +279,52 @@ const PlanForm = ({
         </div>
       </div>
 
-      <div>
-        <label className="block mb-1 font-semibold text-gray-700">
-          Bulk Discount (%) (optional)
-        </label>
-        <input
-          type="number"
-          value={form.bulkDiscount}
-          onChange={(e) => {
-            const value = e.target.value;
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <label className="block mb-1 font-semibold text-gray-700">
+            Bulk Discount (%) (optional)
+          </label>
+          <input
+            type="number"
+            value={form.bulkDiscount}
+            onChange={(e) => {
+              const value = e.target.value;
 
-            setForm((f) => ({
-              ...f,
-              bulkDiscount: value === "" ? "" : Number(value),
-            }));
-          }}
-          className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
-          placeholder="e.g. 10"
-          min="0"
-        />
-        {errors.bulkDiscount && (
-          <p className="text-red-500 text-sm mt-1">{errors.bulkDiscount}</p>
-        )}
+              setForm((f) => ({
+                ...f,
+                bulkDiscount: value === "" ? "" : Number(value),
+              }));
+            }}
+            className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+            placeholder="e.g. 10"
+            min="0"
+          />
+          {errors.bulkDiscount && (
+            <p className="text-red-500 text-sm mt-1">{errors.bulkDiscount}</p>
+          )}
+        </div>
+
+        <div>
+          <label className="block mb-1 font-semibold text-gray-700">
+            Weight (grams) *
+          </label>
+          <input
+            type="number"
+            value={form.weight}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === "" || (!isNaN(value) && Number(value) >= 0)) {
+                setForm((f) => ({ ...f, weight: value }));
+              }
+            }}
+            className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+            placeholder="e.g. 1500"
+            min="0"
+          />
+          {errors.weight && (
+            <p className="text-red-500 text-sm mt-1">{errors.weight}</p>
+          )}
+        </div>
       </div>
 
       <div className="flex justify-end gap-3 mt-6">

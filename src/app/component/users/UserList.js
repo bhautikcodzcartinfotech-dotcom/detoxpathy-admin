@@ -285,18 +285,18 @@ const UserList = ({ users, loading, onEdit, onDelete, onBulkDelete, onSuggest })
                         title="Suggest Program"
                       />
                       {(role === "Admin" || permissions?.includes("edit user")) && (
-                      <ActionButton
-                        type="edit"
-                        onClick={() => onEdit(u)}
-                        disabled={isDeleted}
-                      />
+                        <ActionButton
+                          type="edit"
+                          onClick={() => onEdit(u)}
+                          disabled={isDeleted}
+                        />
                       )}
                       {(role === "Admin" || permissions?.includes("delete user")) && (
-                      <ActionButton
-                        type="delete"
-                        onClick={() => handleDeleteClick(u._id, u.name)}
-                        disabled={isDeleted}
-                      />
+                        <ActionButton
+                          type="delete"
+                          onClick={() => handleDeleteClick(u._id, u.name)}
+                          disabled={isDeleted}
+                        />
                       )}
                       <ActionButton
                         type="view"

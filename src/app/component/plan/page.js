@@ -76,7 +76,8 @@ const PlanPage = () => {
       setEditingPlan(null);
     } catch (err) {
       console.error(err);
-      toast.error("Error saving plan");
+      const errMsg = err?.response?.data?.message || "Error saving plan";
+      toast.error(errMsg);
     } finally {
       setSaving(false);
     }

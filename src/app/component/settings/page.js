@@ -127,6 +127,7 @@ const SettingsPage = () => {
         ...settingsData,
         screenshotProtectionActive: typeof settingsData.screenshotProtectionActive !== 'undefined' ? settingsData.screenshotProtectionActive : true,
         currency: settingsData.currency || "₹",
+        shippingCharges: typeof settingsData.shippingCharges !== 'undefined' ? settingsData.shippingCharges : 0,
         appoinmentDescription: typeof settingsData.appoinmentDescription === 'object' && settingsData.appoinmentDescription !== null
           ? settingsData.appoinmentDescription
           : { english: settingsData.appoinmentDescription || "", hindi: "", gujarati: "" },
@@ -489,9 +490,19 @@ const SettingsPage = () => {
                   <input
                     type="checkbox"
                     checked={formData.screenshotProtectionActive ?? true}
-                    onChange={(e) =>
-                      handleInputChange("screenshotProtectionActive", e.target.checked)
-                    }
+                    onChange={async (e) => {
+                      const newValue = e.target.checked;
+                      handleInputChange("screenshotProtectionActive", newValue);
+                      try {
+                        await updateSettingById(settings._id, { screenshotProtectionActive: newValue });
+                        toast.success(`Screenshot Protection turned ${newValue ? 'ON' : 'OFF'}!`);
+                        // Re-fetch settings from database to confirm and sync state
+                        await fetchSettings();
+                      } catch (err) {
+                        toast.error("Failed to update screenshot protection");
+                        handleInputChange("screenshotProtectionActive", !newValue);
+                      }
+                    }}
                     className="sr-only peer"
                   />
                   <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-yellow-500"></div>
@@ -583,6 +594,22 @@ const SettingsPage = () => {
                 onChange={(e) => handleInputChange("razorpayKey", e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-yellow-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
                 placeholder="Enter Razorpay Key"
+              />
+            </div>
+
+            {/* Shipping Charges */}
+            <div className="bg-gradient-to-br from-white to-yellow-50 rounded-2xl shadow-lg border border-yellow-200 p-6">
+              <h3 className="text-sm font-bold text-gray-700 mb-4 tracking-wide">
+                Shipping Charge (Per Kg) ({formData.currency || "₹"})
+              </h3>
+              <input
+                type="number"
+                value={formData.shippingCharges ?? ""}
+                onChange={(e) => handleInputChange("shippingCharges", e.target.value === "" ? "" : Number(e.target.value))}
+                className="w-full px-4 py-3 rounded-xl border border-yellow-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
+                min="0"
+                step="0.01"
+                placeholder="0"
               />
             </div>
 

@@ -1,4 +1,5 @@
 "use client";
+import { useState, useEffect } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import {
@@ -23,7 +24,8 @@ import {
   MdReceipt,
   MdTransferWithinAStation,
   MdSummarize,
-  MdReportProblem
+  MdReportProblem,
+  MdVideocam
 } from "react-icons/md";
 
 import { MdChevronLeft, MdChevronRight } from "react-icons/md";
@@ -34,7 +36,39 @@ import Image from "next/image";
 
 const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const pathname = usePathname();
-  const { user, role, isImpersonating, exitImpersonation, permissions } = useAuth();
+  const { user, role, isImpersonating, exitImpersonation, permissions, branches } = useAuth();
+  const [newAppointmentsCount, setNewAppointmentsCount] = useState(0);
+
+  useEffect(() => {
+    const handleUpdate = () => {
+      // Defer state update using setTimeout(..., 0) to avoid "Cannot update a component during render of another" warning.
+      setTimeout(() => {
+        const stored = localStorage.getItem("admin_notifications");
+        if (stored) {
+          try {
+            const list = JSON.parse(stored);
+            const filtered = list.filter((n) => {
+              if (role === "Admin") return true;
+              if (!n.branchId) return true;
+              return branches && branches.includes(String(n.branchId));
+            });
+            const unreadAppointments = filtered.filter(
+              (n) => (n.type === "appointment_create" || n.type === "appointment_reschedule") && !n.read
+            ).length;
+            setNewAppointmentsCount(unreadAppointments);
+          } catch (e) {
+            console.error("Failed to parse notifications in Sidebar", e);
+          }
+        } else {
+          setNewAppointmentsCount(0);
+        }
+      }, 0);
+    };
+
+    handleUpdate(); // Initial check on mount
+    window.addEventListener("admin_notifications_updated", handleUpdate);
+    return () => window.removeEventListener("admin_notifications_updated", handleUpdate);
+  }, [role, branches]);
 
   const can = (p) => role === "Admin" || (role === "subadmin" && permissions?.includes(p));
 
@@ -196,8 +230,22 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
             href="/component/appointment"
             className={linkClasses("/component/appointment")}
           >
-            <MdCalendarMonth size={20} />
-            {!isCollapsed && <span>Appointments</span>}
+            <div className="relative flex items-center">
+              <MdCalendarMonth size={20} />
+              {isCollapsed && newAppointmentsCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 w-2 h-2 bg-rose-500 rounded-full shadow-sm shadow-rose-500/30 animate-pulse" />
+              )}
+            </div>
+            {!isCollapsed && (
+              <div className="flex-1 flex items-center justify-between">
+                <span>Appointments</span>
+                {newAppointmentsCount > 0 && (
+                  <span className="px-1.5 py-0.5 text-[10px] font-black bg-rose-500 text-white rounded-full leading-none shadow-sm shadow-rose-500/30 animate-pulse">
+                    {newAppointmentsCount}
+                  </span>
+                )}
+              </div>
+            )}
           </Link>
           )}
           {(role === "Admin" || can("show staff page")) && (
@@ -216,6 +264,15 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
             >
               <MdPerson size={20} />
               {!isCollapsed && <span>Doctors</span>}
+            </Link>
+          )}
+          {(role === "Admin" || role === "subadmin") && (
+            <Link
+              href="/component/meeting"
+              className={linkClasses("/component/meeting")}
+            >
+              <MdVideocam size={20} />
+              {!isCollapsed && <span>Meetings</span>}
             </Link>
           )}
         </div>

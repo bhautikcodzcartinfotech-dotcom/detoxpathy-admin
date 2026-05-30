@@ -105,14 +105,14 @@ const BranchForm = ({
       return null;
     };
     const latitudeRule = (v) => {
-      if (!v) return "Latitude is required.";
+      if (!v) return null; // Optional - backend geocodes using city/state
       const num = Number(v);
       if (isNaN(num)) return "Latitude must be a valid number.";
       if (num < -90 || num > 90) return "Latitude must be between -90 and 90.";
       return null;
     };
     const longitudeRule = (v) => {
-      if (!v) return "Longitude is required.";
+      if (!v) return null; // Optional - backend geocodes using city/state
       const num = Number(v);
       if (isNaN(num)) return "Longitude must be a valid number.";
       if (num < -180 || num > 180)
@@ -295,7 +295,7 @@ const BranchForm = ({
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
         <div>
           <label className="block mb-1 font-semibold text-gray-700">
-            Latitude *
+            Latitude
           </label>
           <input
             type="number"
@@ -315,7 +315,7 @@ const BranchForm = ({
         </div>
         <div>
           <label className="block mb-1 font-semibold text-gray-700">
-            Longitude *
+            Longitude
           </label>
           <input
             type="number"

@@ -609,14 +609,14 @@ const UserProfilePage = () => {
                     <div className="space-y-3">
                       <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Before Front</h4>
                       <div className="group relative">
-                        <div 
+                        <div
                           className="aspect-square bg-gray-100 rounded-2xl overflow-hidden border border-dashed border-gray-200 flex items-center justify-center cursor-pointer hover:border-red-300 transition-all group"
                           onClick={() => overview.user?.before?.front && setSelectedImage(`${API_BASE}/${overview.user.before.front}`)}
                         >
                           {overview.user?.before?.front ? (
-                            <img 
-                              src={`${API_BASE}/${overview.user.before.front}`} 
-                              alt="Before Front" 
+                            <img
+                              src={`${API_BASE}/${overview.user.before.front}`}
+                              alt="Before Front"
                               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                             />
                           ) : (
@@ -640,14 +640,14 @@ const UserProfilePage = () => {
                     <div className="space-y-3">
                       <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">After Front</h4>
                       <div className="group relative">
-                        <div 
+                        <div
                           className="aspect-square bg-gray-100 rounded-2xl overflow-hidden border border-dashed border-gray-200 flex items-center justify-center cursor-pointer hover:border-teal-300 transition-all group"
                           onClick={() => overview.user?.after?.front && setSelectedImage(`${API_BASE}/${overview.user.after.front}`)}
                         >
                           {overview.user?.after?.front ? (
-                            <img 
-                              src={`${API_BASE}/${overview.user.after.front}`} 
-                              alt="After Front" 
+                            <img
+                              src={`${API_BASE}/${overview.user.after.front}`}
+                              alt="After Front"
                               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                             />
                           ) : (
@@ -674,14 +674,14 @@ const UserProfilePage = () => {
                     <div className="space-y-3">
                       <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">Before Side</h4>
                       <div className="group relative">
-                        <div 
+                        <div
                           className="aspect-square bg-gray-100 rounded-2xl overflow-hidden border border-dashed border-gray-200 flex items-center justify-center cursor-pointer hover:border-red-300 transition-all group"
                           onClick={() => overview.user?.before?.side && setSelectedImage(`${API_BASE}/${overview.user.before.side}`)}
                         >
                           {overview.user?.before?.side ? (
-                            <img 
-                              src={`${API_BASE}/${overview.user.before.side}`} 
-                              alt="Before Side" 
+                            <img
+                              src={`${API_BASE}/${overview.user.before.side}`}
+                              alt="Before Side"
                               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                             />
                           ) : (
@@ -705,14 +705,14 @@ const UserProfilePage = () => {
                     <div className="space-y-3">
                       <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-center">After Side</h4>
                       <div className="group relative">
-                        <div 
+                        <div
                           className="aspect-square bg-gray-100 rounded-2xl overflow-hidden border border-dashed border-gray-200 flex items-center justify-center cursor-pointer hover:border-teal-300 transition-all group"
                           onClick={() => overview.user?.after?.side && setSelectedImage(`${API_BASE}/${overview.user.after.side}`)}
                         >
                           {overview.user?.after?.side ? (
-                            <img 
-                              src={`${API_BASE}/${overview.user.after.side}`} 
-                              alt="After Side" 
+                            <img
+                              src={`${API_BASE}/${overview.user.after.side}`}
+                              alt="After Side"
                               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                             />
                           ) : (
@@ -1100,11 +1100,11 @@ const UserProfilePage = () => {
 
         {/* Image Viewer Modal */}
         {selectedImage && (
-          <div 
+          <div
             className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-sm flex items-center justify-center p-4 md:p-10 animate-fade-in"
             onClick={() => setSelectedImage(null)}
           >
-            <button 
+            <button
               className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors p-2"
               onClick={() => setSelectedImage(null)}
             >
@@ -1112,9 +1112,9 @@ const UserProfilePage = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
-            <img 
-              src={selectedImage} 
-              alt="Full Size" 
+            <img
+              src={selectedImage}
+              alt="Full Size"
               className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-zoom-in"
               onClick={(e) => e.stopPropagation()}
             />

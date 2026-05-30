@@ -3,9 +3,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { getSetting } from "@/Api/AllApi";
 
-// TEMPORARY: Set this to true to disable all security protections (F12, right-click, blur-on-focus-loss) during development/debugging.
-const DISABLE_SECURITY_FOR_DEV = true;
-
 const OVERLAY_HIDDEN = { visible: false, title: "", message: "" };
 
 const OVERLAY_SCREENSHOT = {
@@ -41,7 +38,7 @@ const OVERLAY_MAC = {
 };
 
 export default function SecurityGuard({ children }) {
-  const [isActive, setIsActive] = useState(DISABLE_SECURITY_FOR_DEV ? false : true);
+  const [isActive, setIsActive] = useState(true);
   // Single state object → one re-render per activation instead of three.
   const [overlay, setOverlay] = useState(OVERLAY_HIDDEN);
 
@@ -53,16 +50,15 @@ export default function SecurityGuard({ children }) {
   // Load screenshot protection toggle from API
   // ---------------------------------------------------------------------------
   useEffect(() => {
-    if (DISABLE_SECURITY_FOR_DEV) {
-      setIsActive(false);
-      return;
-    }
     const loadSettings = async () => {
       try {
         const res = await getSetting();
         const data = res?.data || res?.setting || res;
-        if (data && typeof data.screenshotProtectionActive !== "undefined") {
-          setIsActive(data.screenshotProtectionActive);
+        if (data) {
+          const isProtectionActive = typeof data.screenshotProtectionActive !== "undefined"
+            ? data.screenshotProtectionActive
+            : true;
+          setIsActive(isProtectionActive);
         }
       } catch (e) {
         console.error("SecurityGuard: failed to load settings", e);

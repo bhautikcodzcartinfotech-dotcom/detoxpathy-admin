@@ -14,6 +14,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
   const [selectedProducts, setSelectedProducts] = useState([]); // [{productId, quantity}]
   const [selectedPlans, setSelectedPlans] = useState([]); // [{planId, name, price}]
   const [currency, setCurrency] = useState("₹");
+  const [shippingRate, setShippingRate] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState("Offline");
   const [onlineAmount, setOnlineAmount] = useState("");
   const [offlineAmount, setOfflineAmount] = useState("");
@@ -49,8 +50,13 @@ const OrderForm = ({ onCancel, onSuccess }) => {
         } else if (settingsRes && settingsRes._id) {
           settingsData = settingsRes;
         }
-        if (settingsData && settingsData.currency) {
-          setCurrency(settingsData.currency);
+        if (settingsData) {
+          if (settingsData.currency) {
+            setCurrency(settingsData.currency);
+          }
+          if (typeof settingsData.shippingCharges !== "undefined") {
+            setShippingRate(Number(settingsData.shippingCharges) || 0);
+          }
         }
       } catch (err) {
         toast.error("Failed to fetch data");
@@ -73,7 +79,8 @@ const OrderForm = ({ onCancel, onSuccess }) => {
       name: product.name, 
       basePrice: sellingPrice, 
       bulkDiscount: Number(product.bulkDiscount) || 0,
-      gstPercentage: Number(product.gstPercentage) || 0
+      gstPercentage: Number(product.gstPercentage) || 0,
+      weight: Number(product.weight) || 0
     }]);
   };
 
@@ -97,7 +104,8 @@ const OrderForm = ({ onCancel, onSuccess }) => {
       planId, 
       name: plan.name, 
       basePrice: Number(plan.price), 
-      bulkDiscount: Number(plan.bulkDiscount) || 0 
+      bulkDiscount: Number(plan.bulkDiscount) || 0,
+      weight: Number(plan.weight) || 0
     }]);
   };
 
@@ -218,8 +226,15 @@ const OrderForm = ({ onCancel, onSuccess }) => {
     return base + (base * gst / 100);
   };
 
-  const totalAmount = selectedProducts.reduce((sum, p) => sum + (getItemPrice(p) * p.quantity), 0) + 
-                     selectedPlans.reduce((sum, p) => sum + getItemPrice(p), 0);
+  const totalWeight = selectedProducts.reduce((sum, p) => sum + ((Number(p.weight) || 0) * p.quantity), 0) + 
+                      selectedPlans.reduce((sum, p) => sum + (Number(p.weight) || 0), 0);
+
+  const itemsSubtotal = selectedProducts.reduce((sum, p) => sum + (getItemPrice(p) * p.quantity), 0) + 
+                       selectedPlans.reduce((sum, p) => sum + getItemPrice(p), 0);
+
+  const shippingCost = (totalWeight / 1000) * shippingRate;
+
+  const totalAmount = itemsSubtotal + shippingCost;
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 px-1">
@@ -389,8 +404,21 @@ const OrderForm = ({ onCancel, onSuccess }) => {
         ))}
       </div>
 
-      {selectedProducts.length > 0 && (
-        <div className="p-4 bg-yellow-50 rounded-xl border border-yellow-200">
+      {(selectedProducts.length > 0 || selectedPlans.length > 0) && (
+        <div className="p-4 bg-yellow-50 rounded-2xl border border-yellow-200 space-y-2.5 shadow-sm">
+          <div className="flex justify-between items-center text-sm font-semibold text-gray-600">
+            <span>Items Subtotal:</span>
+            <span className="text-gray-800">{currency}{itemsSubtotal.toLocaleString()}</span>
+          </div>
+          <div className="flex justify-between items-center text-sm font-semibold text-gray-600">
+            <span>Total Weight:</span>
+            <span className="text-gray-800">{(totalWeight / 1000).toFixed(2)} kg ({totalWeight}g)</span>
+          </div>
+          <div className="flex justify-between items-center text-sm font-semibold text-gray-600">
+            <span>Shipping Cost ({currency}{shippingRate}/kg):</span>
+            <span className="text-gray-800">{currency}{shippingCost.toFixed(2)}</span>
+          </div>
+          <hr className="border-yellow-200 my-1" />
           <div className="flex justify-between items-center text-lg font-bold">
             <span className="text-gray-700">Total Estimation:</span>
             <span className="text-yellow-700">{currency}{totalAmount.toLocaleString()}</span>

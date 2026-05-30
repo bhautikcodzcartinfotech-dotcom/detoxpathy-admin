@@ -58,6 +58,9 @@ const PlanTable = ({ plans, onEdit, onDelete, currency = "₹" }) => {
                 Name
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                Plan Code
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Price
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
@@ -65,6 +68,9 @@ const PlanTable = ({ plans, onEdit, onDelete, currency = "₹" }) => {
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Days
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                Weight (g)
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Description
@@ -83,6 +89,9 @@ const PlanTable = ({ plans, onEdit, onDelete, currency = "₹" }) => {
                 <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-800">
                   {p.name}
                 </td>
+                <td className="px-6 py-4 whitespace-nowrap text-gray-700 font-semibold">
+                  {p.planCode || "-"}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-gray-700">
                   {currency}{p.price || 0}
                 </td>
@@ -91,6 +100,9 @@ const PlanTable = ({ plans, onEdit, onDelete, currency = "₹" }) => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-gray-700">
                   {p.days}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-gray-700 font-medium">
+                  {p.weight ?? 0}g
                 </td>
                 <td className="px-6 py-4 text-gray-700">
                   <p className="text-sm">{p.description}</p>

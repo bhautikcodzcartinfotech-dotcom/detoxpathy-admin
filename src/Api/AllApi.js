@@ -432,6 +432,8 @@ export const createPlanApi = async (payload) => {
     price: Number(payload.price || 0),
     bulkDiscount: Number(payload.bulkDiscount || 0),
     notificationDays: payload.notificationDays || [],
+    weight: Number(payload.weight || 0),
+    planCode: payload.planCode,
   };
   const res = await axios.post(`${API_BASE}/admin/plan/create`, body, {
     headers: getAuthHeaders(),
@@ -448,6 +450,8 @@ export const updatePlanById = async (id, payload) => {
   if (typeof payload.price !== "undefined") body.price = Number(payload.price);
   if (typeof payload.bulkDiscount !== "undefined") body.bulkDiscount = Number(payload.bulkDiscount);
   if (typeof payload.notificationDays !== "undefined") body.notificationDays = payload.notificationDays;
+  if (typeof payload.weight !== "undefined") body.weight = Number(payload.weight);
+  if (typeof payload.planCode !== "undefined") body.planCode = payload.planCode;
   const res = await axios.put(`${API_BASE}/admin/plan/update/${id}`, body, {
     headers: getAuthHeaders(),
   });
@@ -799,6 +803,64 @@ export const getVideoReports = async (params = {}) => {
     headers: getAuthHeaders(),
     params
   });
+  return res.data.data;
+};
+
+/* -------------------- MEETING APIs -------------------- */
+export const listMeetings = async () => {
+  const res = await axios.get(`${API_BASE}/admin/meeting`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const createMeeting = async (payload) => {
+  const res = await axios.post(
+    `${API_BASE}/admin/meeting/create`,
+    payload,
+    { headers: getAuthHeaders() }
+  );
+  return res.data.data;
+};
+
+export const deleteMeeting = async (meetingId) => {
+  const res = await axios.delete(`${API_BASE}/admin/meeting/${meetingId}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const updateMeetingRecording = async (meetingId, recordingUrl) => {
+  const res = await axios.put(
+    `${API_BASE}/admin/meeting/${meetingId}/recording`,
+    { recordingUrl },
+    { headers: getAuthHeaders() }
+  );
+  return res.data.data;
+};
+
+export const syncMeetingRecording = async (meetingId) => {
+  const res = await axios.post(
+    `${API_BASE}/admin/meeting/${meetingId}/sync-recording`,
+    {},
+    { headers: getAuthHeaders() }
+  );
+  return res.data.data;
+};
+
+export const uploadMeetingRecordingFile = async (meetingId, file) => {
+  const formData = new FormData();
+  formData.append("recordingFile", file);
+  const res = await axios.post(
+    `${API_BASE}/admin/meeting/${meetingId}/upload-recording`,
+    formData,
+    {
+      headers: {
+        ...getAuthHeaders(),
+        "Content-Type": "multipart/form-data",
+      },
+    }
+  );
   return res.data.data;
 };
 
@@ -1261,12 +1323,14 @@ export const getAllOrders = async (params = {}) => {
   return res.data.data;
 };
 
-export const updateOrderStatus = async (id, orderStatus) => {
-  const res = await axios.put(`${API_BASE}/admin/order/update/${id}`, { orderStatus }, {
+export const updateOrderStatus = async (id, orderStatus, extraFields = {}) => {
+  const res = await axios.put(`${API_BASE}/admin/order/update/${id}`, { orderStatus, ...extraFields }, {
     headers: getAuthHeaders(),
   });
   return res.data.data;
 };
+
+
 
 export const bulkUpdateOrderStatusApi = async (ids, orderStatus) => {
   const res = await axios.put(`${API_BASE}/admin/order/bulk-update`, { ids, orderStatus }, {
@@ -1842,4 +1906,40 @@ export const getScreenUsages = async (params = {}) => {
     headers: getAuthHeaders(),
   });
   return res.data.data;
-}
+};
+
+/* -------------------- USER NOTIFICATION APIs -------------------- */
+export const sendNotificationToUserApi = async (userId, title, message, saveToDb = true) => {
+  const res = await axios.post(
+    `${API_BASE}/admin/user/send-notification/${userId}`,
+    { title, message, saveToDb },
+    { headers: getAuthHeaders() }
+  );
+  return res.data;
+};
+
+/* -------------------- COURIER TRACKING APIs -------------------- */
+
+/**
+ * Get live tracking data for an order from Shree Tirupati Courier
+ * GET /admin/order/:id/tracking
+ */
+export const getOrderTracking = async (orderId) => {
+  const res = await axios.get(`${API_BASE}/admin/order/${orderId}/tracking`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+/**
+ * Get DRS delivery proof scan image for a given imageId
+ * GET /admin/order/courier/image?imageId=<id>
+ */
+export const getDRSImage = async (imageId) => {
+  const res = await axios.get(`${API_BASE}/admin/order/courier/image`, {
+    params: { imageId },
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+

@@ -6,6 +6,7 @@ import axios from "axios";
 import { ActionButton } from "@/utils/actionbutton";
 import toast from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { Truck, X, Edit } from "lucide-react";
 
 const STATUS_LABELS = {
   1: "Pending",
@@ -30,6 +31,39 @@ const OrderTable = ({ items, loading, onRefresh, selectedIds = [], onToggleSelec
   const canUpdateOrderStatus = role === "Admin" || (role === "subadmin" && permissions?.includes("update order status"));
   const [updatingId, setUpdatingId] = useState(null);
 
+  // Courier details modal state
+  const [isCourierModalOpen, setIsCourierModalOpen] = useState(false);
+  const [courierOrderId, setCourierOrderId] = useState(null);
+  const [targetStatus, setTargetStatus] = useState(null);
+  const [courierType, setCourierType] = useState("Shree Tirupati Courier");
+  const [courierName, setCourierName] = useState("");
+  const [trackingNumber, setTrackingNumber] = useState("");
+
+  const handleOpenCourierModal = (order, forceStatus = null) => {
+    setCourierOrderId(order._id);
+    setTargetStatus(forceStatus !== null ? forceStatus : Number(order.orderStatus));
+    setCourierType(order.courier === "Shree Tirupati Courier" ? "Shree Tirupati Courier" : (order.courier ? "Other" : "Shree Tirupati Courier"));
+    setCourierName(order.courier === "Shree Tirupati Courier" ? "" : (order.courier || ""));
+    setTrackingNumber(order.trackingId || "");
+    setIsCourierModalOpen(true);
+  };
+
+  const handleSaveCourierDetails = async (e) => {
+    e.preventDefault();
+    try {
+      setUpdatingId(courierOrderId);
+      const finalCourier = courierType === "Shree Tirupati Courier" ? "Shree Tirupati Courier" : courierName;
+      await updateOrderStatus(courierOrderId, targetStatus, { courier: finalCourier, trackingId: trackingNumber });
+      toast.success("Courier & Tracking details updated successfully!");
+      setIsCourierModalOpen(false);
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      toast.error(err?.response?.data?.error || err?.response?.data?.message || "Failed to update courier details");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   if (loading) return <div className="p-10 flex justify-center"><Loader /></div>;
 
   if (!items || items.length === 0) {
@@ -43,9 +77,10 @@ const OrderTable = ({ items, loading, onRefresh, selectedIds = [], onToggleSelec
   const allSelected = items.length > 0 && items.every(item => selectedIds.includes(item._id));
 
   const handleStatusChange = async (orderId, newStatus) => {
+    const statusNum = Number(newStatus);
     try {
       setUpdatingId(orderId);
-      await updateOrderStatus(orderId, Number(newStatus));
+      await updateOrderStatus(orderId, statusNum);
       toast.success("Order status updated!");
       if (onRefresh) onRefresh();
     } catch (err) {
@@ -117,13 +152,12 @@ const OrderTable = ({ items, loading, onRefresh, selectedIds = [], onToggleSelec
 
               <td className="px-4 py-5 whitespace-nowrap">
                 <span
-                  className={`px-2.5 py-1 rounded text-[11px] font-bold ${
-                    order.paymentMethod === "Split"
+                  className={`px-2.5 py-1 rounded text-[11px] font-bold ${order.paymentMethod === "Split"
                       ? "bg-blue-100 text-blue-600"
                       : order.type === 2
                         ? "bg-gray-100 text-gray-500"
                         : "bg-blue-100 text-blue-600"
-                  }`}
+                    }`}
                 >
                   {order.paymentMethod === "Split"
                     ? "Hybrid"
@@ -140,11 +174,33 @@ const OrderTable = ({ items, loading, onRefresh, selectedIds = [], onToggleSelec
               </td>
 
               <td className="px-4 py-5 whitespace-nowrap text-[13px] text-gray-500">
-                {order.courier || "-"}
+                <div className="flex items-center gap-1.5">
+                  <span>{order.courier || "-"}</span>
+                  {canUpdateOrderStatus && (
+                    <button
+                      onClick={() => handleOpenCourierModal(order)}
+                      className="text-gray-400 hover:text-teal-600 transition"
+                      title="Edit Courier"
+                    >
+                      <Edit className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               </td>
 
               <td className="px-4 py-5 whitespace-nowrap text-[13px] text-gray-400">
-                {order.trackingId || "-"}
+                <div className="flex items-center gap-1.5">
+                  <span>{order.trackingId || "-"}</span>
+                  {canUpdateOrderStatus && (
+                    <button
+                      onClick={() => handleOpenCourierModal(order)}
+                      className="text-gray-400 hover:text-teal-600 transition"
+                      title="Edit Tracking ID"
+                    >
+                      <Edit className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
               </td>
 
               <td className="px-4 py-5 whitespace-nowrap">
@@ -184,6 +240,82 @@ const OrderTable = ({ items, loading, onRefresh, selectedIds = [], onToggleSelec
           ))}
         </tbody>
       </table>
+
+      {/* Assign Courier Service Modal */}
+      {isCourierModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                <Truck className="w-5 h-5 text-teal-600" />
+                Fulfillment & Courier Details
+              </h3>
+              <button 
+                onClick={() => setIsCourierModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleSaveCourierDetails} className="p-6 space-y-4">
+              <div>
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Courier Service</label>
+                <select
+                  value={courierType}
+                  onChange={(e) => setCourierType(e.target.value)}
+                  className="w-full h-11 px-3 border border-gray-200 rounded-xl bg-gray-50 font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
+                >
+                  <option value="Shree Tirupati Courier">Shree Tirupati Courier</option>
+                  <option value="Other">Other (Custom Courier)</option>
+                </select>
+              </div>
+
+              {courierType === "Other" && (
+                <div>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Custom Courier Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={courierName}
+                    onChange={(e) => setCourierName(e.target.value)}
+                    placeholder="Enter courier company name"
+                    className="w-full h-11 px-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 transition text-sm font-medium"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">AWB / Tracking Number</label>
+                <input
+                  type="text"
+                  required
+                  value={trackingNumber}
+                  onChange={(e) => setTrackingNumber(e.target.value)}
+                  placeholder="Enter tracking number"
+                  className="w-full h-11 px-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 transition text-sm font-mono"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-gray-50">
+                <button
+                  type="button"
+                  onClick={() => setIsCourierModalOpen(false)}
+                  className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl text-sm font-bold transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-sm font-bold transition"
+                >
+                  Save Details
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

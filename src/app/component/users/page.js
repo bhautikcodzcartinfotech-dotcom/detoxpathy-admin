@@ -267,15 +267,15 @@ const UsersPage = () => {
       data = data.filter((u) => {
         const age = calculateAge(u.dob);
         if (age === null) return false;
-        
+
         const cleanAgeRange = ageRange.trim().replace(/\s+/g, "");
-        
+
         // Case: 50+
         if (cleanAgeRange.endsWith("+")) {
           const min = parseInt(cleanAgeRange);
           return !isNaN(min) && age >= min;
         }
-        
+
         // Case: 20-30
         if (cleanAgeRange.includes("-")) {
           const [minStr, maxStr] = cleanAgeRange.split("-");
@@ -286,7 +286,7 @@ const UsersPage = () => {
           if (isNaN(max)) return age >= min;
           return age >= min && age <= max;
         }
-        
+
         // Case: Exact age (e.g. 25)
         const exactAge = parseInt(cleanAgeRange);
         return !isNaN(exactAge) && age === exactAge;

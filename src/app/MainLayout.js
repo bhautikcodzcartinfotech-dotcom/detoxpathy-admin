@@ -13,6 +13,74 @@ import Loader from "@/utils/loader";
 import { trackPanelOpen, trackPanelClose, API_BASE, API_HOST, getSetting } from "@/Api/AllApi";
 import { io } from "socket.io-client";
 import toast from "react-hot-toast";
+import { FiUserPlus, FiMessageSquare, FiCalendar, FiBell, FiX } from "react-icons/fi";
+
+const renderNotificationMessage = (message, type) => {
+  if (!message) return null;
+
+  try {
+    if (type === "register") {
+      const match = message.match(/🆕 New user registered:\s+([^(]+)(?:\(([^)]+)\))?/);
+      if (match) {
+        const name = match[1].trim();
+        const details = match[2] ? match[2].trim() : "";
+        return (
+          <div className="text-[12.5px] leading-relaxed text-gray-700">
+            <span className="font-bold text-gray-900">{name}</span> has joined Detoxpathy.
+            {details && (
+              <span className="block text-[10px] text-blue-600 font-bold tracking-wide uppercase mt-1 bg-blue-50/50 w-fit px-1.5 py-0.5 rounded border border-blue-100/40">
+                {details}
+              </span>
+            )}
+          </div>
+        );
+      }
+    }
+
+    if (type === "support") {
+      const match = message.match(/💬 Support message from\s+([^:]+):\s*"([^"]+)"/);
+      if (match) {
+        const name = match[1].trim();
+        const text = match[2].trim();
+        return (
+          <div className="text-[12.5px] leading-relaxed text-gray-700">
+            Message from <span className="font-bold text-gray-900">{name}</span>
+            <div className="mt-1 pl-2.5 border-l-[3px] border-violet-400 text-gray-600 italic bg-violet-500/[0.03] py-0.5 pr-1.5 rounded-r text-[11.5px] font-medium leading-relaxed">
+              "{text}"
+            </div>
+          </div>
+        );
+      }
+    }
+
+    if (type === "appointment_create" || type === "appointment_reschedule") {
+      const isResched = type === "appointment_reschedule";
+      const regex = isResched 
+        ? /📅 Appointment rescheduled by\s+(.+)\s+to\s+(.+)\s+at\s+(.+)/ 
+        : /📅 New appointment booked by\s+(.+)\s+for\s+(.+)\s+at\s+(.+)/;
+        
+      const match = message.match(regex);
+      if (match) {
+        const name = match[1].trim();
+        const date = match[2].trim();
+        const time = match[3].trim();
+        return (
+          <div className="text-[12.5px] leading-relaxed text-gray-700">
+            <span className="font-bold text-gray-900">{name}</span> {isResched ? "has rescheduled an appointment" : "has booked a appointment"}
+            <span className="flex items-center gap-1 text-[10px] text-emerald-600 font-bold tracking-wide uppercase mt-1.5 bg-emerald-500/[0.06] w-fit px-2 py-0.5 rounded-full border border-emerald-200/50">
+              {date} • {time}
+            </span>
+          </div>
+        );
+      }
+    }
+  } catch (e) {
+    console.error("Error parsing toast notification message", e);
+  }
+
+  const cleanMessage = message.replace(/^[🆕💬📅🚨]\s*/, "");
+  return <p className="text-[12.5px] leading-relaxed text-gray-700">{cleanMessage}</p>;
+};
 
 export default function MainLayout({ children }) {
   const pathname = usePathname();
@@ -127,17 +195,85 @@ export default function MainLayout({ children }) {
         if (isEmergency) {
           setEmergencyModal({ isOpen: true, data });
         } else {
-          toast.success(data.message, {
-            duration: 6000,
-            position: "top-right",
-            style: {
-              background: "#4CAF50",
-              color: "#fff",
-              fontWeight: "bold",
-              padding: "16px",
-            },
-            icon: '🔔'
-          });
+          // Custom styling depending on the type
+          let icon = <FiBell className="w-5 h-5" />;
+          let iconBg = "bg-gray-100 text-gray-600 border border-gray-200/50";
+          let borderCol = "border-gray-200";
+          let redirectUrl = "";
+
+          if (data.type === "register") {
+            icon = <FiUserPlus className="w-5 h-5" />;
+            iconBg = "bg-blue-50 text-blue-600 border border-blue-100";
+            borderCol = "border-blue-100";
+            redirectUrl = `/component/users/${data.userId}/profile`;
+          } else if (data.type === "support") {
+            icon = <FiMessageSquare className="w-5 h-5" />;
+            iconBg = "bg-violet-50 text-violet-600 border border-violet-100";
+            borderCol = "border-violet-100";
+            redirectUrl = `/component/userchat`;
+          } else if (data.type === "appointment_create" || data.type === "appointment_reschedule") {
+            icon = <FiCalendar className="w-5 h-5" />;
+            iconBg = "bg-emerald-50 text-emerald-600 border border-emerald-100";
+            borderCol = "border-emerald-100";
+            redirectUrl = `/component/appointment`;
+          }
+
+          // Clean emoji prefixes from message if any
+          const cleanMessage = data.message ? data.message.replace(/^[🆕💬📅🚨]\s*/, "") : "";
+
+          toast.custom(
+            (t) => (
+              <div
+                className={`${
+                  t.visible ? "animate-slide-in-toast" : "animate-slide-out-toast"
+                } max-w-sm w-full bg-white/95 backdrop-blur-xl shadow-[0_15px_30px_rgba(0,0,0,0.08)] rounded-2xl pointer-events-auto border ${borderCol} p-4 flex gap-3.5 transition-all duration-300 hover:shadow-xl hover:translate-y-[-1px] relative`}
+              >
+                {/* Accent Icon Container */}
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBg} shadow-sm`}>
+                  {icon}
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0 pr-4">
+                  <div className="text-[11px] font-black tracking-wider text-gray-400 uppercase">
+                    {data.type === "register"
+                      ? "New Member"
+                      : data.type === "support"
+                      ? "Support Message"
+                      : "Appointment Alert"}
+                  </div>
+                  <div className="mt-1">
+                    {renderNotificationMessage(data.message, data.type)}
+                  </div>
+                  
+                  {/* Action Link */}
+                  {redirectUrl && (
+                    <button
+                      onClick={() => {
+                        toast.dismiss(t.id);
+                        router.push(redirectUrl);
+                      }}
+                      className="text-[11.5px] font-bold text-yellow-600 hover:text-yellow-700 transition-colors mt-2 underline cursor-pointer"
+                    >
+                      {data.type === "support" ? "Open Chat" : "Manage Details"}
+                    </button>
+                  )}
+                </div>
+
+                {/* Dismiss button */}
+                <button
+                  onClick={() => toast.dismiss(t.id)}
+                  className="p-1 rounded-lg hover:bg-gray-50 text-gray-400 hover:text-gray-600 transition-all absolute right-3 top-3 border border-transparent hover:border-gray-100"
+                >
+                  <FiX className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ),
+            {
+              duration: 6000,
+              position: "top-right",
+            }
+          );
         }
       });
 
@@ -203,6 +339,36 @@ export default function MainLayout({ children }) {
             router.push(`/component/users/${userId}/profile`);
           }}
         />
+
+        {/* Dynamic Keyframes for Custom Fly-in Toasts */}
+        <style>{`
+          @keyframes slideInToast {
+            from {
+              opacity: 0;
+              transform: translateX(120%) scale(0.9);
+            }
+            to {
+              opacity: 1;
+              transform: translateX(0) scale(1);
+            }
+          }
+          @keyframes slideOutToast {
+            from {
+              opacity: 1;
+              transform: translateX(0) scale(1);
+            }
+            to {
+              opacity: 0;
+              transform: translateX(120%) scale(0.9);
+            }
+          }
+          .animate-slide-in-toast {
+            animation: slideInToast 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          }
+          .animate-slide-out-toast {
+            animation: slideOutToast 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+          }
+        `}</style>
       </SecurityGuard>
     </AuthGuard>
   );

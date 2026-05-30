@@ -100,6 +100,9 @@ const ProductTable = ({ items, loading, onEdit, onDelete, currency = "₹" }) =>
                 Bulk Discount (%)
               </th>
               <th className="px-3 py-2.5 lg:px-4 lg:py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                Weight (g)
+              </th>
+              <th className="px-3 py-2.5 lg:px-4 lg:py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Images
               </th>
               <th className="hidden lg:table-cell px-3 py-2.5 lg:px-4 lg:py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
@@ -139,6 +142,11 @@ const ProductTable = ({ items, loading, onEdit, onDelete, currency = "₹" }) =>
                 <td className="hidden sm:table-cell px-3 py-3 lg:px-4 whitespace-nowrap text-xs lg:text-sm">
                   <div className="font-medium text-blue-600">
                     {product.bulkDiscount}%
+                  </div>
+                </td>
+                <td className="px-3 py-3 lg:px-4 whitespace-nowrap text-xs lg:text-sm">
+                  <div className="font-medium text-gray-700">
+                    {product.weight ?? 0}g
                   </div>
                 </td>
                 <td className="px-3 py-3 lg:px-4 whitespace-nowrap text-xs lg:text-sm">

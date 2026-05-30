@@ -2,10 +2,10 @@
 
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { getOrderDetails, updateOrderStatus, downloadOrderInvoiceApi, API_BASE } from "@/Api/AllApi";
+import { getOrderDetails, updateOrderStatus, downloadOrderInvoiceApi, API_BASE, getOrderTracking, getDRSImage } from "@/Api/AllApi";
 import Loader from "@/utils/loader";
 import toast from "react-hot-toast";
-import { ChevronLeft, Package, User, MapPin, Truck, CreditCard, ExternalLink } from "lucide-react";
+import { ChevronLeft, Package, User, MapPin, Truck, CreditCard, ExternalLink, Calendar, Eye, Download, X, CheckCircle2, AlertCircle, FileText, Phone, Building, Printer } from "lucide-react";
 
 const OrderDetailsPage = () => {
   const { id } = useParams();
@@ -14,11 +14,42 @@ const OrderDetailsPage = () => {
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
 
+  // Shree Tirupati Courier integration state variables
+  const [trackingData, setTrackingData] = useState(null);
+  const [trackingLoading, setTrackingLoading] = useState(false);
+  const [isCourierModalOpen, setIsCourierModalOpen] = useState(false);
+  const [courierName, setCourierName] = useState("");
+  const [trackingNumber, setTrackingNumber] = useState("");
+  const [courierType, setCourierType] = useState("Shree Tirupati Courier");
+  const [isProofModalOpen, setIsProofModalOpen] = useState(false);
+  const [proofImageBase64, setProofImageBase64] = useState("");
+  const [proofLoading, setProofLoading] = useState(false);
+  const [proofError, setProofError] = useState("");
+
+  const fetchTracking = async (orderId) => {
+    try {
+      setTrackingLoading(true);
+      const data = await getOrderTracking(orderId);
+      setTrackingData(data);
+    } catch (err) {
+      console.error("Failed to load tracking data", err);
+    } finally {
+      setTrackingLoading(false);
+    }
+  };
+
   const fetchDetails = async () => {
     try {
       setLoading(true);
       const data = await getOrderDetails(id);
       setOrder(data);
+      
+      const courierTypeStr = String(data.courier || '').trim().toLowerCase();
+      if (data.trackingId && (courierTypeStr === 'shree tirupati courier' || courierTypeStr === 'shree tirupati' || courierTypeStr === 'tirupati')) {
+        fetchTracking(data._id);
+      } else {
+        setTrackingData(null);
+      }
     } catch (err) {
       toast.error("Failed to load order details");
       console.error(err);
@@ -41,6 +72,57 @@ const OrderDetailsPage = () => {
       toast.error(err?.response?.data?.error || err?.response?.data?.message || "Failed to update status");
     } finally {
       setUpdating(false);
+    }
+  };
+
+  useEffect(() => {
+    if (order && isCourierModalOpen) {
+      setCourierName(order.courier || "");
+      setTrackingNumber(order.trackingId || "");
+      if (order.courier === "Shree Tirupati Courier") {
+        setCourierType("Shree Tirupati Courier");
+      } else if (order.courier) {
+        setCourierType("Other");
+      } else {
+        setCourierType("Shree Tirupati Courier");
+      }
+    }
+  }, [order, isCourierModalOpen]);
+
+  const handleSaveCourierDetails = async (e) => {
+    e.preventDefault();
+    try {
+      setUpdating(true);
+      const finalCourier = courierType === "Shree Tirupati Courier" ? "Shree Tirupati Courier" : courierName;
+      await updateOrderStatus(id, order.orderStatus, { courier: finalCourier, trackingId: trackingNumber });
+      toast.success("Courier details updated successfully!");
+      setIsCourierModalOpen(false);
+      fetchDetails();
+    } catch (err) {
+      toast.error(err?.response?.data?.error || err?.response?.data?.message || "Failed to update courier details");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleViewProof = async (imageId) => {
+    try {
+      setIsProofModalOpen(true);
+      setProofLoading(true);
+      setProofError("");
+      setProofImageBase64("");
+      
+      const data = await getDRSImage(imageId);
+      if (data && data.OpStatus === 'SUCCEED') {
+        setProofImageBase64(data.ImgData);
+      } else {
+        setProofError(data?.ErrMSG || "Failed to load delivery proof image.");
+      }
+    } catch (err) {
+      setProofError("An error occurred while loading the image.");
+      console.error(err);
+    } finally {
+      setProofLoading(false);
     }
   };
 
@@ -79,7 +161,7 @@ const OrderDetailsPage = () => {
     const billTo = `${customerName} | Mob: ${mobile} | ${addressParts.join(", ")}`;
 
     let itemsHtml = "";
-    
+
     if (order.plans && order.plans.length > 0) {
       order.plans.forEach(planItem => {
         const hsn = planItem.hsnCode || "-";
@@ -330,6 +412,190 @@ const OrderDetailsPage = () => {
     printWindow.document.close();
   };
 
+  const handlePrintShippingLabel = () => {
+    if (!order.trackingId) {
+      toast.error("No AWB/Tracking number assigned. Please assign a courier first.");
+      return;
+    }
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Popup blocker prevented opening print window");
+      return;
+    }
+
+    const customerName = (order.shippingAddress?.name || `${order.user?.name || ""} ${order.user?.surname || ""}`).trim().toUpperCase();
+    const mobile = order.shippingAddress?.mobile || order.user?.mobileNumber || "N/A";
+    const addressLine1 = order.shippingAddress?.addressLine1 || "";
+    const addressLine2 = order.shippingAddress?.addressLine2 || "";
+    const city = order.shippingAddress?.city || "";
+    const state = order.shippingAddress?.state || "";
+    const postalCode = order.shippingAddress?.postalCode || "";
+    const country = order.shippingAddress?.country || "India";
+
+    const branchName = order.branch?.name || "Detoxpathy Corporate Office";
+    const branchAddress = order.branch?.address || "Surat, Gujarat, India";
+
+    const orderIdShort = `ORD-${order._id.slice(-6).toUpperCase()}`;
+    const orderDate = new Date(order.createdAt).toLocaleDateString("en-GB");
+
+    // Using a reliable online barcode generation API
+    const barcodeUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(order.trackingId)}&scale=2&rotate=N&includetext`;
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Shipping Label - ${orderIdShort}</title>
+        <meta charset="utf-8">
+        <style>
+          @page {
+            size: 4in 6in;
+            margin: 0;
+          }
+          body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 15px;
+            color: #000;
+            background-color: #fff;
+            width: 3.6in;
+            height: 5.6in;
+            box-sizing: border-box;
+          }
+          .label-container {
+            border: 2px solid #000;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 8px;
+            box-sizing: border-box;
+          }
+          .header {
+            text-align: center;
+            border-bottom: 2px dashed #000;
+            padding-bottom: 6px;
+            margin-bottom: 8px;
+          }
+          .courier-title {
+            font-size: 14px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0;
+          }
+          .barcode-section {
+            text-align: center;
+            padding: 8px 0;
+            border-bottom: 2px dashed #000;
+            margin-bottom: 8px;
+          }
+          .barcode-img {
+            max-width: 90%;
+            height: auto;
+            max-height: 55px;
+            object-fit: contain;
+          }
+          .awb-text {
+            font-family: monospace;
+            font-size: 12px;
+            font-weight: bold;
+            margin-top: 4px;
+            margin-bottom: 0;
+          }
+          .address-section {
+            flex-grow: 1;
+            font-size: 10px;
+            line-height: 1.4;
+          }
+          .section-title {
+            font-size: 9px;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #333;
+            margin-bottom: 2px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 1px;
+          }
+          .to-section {
+            margin-bottom: 10px;
+          }
+          .to-name {
+            font-size: 11px;
+            font-weight: 800;
+            margin-bottom: 1px;
+          }
+          .from-section {
+            border-top: 2px dashed #000;
+            padding-top: 8px;
+            margin-top: auto;
+          }
+          .footer {
+            border-top: 1px solid #000;
+            padding-top: 4px;
+            margin-top: 6px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 8px;
+            font-weight: bold;
+          }
+        </style>
+      </head>
+      <body>
+        <div class="label-container">
+          <div class="header">
+            <h1 class="courier-title">${order.courier || "Shree Tirupati Courier"}</h1>
+          </div>
+          
+          <div class="barcode-section">
+            <img class="barcode-img" src="${barcodeUrl}" alt="AWB Barcode" />
+            <p class="awb-text">AWB: ${order.trackingId}</p>
+          </div>
+          
+          <div class="address-section">
+            <div class="to-section">
+              <div class="section-title">SHIP TO (DELIVER TO):</div>
+              <div class="to-name">${customerName}</div>
+              <div style="font-weight: bold; margin-bottom: 2px;">Mob: ${mobile}</div>
+              <div>${addressLine1}</div>
+              ${addressLine2 ? `<div>${addressLine2}</div>` : ""}
+              <div style="font-weight: bold; font-size: 11px; margin-top: 2px;">
+                ${city.toUpperCase()}, ${state.toUpperCase()} - ${postalCode}
+              </div>
+              <div>${country.toUpperCase()}</div>
+            </div>
+            
+            <div class="from-section">
+              <div class="section-title">SHIP FROM (SENDER):</div>
+              <div style="font-weight: bold;">${branchName}</div>
+              <div>${branchAddress}</div>
+            </div>
+          </div>
+          
+          <div class="footer">
+            <span>ID: ${orderIdShort}</span>
+            <span>DATE: ${orderDate}</span>
+          </div>
+        </div>
+        
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+              setTimeout(function() {
+                window.close();
+              }, 500);
+            }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+  };
+
   if (loading) return <div className="min-h-screen flex items-center justify-center"><Loader /></div>;
   if (!order) return <div className="p-10 text-center">Order not found</div>;
 
@@ -470,6 +736,142 @@ const OrderDetailsPage = () => {
               </div>
             </div>
           </div>
+
+          {/* Live Courier Tracking Section */}
+          {order.trackingId && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
+                <h2 className="font-bold text-gray-800 flex items-center gap-2">
+                  <Truck className="w-5 h-5 text-teal-600" />
+                  Live Tracking Information ({order.courier})
+                </h2>
+                <span className="text-xs font-mono bg-teal-50 text-teal-700 px-3 py-1 rounded-full font-bold">
+                  AWB: {order.trackingId}
+                </span>
+              </div>
+              
+              <div className="p-6">
+                {trackingLoading ? (
+                  <div className="flex flex-col items-center justify-center py-10 space-y-3">
+                    <div className="w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
+                    <p className="text-sm font-medium text-gray-400">Fetching live updates...</p>
+                  </div>
+                ) : trackingData ? (
+                  trackingData.OpStatus === "SUCCEED" ? (
+                    <div className="space-y-6">
+                      {/* Summary Banner */}
+                      <div className="bg-teal-50/50 border border-teal-100/50 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase">Current Status</p>
+                          <p className="text-sm font-black text-teal-800 uppercase mt-0.5">{trackingData.CurStatus || "In Transit"}</p>
+                        </div>
+                        <div className="flex gap-4 text-xs">
+                          <div className="flex items-center gap-1">
+                            <span className="text-gray-400 font-medium">Origin:</span> <span className="font-bold text-gray-700">{trackingData.AWBFrom}</span>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <span className="text-gray-400 font-medium">Destination:</span> <span className="font-bold text-gray-700">{trackingData.AWBTo}</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Last Location */}
+                      {trackingData.LastLocation && trackingData.LastLocation.length > 0 && (
+                        <div className="bg-gray-50/70 border border-gray-100 rounded-xl p-4 space-y-2">
+                          <div className="flex items-center gap-2 text-xs font-black text-gray-400 uppercase">
+                            <Building className="w-4 h-4 text-teal-600" />
+                            Current Holding Location Details
+                          </div>
+                          {trackingData.LastLocation.map((loc, lIdx) => (
+                            <div key={lIdx} className="text-xs space-y-1">
+                              <p className="font-black text-gray-800">{loc.BranchNM}</p>
+                              <p className="text-gray-500 leading-relaxed">{loc.Address}</p>
+                              {loc.ContactNo && (
+                                <p className="text-teal-600 font-bold flex items-center gap-1.5 mt-1">
+                                  <Phone className="w-3.5 h-3.5" />
+                                  Contact: {loc.ContactNo}
+                                </p>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Timeline List */}
+                      <div className="relative border-l border-gray-100 ml-4 pl-6 space-y-6">
+                        {trackingData.TrackData && [...trackingData.TrackData].reverse().map((step, idx) => {
+                          const isLatest = idx === 0;
+                          const isDelivered = step.OpType === "DRS" || String(step.Description).toLowerCase().includes("delivered");
+                          
+                          return (
+                            <div key={idx} className="relative group">
+                              {/* Timeline Point */}
+                              <span className={`absolute -left-[31px] top-1.5 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
+                                isLatest 
+                                  ? (isDelivered ? "bg-green-600 border-green-600 ring-4 ring-green-100" : "bg-teal-600 border-teal-600 ring-4 ring-teal-100") 
+                                  : "bg-white border-gray-300 group-hover:border-teal-500"
+                              }`} />
+
+                              <div className="space-y-1">
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
+                                  <span className={`text-[11px] font-black uppercase px-2 py-0.5 rounded-md ${
+                                    isLatest 
+                                      ? (isDelivered ? "bg-green-100 text-green-700" : "bg-teal-100 text-teal-700") 
+                                      : "bg-gray-100 text-gray-600"
+                                  }`}>
+                                    {step.OpType || "Scan"}
+                                  </span>
+                                  <div className="flex items-center gap-1.5 text-xs text-gray-400">
+                                    <Calendar className="w-3.5 h-3.5" />
+                                    {step.OpDate} {step.OpTime}
+                                  </div>
+                                </div>
+                                <p className={`text-xs font-bold leading-relaxed ${isLatest ? 'text-gray-800 font-extrabold text-sm' : 'text-gray-600'}`}>
+                                  {step.Description}
+                                </p>
+                                {step.Receiver && (
+                                  <p className="text-[11px] text-gray-400 font-medium">
+                                    Receiver Name: <span className="font-bold text-gray-600">{step.Receiver}</span>
+                                  </p>
+                                )}
+                                
+                                {step.ImageID && (
+                                  <button
+                                    onClick={() => handleViewProof(step.ImageID)}
+                                    className="mt-2 text-[11px] font-black text-teal-600 hover:text-teal-700 bg-teal-50 hover:bg-teal-100 px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition"
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                    View Delivery Proof Scan
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-6 text-center space-y-2">
+                      <AlertCircle className="w-8 h-8 text-amber-500" />
+                      <p className="text-xs font-bold text-gray-600">Failed to load live tracking from Shree Tirupati Courier API.</p>
+                      <p className="text-[10px] text-gray-400">Response Status: {trackingData.OpStatus || "FAILED"}</p>
+                    </div>
+                  )
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-6 text-center space-y-2 text-gray-400">
+                    <AlertCircle className="w-8 h-8" />
+                    <p className="text-xs font-bold">No active tracking records returned.</p>
+                    <button
+                      onClick={() => fetchTracking(order._id)}
+                      className="text-xs text-teal-600 font-bold underline"
+                    >
+                      Retry Connection
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Right Column: User Info & Actions */}
@@ -527,12 +929,20 @@ const OrderDetailsPage = () => {
                 </div>
               </div>
 
-              <div className="flex items-center gap-3">
-                <Truck className="w-5 h-5 text-gray-400" />
-                <div className="flex-1">
-                  <p className="text-[10px] font-bold text-gray-400 uppercase">Courier Service</p>
-                  <p className="text-sm font-bold text-gray-700">{order.courier || 'Not Assigned'}</p>
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <Truck className="w-5 h-5 text-gray-400" />
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase">Courier Service</p>
+                    <p className="text-sm font-bold text-gray-700">{order.courier || 'Not Assigned'}</p>
+                  </div>
                 </div>
+                <button
+                  onClick={() => setIsCourierModalOpen(true)}
+                  className="text-xs font-bold text-teal-600 hover:text-teal-700 px-2.5 py-1 bg-teal-50 hover:bg-teal-100 rounded-lg transition"
+                >
+                  Edit
+                </button>
               </div>
 
               <div className="flex items-center gap-3">
@@ -550,9 +960,162 @@ const OrderDetailsPage = () => {
             >
               Print Invoice
             </button>
+            {order.trackingId && (
+              <button
+                onClick={handlePrintShippingLabel}
+                className="w-full py-2.5 mt-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition"
+              >
+                Print Shipping Label
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Assign Courier Service Modal */}
+      {isCourierModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                <Truck className="w-5 h-5 text-teal-600" />
+                Fulfillment & Courier Details
+              </h3>
+              <button 
+                onClick={() => setIsCourierModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleSaveCourierDetails} className="p-6 space-y-4">
+              <div>
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Courier Service</label>
+                <select
+                  value={courierType}
+                  onChange={(e) => setCourierType(e.target.value)}
+                  className="w-full h-11 px-3 border border-gray-200 rounded-xl bg-gray-50 font-bold text-gray-700 focus:outline-none focus:ring-2 focus:ring-teal-500 transition"
+                >
+                  <option value="Shree Tirupati Courier">Shree Tirupati Courier</option>
+                  <option value="Other">Other (Custom Courier)</option>
+                </select>
+              </div>
+
+              {courierType === "Other" && (
+                <div>
+                  <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Custom Courier Name</label>
+                  <input
+                    type="text"
+                    required
+                    value={courierName}
+                    onChange={(e) => setCourierName(e.target.value)}
+                    placeholder="Enter courier company name"
+                    className="w-full h-11 px-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 transition text-sm font-medium"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">AWB / Tracking Number</label>
+                <input
+                  type="text"
+                  required
+                  value={trackingNumber}
+                  onChange={(e) => setTrackingNumber(e.target.value)}
+                  placeholder="Enter tracking number"
+                  className="w-full h-11 px-4 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-teal-500 transition text-sm font-mono"
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4 border-t border-gray-50">
+                <button
+                  type="button"
+                  onClick={() => setIsCourierModalOpen(false)}
+                  className="flex-1 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-xl text-sm font-bold transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={updating}
+                  className="flex-1 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-sm font-bold transition disabled:opacity-50"
+                >
+                  {updating ? "Updating..." : "Save Details"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* View Delivery Proof Scan (DRS Image Lightbox) Modal */}
+      {isProofModalOpen && (
+        <div className="fixed inset-0 z-50 overflow-y-auto bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+              <h3 className="font-bold text-gray-800 text-lg flex items-center gap-2">
+                <FileText className="w-5 h-5 text-teal-600" />
+                Delivery Proof Scan / Signature
+              </h3>
+              <button 
+                onClick={() => setIsProofModalOpen(false)}
+                className="text-gray-400 hover:text-gray-600 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <div className="p-6 flex flex-col items-center justify-center">
+              {proofLoading ? (
+                <div className="flex flex-col items-center py-20 space-y-3">
+                  <div className="w-8 h-8 border-4 border-teal-600 border-t-transparent rounded-full animate-spin"></div>
+                  <p className="text-sm font-medium text-gray-400">Loading image from server...</p>
+                </div>
+              ) : proofError ? (
+                <div className="flex flex-col items-center py-10 space-y-2 text-center">
+                  <AlertCircle className="w-8 h-8 text-red-500" />
+                  <p className="text-sm font-bold text-gray-600">{proofError}</p>
+                </div>
+              ) : proofImageBase64 ? (
+                <div className="space-y-6 w-full">
+                  <div className="border border-gray-200 rounded-xl overflow-hidden bg-gray-50 p-2 flex items-center justify-center max-h-[350px]">
+                    <img 
+                      src={`data:image/jpeg;base64,${proofImageBase64}`} 
+                      alt="Delivery Proof" 
+                      className="object-contain max-h-[330px] rounded-lg shadow-sm"
+                    />
+                  </div>
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      onClick={() => {
+                        const win = window.open();
+                        win.document.write(`<img src="data:image/jpeg;base64,${proofImageBase64}" style="max-width:100%; height:auto;" />`);
+                        win.document.close();
+                        setTimeout(() => win.print(), 500);
+                      }}
+                      className="flex-1 py-2.5 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition"
+                    >
+                      <Printer className="w-4 h-4" />
+                      Print
+                    </button>
+                    <a
+                      href={`data:image/jpeg;base64,${proofImageBase64}`}
+                      download="Delivery_Proof.jpg"
+                      className="flex-1 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition"
+                    >
+                      <Download className="w-4 h-4" />
+                      Download
+                    </a>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">No image loaded.</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
