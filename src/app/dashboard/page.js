@@ -64,14 +64,90 @@ const DashboardPage = () => {
     return "Good evening";
   };
 
+  const getRangeLabel = (range) => {
+    switch (range) {
+      case "today": return "Today";
+      case "yesterday": return "Yesterday";
+      case "7days": return "Last 7 Days";
+      case "month": return "Last Month";
+      case "year": return "Last Year";
+      case "custom": return "Custom Range";
+      default: return "All Time";
+    }
+  };
+
+  const getRangeDates = (range) => {
+    const now = new Date();
+    let start = null;
+    let end = null;
+
+    switch (range) {
+      case "today": {
+        const s = new Date(now);
+        s.setHours(0, 0, 0, 0);
+        const e = new Date(now);
+        e.setHours(23, 59, 59, 999);
+        start = s.toISOString();
+        end = e.toISOString();
+        break;
+      }
+      case "yesterday": {
+        const s = new Date(now);
+        s.setDate(s.getDate() - 1);
+        s.setHours(0, 0, 0, 0);
+        const e = new Date(now);
+        e.setDate(e.getDate() - 1);
+        e.setHours(23, 59, 59, 999);
+        start = s.toISOString();
+        end = e.toISOString();
+        break;
+      }
+      case "7days": {
+        const s = new Date(now);
+        s.setDate(s.getDate() - 7);
+        s.setHours(0, 0, 0, 0);
+        const e = new Date(now);
+        e.setHours(23, 59, 59, 999);
+        start = s.toISOString();
+        end = e.toISOString();
+        break;
+      }
+      case "month": {
+        const s = new Date(now);
+        s.setMonth(s.getMonth() - 1);
+        s.setHours(0, 0, 0, 0);
+        const e = new Date(now);
+        e.setHours(23, 59, 59, 999);
+        start = s.toISOString();
+        end = e.toISOString();
+        break;
+      }
+      case "year": {
+        const s = new Date(now);
+        s.setFullYear(s.getFullYear() - 1);
+        s.setHours(0, 0, 0, 0);
+        const e = new Date(now);
+        e.setHours(23, 59, 59, 999);
+        start = s.toISOString();
+        end = e.toISOString();
+        break;
+      }
+      case "custom":
+        start = customStartDate || null;
+        end = customEndDate || null;
+        break;
+      default:
+        break;
+    }
+    return { start, end };
+  };
+
   useEffect(() => {
     const fetchStats = async () => {
       try {
         setLoading(true);
-        const data = await getDashboardStats(
-          dateRange === "custom" ? customStartDate : null,
-          dateRange === "custom" ? customEndDate : null
-        );
+        const { start, end } = getRangeDates(dateRange);
+        const data = await getDashboardStats(start, end);
         setStats(data);
       } catch (err) {
         setError(err?.response?.data?.message || "Failed to load dashboard stats");
@@ -146,15 +222,22 @@ const DashboardPage = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          <Dropdown
-            options={[
-              { label: "All Time", value: "all" },
-              { label: "Custom Range", value: "custom" },
-            ]}
-            value={dateRange}
-            onChange={setDateRange}
-            placeholder="Data View"
-          />
+          <div className="w-[220px]">
+            <Dropdown
+              options={[
+                { label: "All Time", value: "all" },
+                { label: "Today", value: "today" },
+                { label: "Yesterday", value: "yesterday" },
+                { label: "Last 7 Days", value: "7days" },
+                { label: "Last Month", value: "month" },
+                { label: "Last Year", value: "year" },
+                { label: "Custom Range", value: "custom" },
+              ]}
+              value={dateRange}
+              onChange={setDateRange}
+              placeholder="Data View"
+            />
+          </div>
           {dateRange === "custom" && (
             <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-none border border-gray-200 shadow-sm animate-in fade-in zoom-in-95">
               <input 
@@ -179,30 +262,32 @@ const DashboardPage = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {[
           { 
-            title: "TOTAL USERS", 
+            title: `TOTAL USERS (${getRangeLabel(dateRange).toUpperCase()})`, 
             value: stats.totalUsers || 0, 
-            sub: "+34 this week", 
+            sub: dateRange === "all" ? "cumulative total" : `new users ${getRangeLabel(dateRange).toLowerCase()}`, 
             color: "border-teal-600 shadow-teal-900/5",
             icon: Users
           },
           { 
-            title: "REVENUE (MTD)", 
-            value: `${((stats.revenue?.mtd || 0) / 100000).toFixed(1)}L`, 
-            sub: "+18% vs last month", 
+            title: `REVENUE (${getRangeLabel(dateRange).toUpperCase()})`, 
+            value: stats.revenue?.custom >= 100000 
+              ? `₹${((stats.revenue?.custom || 0) / 100000).toFixed(2)}L` 
+              : `₹${(stats.revenue?.custom || 0).toLocaleString('en-IN')}`, 
+            sub: dateRange === "all" ? "total cumulative revenue" : `revenue for ${getRangeLabel(dateRange).toLowerCase()}`, 
             color: "border-orange-500 shadow-orange-900/5",
             icon: TrendingUp
           },
           { 
             title: "ACTIVE PROGRAMS", 
             value: stats.activePlanUsers || 0, 
-            sub: "64 completing today", 
+            sub: "currently running", 
             color: "border-green-500 shadow-green-900/5",
             icon: Activity 
           },
           { 
             title: "UNASSIGNED LEADS", 
             value: stats.pendingUsers || 0, 
-            sub: "needs attention", 
+            sub: "currently pending", 
             subColor: "text-red-500 font-bold",
             color: "border-red-500 shadow-red-900/5",
             icon: AlertCircle
@@ -226,25 +311,28 @@ const DashboardPage = () => {
         {/* Branch Performance */}
         <div className="lg:col-span-1 bg-white p-8 rounded-none shadow-xl shadow-teal-900/5 border border-gray-100 flex flex-col">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-sm font-black text-gray-900 uppercase tracking-widest px-2">Branch Performance</h2>
+            <h2 className="text-sm font-black text-gray-900 uppercase tracking-widest px-2">Branch Performance ({getRangeLabel(dateRange)})</h2>
             <button className="text-[10px] font-black text-teal-600 uppercase tracking-widest hover:underline">Full report</button>
           </div>
           
           <div className="space-y-8 flex-1">
-            {stats.revenue?.byBranch?.slice(0, 5).map((branch, i) => (
-              <div key={i} className="space-y-2">
-                <div className="flex justify-between items-center text-[13px]">
-                  <span className="font-bold text-gray-800">{branch.name}</span>
-                  <span className="font-black text-gray-900">{branch.total.toLocaleString()}</span>
+            {(() => {
+              const maxBranchTotal = Math.max(...(stats.revenue?.byBranch?.map(b => b.total) || []), 1);
+              return stats.revenue?.byBranch?.slice(0, 5).map((branch, i) => (
+                <div key={i} className="space-y-2">
+                  <div className="flex justify-between items-center text-[13px]">
+                    <span className="font-bold text-gray-800">{branch.name}</span>
+                    <span className="font-black text-gray-900">{branch.total.toLocaleString()}</span>
+                  </div>
+                  <div className="h-2 w-full bg-gray-50 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-teal-900 rounded-full transition-all duration-1000" 
+                      style={{ width: `${(branch.total / maxBranchTotal) * 100}%` }}
+                    />
+                  </div>
                 </div>
-                <div className="h-2 w-full bg-gray-50 rounded-full overflow-hidden">
-                  <div 
-                    className="h-full bg-teal-900 rounded-full transition-all duration-1000" 
-                    style={{ width: `${Math.min((branch.total / (stats.revenue?.mtd || 1)) * 100, 100)}%` }}
-                  />
-                </div>
-              </div>
-            ))}
+              ));
+            })()}
             {(!stats.revenue?.byBranch || stats.revenue.byBranch.length === 0) && (
               <div className="flex items-center justify-center h-full text-gray-400 font-bold text-xs uppercase italic">No branch data data</div>
             )}

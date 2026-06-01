@@ -47,7 +47,8 @@ const BranchTimePage = () => {
         if (role === "subadmin" && branches.length > 0) {
           setSelectedBranchId(branches[0]);
         } else {
-          const defaultBranch = data[0];
+          const mainBranch = data.find(b => b.isMainBranch);
+          const defaultBranch = mainBranch || data[0];
           if (defaultBranch) {
             setSelectedBranchId(defaultBranch._id);
           }
