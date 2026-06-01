@@ -45,7 +45,7 @@ const Dropdown = ({
   return (
     <div className="relative w-full" ref={dropdownRef}>
       {label && (
-        <label className={`block mb-1.5 font-bold text-sm tracking-wide ${labelClassName}`}>
+        <label className={`block mb-1.5 font-bold text-[11px] tracking-wide ${labelClassName}`}>
           {label}
         </label>
       )}
@@ -64,7 +64,7 @@ const Dropdown = ({
             : "cursor-pointer"
         }`}
       >
-        <span className={`truncate mr-2 font-medium text-sm ${value ? "text-gray-900" : "text-gray-400"}`}>
+        <span className={`truncate mr-2 font-medium text-sm text-black placeholder:text-black`}>
           {selected ? selected.label : (placeholder || `Select ${label || "Option"}`)}
         </span>
         <svg
@@ -97,7 +97,7 @@ const Dropdown = ({
                   placeholder="Search..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-100 rounded-xl focus:outline-none focus:ring-4 focus:ring-amber-500/5 focus:border-amber-500 bg-gray-50/50 transition-all"
+                  className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-100 rounded-xl focus:outline-none focus:ring-4 focus:ring-amber-500/5 focus:border-amber-500 bg-gray-50/50 transition-all text-black"
                   autoFocus
                 />
                 <svg
@@ -134,7 +134,7 @@ const Dropdown = ({
                         ? "opacity-30 cursor-not-allowed bg-gray-50 border-transparent"
                         : isSelected
                         ? "bg-amber-50 border-amber-500 text-amber-700 font-bold"
-                        : "hover:bg-gray-50 border-transparent hover:border-gray-200 cursor-pointer text-gray-600"
+                        : "hover:bg-gray-50 border-transparent hover:border-gray-200 cursor-pointer text-black"
                     }`}
                   >
                     <span className="flex items-center gap-3 min-w-0">
