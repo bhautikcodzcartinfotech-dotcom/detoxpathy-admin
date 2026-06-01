@@ -868,7 +868,7 @@ const ReportsPage = () => {
     if (viewType === "videoReports") {
         return (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
+            <table className="w-full text-[11px] text-left">
               <thead className="text-[11px] text-gray-400 uppercase bg-gray-50/50 font-bold tracking-wider">
                 <tr>
                   <th className="px-6 py-4">Rank</th>
@@ -894,7 +894,7 @@ const ReportsPage = () => {
                         {(typeof item.watchPercentage === 'number' ? item.watchPercentage : 0).toFixed(1)}%
                       </td>
                       <td className="px-6 py-4 text-center">
-                        <span className={`inline-flex px-3 py-1 rounded-full text-[10px] font-black uppercase ${item.isCompleted ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
+                        <span className={`inline-flex px-3 py-1 rounded-full text-xs text-black font-black uppercase ${item.isCompleted ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
                           {item.isCompleted ? "Yes" : "No"}
                         </span>
                       </td>
@@ -908,7 +908,7 @@ const ReportsPage = () => {
     } else if (viewType === "highest_selling_products") {
       return (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
+          <table className="w-full text-[11px] text-left">
             {productReportSubView === "highest_sold" && (
               <>
                 <thead className="text-[11px] text-gray-400 uppercase bg-gray-50/50 font-bold tracking-wider">
@@ -994,7 +994,7 @@ const ReportsPage = () => {
     if (checklistReportEnabled) {
       return (
         <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
+          <table className="w-full text-[11px] text-left">
             <thead className="text-[11px] text-gray-400 uppercase bg-gray-50/50 font-bold tracking-wider">
               <tr>
                 <th className="px-6 py-4 whitespace-nowrap">Patient</th>
@@ -1008,10 +1008,10 @@ const ReportsPage = () => {
                 <th className="px-4 py-4 text-center whitespace-nowrap">Weight</th>
                 <th className="px-6 py-4 whitespace-nowrap">Mistakes</th>
               </tr>
-            </thead>
+            </thead> 
             <tbody className="divide-y divide-gray-50">
               {paginatedData.map((item) => (
-                <tr key={item._id} className="bg-white hover:bg-gray-50/80 transition-colors text-xs">
+                <tr key={item._id} className="bg-white hover:bg-gray-50/80 transition-colors text-xs text-black">
                   <td className="px-6 py-4 font-semibold text-gray-900 whitespace-nowrap">
                     {item.userId?.name || "Unknown"} {item.userId?.surname || ""}
                   </td>
@@ -1054,7 +1054,7 @@ const ReportsPage = () => {
       case "users":
         return (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
+            <table className="w-full text-[11px] text-left">
               <thead className="text-[11px] text-gray-400 uppercase bg-gray-50/50 font-bold tracking-wider">
                 <tr>
                   <th className="px-6 py-4">Name</th>
@@ -1079,7 +1079,7 @@ const ReportsPage = () => {
                   // Calculate how many referrals this user has sent
                   const referralsSentCount = allUsersList.filter(u => u.usedReferralCode === item.referralCode).length;
                   return (
-                    <tr key={item._id} className="bg-white hover:bg-gray-50/80 transition-colors text-xs">
+                    <tr key={item._id} className="bg-white hover:bg-gray-50/80 transition-colors text-xs text-black">
                       <td className="px-6 py-4 font-semibold text-gray-900">{item.name} {item.surname}</td>
                       <td className="px-6 py-4 text-gray-500 font-medium">{item.mobileNumber}</td>
                       <td className="px-6 py-4 text-indigo-600 font-bold">{assignedDoctors}</td>
@@ -1097,7 +1097,7 @@ const ReportsPage = () => {
                         {referralsSentCount}
                       </td>
                       <td className="px-6 py-4">
-                        <span className={`px-2 py-1 rounded-md text-[9px] font-black uppercase ${item.isDeleted || item.isBlocked ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"
+                        <span className={`px-2 py-1 rounded-md text-[11px] font-black uppercase ${item.isDeleted || item.isBlocked ? "bg-red-50 text-red-600" : "bg-green-50 text-green-600"
                           }`}>
                           {item.isDeleted || item.isBlocked ? "Inactive" : "Active"}
                         </span>
@@ -1113,7 +1113,7 @@ const ReportsPage = () => {
       case "orders":
         return (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
+            <table className="w-full text-[11px] text-left">
               <thead className="text-[11px] text-gray-400 uppercase bg-gray-50/50 font-bold tracking-wider">
                 <tr>
                   <th className="px-6 py-4">Order ID</th>
@@ -1127,14 +1127,14 @@ const ReportsPage = () => {
               <tbody className="divide-y divide-gray-50">
                 {paginatedData.map((item) => (
                   <tr key={item._id} className="bg-white hover:bg-gray-50/80 transition-colors">
-                    <td className="px-6 py-4 font-bold text-gray-900 text-xs">#{item._id.slice(-6).toUpperCase()}</td>
+                    <td className="px-6 py-4 font-bold text-gray-900 text-xs text-black">#{item._id.slice(-6).toUpperCase()}</td>
                     <td className="px-6 py-4 font-semibold">{item.userId ? `${item.userId.name || ""} ${item.userId.surname || ""}` : "Deleted User"}</td>
                     <td className="px-6 py-4 text-gray-500">{item.userId?.mobileNumber || "N/A"}</td>
                     <td className="px-6 py-4 font-semibold">{item.userId ? `${item.userId.name} ${item.userId.surname || ""}` : "Unknown Patient (Deleted)"}</td>
                     <td className="px-6 py-4 text-gray-500">{item.userId?.mobileNumber || "N/A"}</td>
                     <td className="px-6 py-4 font-black text-gray-900">₹{item.totalAmount}</td>
                     <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${item.orderStatus === "delivered" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
+                      <span className={`px-3 py-1 rounded-full text-xs text-black font-black uppercase tracking-tighter ${item.orderStatus === "delivered" ? "bg-green-100 text-green-700" : "bg-amber-100 text-amber-700"
                         }`}>
                         {item.orderStatus}
                       </span>
@@ -1150,7 +1150,7 @@ const ReportsPage = () => {
       case "video":
         return (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
+            <table className="w-full text-[11px] text-left">
               <thead className="text-[11px] text-gray-400 uppercase bg-gray-50/50 font-bold tracking-wider">
                 <tr>
                   <th className="px-6 py-4">Patient</th>
@@ -1169,7 +1169,7 @@ const ReportsPage = () => {
                         <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
                           <div className="h-full bg-indigo-500" style={{ width: `${Math.min(100, (item.planCurrentDay / 30) * 100)}%` }}></div>
                         </div>
-                        <span className="text-[10px] font-black text-indigo-600 uppercase">Day {item.planCurrentDay}</span>
+                        <span className="text-xs text-black font-black text-indigo-600 uppercase">Day {item.planCurrentDay}</span>
                       </div>
                     </td>
                     <td className="px-6 py-4 text-gray-600">{item.plan?.name || "N/A"}</td>
@@ -1184,7 +1184,7 @@ const ReportsPage = () => {
       case "videoReports":
         return (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
+            <table className="w-full text-[11px] text-left">
               <thead className="text-[11px] text-gray-400 uppercase bg-gray-50/50 font-bold tracking-wider">
                 <tr>
                   <th className="px-6 py-4">Rank</th>
@@ -1212,7 +1212,7 @@ const ReportsPage = () => {
                           <div className="w-24 h-2 bg-gray-100 rounded-full overflow-hidden">
                             <div className="h-full bg-indigo-500" style={{ width: `${Math.min(100, typeof item.watchPercentage === 'number' ? item.watchPercentage : 0)}%` }}></div>
                           </div>
-                          <span className="text-[10px] font-black text-indigo-600 uppercase">{(typeof item.watchPercentage === 'number' ? item.watchPercentage : 0).toFixed(1)}%</span>
+                          <span className="text-xs text-black font-black text-indigo-600 uppercase">{(typeof item.watchPercentage === 'number' ? item.watchPercentage : 0).toFixed(1)}%</span>
                         </div>
                       </td>
                     </tr>
@@ -1226,7 +1226,7 @@ const ReportsPage = () => {
       case "reschedule":
         return (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
+            <table className="w-full text-[11px] text-left">
               <thead className="text-[11px] text-gray-400 uppercase bg-gray-50/50 font-bold tracking-wider">
                 <tr>
                   <th className="px-6 py-4">Admin/Doctor</th>
@@ -1242,7 +1242,7 @@ const ReportsPage = () => {
                     <td className="px-6 py-4 font-semibold text-gray-900">{item.user?.username || 'System'}</td>
                     <td className="px-6 py-4 text-gray-700 italic">"{item.action}"</td>
                     <td className="px-6 py-4 text-gray-600">{item.branch?.name || "Global"}</td>
-                    <td className="px-6 py-4 text-[10px] font-mono text-gray-400">{item.ipAddress}</td>
+                    <td className="px-6 py-4 text-xs text-black font-mono text-gray-400">{item.ipAddress}</td>
                     <td className="px-6 py-4 text-gray-500">{new Date(item.timestamp).toLocaleString()}</td>
                   </tr>
                 ))}
@@ -1253,8 +1253,8 @@ const ReportsPage = () => {
       case "screen":
         return (
           <div className="w-full max-w-[calc(100vw-80px)] lg:max-w-[calc(100vw-380px)] overflow-x-auto">
-            <table className="w-full text-xs text-left">
-              <thead className="text-[10px] text-gray-400 uppercase bg-gray-50/50 font-bold tracking-wider">
+            <table className="w-full text-xs text-black text-left">
+              <thead className="text-xs text-black text-gray-400 uppercase bg-gray-50/50 font-bold tracking-wider">
                 <tr>
                   <th className="px-2 py-1.5 whitespace-nowrap">Patient</th>
                   {screenFields.map((f) => (
@@ -1268,7 +1268,7 @@ const ReportsPage = () => {
                 {paginatedData.map((item) => {
                   const userUsage = screenUsages.find(su => String(su.userId?._id || su.userId) === String(item._id));
                   return (
-                    <tr key={item._id} className="bg-white hover:bg-gray-50/80 transition-colors text-[10px]">
+                    <tr key={item._id} className="bg-white hover:bg-gray-50/80 transition-colors text-xs text-black">
                       <td className="px-2 py-1 font-semibold text-gray-900 whitespace-nowrap">
                         {item.name} {item.surname}
                       </td>
@@ -1292,7 +1292,7 @@ const ReportsPage = () => {
       default:
         return (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
+            <table className="w-full text-[11px] text-left">
               <thead className="text-[11px] text-gray-400 uppercase bg-gray-50/50 font-bold tracking-wider">
                 <tr>
                   <th className="px-6 py-4">Patient</th>
@@ -1310,21 +1310,21 @@ const ReportsPage = () => {
                     <td className="px-6 py-4">
                       <div className="flex flex-col">
                         <span className="font-bold">{item.date}</span>
-                        <span className="text-[10px] text-gray-400 uppercase">{item.startTime} - {item.endTime}</span>
+                        <span className="text-xs text-black text-gray-400 uppercase">{item.startTime} - {item.endTime}</span>
                       </div>
                     </td>
-                    <td className="px-6 py-4 capitalize font-bold text-xs">
+                    <td className="px-6 py-4 capitalize font-bold text-xs text-black">
                       <div className="flex flex-col gap-1">
                         <span>{item.status}</span>
                         {item.isRescheduled && (
-                          <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-600 text-[9px] font-black uppercase w-max tracking-tighter">
+                          <span className="px-2 py-0.5 rounded bg-amber-50 text-amber-600 text-[11px] font-black uppercase w-max tracking-tighter">
                             Rescheduled
                           </span>
                         )}
                       </div>
                     </td>
                     <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${item.type === 1 ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"
+                      <span className={`px-3 py-1 rounded-full text-xs text-black font-black uppercase tracking-tighter ${item.type === 1 ? "bg-purple-100 text-purple-700" : "bg-blue-100 text-blue-700"
                         }`}>
                         {item.type === 1 ? "Online" : "Offline"}
                       </span>
@@ -1909,7 +1909,7 @@ const ReportsPage = () => {
             <Header size="4xl" className="flex items-center gap-3">
               Reports
             </Header>
-            <p className="text-xs text-gray-400 font-bold uppercase tracking-[0.2em] mt-2">Operational Analytics & Patient Tracking</p>
+            <p className="text-xs text-black text-gray-400 font-bold uppercase tracking-[0.2em] mt-2">Operational Analytics & Patient Tracking</p>
           </div>
 
           <div className="flex items-center gap-3 relative z-10">
@@ -1945,10 +1945,10 @@ const ReportsPage = () => {
         {/* Summary Stat Cards - Row 1 */}
         {viewType === "videoReports" ? (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all hover:shadow-md">
+            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
               <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500"></div>
               <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Users</span>
+                <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Total Users</span>
                 <div className="flex items-end gap-2 mt-2">
                   <span className="text-4xl font-black text-gray-900 leading-none">{videoReportStats.totalUsers}</span>
                 </div>
@@ -1960,16 +1960,16 @@ const ReportsPage = () => {
               </div>
             </div>
 
-            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all hover:shadow-md">
+            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
               <div className="absolute top-0 left-0 w-full h-1 bg-purple-500"></div>
               <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Avg Watch Percentage</span>
+                <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Avg Watch Percentage</span>
                 <div className="flex items-end gap-2 mt-2">
                   <span className="text-4xl font-black text-purple-600 leading-none">{videoReportStats.avgWatchPercentage}%</span>
                 </div>
                 <div className="mt-4 flex items-center gap-2">
                   <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
-                    <div className="h-full bg-purple-500 transition-all duration-500" style={{
+                    <div className="h-full bg-purple-500 transition-all placeholder:text-black duration-500" style={{
                       width: `${Math.min(100, Number(videoReportStats.avgWatchPercentage))}%`
                     }}></div>
                   </div>
@@ -1977,21 +1977,21 @@ const ReportsPage = () => {
               </div>
             </div>
 
-            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all hover:shadow-md">
+            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
               <div className="absolute top-0 left-0 w-full h-1 bg-green-500"></div>
               <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Completed</span>
+                <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Completed</span>
                 <div className="flex items-end gap-2 mt-2">
                   <span className="text-4xl font-black text-green-600 leading-none">{videoReportStats.completedCount}</span>
                   <div className="flex flex-col ml-2">
-                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter leading-tight">
+                    <span className="text-xs text-black font-bold text-gray-400 uppercase tracking-tighter leading-tight">
                       {filteredData.length > 0 ? ((videoReportStats.completedCount / filteredData.length) * 100).toFixed(1) : 0}%
                     </span>
                   </div>
                 </div>
                 <div className="mt-4 flex items-center gap-2">
                   <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
-                    <div className="h-full bg-green-500 transition-all duration-500" style={{
+                    <div className="h-full bg-green-500 transition-all placeholder:text-black duration-500" style={{
                       width: `${filteredData.length > 0 ? (videoReportStats.completedCount / filteredData.length) * 100 : 0}%`
                     }}></div>
                   </div>
@@ -1999,10 +1999,10 @@ const ReportsPage = () => {
               </div>
             </div>
 
-            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all hover:shadow-md">
+            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
               <div className="absolute top-0 left-0 w-full h-1 bg-amber-500"></div>
               <div className="flex flex-col gap-1">
-                <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Watch Time</span>
+                <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Total Watch Time</span>
                 <div className="flex items-end gap-2 mt-2">
                   <span className="text-4xl font-black text-amber-600 leading-none">
                     {Math.floor(videoReportStats.totalWatchedSeconds / 60)}m
@@ -2022,15 +2022,15 @@ const ReportsPage = () => {
         ) : viewType !== "highest_selling_products" && (
           <>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all hover:shadow-md">
+              <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
             <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500"></div>
             <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Total Results</span>
+              <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Total Results</span>
               <div className="flex items-end gap-2 mt-2">
                 <span className="text-4xl font-black text-gray-900 leading-none">{filteredData.length}</span>
                 <div className="flex flex-col ml-2">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter leading-tight">Records Found</span>
-                  <span className="text-[10px] font-bold text-indigo-500 uppercase tracking-tighter leading-tight">
+                  <span className="text-xs text-black font-bold text-gray-400 uppercase tracking-tighter leading-tight">Records Found</span>
+                  <span className="text-xs text-black font-bold text-indigo-500 uppercase tracking-tighter leading-tight">
                     {totalUserCount > 0 ? ((filteredData.length / totalUserCount) * 100).toFixed(1) : 0}% of All Users
                   </span>
                 </div>
@@ -2043,24 +2043,24 @@ const ReportsPage = () => {
             </div>
           </div>
 
-          <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all hover:shadow-md">
+          <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
             <div className="absolute top-0 left-0 w-full h-1 bg-green-500"></div>
             <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Active Status</span>
+              <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Active Status</span>
               <div className="flex items-end gap-2 mt-2">
                 <span className="text-4xl font-black text-green-600 leading-none">{activeCount}</span>
                 <div className="flex flex-col ml-2">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter leading-tight">
+                  <span className="text-xs text-black font-bold text-gray-400 uppercase tracking-tighter leading-tight">
                     {filteredData.length > 0 ? ((activeCount / filteredData.length) * 100).toFixed(1) : 0}% of Filter
                   </span>
-                  <span className="text-[10px] font-bold text-green-500 uppercase tracking-tighter leading-tight">
+                  <span className="text-xs text-black font-bold text-green-500 uppercase tracking-tighter leading-tight">
                     {totalUserCount > 0 ? ((activeCount / totalUserCount) * 100).toFixed(1) : 0}% of All
                   </span>
                 </div>
               </div>
               <div className="mt-4 flex items-center gap-2">
                 <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
-                  <div className="h-full bg-green-500 transition-all duration-500" style={{
+                  <div className="h-full bg-green-500 transition-all placeholder:text-black duration-500" style={{
                     width: `${filteredData.length > 0 ? (activeCount / filteredData.length) * 100 : 0}%`
                   }}></div>
                 </div>
@@ -2068,24 +2068,24 @@ const ReportsPage = () => {
             </div>
           </div>
 
-          <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all hover:shadow-md">
+          <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
             <div className="absolute top-0 left-0 w-full h-1 bg-red-500"></div>
             <div className="flex flex-col gap-1">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Inactive Status</span>
+              <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Inactive Status</span>
               <div className="flex items-end gap-2 mt-2">
                 <span className="text-4xl font-black text-red-600 leading-none">{inactiveCount}</span>
                 <div className="flex flex-col ml-2">
-                  <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter leading-tight">
+                  <span className="text-xs text-black font-bold text-gray-400 uppercase tracking-tighter leading-tight">
                     {filteredData.length > 0 ? ((inactiveCount / filteredData.length) * 100).toFixed(1) : 0}% of Filter
                   </span>
-                  <span className="text-[10px] font-bold text-red-500 uppercase tracking-tighter leading-tight">
+                  <span className="text-xs text-black font-bold text-red-500 uppercase tracking-tighter leading-tight">
                     {totalUserCount > 0 ? ((inactiveCount / totalUserCount) * 100).toFixed(1) : 0}% of All
                   </span>
                 </div>
               </div>
               <div className="mt-4 flex items-center gap-2">
                 <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
-                  <div className="h-full bg-red-500 transition-all duration-500" style={{
+                  <div className="h-full bg-red-500 transition-all placeholder:text-black duration-500" style={{
                     width: `${filteredData.length > 0 ? (inactiveCount / filteredData.length) * 100 : 0}%`
                   }}></div>
                 </div>
@@ -2097,62 +2097,62 @@ const ReportsPage = () => {
         {/* New Analytics Boxes - Row 2 */}
         {reportType === "users" && !checklistReportEnabled && (
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
-            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all hover:shadow-md">
+            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all placeholder:text-black hover:shadow-md">
               <div className="absolute top-0 left-0 w-full h-1 bg-blue-400"></div>
-              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Avg Weight & Height</span>
+              <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Avg Weight & Height</span>
               <div className="mt-3 flex flex-col gap-1">
                 <div className="flex justify-between items-center">
-                  <span className="text-xs font-bold text-gray-600">Weight</span>
+                  <span className="text-xs text-black font-bold text-gray-600">Weight</span>
                   <span className="text-lg font-black text-gray-900">{advancedStats.avgWeight} kg</span>
                 </div>
-                <div className="flex justify-between items-center text-[10px] text-gray-400 font-bold uppercase">
+                <div className="flex justify-between items-center text-xs text-black text-gray-400 font-bold uppercase">
                   <span>High: {advancedStats.highestWeight}</span>
                   <span>Low: {advancedStats.lowestWeight}</span>
                 </div>
                 <div className="h-0.5 bg-gray-50 mt-1"></div>
                 <div className="flex justify-between items-center mt-1">
-                  <span className="text-xs font-bold text-gray-600">Height</span>
+                  <span className="text-xs text-black font-bold text-gray-600">Height</span>
                   <span className="text-lg font-black text-gray-900">{advancedStats.avgHeight} cm</span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all hover:shadow-md">
+            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all placeholder:text-black hover:shadow-md">
               <div className="absolute top-0 left-0 w-full h-1 bg-purple-400"></div>
-              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Ideal Weight & Geography</span>
+              <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Ideal Weight & Geography</span>
               <div className="mt-3 flex flex-col gap-2">
                 <div>
-                  <span className="text-[10px] text-gray-400 font-bold uppercase block">Avg Ideal Weight</span>
+                  <span className="text-xs text-black text-gray-400 font-bold uppercase block">Avg Ideal Weight</span>
                   <span className="text-xl font-black text-purple-600">{advancedStats.avgIdealWeight} kg</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-gray-400 font-bold uppercase block">Top Booking State</span>
-                  <span className="text-sm font-black text-gray-800 truncate">{advancedStats.topState}</span>
+                  <span className="text-xs text-black text-gray-400 font-bold uppercase block">Top Booking State</span>
+                  <span className="text-[11px] font-black text-gray-800 truncate">{advancedStats.topState}</span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all hover:shadow-md">
+            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all placeholder:text-black hover:shadow-md">
               <div className="absolute top-0 left-0 w-full h-1 bg-amber-400"></div>
-              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Referral Performance</span>
+              <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Referral Performance</span>
               <div className="mt-3 flex flex-col gap-2">
                 <div>
-                  <span className="text-[10px] text-gray-400 font-bold uppercase block text-amber-600">Highest Source</span>
-                  <span className="text-sm font-black text-gray-800 truncate">{advancedStats.refPerformance.highest}</span>
+                  <span className="text-xs text-black text-gray-400 font-bold uppercase block text-amber-600">Highest Source</span>
+                  <span className="text-[11px] font-black text-gray-800 truncate">{advancedStats.refPerformance.highest}</span>
                 </div>
                 <div>
-                  <span className="text-[10px] text-gray-400 font-bold uppercase block text-gray-400">Lowest Source</span>
-                  <span className="text-sm font-black text-gray-600 truncate">{advancedStats.refPerformance.lowest}</span>
+                  <span className="text-xs text-black text-gray-400 font-bold uppercase block text-gray-400">Lowest Source</span>
+                  <span className="text-[11px] font-black text-gray-600 truncate">{advancedStats.refPerformance.lowest}</span>
                 </div>
               </div>
             </div>
 
-            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all hover:shadow-md">
+            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all placeholder:text-black hover:shadow-md">
               <div className="absolute top-0 left-0 w-full h-1 bg-rose-400"></div>
-              <span className="text-[9px] font-black text-gray-400 uppercase tracking-widest">Engagement Overview</span>
+              <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Engagement Overview</span>
               <div className="mt-3 flex flex-col gap-2">
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] text-gray-400 font-bold uppercase">Video Viewers</span>
+                  <span className="text-xs text-black text-gray-400 font-bold uppercase">Video Viewers</span>
                   <span className="text-lg font-black text-rose-500">
                     {filteredData.filter(item => {
                       const u = checklistReportEnabled || reportType === 'appointments' || reportType === 'orders' ? item.userId : (reportType === 'reschedule' ? item.user : item);
@@ -2161,7 +2161,7 @@ const ReportsPage = () => {
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-[10px] text-gray-400 font-bold uppercase">Answered Qs</span>
+                  <span className="text-xs text-black text-gray-400 font-bold uppercase">Answered Qs</span>
                   <span className="text-lg font-black text-rose-500">
                     {filteredData.filter(item => {
                       const u = checklistReportEnabled || reportType === 'appointments' || reportType === 'orders' ? item.userId : (reportType === 'reschedule' ? item.user : item);
@@ -2180,7 +2180,7 @@ const ReportsPage = () => {
             {viewType === "videoReports" ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-3 items-end">
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Watch Percentage</label>
+                  <label className="text-[11px] font-black text-indigo-600 uppercase tracking-widest px-1">Watch Percentage</label>
                   <Dropdown
                     options={[
                       { label: "All", value: "" },
@@ -2196,7 +2196,7 @@ const ReportsPage = () => {
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Specific Video</label>
+                  <label className="text-[11px] font-black text-indigo-600 uppercase tracking-widest px-1">Specific Video</label>
                   <Dropdown
                     options={[
                       { label: "All Videos", value: "" },
@@ -2211,9 +2211,9 @@ const ReportsPage = () => {
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Global Search</label>
+                  <label className="text-[11px] font-black text-indigo-600 uppercase tracking-widest px-1">Global Search</label>
                   <div className="relative">
-                    <input type="text" placeholder="Search user or video..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-[40px] pl-10 pr-4 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all" />
+                    <input type="text" placeholder="Search user or video..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-[40px] pl-10 pr-4 bg-gray-50/50 border border-gray-100 rounded-xl text-xs text-black font-medium focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all placeholder:text-black" />
                     <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                   </div>
                 </div>
@@ -2222,7 +2222,7 @@ const ReportsPage = () => {
                     type="button"
                     onClick={resetAllFilters}
                     title="Reset All Filters"
-                    className="w-full h-[40px] bg-gray-50 text-gray-600 border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm"
+                    className="w-full h-[40px] bg-gray-50 text-gray-600 border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 rounded-xl text-xs text-black font-bold transition-all placeholder:text-black flex items-center justify-center gap-2 shadow-sm"
                   >
                     <MdRefresh size={18} className="transition-transform group-hover:rotate-180" />
                     <span>Reset</span>
@@ -2232,23 +2232,23 @@ const ReportsPage = () => {
             ) : reportType === "appointments" ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-x-6 gap-y-3 items-end">
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Report</label>
+                  <label className="text-[11px] font-black text-indigo-600 uppercase tracking-widest px-1">Report</label>
                   <Dropdown options={reportOptions} value={reportType} onChange={(val) => { setReportType(val); setRawData([]); setSearchTerm(""); }} placeholder="Report" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Branch</label>
+                  <label className="text-[11px] font-black text-indigo-600 uppercase tracking-widest px-1">Branch</label>
                   <Dropdown options={[{ label: "All Branches", value: "" }, ...(allBranches || []).map(b => ({ label: b.name, value: b._id }))]} value={selectedBranchId} onChange={setSelectedBranchId} placeholder="Branch" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Doctor</label>
+                  <label className="text-[11px] font-black text-indigo-600 uppercase tracking-widest px-1">Doctor</label>
                   <Dropdown options={[{ label: "All Doctors", value: "" }, ...(allDoctors || []).filter(d => { const docBranches = Array.isArray(d.fullBranches) ? d.fullBranches : []; return !selectedBranchId || docBranches.some(b => String(b._id || b) === String(selectedBranchId)); }).map(d => ({ label: d.username || d.name || "Unknown", value: d._id }))]} value={selectedDoctorId} onChange={setSelectedDoctorId} placeholder="Doctor" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Appoint. Type</label>
+                  <label className="text-[11px] font-black text-indigo-600 uppercase tracking-widest px-1">Appoint. Type</label>
                   <Dropdown options={[{ label: "All Types", value: "" }, { label: "Online", value: "1" }, { label: "Offline", value: "2" }]} value={selectedConsultingType} onChange={setSelectedConsultingType} />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-amber-600 uppercase tracking-widest px-1">Reschedule</label>
+                  <label className="text-[11px] font-black text-amber-600 uppercase tracking-widest px-1">Reschedule</label>
                   <Dropdown
                     options={[
                       { label: "All", value: "" },
@@ -2260,9 +2260,9 @@ const ReportsPage = () => {
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Global Patient Search</label>
+                  <label className="text-[11px] font-black text-indigo-600 uppercase tracking-widest px-1">Global Patient Search</label>
                   <div className="relative">
-                    <input type="text" placeholder="Name, mobile or ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-[40px] pl-10 pr-4 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all" />
+                    <input type="text" placeholder="Name, mobile or ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-[40px] pl-10 pr-4 bg-gray-50/50 border border-gray-100 rounded-xl text-xs text-black font-medium focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all placeholder:text-black" />
                     <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                   </div>
                 </div>
@@ -2271,7 +2271,7 @@ const ReportsPage = () => {
                     type="button"
                     onClick={resetAllFilters}
                     title="Reset All Filters"
-                    className="w-full h-[40px] bg-gray-50 text-gray-600 border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm"
+                    className="w-full h-[40px] bg-gray-50 text-gray-600 border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 rounded-xl text-xs text-black font-bold transition-all placeholder:text-black flex items-center justify-center gap-2 shadow-sm"
                   >
                     <MdRefresh size={18} className="transition-transform group-hover:rotate-180" />
                     <span>Reset</span>
@@ -2281,11 +2281,11 @@ const ReportsPage = () => {
             ) : reportType === "videoReports" ? (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-3 items-end">
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Report</label>
+                  <label className="text-[11px] font-black text-indigo-600 uppercase tracking-widest px-1">Report</label>
                   <Dropdown options={reportOptions} value={reportType} onChange={(val) => { setReportType(val); setRawData([]); setSearchTerm(""); }} placeholder="Report" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Watch Percentage</label>
+                  <label className="text-[11px] font-black text-indigo-600 uppercase tracking-widest px-1">Watch Percentage</label>
                   <Dropdown
                     options={[
                       { label: "All", value: "" },
@@ -2301,7 +2301,7 @@ const ReportsPage = () => {
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Specific Video</label>
+                  <label className="text-[11px] font-black text-indigo-600 uppercase tracking-widest px-1">Specific Video</label>
                   <Dropdown
                     options={[
                       { label: "All Videos", value: "" },
@@ -2316,9 +2316,9 @@ const ReportsPage = () => {
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Global Search</label>
+                  <label className="text-[11px] font-black text-indigo-600 uppercase tracking-widest px-1">Global Search</label>
                   <div className="relative">
-                    <input type="text" placeholder="Name, mobile or email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-[40px] pl-10 pr-4 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all" />
+                    <input type="text" placeholder="Name, mobile or email..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-[40px] pl-10 pr-4 bg-gray-50/50 border border-gray-100 rounded-xl text-xs text-black font-medium focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all placeholder:text-black" />
                     <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                   </div>
                 </div>
@@ -2327,7 +2327,7 @@ const ReportsPage = () => {
                     type="button"
                     onClick={resetAllFilters}
                     title="Reset All Filters"
-                    className="w-full h-[40px] bg-gray-50 text-gray-600 border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm"
+                    className="w-full h-[40px] bg-gray-50 text-gray-600 border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 rounded-xl text-xs text-black font-bold transition-all placeholder:text-black flex items-center justify-center gap-2 shadow-sm"
                   >
                     <MdRefresh size={18} className="transition-transform group-hover:rotate-180" />
                     <span>Reset</span>
@@ -2339,27 +2339,27 @@ const ReportsPage = () => {
                 {/* Row 1: Core & Identity */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-3">
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Report</label>
+                    <label className="text-[11px] font-black text-indigo-600 uppercase tracking-widest px-1">Report</label>
                     <Dropdown options={reportOptions} value={reportType} onChange={(val) => { setReportType(val); setRawData([]); setSearchTerm(""); }} placeholder="Report" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Branch</label>
+                    <label className="text-[11px] font-black text-indigo-600 uppercase tracking-widest px-1">Branch</label>
                     <Dropdown options={[{ label: "All Branches", value: "" }, ...(allBranches || []).map(b => ({ label: b.name, value: b._id }))]} value={selectedBranchId} onChange={setSelectedBranchId} placeholder="Branch" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Doctor</label>
+                    <label className="text-[11px] font-black text-indigo-600 uppercase tracking-widest px-1">Doctor</label>
                     <Dropdown options={[{ label: "All Doctors", value: "" }, ...(allDoctors || []).filter(d => { const docBranches = Array.isArray(d.fullBranches) ? d.fullBranches : []; return !selectedBranchId || docBranches.some(b => String(b._id || b) === String(selectedBranchId)); }).map(d => ({ label: d.username || d.name || "Unknown", value: d._id }))]} value={selectedDoctorId} onChange={setSelectedDoctorId} placeholder="Doctor" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Plan</label>
+                    <label className="text-[11px] font-black text-indigo-600 uppercase tracking-widest px-1">Plan</label>
                     <Dropdown options={[{ label: "All Plans", value: "" }, ...(allPlans || []).map(p => ({ label: p.name, value: p._id }))]} value={selectedPlanId} onChange={setSelectedPlanId} placeholder="Plan" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-black text-teal-600 uppercase tracking-widest px-1">Medical</label>
+                    <label className="text-[11px] font-black text-teal-600 uppercase tracking-widest px-1">Medical</label>
                     <Dropdown options={[{ label: "All Conditions", value: "" }, ...medicalConditions.map(m => ({ label: m.name, value: m.name }))]} value={selectedMedicalCondition} onChange={setSelectedMedicalCondition} placeholder="Condition" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-black text-teal-600 uppercase tracking-widest px-1">Gender</label>
+                    <label className="text-[11px] font-black text-teal-600 uppercase tracking-widest px-1">Gender</label>
                     <Dropdown options={[{ label: "All Genders", value: "" }, { label: "Male", value: "male" }, { label: "Female", value: "female" }]} value={selectedGender} onChange={setSelectedGender} />
                   </div>
                 </div>
@@ -2367,27 +2367,27 @@ const ReportsPage = () => {
                 {/* Row 2: Demographics & Geography */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-x-6 gap-y-3">
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-black text-teal-600 uppercase tracking-widest px-1">Age</label>
-                    <input type="number" placeholder="Exact Age..." value={selectedAge} onChange={(e) => setSelectedAge(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-teal-500/10 focus:bg-white transition-all" />
+                    <label className="text-[11px] font-black text-teal-600 uppercase tracking-widest px-1">Age</label>
+                    <input type="number" placeholder="Exact Age..." value={selectedAge} onChange={(e) => setSelectedAge(e.target.value)} className="w-full h-[40px] px-3 bg-white border border-gray-200 rounded-xl text-xs text-black font-medium focus:outline-none focus:ring-4 focus:ring-amber-500/5 focus:border-amber-500 focus:shadow-lg hover:border-amber-500/50 shadow-sm transition-all placeholder:text-black" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-black text-blue-600 uppercase tracking-widest px-1">City</label>
-                    <input type="text" placeholder="City..." value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:bg-white transition-all" />
+                    <label className="text-[11px] font-black text-blue-600 uppercase tracking-widest px-1">City</label>
+                    <input type="text" placeholder="City..." value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)} className="w-full h-[40px] px-3 bg-white border border-gray-200 rounded-xl text-xs text-black font-medium focus:outline-none focus:ring-4 focus:ring-amber-500/5 focus:border-amber-500 focus:shadow-lg hover:border-amber-500/50 shadow-sm transition-all placeholder:text-black" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-black text-blue-600 uppercase tracking-widest px-1">State</label>
-                    <input type="text" placeholder="State..." value={selectedState} onChange={(e) => setSelectedState(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-blue-500/10 focus:bg-white transition-all" />
+                    <label className="text-[11px] font-black text-blue-600 uppercase tracking-widest px-1">State</label>
+                    <input type="text" placeholder="State..." value={selectedState} onChange={(e) => setSelectedState(e.target.value)} className="w-full h-[40px] px-3 bg-white border border-gray-200 rounded-xl text-xs text-black font-medium focus:outline-none focus:ring-4 focus:ring-amber-500/5 focus:border-amber-500 focus:shadow-lg hover:border-amber-500/50 shadow-sm transition-all placeholder:text-black" />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-black text-blue-600 uppercase tracking-widest px-1">Source</label>
+                    <label className="text-[11px] font-black text-blue-600 uppercase tracking-widest px-1">Source</label>
                     <Dropdown options={appReferenceOptions} value={selectedAppReference} onChange={setSelectedAppReference} />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-black text-blue-600 uppercase tracking-widest px-1">Status</label>
+                    <label className="text-[11px] font-black text-blue-600 uppercase tracking-widest px-1">Status</label>
                     <Dropdown options={[{ label: "All Status", value: "all" }, { label: "Active", value: "active" }, { label: "Inactive", value: "inactive" }]} value={statusFilter} onChange={setStatusFilter} />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-black text-blue-600 uppercase tracking-widest px-1">Referral</label>
+                    <label className="text-[11px] font-black text-blue-600 uppercase tracking-widest px-1">Referral</label>
                     <Dropdown options={[
                       { label: "All Users", value: "" },
                       { label: "Used Referral (Referred Users)", value: "has_used" },
@@ -2400,37 +2400,37 @@ const ReportsPage = () => {
                 {/* Row 3: Engagement & Metrics */}
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-x-6 gap-y-3">
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Video Watch</label>
+                    <label className="text-[11px] font-black text-violet-600 uppercase tracking-widest px-1">Video Watch</label>
                     <Dropdown options={[{ label: "All", value: "" }, { label: "Watched", value: "watched" }, { label: "Not Watched", value: "not_watched" }]} value={selectedVideoWatchStatus} onChange={setSelectedVideoWatchStatus} />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Video Lang.</label>
+                    <label className="text-[11px] font-black text-violet-600 uppercase tracking-widest px-1">Video Lang.</label>
                     <Dropdown options={[{ label: "All Lang", value: "" }, { label: "English", value: "en" }, { label: "Hindi", value: "hi" }, { label: "Gujarati", value: "gu" }]} value={selectedVideoLanguage} onChange={setSelectedVideoLanguage} />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Appoint. Type</label>
+                    <label className="text-[11px] font-black text-violet-600 uppercase tracking-widest px-1">Appoint. Type</label>
                     <Dropdown options={[{ label: "All Types", value: "" }, { label: "Online", value: "1" }, { label: "Offline", value: "2" }]} value={selectedConsultingType} onChange={setSelectedConsultingType} />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Branch City Online</label>
+                    <label className="text-[11px] font-black text-violet-600 uppercase tracking-widest px-1">Branch City Online</label>
                     <Dropdown options={[{ label: "All Bookings", value: "" }, { label: "Local Online Only", value: "local_online" }]} value={localOnlineFilter} onChange={setLocalOnlineFilter} />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Body Stats</label>
+                    <label className="text-[11px] font-black text-violet-600 uppercase tracking-widest px-1">Body Stats</label>
                     <Dropdown options={[{ label: "Show All", value: "" }, { label: "With Data", value: "with" }, { label: "Missing Data", value: "skip" }]} value={skipBodyMeasurement} onChange={setSkipBodyMeasurement} />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Ans Status</label>
+                    <label className="text-[11px] font-black text-violet-600 uppercase tracking-widest px-1">Ans Status</label>
                     <Dropdown options={[{ label: "All", value: "" }, { label: "Passed", value: "passed" }, { label: "Failed", value: "failed" }]} value={selectedResultStatus} onChange={setSelectedResultStatus} />
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Language</label>
+                    <label className="text-[11px] font-black text-violet-600 uppercase tracking-widest px-1">Language</label>
                     <Dropdown options={[{ label: "All", value: "" }, { label: "English", value: "en" }, { label: "Hindi", value: "hi" }, { label: "Gujarati", value: "gu" }]} value={selectedLanguage} onChange={setSelectedLanguage} />
                   </div>
                 </div>
                 {reportType === "appointments" && (
                     <div className="flex flex-col gap-1">
-                      <label className="text-[9px] font-black text-amber-600 uppercase tracking-widest px-1">Reschedule Appointments</label>
+                      <label className="text-[11px] font-black text-amber-600 uppercase tracking-widest px-1">Reschedule Appointments</label>
                       <Dropdown
                         options={[
                           { label: "All", value: "" },
@@ -2445,26 +2445,26 @@ const ReportsPage = () => {
                 {/* Row 4: Search, Timeline & Checklist Report */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
                   <div className="lg:col-span-3 flex flex-col gap-1">
-                    <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Global Patient Search</label>
+                    <label className="text-[11px] font-black text-indigo-600 uppercase tracking-widest px-1">Global Patient Search</label>
                     <div className="relative">
-                      <input type="text" placeholder="Name, mobile or ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-[40px] pl-10 pr-4 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all" />
+                      <input type="text" placeholder="Name, mobile or ID..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="w-full h-[40px] pl-10 pr-4 bg-white border border-gray-200 rounded-xl text-xs text-black font-medium focus:outline-none focus:ring-4 focus:ring-amber-500/5 focus:border-amber-500 focus:shadow-lg hover:border-amber-500/50 shadow-sm transition-all placeholder:text-black" />
                       <MdSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
                     </div>
                   </div>
                   <div className="lg:col-span-4 flex flex-col gap-1">
-                    <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1">Timeline Scope</label>
+                    <label className="text-[11px] font-black text-indigo-600 uppercase tracking-widest px-1">Timeline Scope</label>
                     <div className="flex items-center gap-3">
                       <div className="flex-1 relative">
-                        <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-[10px] font-bold focus:outline-none focus:bg-white transition-all" />
+                        <input type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} className="w-full h-[40px] px-3 bg-white border border-gray-200 rounded-xl text-xs text-black font-bold focus:outline-none focus:ring-4 focus:ring-amber-500/5 focus:border-amber-500 focus:shadow-lg hover:border-amber-500/50 shadow-sm transition-all placeholder:text-black" />
                       </div>
-                      <span className="text-gray-300 font-bold text-[10px] uppercase">To</span>
+                      <span className="text-gray-300 font-bold text-xs text-black uppercase">To</span>
                       <div className="flex-1 relative">
-                        <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-[10px] font-bold focus:outline-none focus:bg-white transition-all" />
+                        <input type="date" value={endDate} onChange={(e) => setEndDate(e.target.value)} className="w-full h-[40px] px-3 bg-white border border-gray-200 rounded-xl text-xs text-black font-bold focus:outline-none focus:ring-4 focus:ring-amber-500/5 focus:border-amber-500 focus:shadow-lg hover:border-amber-500/50 shadow-sm transition-all placeholder:text-black" />
                       </div>
                     </div>
                   </div>
                   <div className="lg:col-span-3 flex flex-col gap-1">
-                    <label className="text-[9px] font-black text-violet-600 uppercase tracking-widest px-1">Daily Checklist Report</label>
+                    <label className="text-[11px] font-black text-violet-600 uppercase tracking-widest px-1">Daily Checklist Report</label>
                     <Dropdown
                       options={[
                         { label: "Normal (Disabled)", value: "disabled" },
@@ -2488,7 +2488,7 @@ const ReportsPage = () => {
                       type="button"
                       onClick={resetAllFilters}
                       title="Reset All Filters"
-                      className="w-full h-[40px] bg-gray-50 text-gray-600 border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 shadow-sm"
+                      className="w-full h-[40px] bg-gray-50 text-gray-600 border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 rounded-xl text-xs text-black font-bold transition-all placeholder:text-black flex items-center justify-center gap-2 shadow-sm"
                     >
                       <MdRefresh size={18} className="transition-transform group-hover:rotate-180" />
                       <span>Reset</span>
@@ -2502,24 +2502,24 @@ const ReportsPage = () => {
             {checklistReportEnabled && (
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-6 gap-y-3 pt-3 mt-3 border-t border-gray-100 border-dashed">
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-teal-600 uppercase tracking-widest px-1 flex items-center gap-1"><MdWaterDrop /> Water Intake</label>
-                  <input type="number" placeholder="Exact times..." value={filterWater} onChange={(e) => setFilterWater(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-teal-500/10 focus:bg-white transition-all" />
+                  <label className="text-[11px] font-black text-teal-600 uppercase tracking-widest px-1 flex items-center gap-1"><MdWaterDrop /> Water Intake</label>
+                  <input type="number" placeholder="Exact times..." value={filterWater} onChange={(e) => setFilterWater(e.target.value)} className="w-full h-[40px] px-3 bg-white border border-gray-200 rounded-xl text-xs text-black font-medium focus:outline-none focus:ring-4 focus:ring-amber-500/5 focus:border-amber-500 focus:shadow-lg hover:border-amber-500/50 shadow-sm transition-all placeholder:text-black" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-orange-600 uppercase tracking-widest px-1 flex items-center gap-1"><MdFitnessCenter /> Exercise</label>
-                  <input type="number" placeholder="Exact mins..." value={filterExercise} onChange={(e) => setFilterExercise(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-orange-500/10 focus:bg-white transition-all" />
+                  <label className="text-[11px] font-black text-orange-600 uppercase tracking-widest px-1 flex items-center gap-1"><MdFitnessCenter /> Exercise</label>
+                  <input type="number" placeholder="Exact mins..." value={filterExercise} onChange={(e) => setFilterExercise(e.target.value)} className="w-full h-[40px] px-3 bg-white border border-gray-200 rounded-xl text-xs text-black font-medium focus:outline-none focus:ring-4 focus:ring-amber-500/5 focus:border-amber-500 focus:shadow-lg hover:border-amber-500/50 shadow-sm transition-all placeholder:text-black" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-emerald-600 uppercase tracking-widest px-1 flex items-center gap-1"><MdLocalDrink /> Green Juice</label>
-                  <input type="number" placeholder="Exact times..." value={filterJuice} onChange={(e) => setFilterJuice(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-emerald-500/10 focus:bg-white transition-all" />
+                  <label className="text-[11px] font-black text-emerald-600 uppercase tracking-widest px-1 flex items-center gap-1"><MdLocalDrink /> Green Juice</label>
+                  <input type="number" placeholder="Exact times..." value={filterJuice} onChange={(e) => setFilterJuice(e.target.value)} className="w-full h-[40px] px-3 bg-white border border-gray-200 rounded-xl text-xs text-black font-medium focus:outline-none focus:ring-4 focus:ring-amber-500/5 focus:border-amber-500 focus:shadow-lg hover:border-amber-500/50 shadow-sm transition-all placeholder:text-black" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-cyan-600 uppercase tracking-widest px-1 flex items-center gap-1"><MdSelfImprovement /> Pranayama</label>
-                  <input type="number" placeholder="Exact mins..." value={filterPranayama} onChange={(e) => setFilterPranayama(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-cyan-500/10 focus:bg-white transition-all" />
+                  <label className="text-[11px] font-black text-cyan-600 uppercase tracking-widest px-1 flex items-center gap-1"><MdSelfImprovement /> Pranayama</label>
+                  <input type="number" placeholder="Exact mins..." value={filterPranayama} onChange={(e) => setFilterPranayama(e.target.value)} className="w-full h-[40px] px-3 bg-white border border-gray-200 rounded-xl text-xs text-black font-medium focus:outline-none focus:ring-4 focus:ring-amber-500/5 focus:border-amber-500 focus:shadow-lg hover:border-amber-500/50 shadow-sm transition-all placeholder:text-black" />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <label className="text-[9px] font-black text-indigo-600 uppercase tracking-widest px-1 flex items-center gap-1"><MdBedtime /> Sleep Hours</label>
-                  <input type="number" placeholder="Exact hours..." value={filterSleep} onChange={(e) => setFilterSleep(e.target.value)} className="w-full h-[40px] px-3 bg-gray-50/50 border border-gray-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:bg-white transition-all" />
+                  <label className="text-[11px] font-black text-indigo-600 uppercase tracking-widest px-1 flex items-center gap-1"><MdBedtime /> Sleep Hours</label>
+                  <input type="number" placeholder="Exact hours..." value={filterSleep} onChange={(e) => setFilterSleep(e.target.value)} className="w-full h-[40px] px-3 bg-white border border-gray-200 rounded-xl text-xs text-black font-medium focus:outline-none focus:ring-4 focus:ring-amber-500/5 focus:border-amber-500 focus:shadow-lg hover:border-amber-500/50 shadow-sm transition-all placeholder:text-black" />
                 </div>
               </div>
             )}
@@ -2555,17 +2555,17 @@ const ReportsPage = () => {
             </h2>
             <div className="flex items-center gap-4">
               {viewType === "videoReports" && selectedVideoId && (
-                <span className="text-[10px] font-black text-purple-600 bg-purple-50 px-4 py-2 rounded-full uppercase tracking-widest border border-purple-100/50 flex items-center gap-1.5">
+                <span className="text-xs text-black font-black text-purple-600 bg-purple-50 px-4 py-2 rounded-full uppercase tracking-widest border border-purple-100/50 flex items-center gap-1.5">
                   <span className="opacity-60">Avg Watch:</span> {videoReportStats.avgWatchPercentage}%
                 </span>
               )}
-              <span className="text-[10px] font-black text-gray-400 bg-gray-100/80 px-4 py-2 rounded-full uppercase tracking-widest border border-gray-50">
+              <span className="text-xs text-black font-black text-gray-400 bg-gray-100/80 px-4 py-2 rounded-full uppercase tracking-widest border border-gray-50">
                 {filteredData.length} Results Found
               </span>
               <button
                 type="button"
                 onClick={exportFilteredDataToExcel}
-                className="flex items-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 hover:text-emerald-800 border border-emerald-100 hover:border-emerald-200 rounded-full text-[10px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95"
+                className="flex items-center gap-2 px-4 py-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 hover:text-emerald-800 border border-emerald-100 hover:border-emerald-200 rounded-full text-xs text-black font-black uppercase tracking-widest transition-all placeholder:text-black shadow-sm active:scale-95"
               >
                 <FiDownload size={12} />
                 Export to Excel
@@ -2576,73 +2576,73 @@ const ReportsPage = () => {
           <div className="p-0">
             {/* Active Filters Bar */}
             <div className="px-8 py-3 bg-white border-b border-gray-50 flex items-center gap-3 overflow-x-auto no-scrollbar">
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Active Filters:</span>
+              <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Active Filters:</span>
               <div className="flex items-center gap-2">
-                <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-bold border border-indigo-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-xs text-black font-bold border border-indigo-100/50 flex items-center gap-1.5 whitespace-nowrap">
                   <span className="opacity-50">Type:</span> {viewType === "highest_selling_products" ? (itemTypeFilter === "Plan" ? "Plans" : "Products") : reportOptions.find(o => o.value === reportType)?.label}
                 </span>
                 {viewType === "videoReports" && selectedMinPercentageOption && (
-                  <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-bold border border-indigo-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                  <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-xs text-black font-bold border border-indigo-100/50 flex items-center gap-1.5 whitespace-nowrap">
                     <span className="opacity-50">Min Watch %:</span> {selectedMinPercentageOption}%
                   </span>
                 )}
                 {viewType === "videoReports" && selectedVideoId && (
-                  <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold border border-blue-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                  <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs text-black font-bold border border-blue-100/50 flex items-center gap-1.5 whitespace-nowrap">
                     <span className="opacity-50">Video:</span> {allVideos.find(v => v._id === selectedVideoId)?.title?.english || "Selected Video"}
                   </span>
                 )}
                 {selectedBranchId && (
-                  <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold border border-blue-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                  <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs text-black font-bold border border-blue-100/50 flex items-center gap-1.5 whitespace-nowrap">
                     <span className="opacity-50">Branch:</span> {allBranches.find(b => b._id === selectedBranchId)?.name}
                   </span>
                 )}
                 {selectedDoctorId && (
-                  <span className="px-3 py-1 bg-purple-50 text-purple-600 rounded-full text-[10px] font-bold border border-purple-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                  <span className="px-3 py-1 bg-purple-50 text-purple-600 rounded-full text-xs text-black font-bold border border-purple-100/50 flex items-center gap-1.5 whitespace-nowrap">
                     <span className="opacity-50">Doctor:</span> {allDoctors.find(d => d._id === selectedDoctorId)?.username || "Selected Doctor"}
                   </span>
                 )}
                 {selectedMedicalCondition && (
-                  <span className="px-3 py-1 bg-rose-50 text-rose-600 rounded-full text-[10px] font-bold border border-rose-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                  <span className="px-3 py-1 bg-rose-50 text-rose-600 rounded-full text-xs text-black font-bold border border-rose-100/50 flex items-center gap-1.5 whitespace-nowrap">
                     <span className="opacity-50">Disease:</span> {selectedMedicalCondition}
                   </span>
                 )}
                 {selectedCity && (
-                  <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-bold border border-emerald-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                  <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-xs text-black font-bold border border-emerald-100/50 flex items-center gap-1.5 whitespace-nowrap">
                     <span className="opacity-50">City:</span> {selectedCity}
                   </span>
                 )}
                 {selectedState && (
-                  <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-[10px] font-bold border border-emerald-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                  <span className="px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full text-xs text-black font-bold border border-emerald-100/50 flex items-center gap-1.5 whitespace-nowrap">
                     <span className="opacity-50">State:</span> {selectedState}
                   </span>
                 )}
                 {statusFilter !== "all" && (
-                  <span className="px-3 py-1 bg-green-50 text-green-600 rounded-full text-[10px] font-bold border border-green-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                  <span className="px-3 py-1 bg-green-50 text-green-600 rounded-full text-xs text-black font-bold border border-green-100/50 flex items-center gap-1.5 whitespace-nowrap">
                     <span className="opacity-50">Status:</span> {statusFilter}
                   </span>
                 )}
                 {localOnlineFilter === "local_online" && (
-                  <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-[10px] font-bold border border-blue-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                  <span className="px-3 py-1 bg-blue-50 text-blue-600 rounded-full text-xs text-black font-bold border border-blue-100/50 flex items-center gap-1.5 whitespace-nowrap">
                     <span className="opacity-50">Booking:</span> Local Online
                   </span>
                 )}
                 {rescheduleFilter && (
-                  <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-[10px] font-bold border border-amber-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                  <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-xs text-black font-bold border border-amber-100/50 flex items-center gap-1.5 whitespace-nowrap">
                     <span className="opacity-50">Reschedule:</span> Reschedule
                   </span>
                 )}
                 {selectedGender && (
-                  <span className="px-3 py-1 bg-pink-50 text-pink-600 rounded-full text-[10px] font-bold border border-pink-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                  <span className="px-3 py-1 bg-pink-50 text-pink-600 rounded-full text-xs text-black font-bold border border-pink-100/50 flex items-center gap-1.5 whitespace-nowrap">
                     <span className="opacity-50">Gender:</span> {selectedGender}
                   </span>
                 )}
                 {selectedAge && (
-                  <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-[10px] font-bold border border-indigo-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                  <span className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-xs text-black font-bold border border-indigo-100/50 flex items-center gap-1.5 whitespace-nowrap">
                     <span className="opacity-50">Age:</span> {selectedAge}
                   </span>
                 )}
                 {usedReferralFilter && (
-                  <span className="px-3 py-1 bg-violet-50 text-violet-600 rounded-full text-[10px] font-bold border border-violet-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                  <span className="px-3 py-1 bg-violet-50 text-violet-600 rounded-full text-xs text-black font-bold border border-violet-100/50 flex items-center gap-1.5 whitespace-nowrap">
                     <span className="opacity-50">Referral:</span> {
                       usedReferralFilter === 'has_used' 
                         ? 'Used Referral (Referred Users)' 
@@ -2653,27 +2653,27 @@ const ReportsPage = () => {
                   </span>
                 )}
                 {selectedVideoWatchStatus && (
-                  <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-[10px] font-bold border border-amber-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                  <span className="px-3 py-1 bg-amber-50 text-amber-600 rounded-full text-xs text-black font-bold border border-amber-100/50 flex items-center gap-1.5 whitespace-nowrap">
                     <span className="opacity-50">Video:</span> {selectedVideoWatchStatus}
                   </span>
                 )}
                  {selectedAppointmentStatus && (
-                  <span className="px-3 py-1 bg-violet-50 text-violet-600 rounded-full text-[10px] font-bold border border-violet-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                  <span className="px-3 py-1 bg-violet-50 text-violet-600 rounded-full text-xs text-black font-bold border border-violet-100/50 flex items-center gap-1.5 whitespace-nowrap">
                     <span className="opacity-50">Appoint. Status:</span> {selectedAppointmentStatus}
                   </span>
                 )}
                 {screenDateFilter && reportType === "screen" && (
-                  <span className="px-3 py-1 bg-violet-50 text-violet-600 rounded-full text-[10px] font-bold border border-violet-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                  <span className="px-3 py-1 bg-violet-50 text-violet-600 rounded-full text-xs text-black font-bold border border-violet-100/50 flex items-center gap-1.5 whitespace-nowrap">
                     <span className="opacity-50">Screen Date:</span> {screenDateFilter}
                   </span>
                 )}
                 {viewType === "highest_selling_products" && itemTypeFilter !== "all" && (
-                  <span className="px-3 py-1 bg-violet-50 text-violet-600 rounded-full text-[10px] font-bold border border-violet-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                  <span className="px-3 py-1 bg-violet-50 text-violet-600 rounded-full text-xs text-black font-bold border border-violet-100/50 flex items-center gap-1.5 whitespace-nowrap">
                     <span className="opacity-50">Item Type:</span> {itemTypeFilter === "Product" ? "Products Only" : "Plans Only"}
                   </span>
                 )}
                 {searchTerm && (
-                  <span className="px-3 py-1 bg-slate-50 text-slate-600 rounded-full text-[10px] font-bold border border-slate-100/50 flex items-center gap-1.5 whitespace-nowrap">
+                  <span className="px-3 py-1 bg-slate-50 text-slate-600 rounded-full text-xs text-black font-bold border border-slate-100/50 flex items-center gap-1.5 whitespace-nowrap">
                     <span className="opacity-50">Search:</span> "{searchTerm}"
                   </span>
                 )}
@@ -2691,7 +2691,7 @@ const ReportsPage = () => {
                 >
                   Previous
                 </Button>
-                <span className="text-sm font-bold text-gray-700">
+                <span className="text-[11px] font-bold text-gray-700">
                   Page {currentPage} of {Math.ceil(filteredData.length / 20)}
                 </span>
                 <Button
