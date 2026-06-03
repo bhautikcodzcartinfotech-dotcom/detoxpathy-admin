@@ -127,7 +127,8 @@ const SettingsPage = () => {
         ...settingsData,
         screenshotProtectionActive: typeof settingsData.screenshotProtectionActive !== 'undefined' ? settingsData.screenshotProtectionActive : true,
         currency: settingsData.currency || "₹",
-        shippingCharges: typeof settingsData.shippingCharges !== 'undefined' ? settingsData.shippingCharges : 0,
+        advanceBookingDays: typeof settingsData.advanceBookingDays !== 'undefined' ? settingsData.advanceBookingDays : 30,
+        bookingSlotDays: typeof settingsData.bookingSlotDays !== 'undefined' ? settingsData.bookingSlotDays : 0,
         appoinmentDescription: typeof settingsData.appoinmentDescription === 'object' && settingsData.appoinmentDescription !== null
           ? settingsData.appoinmentDescription
           : { english: settingsData.appoinmentDescription || "", hindi: "", gujarati: "" },
@@ -393,6 +394,16 @@ const SettingsPage = () => {
         [contenteditable] p:empty {
           min-height: 1.2em;
         }
+        
+        /* Hide arrows for number inputs */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+          -webkit-appearance: none; 
+          margin: 0; 
+        }
+        input[type=number] {
+          -moz-appearance: textfield;
+        }
       `}</style>
       <div className="w-full h-full px-18">
         <div className="flex items-center justify-between mb-8">
@@ -490,19 +501,9 @@ const SettingsPage = () => {
                   <input
                     type="checkbox"
                     checked={formData.screenshotProtectionActive ?? true}
-                    onChange={async (e) => {
-                      const newValue = e.target.checked;
-                      handleInputChange("screenshotProtectionActive", newValue);
-                      try {
-                        await updateSettingById(settings._id, { screenshotProtectionActive: newValue });
-                        toast.success(`Screenshot Protection turned ${newValue ? 'ON' : 'OFF'}!`);
-                        // Re-fetch settings from database to confirm and sync state
-                        await fetchSettings();
-                      } catch (err) {
-                        toast.error("Failed to update screenshot protection");
-                        handleInputChange("screenshotProtectionActive", !newValue);
-                      }
-                    }}
+                    onChange={(e) =>
+                      handleInputChange("screenshotProtectionActive", e.target.checked)
+                    }
                     className="sr-only peer"
                   />
                   <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-yellow-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-yellow-500"></div>
@@ -583,36 +584,6 @@ const SettingsPage = () => {
               </p>
             </div>
 
-            {/* Razorpay Key */}
-            <div className="bg-gradient-to-br from-white to-yellow-50 rounded-2xl shadow-lg border border-yellow-200 p-6">
-              <h3 className="text-sm font-bold text-gray-700 mb-4 tracking-wide">
-                Razorpay Key
-              </h3>
-              <input
-                type="text"
-                value={formData.razorpayKey || ""}
-                onChange={(e) => handleInputChange("razorpayKey", e.target.value)}
-                className="w-full px-4 py-3 rounded-xl border border-yellow-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
-                placeholder="Enter Razorpay Key"
-              />
-            </div>
-
-            {/* Shipping Charges */}
-            <div className="bg-gradient-to-br from-white to-yellow-50 rounded-2xl shadow-lg border border-yellow-200 p-6">
-              <h3 className="text-sm font-bold text-gray-700 mb-4 tracking-wide">
-                Shipping Charge (Per Kg) ({formData.currency || "₹"})
-              </h3>
-              <input
-                type="number"
-                value={formData.shippingCharges ?? ""}
-                onChange={(e) => handleInputChange("shippingCharges", e.target.value === "" ? "" : Number(e.target.value))}
-                className="w-full px-4 py-3 rounded-xl border border-yellow-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
-                min="0"
-                step="0.01"
-                placeholder="0"
-              />
-            </div>
-
             {/* Video Language */}
             <div className="bg-gradient-to-br from-white to-amber-50 rounded-2xl shadow-lg border border-amber-200 p-6 flex flex-col justify-between h-full">
               <div className="flex-1">
@@ -660,6 +631,65 @@ const SettingsPage = () => {
               <p className="text-[11px] text-gray-500 mt-4 leading-relaxed italic opacity-70">
                 Only selected languages will be available for video content.
               </p>
+            </div>
+
+            {/* Booking & Slots Settings */}
+            <div className="bg-gradient-to-br from-white to-yellow-50 rounded-2xl shadow-lg border border-yellow-200 p-6 lg:col-span-2">
+              <h3 className="text-lg font-semibold text-gray-800 mb-2 flex items-center gap-2">
+                <svg className="w-5 h-5 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Booking & Slots Settings
+              </h3>
+              <p className="text-sm text-gray-600 mb-6">
+                Configure the booking window duration for appointments.
+              </p>
+              
+              <div className="space-y-2">
+                <label className="block text-sm font-bold text-gray-700">
+                  Booking Slot Duration (Days)
+                </label>
+                <input
+                  type="number"
+                  value={formData.bookingSlotDays ?? ""}
+                  onChange={(e) => handleInputChange("bookingSlotDays", e.target.value === "" ? "" : Number(e.target.value))}
+                  className="w-full px-4 py-3 rounded-xl border border-yellow-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
+                  min="0"
+                  placeholder="0"
+                />
+                <p className="text-xs text-gray-500">
+                  Number of days from <strong>today</strong> users can book. Set to 0 to disable booking slots.
+                </p>
+              </div>
+
+              {/* Info Box */}
+              {Number(formData.bookingSlotDays) > 0 && (() => {
+                const today = new Date();
+                const todayStr = [
+                  today.getFullYear(),
+                  String(today.getMonth() + 1).padStart(2, '0'),
+                  String(today.getDate()).padStart(2, '0')
+                ].join('-');
+                const endDate = new Date(today);
+                endDate.setDate(endDate.getDate() + Number(formData.bookingSlotDays) - 1);
+                const endStr = [
+                  endDate.getFullYear(),
+                  String(endDate.getMonth() + 1).padStart(2, '0'),
+                  String(endDate.getDate()).padStart(2, '0')
+                ].join('-');
+                return (
+                  <div className="mt-6 p-4 rounded-xl bg-amber-50 border border-amber-200 flex items-start gap-3">
+                    <svg className="w-5 h-5 text-amber-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <p className="text-xs text-amber-800 leading-relaxed">
+                      <strong>Active Override:</strong> Users will only be allowed to book appointments between{" "}
+                      <strong>{todayStr}</strong> (today) and{" "}
+                      <strong>{endStr}</strong>. Outside this window, bookings are blocked.
+                    </p>
+                  </div>
+                );
+              })()}
             </div>
           </div>
 

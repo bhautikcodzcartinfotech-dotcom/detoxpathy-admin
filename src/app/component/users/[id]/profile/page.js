@@ -11,6 +11,7 @@ import {
   resumeUserPlan,
   getUserVideoAnswers,
   downloadConsultationPdfApi,
+  getAllOrders,
 } from "@/Api/AllApi";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import toast from "react-hot-toast";
@@ -61,6 +62,7 @@ const UserProfilePage = () => {
 
   const [loading, setLoading] = useState(true);
   const [overview, setOverview] = useState(null);
+  const [userOrders, setUserOrders] = useState([]);
   const [selectedDay, setSelectedDay] = useState(null); // for popup
   const [closing, setClosing] = useState(false);
   const [planActionLoading, setPlanActionLoading] = useState(false);
@@ -88,6 +90,14 @@ const UserProfilePage = () => {
         } catch (err) {
           console.error("Failed to load video answers", err);
         }
+
+        // Fetch user orders
+        try {
+          const oData = await getAllOrders({ userId, limit: 1000 });
+          setUserOrders(oData?.orders || []);
+        } catch (err) {
+          console.error("Failed to load user orders", err);
+        }
       } catch {
         setOverview(null);
       } finally {
@@ -112,6 +122,324 @@ const UserProfilePage = () => {
     const checklist =
       overview?.dailyChecklist?.find((c) => c.day === dayObj.day) || null;
     setSelectedDay({ ...dayObj, answers: report.answers || [], checklist });
+  };
+
+  const handlePrintUserInvoice = () => {
+    if (!userOrders || userOrders.length === 0) {
+      toast.error("No orders found for this user");
+      return;
+    }
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Popup blocker prevented opening print window");
+      return;
+    }
+
+    const STATUS_LABELS = {
+      1: "Pending",
+      2: "Packed",
+      3: "Processing",
+      4: "In Transit",
+      5: "Delivered",
+      6: "Cancelled",
+    };
+
+    let invoicesHtml = "";
+
+    userOrders.forEach((order) => {
+      const statusLabel = STATUS_LABELS[order.orderStatus] || "Pending";
+      const orderDate = new Date(order.createdAt).toLocaleDateString("en-GB");
+      const orderId = `ORD-${order._id.slice(-6).toUpperCase()}`;
+
+      const branchName = order.branch?.name || "Detoxpathy Corporate Office";
+      const billFrom = `${branchName}, Surat, Gujarat - 400001`;
+
+      const customerName = (order.shippingAddress?.name || `${order.user?.name || ""} ${order.user?.surname || ""}`).trim().toUpperCase();
+      const mobile = order.shippingAddress?.mobile || order.user?.mobileNumber || "N/A";
+      const addressParts = [
+        order.shippingAddress?.addressLine1,
+        order.shippingAddress?.addressLine2,
+        order.shippingAddress?.city,
+        order.shippingAddress?.state ? `${order.shippingAddress.state} ${order.shippingAddress.postalCode || ""}` : order.shippingAddress?.postalCode,
+        order.shippingAddress?.country || "India"
+      ].filter(p => p && p.trim().length > 0);
+      const billTo = `${customerName} | Mob: ${mobile} | ${addressParts.join(", ")}`;
+
+      let itemsHtml = "";
+
+      if (order.plans && order.plans.length > 0) {
+        order.plans.forEach(planItem => {
+          const hsn = planItem.hsnCode || "-";
+          const rate = `₹${Number(planItem.price || 0).toLocaleString("en-IN")}`;
+          const qty = planItem.quantity || "1";
+          const gst = `${planItem.gstPercentage || 0}%`;
+          const total = `₹${Number(planItem.totalWithTax || planItem.price || 0).toLocaleString("en-IN")}`;
+          itemsHtml += `
+            <tr>
+              <td>${planItem.name || "Membership Plan"}</td>
+              <td class="text-center">${hsn}</td>
+              <td class="text-right">${rate}</td>
+              <td class="text-center">${qty}</td>
+              <td class="text-center">${gst}</td>
+              <td class="text-right font-bold">${total}</td>
+            </tr>
+          `;
+        });
+      } else if (order.plan) {
+        const hsn = order.plan.hsnCode || "-";
+        const rate = `₹${Number(order.plan.price || 0).toLocaleString("en-IN")}`;
+        const qty = "1";
+        const gst = `${order.plan.gstPercentage || 0}%`;
+        const total = `₹${Number(order.plan.totalWithTax || order.plan.price || 0).toLocaleString("en-IN")}`;
+        itemsHtml += `
+          <tr>
+            <td>${order.plan.name || "Membership Plan"}</td>
+            <td class="text-center">${hsn}</td>
+            <td class="text-right">${rate}</td>
+            <td class="text-center">${qty}</td>
+            <td class="text-center">${gst}</td>
+            <td class="text-right font-bold">${total}</td>
+          </tr>
+        `;
+      }
+
+      if (order.products && order.products.length > 0) {
+        order.products.forEach(prod => {
+          const hsn = prod.hsnCode || "-";
+          const rate = `₹${Number(prod.price || 0).toLocaleString("en-IN")}`;
+          const qty = prod.quantity || "1";
+          const gst = `${prod.gstPercentage || 0}%`;
+          const total = `₹${Number(prod.totalWithTax || (prod.price * prod.quantity) || 0).toLocaleString("en-IN")}`;
+          itemsHtml += `
+            <tr>
+              <td>${prod.name || "Product"}</td>
+              <td class="text-center">${hsn}</td>
+              <td class="text-right">${rate}</td>
+              <td class="text-center">${qty}</td>
+              <td class="text-center">${gst}</td>
+              <td class="text-right font-bold">${total}</td>
+            </tr>
+          `;
+        });
+      }
+
+      const cgstVal = `₹${Number(order.cgst || 0).toLocaleString("en-IN")}`;
+      const sgstVal = `₹${Number(order.sgst || 0).toLocaleString("en-IN")}`;
+      const igstVal = order.igst > 0 ? `₹${Number(order.igst).toLocaleString("en-IN")}` : null;
+      const totalVal = `₹${Number(order.totalAmount || 0).toLocaleString("en-IN")}`;
+      const subTotalVal = `₹${Number(order.subTotal || order.totalAmount || 0).toLocaleString("en-IN")}`;
+
+      let taxSummary = `<strong>CGST:</strong> ${cgstVal} | <strong>SGST:</strong> ${sgstVal}`;
+      if (igstVal) {
+        taxSummary = `<strong>IGST:</strong> ${igstVal}`;
+      }
+
+      const summaryLine = `<strong>Sub Total:</strong> ${subTotalVal} | ${taxSummary} | <strong>Grand Total:</strong> ${totalVal}`;
+
+      invoicesHtml += `
+        <div class="invoice-page">
+          <h1>DETOXPATHY</h1>
+          <div class="subtitle">HEALTH & WELLNESS SOLUTIONS</div>
+          
+          <h2>INVOICE</h2>
+          
+          <div class="metadata">
+            <strong>Order ID:</strong> ${orderId} | <strong>Date:</strong> ${orderDate} | <strong>Status:</strong> ${statusLabel}
+          </div>
+          
+          <hr />
+          
+          <div class="info-section">
+            <p><strong>BILL FROM:</strong> ${billFrom}</p>
+            <p style="margin-top: 8px;"><strong>BILL TO:</strong> ${billTo}</p>
+          </div>
+          
+          <hr />
+          
+          <table>
+            <thead>
+              <tr>
+                <th>DESCRIPTION</th>
+                <th class="text-center" style="width: 80px;">HSN</th>
+                <th class="text-right" style="width: 100px;">RATE</th>
+                <th class="text-center" style="width: 60px;">QTY</th>
+                <th class="text-center" style="width: 80px;">GST</th>
+                <th class="text-right" style="width: 120px;">TOTAL</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+          
+          <hr />
+          
+          <div class="summary-line">
+            ${summaryLine}
+          </div>
+          
+          <hr />
+          
+          <div class="footer">
+            Thank you | www.detoxpathy.com | Computer generated invoice. No signature required.
+          </div>
+        </div>
+      `;
+    });
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Invoices - User USR-${userId.slice(-6).toUpperCase()}</title>
+        <meta charset="utf-8">
+        <style>
+          body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: #1e293b;
+            font-size: 13px;
+            line-height: 1.5;
+            margin: 0;
+            padding: 20px;
+            background-color: #f8fafc;
+          }
+          .container {
+            max-width: 800px;
+            margin: 0 auto;
+          }
+          .invoice-page {
+            background-color: #ffffff;
+            padding: 40px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            margin-bottom: 40px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+          }
+          h1 {
+            color: #0d9488;
+            font-size: 28px;
+            margin: 0 0 5px 0;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+          }
+          .subtitle {
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            color: #1e293b;
+            margin-bottom: 25px;
+            letter-spacing: 1px;
+          }
+          h2 {
+            font-size: 18px;
+            font-weight: 800;
+            margin: 0 0 12px 0;
+            color: #1e293b;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+          }
+          .metadata {
+            font-size: 12px;
+            margin-bottom: 12px;
+            color: #1e293b;
+          }
+          .metadata strong {
+            font-weight: 700;
+          }
+          hr {
+            border: 0;
+            border-top: 1px solid #cbd5e1;
+            margin: 15px 0;
+          }
+          .info-section {
+            margin: 15px 0;
+            font-size: 12px;
+            line-height: 1.6;
+          }
+          .info-section p {
+            margin: 4px 0;
+          }
+          .info-section strong {
+            font-weight: 700;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+          }
+          th {
+            background-color: #f8fafc;
+            color: #1e293b;
+            font-weight: 700;
+            text-align: left;
+            padding: 8px 12px;
+            font-size: 11px;
+            border-top: 1px solid #cbd5e1;
+            border-bottom: 1px solid #cbd5e1;
+            text-transform: uppercase;
+          }
+          td {
+            padding: 10px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 12px;
+          }
+          .text-center {
+            text-align: center;
+          }
+          .text-right {
+            text-align: right;
+          }
+          .summary-line {
+            font-size: 12px;
+            margin: 15px 0;
+            color: #1e293b;
+            padding: 5px 0;
+          }
+          .footer {
+            text-align: center;
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 40px;
+          }
+          @media print {
+            body {
+              background-color: #ffffff;
+              padding: 0;
+            }
+            .invoice-page {
+              box-shadow: none;
+              border: none;
+              padding: 0;
+              margin: 0;
+              page-break-after: always;
+            }
+            .invoice-page:last-child {
+              page-break-after: avoid;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          ${invoicesHtml}
+        </div>
+        
+        <script>
+          window.onload = function() {
+            window.print();
+            setTimeout(function() {
+              window.close();
+            }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
   };
 
   // Plan management functions
@@ -265,7 +593,12 @@ const UserProfilePage = () => {
       <div className="py-6 px-6 md:px-12">
         <div className="flex items-center justify-between mb-6 px-8">
           <Header size="3xl">User Profile</Header>
-          <Button onClick={() => router.back()}>Back</Button>
+          <div className="flex gap-4">
+            <Button onClick={handlePrintUserInvoice} variant="secondary">
+              Generate Invoice PDF
+            </Button>
+            <Button onClick={() => router.back()}>Back</Button>
+          </div>
         </div>
 
         {loading ? (
@@ -1039,14 +1372,14 @@ const UserProfilePage = () => {
                   {/* Diet Mistake - Full Width Row */}
                   <div className="bg-white p-4 rounded-xl border border-red-50 shadow-sm">
                     <div className="flex items-center gap-2 text-sm font-bold text-red-500 uppercase tracking-wider mb-2">
-                      <span>⚠️</span> Diet Mistake
+                      <span>⚠️</span> Food Mistake
                     </div>
                     <div className="text-sm text-red-600 font-medium leading-relaxed">
                       {selectedDay.checklist.dietMistake || "No mistakes reported for this day."}
                     </div>
                   </div>
                 </div>
-              )}
+              )}  
 
               {/* Daily Question Reports */}
               <h3 className="text-lg font-bold text-gray-700 mb-4 flex items-center gap-2">

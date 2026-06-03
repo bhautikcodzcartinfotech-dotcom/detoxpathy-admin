@@ -2,7 +2,7 @@ import axios from "axios";
 
 // export const API_BASE = "http://192.168.29.204:3002/api/v1";
 // export const API_BASE = "http://69.62.73.194:4009/api/v1";
- export const API_BASE = "https://admin.detoxpathy.com/api/v1";
+  export const API_BASE = "https://admin.detoxpathy.com/api/v1";
 // export const API_BASE = "https://backend.fatendfit.com/api/v1";
 // Host base used to resolve file URLs coming from multer (e.g., uploads/..)
 export const API_HOST = API_BASE.replace(/\/?api\/?v1\/?$/, "").replace(
@@ -393,7 +393,7 @@ export const updateUserById = async (id, payload) => {
   if (typeof payload.mobileNumber !== "undefined") data.append("mobileNumber", payload.mobileNumber);
   if (typeof payload.branchId !== "undefined") data.append("branchId", payload.branchId);
   if (typeof payload.planId !== "undefined") data.append("planId", payload.planId);
-  if (typeof payload.isDeleted !== "undefined") data.append("isDeleted", payload.isDeleted);
+  if (typeof payload.isDeleted !== "undefined") data.append("isDeleted", String(Boolean(payload.isDeleted)));
   if (typeof payload.gstin !== "undefined") data.append("gstin", payload.gstin);
   if (typeof payload.planCurrentDay !== "undefined") data.append("planCurrentDay", payload.planCurrentDay);
 
@@ -1316,6 +1316,7 @@ export const getAllOrders = async (params = {}) => {
   if (params.search) queryParams.append("search", params.search);
   if (params.status) queryParams.append("status", params.status);
   if (params.type) queryParams.append("type", params.type);
+  if (params.userId) queryParams.append("userId", params.userId);
 
   const res = await axios.get(`${API_BASE}/admin/order/userOrders?${queryParams.toString()}`, {
     headers: getAuthHeaders(),
@@ -1448,6 +1449,21 @@ export const rejectTransferAppointment = async (appointmentId) => {
 
 export const getTransferRequests = async () => {
   const res = await axios.get(`${API_BASE}/admin/appointment/transfer/requests`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+// Mobile Number Change Request APIs
+export const getAllMobileNumberChangeRequests = async () => {
+  const res = await axios.get(`${API_BASE}/admin/user/mobile-number-change-requests`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const handleMobileNumberChangeRequest = async (requestId, data) => {
+  const res = await axios.put(`${API_BASE}/admin/user/mobile-number-change-requests/${requestId}`, data, {
     headers: getAuthHeaders(),
   });
   return res.data.data;

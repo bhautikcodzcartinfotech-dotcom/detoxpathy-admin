@@ -46,7 +46,7 @@ const ThemedCheckbox = ({ checked, onChange, ariaLabel, disabled = false }) => {
   );
 };
 
-const UserList = ({ users, loading, onEdit, onDelete, onBulkDelete, onSuggest }) => {
+const UserList = ({ users, loading, onEdit, onDelete, onRestore, onBulkDelete, onSuggest }) => {
   const router = useRouter();
   const { role, permissions } = useAuth();
   const [deleteDialog, setDeleteDialog] = useState({
@@ -278,25 +278,32 @@ const UserList = ({ users, loading, onEdit, onDelete, onBulkDelete, onSuggest })
                   </td>
                   <td className="px-2 py-3 lg:px-4 text-xs lg:text-sm">
                     <div className="flex items-center justify-center gap-1.5 lg:gap-2">
-                      <ActionButton
-                        type="suggest"
-                        onClick={() => onSuggest(u)}
-                        disabled={isDeleted}
-                        title="Suggest Program"
-                      />
-                      {(role === "Admin" || permissions?.includes("edit user")) && (
+                      {isDeleted ? (
                         <ActionButton
-                          type="edit"
-                          onClick={() => onEdit(u)}
-                          disabled={isDeleted}
+                          type="restore"
+                          onClick={() => onRestore(u._id)}
+                          title="Restore User"
                         />
-                      )}
-                      {(role === "Admin" || permissions?.includes("delete user")) && (
-                        <ActionButton
-                          type="delete"
-                          onClick={() => handleDeleteClick(u._id, u.name)}
-                          disabled={isDeleted}
-                        />
+                      ) : (
+                        <>
+                          <ActionButton
+                            type="suggest"
+                            onClick={() => onSuggest(u)}
+                            title="Suggest Program"
+                          />
+                          {(role === "Admin" || permissions?.includes("edit user")) && (
+                            <ActionButton
+                              type="edit"
+                              onClick={() => onEdit(u)}
+                            />
+                          )}
+                          {(role === "Admin" || permissions?.includes("delete user")) && (
+                            <ActionButton
+                              type="delete"
+                              onClick={() => handleDeleteClick(u._id, u.name)}
+                            />
+                          )}
+                        </>
                       )}
                       <ActionButton
                         type="view"

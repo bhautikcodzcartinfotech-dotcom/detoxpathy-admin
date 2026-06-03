@@ -411,6 +411,26 @@ const UsersPage = () => {
     }
   };
 
+  const handleRestore = async (id) => {
+    try {
+      setLoading(true);
+      setError("");
+      const current = Array.isArray(users)
+        ? users.find((u) => u._id === id)
+        : null;
+      const branchId = current?.branch?._id || current?.branch;
+      const planId = current?.plan?._id || current?.plan;
+      await updateUserById(id, { isDeleted: false, branchId, planId });
+      await fetchList();
+      toast.success("User restored successfully!");
+    } catch (err) {
+      setError(err?.response?.data?.message || "Failed to restore user");
+      toast.error(err?.response?.data?.message || "Failed to restore user");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <RoleGuard allow={["Admin", "subadmin"]} permission="show users page">
       <div className="w-full h-full px-8 lg:px-12 py-6 bg-gray-50/50">
@@ -636,6 +656,7 @@ const UsersPage = () => {
             loading={listLoading}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            onRestore={handleRestore}
             onSuggest={handleSuggest}
           />
         </div>

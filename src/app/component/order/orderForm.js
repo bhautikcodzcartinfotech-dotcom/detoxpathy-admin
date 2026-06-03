@@ -321,9 +321,9 @@ const OrderForm = ({ onCancel, onSuccess }) => {
             />
           </div>
           <div>
-            <label className="block mb-1 text-sm font-semibold text-gray-700">
+            {/* <label className="block mb-1 text-sm font-semibold text-gray-700">
               Offline Amount ({currency}) *
-            </label>
+            </label> */}
             <input
               type="number"
               min="0"

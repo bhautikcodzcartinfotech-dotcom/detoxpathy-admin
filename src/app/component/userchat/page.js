@@ -50,6 +50,7 @@ import {
   BsVolumeMute,
 } from "react-icons/bs";
 import { db } from "../../../lib/firebase";
+import toast from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   doc,
@@ -59,6 +60,8 @@ import {
   getDocs,
   updateDoc,
   onSnapshot,
+  query,
+  where,
 } from "firebase/firestore";
 import { useMessages } from "../../../hooks/useMessages";
 import {
@@ -103,7 +106,16 @@ export default function ChatPage() {
   const [allBranches, setAllBranches] = useState([]);
   const [branchIdToName, setBranchIdToName] = useState({});
   const [selectedBranchId, setSelectedBranchId] = useState("");
+  // Mic error modal
+  const [showMicErrorModal, setShowMicErrorModal] = useState(false);
   const [showTransferModal, setShowTransferModal] = useState(false);
+  const [activeMessageMenuId, setActiveMessageMenuId] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    type: "delete", // "delete" | "restore"
+    msgId: null,
+    msgData: null
+  });
 
   const messagesEndRef = useRef(null);
   const [users, setUsers] = useState([]);
@@ -399,6 +411,8 @@ export default function ChatPage() {
               branchId: chatData.branchId || null,
               customerCareId: chatData.customerCareId || null,
               unreadCount,
+              deletedByDoctor: chatData.deletedByDoctor || false,
+              deletedByDoctorAt: chatData.deletedByDoctorAt || null,
             };
           });
 
@@ -685,6 +699,20 @@ export default function ChatPage() {
   // Recording
   const startVoiceRecording = async () => {
     try {
+      // Check if mediaDevices is available
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        setShowMicErrorModal(true);
+        return;
+      }
+
+      // Check if there are any audio input devices
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const audioDevices = devices.filter(device => device.kind === "audioinput");
+      if (audioDevices.length === 0) {
+        setShowMicErrorModal(true);
+        return;
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       const mime =
         MediaRecorder.isTypeSupported("audio/webm;codecs=opus") &&
@@ -701,7 +729,8 @@ export default function ChatPage() {
       setRecording(true);
       setIsListening(true);
     } catch (err) {
-      setPermissionError(true);
+      console.error("Recording error:", err);
+      setShowMicErrorModal(true);
     }
   };
 
@@ -709,6 +738,129 @@ export default function ChatPage() {
     mediaRecorder?.stop();
     setRecording(false);
     setIsListening(false);
+  };
+
+  const getMessageRef = async (msgId, msgData) => {
+    // 1. Try direct lookup with msgId
+    let msgRef = doc(db, "chats", chatId, "messages", msgId);
+    try {
+      const snap = await getDoc(msgRef);
+      if (snap.exists()) {
+        return msgRef;
+      }
+    } catch (e) {
+      console.warn("Direct lookup failed, will query:", e);
+    }
+
+    // 2. Try lookup with msgData.id (if different from msgId)
+    if (msgData?.id && msgData.id !== msgId) {
+      let fallbackRef = doc(db, "chats", chatId, "messages", msgData.id);
+      try {
+        const snap = await getDoc(fallbackRef);
+        if (snap.exists()) {
+          return fallbackRef;
+        }
+      } catch (e) {
+        console.warn("Fallback direct lookup failed:", e);
+      }
+    }
+
+    // 3. Query by internal id field
+    const targetId = msgData?.id || msgId;
+    if (targetId) {
+      try {
+        const q = query(
+          collection(db, "chats", chatId, "messages"),
+          where("id", "==", targetId)
+        );
+        const querySnap = await getDocs(q);
+        if (!querySnap.empty) {
+          return doc(db, "chats", chatId, "messages", querySnap.docs[0].id);
+        }
+      } catch (e) {
+        console.error("Query lookup failed:", e);
+      }
+    }
+
+    return msgRef;
+  };
+
+  const handleDeleteMessage = (msgId, msgData) => {
+    setConfirmModal({
+      isOpen: true,
+      type: "delete",
+      msgId,
+      msgData
+    });
+  };
+
+  const handleRestoreMessage = (msgId, msgData) => {
+    setConfirmModal({
+      isOpen: true,
+      type: "restore",
+      msgId,
+      msgData
+    });
+  };
+
+  const executeDeleteMessage = async (msgId, msgData) => {
+    if (!chatId) return;
+
+    try {
+      const msgRef = await getMessageRef(msgId, msgData);
+      await updateDoc(msgRef, {
+        deletedByDoctor: true,
+        deletedByDoctorAt: Date.now()
+      });
+
+      // Update parent chat's lastMessage if this was the last message of the chat
+      const chatRef = doc(db, "chats", chatId);
+      const chatDoc = await getDoc(chatRef);
+      if (chatDoc.exists()) {
+        const chatData = chatDoc.data();
+        if (chatData.lastMessage && chatData.lastMessage.createdAt === msgData.createdAt) {
+          await updateDoc(chatRef, {
+            "lastMessage.deletedByDoctor": true,
+            "lastMessage.deletedByDoctorAt": Date.now()
+          });
+        }
+      }
+
+      toast.success("Message deleted");
+    } catch (err) {
+      console.error("Failed to delete message:", err);
+      toast.error("Failed to delete message");
+    }
+  };
+
+  const executeRestoreMessage = async (msgId, msgData) => {
+    if (!chatId) return;
+
+    try {
+      const msgRef = await getMessageRef(msgId, msgData);
+      await updateDoc(msgRef, {
+        deletedByDoctor: false,
+        deletedByDoctorAt: null
+      });
+
+      // Update parent chat's lastMessage if this was the last message of the chat
+      const chatRef = doc(db, "chats", chatId);
+      const chatDoc = await getDoc(chatRef);
+      if (chatDoc.exists()) {
+        const chatData = chatDoc.data();
+        if (chatData.lastMessage && chatData.lastMessage.createdAt === msgData.createdAt) {
+          await updateDoc(chatRef, {
+            "lastMessage.deletedByDoctor": false,
+            "lastMessage.deletedByDoctorAt": null
+          });
+        }
+      }
+
+      toast.success("Message restored");
+    } catch (err) {
+      console.error("Failed to restore message:", err);
+      toast.error("Failed to restore message");
+    }
   };
 
   // Media playback controls
@@ -749,6 +901,17 @@ export default function ChatPage() {
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    const handleOutsideClick = (e) => {
+      if (e.target.closest(".message-menu-btn")) return;
+      setActiveMessageMenuId(null);
+    };
+    document.addEventListener("click", handleOutsideClick);
+    return () => {
+      document.removeEventListener("click", handleOutsideClick);
+    };
+  }, []);
 
   return (
     <RoleGuard allow={["Admin", "subadmin"]} permission="show supports page">
@@ -856,12 +1019,13 @@ export default function ChatPage() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
                           <p
-                            className={`text-base font-semibold truncate ${selectedUser?.id === user.id
+                            className={`text-base font-semibold truncate flex items-center gap-2 ${selectedUser?.id === user.id
                                 ? "text-black"
                                 : "text-gray-800"
                               }`}
                           >
-                            {user.name}
+                            <span>{user.name}</span>
+
                           </p>
                           <span
                             className={`text-xs ${selectedUser?.id === user.id
@@ -896,7 +1060,9 @@ export default function ChatPage() {
                               : "text-gray-500"
                             }`}
                         >
-                          {user.lastMessage?.type === "voice"
+                          {user.lastMessage?.deletedByDoctor ? (
+                            <span className="italic text-gray-400">🚫 Message deleted</span>
+                          ) : user.lastMessage?.type === "voice"
                             ? "🎤 Voice message"
                             : user.lastMessage?.type === "image"
                               ? "📷 Image"
@@ -937,9 +1103,12 @@ export default function ChatPage() {
                     </div>
                   </div>
                   <div>
-                    <h3 className="text-lg font-bold text-gray-800">
-                      {selectedUser.name}
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-lg font-bold text-gray-800">
+                        {selectedUser.name}
+                      </h3>
+
+                    </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -949,14 +1118,13 @@ export default function ChatPage() {
                   >
                     Transfer Appointment
                   </button>
-                  {/* <button className="p-3 rounded-full hover:bg-gray-100 transition-colors">
-                    <BsThreeDotsVertical className="text-gray-600" size={20} />
-                  </button> */}
+
                 </div>
               </div>
 
               {/* Messages Area */}
               <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gradient-to-b from-transparent to-yellow-50/30">
+
                 {messagesError ? (
                   <div className="flex flex-col items-center justify-center h-full text-red-500">
                     <div className="w-24 h-24 bg-red-100 rounded-full flex items-center justify-center mb-4">
@@ -985,16 +1153,75 @@ export default function ChatPage() {
                           }`}
                       >
                         <div
-                          className={`group relative max-w-[75%] transition-all duration-300 ${msg.senderId === selectedUser?.customerCareId
-                              ? "bg-gradient-to-r from-yellow-400 to-amber-300 text-black"
-                              : "bg-white/80 backdrop-blur-sm text-gray-800"
-                            } rounded-3xl shadow-lg hover:shadow-xl`}
+                          className={`group relative max-w-[75%] transition-all duration-300 ${
+                            msg.deletedByDoctor
+                              ? "bg-gray-50 border border-gray-200 text-gray-400 shadow-sm"
+                              : msg.senderId === selectedUser?.customerCareId
+                                ? "bg-gradient-to-r from-yellow-400 to-amber-300 text-black shadow-lg"
+                                : "bg-white/80 backdrop-blur-sm text-gray-800 shadow-lg"
+                          } hover:shadow-xl rounded-3xl`}
                         >
+                          {/* Message Action Menu (Inside bubble at top right) */}
+                          <div className="absolute top-2.5 right-2.5 z-20">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveMessageMenuId(
+                                  activeMessageMenuId === msg.id ? null : msg.id
+                                );
+                              }}
+                              className={`message-menu-btn p-1 rounded-full transition-all duration-200 shadow-sm border border-black/5 ${
+                                msg.senderId === selectedUser?.customerCareId
+                                  ? "bg-black/10 hover:bg-black/20 text-black/70 hover:text-black"
+                                  : "bg-white hover:bg-gray-50 text-gray-500 hover:text-gray-800"
+                              }`}
+                            >
+                              <BsThreeDotsVertical size={13} />
+                            </button>
+                            
+                            {activeMessageMenuId === msg.id && (
+                              <div
+                                className="absolute mt-1 w-32 bg-white rounded-xl shadow-2xl border border-gray-150 z-50 overflow-hidden text-left right-0 top-full"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                {msg.deletedByDoctor ? (
+                                  <button
+                                    onClick={() => {
+                                      handleRestoreMessage(msg.docId || msg.id, msg);
+                                      setActiveMessageMenuId(null);
+                                    }}
+                                    className="w-full text-left px-4 py-3 text-sm text-emerald-600 hover:bg-emerald-50 transition-colors font-medium flex items-center gap-1.5"
+                                  >
+                                    <span>✅</span> Restore
+                                  </button>
+                                ) : (
+                                  <button
+                                    onClick={() => {
+                                      handleDeleteMessage(msg.docId || msg.id, msg);
+                                      setActiveMessageMenuId(null);
+                                    }}
+                                    className="w-full text-left px-4 py-3 text-sm text-rose-600 hover:bg-rose-50 transition-colors font-medium flex items-center gap-1.5"
+                                  >
+                                    <span>🗑️</span> Delete
+                                  </button>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Deleted Message Banner */}
+                          {msg.deletedByDoctor && (
+                            <div className="px-4 pt-3 pb-1 pr-10 text-[11px] font-semibold text-gray-500 flex items-center gap-1.5 bg-gray-200/50 rounded-t-3xl border-b border-gray-200/30">
+                              <span>🚫</span>
+                              <span>Message deleted for user</span>
+                            </div>
+                          )}
+
                           {/* Message Content */}
-                          <div className="p-4">
+                          <div className={`p-4 ${msg.deletedByDoctor ? "opacity-75" : ""}`}>
                             {msg.type === "voice" &&
                               (msg.audioUrl || msg.mediaUrl) ? (
-                              <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-3 pr-6">
                                 <button
                                   onClick={() => toggleAudioPlayback(msg.id)}
                                   className="p-3 rounded-full bg-white/20 hover:bg-white/30 transition-colors"
@@ -1031,7 +1258,7 @@ export default function ChatPage() {
                               </div>
                             ) : msg.type === "video" &&
                               (msg.audioUrl || msg.mediaUrl) ? (
-                              <div className="space-y-2">
+                              <div className="space-y-2 pr-6">
                                 <div className="relative">
                                   <video
                                     src={resolveAudioUrl(
@@ -1050,7 +1277,7 @@ export default function ChatPage() {
                               </div>
                             ) : msg.type === "image" &&
                               (msg.audioUrl || msg.mediaUrl) ? (
-                              <div className="space-y-2">
+                              <div className="space-y-2 pr-6">
                                 <img
                                   src={resolveAudioUrl(
                                     msg.audioUrl || msg.mediaUrl
@@ -1071,7 +1298,7 @@ export default function ChatPage() {
                               </div>
                             ) : msg.type === "file" &&
                               (msg.audioUrl || msg.mediaUrl || msg.fileUrl) ? (
-                              <div className="flex items-center gap-3 p-3 bg-white/20 rounded-2xl">
+                              <div className="flex items-center gap-3 p-3 bg-white/20 rounded-2xl pr-6">
                                 {getFileIcon(msg.fileType)}
                                 <div className="flex-1 min-w-0">
                                   <p className="text-sm font-medium truncate">
@@ -1095,7 +1322,7 @@ export default function ChatPage() {
                                 </a>
                               </div>
                             ) : (
-                              <p className="text-sm break-words leading-relaxed">
+                              <p className="text-sm break-words leading-relaxed pr-6">
                                 {msg.text}
                               </p>
                             )}
@@ -1329,6 +1556,106 @@ export default function ChatPage() {
         selectedUser={selectedUser}
         allBranches={allBranches}
       />
+
+      {/* Custom Delete/Restore Confirmation Modal */}
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100 animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h3 className="text-lg font-bold text-gray-800">
+                {confirmModal.type === "delete" ? "Delete Message" : "Restore Message"}
+              </h3>
+              <button
+                onClick={() => setConfirmModal({ isOpen: false, type: "delete", msgId: null, msgData: null })}
+                className="p-1.5 hover:bg-gray-200 rounded-full transition-colors text-gray-400 hover:text-gray-600"
+              >
+                <FiX size={18} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 text-center">
+              <div className="mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-4 bg-emerald-100 text-emerald-600">
+                {confirmModal.type === "delete" ? (
+                  <span className="text-xl">🗑️</span>
+                ) : (
+                  <span className="text-xl">✅</span>
+                )}
+              </div>
+              <p className="text-gray-600 text-sm leading-relaxed mb-6">
+                {confirmModal.type === "delete"
+                  ? "Are you sure you want to delete this message? It will be hidden from the user."
+                  : "Are you sure you want to restore this message? It will be visible to the user again."}
+              </p>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setConfirmModal({ isOpen: false, type: "delete", msgId: null, msgData: null })}
+                  className="px-4 py-2 border border-gray-200 rounded-xl text-gray-600 hover:bg-gray-50 text-sm font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={async () => {
+                    const { type, msgId, msgData } = confirmModal;
+                    setConfirmModal({ isOpen: false, type: "delete", msgId: null, msgData: null });
+                    if (type === "delete") {
+                      await executeDeleteMessage(msgId, msgData);
+                    } else {
+                      await executeRestoreMessage(msgId, msgData);
+                    }
+                  }}
+                  className="px-5 py-2 rounded-xl text-white text-sm font-medium transition-colors bg-emerald-500 hover:bg-emerald-600 shadow-lg shadow-emerald-500/20"
+                >
+                  Confirm
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Microphone Not Available Error Modal */}
+      {showMicErrorModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all scale-100 animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="p-5 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+              <h3 className="text-lg font-bold text-gray-800">
+                Microphone Not Available
+              </h3>
+              <button
+                onClick={() => setShowMicErrorModal(false)}
+                className="p-1.5 hover:bg-gray-200 rounded-full transition-colors text-gray-400 hover:text-gray-600"
+              >
+                <FiX size={18} />
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="p-6 text-center">
+              <div className="mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-4 bg-red-100 text-red-600">
+                <FiAlertCircle size={24} />
+              </div>
+              <p className="text-gray-600 text-sm leading-relaxed mb-6">
+                We couldn't find a microphone on your device. Please connect a microphone and try again, or check your microphone permissions in your browser settings.
+              </p>
+
+              {/* Action Buttons */}
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowMicErrorModal(false)}
+                  className="px-5 py-2 rounded-xl text-white text-sm font-medium transition-colors bg-yellow-500 hover:bg-yellow-600 shadow-lg shadow-yellow-500/20"
+                >
+                  Okay
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
     </RoleGuard>
   );

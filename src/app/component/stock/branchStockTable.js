@@ -1,7 +1,7 @@
 "use client";
 import React from "react";
 
-const BranchStockTable = ({ stocks, loading, onEdit }) => {
+const BranchStockTable = ({ stocks, loading }) => {
   if (loading && stocks.length === 0) {
     return (
       <div className="flex justify-center py-10">
@@ -23,6 +23,8 @@ const BranchStockTable = ({ stocks, loading, onEdit }) => {
             <th className="px-4 py-3 font-black text-center">Total</th>
             <th className="px-4 py-3 font-black text-center">Sold</th>
             <th className="px-4 py-3 font-black text-center">Available</th>
+            <th className="px-4 py-3 font-black text-center">Expiry</th>
+            <th className="px-4 py-3 font-black text-center">Breakage</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">
@@ -31,12 +33,12 @@ const BranchStockTable = ({ stocks, loading, onEdit }) => {
             const available = stock.available || 0;
             const isLow = available < 10 && available > 0;
             const isOutOfStock = available <= 0;
+            const isExpired = stock.expiry && new Date(stock.expiry) < new Date();
 
             return (
               <tr 
                 key={stock._id} 
-                className="group hover:bg-gray-50/50 transition-colors cursor-pointer"
-                onClick={() => onEdit(stock)}
+                className="group hover:bg-gray-50/50 transition-colors"
               >
                 <td className="py-4">
                   <div className="flex items-center gap-3">
@@ -63,6 +65,14 @@ const BranchStockTable = ({ stocks, loading, onEdit }) => {
                   <span className={`font-black ${isOutOfStock || isLow ? "text-red-600" : "text-gray-900"}`}>
                     {available.toLocaleString()}
                   </span>
+                </td>
+                <td className={`py-4 text-center font-bold ${isExpired ? "text-red-600" : "text-gray-700"}`}>
+                  {stock.expiry 
+                    ? new Date(stock.expiry).toLocaleDateString('en-GB') 
+                    : "-"}
+                </td>
+                <td className="py-4 text-center font-bold text-gray-700">
+                  {(stock.breakage || 0).toLocaleString()}
                 </td>
               </tr>
             );

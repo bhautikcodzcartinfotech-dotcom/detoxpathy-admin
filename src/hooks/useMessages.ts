@@ -26,7 +26,7 @@ export function useMessages(chatId?: string) {
     const unsub = onSnapshot(
       q, 
       (snap) => {
-        const newMessages = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
+        const newMessages = snap.docs.map((d: any) => ({ id: d.id, ...d.data(), docId: d.id }));
         setMessages(newMessages);
         setLoading(false);
         setError(null);

@@ -79,6 +79,19 @@ const getTodayInKolkata = () => {
 const getNowInKolkata = () =>
   new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
 
+const getMaxBookingDateInKolkata = (advanceDays) => {
+  const todayStr = getTodayInKolkata();
+  const [year, month, day] = todayStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  const days = typeof advanceDays !== 'undefined' && advanceDays !== null ? Number(advanceDays) : 30;
+  date.setDate(date.getDate() + (isNaN(days) ? 30 : days) - 1);
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0')
+  ].join('-');
+};
+
 
 const AppointmentPage = () => {
   const router = useRouter();
@@ -128,6 +141,8 @@ const AppointmentPage = () => {
   const [transferActionLoadingId, setTransferActionLoadingId] = useState(null);
 
   const [currency, setCurrency] = useState("₹");
+  const [advanceBookingDays, setAdvanceBookingDays] = useState(30);
+  const [bookingSlotDays, setBookingSlotDays] = useState(0);
   const localVideoRef = useRef(null);
   const remoteVideoGridRef = useRef(null);
   const agoraSdkPromiseRef = useRef(null);
@@ -433,8 +448,16 @@ const AppointmentPage = () => {
       } else if (response && response._id) {
         settingsData = response;
       }
-      if (settingsData && settingsData.currency) {
-        setCurrency(settingsData.currency);
+      if (settingsData) {
+        if (settingsData.currency) {
+          setCurrency(settingsData.currency);
+        }
+        if (typeof settingsData.advanceBookingDays !== "undefined") {
+          setAdvanceBookingDays(settingsData.advanceBookingDays);
+        }
+        if (typeof settingsData.bookingSlotDays !== "undefined") {
+          setBookingSlotDays(settingsData.bookingSlotDays);
+        }
       }
     } catch (error) {
       console.error("Failed to fetch settings:", error);
@@ -1266,6 +1289,30 @@ const AppointmentPage = () => {
         .slice(0, 1);
     })(),
   };
+
+  const getBookingBounds = () => {
+    const today = getTodayInKolkata();
+    if (Number(bookingSlotDays) > 0) {
+      // Calculate end date for booking slot
+      const [year, month, day] = today.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      date.setDate(date.getDate() + Number(bookingSlotDays) - 1);
+      const endDateStr = [
+        date.getFullYear(),
+        String(date.getMonth() + 1).padStart(2, '0'),
+        String(date.getDate()).padStart(2, '0')
+      ].join('-');
+
+      return { min: today, max: endDateStr };
+    }
+
+    return {
+      min: today,
+      max: getMaxBookingDateInKolkata(advanceBookingDays)
+    };
+  };
+
+  const { min: bookingMinDate, max: bookingMaxDate } = getBookingBounds();
 
   return (
     <RoleGuard allow={["Admin", "subadmin"]} permission="show appointments page">
@@ -2271,7 +2318,8 @@ const AppointmentPage = () => {
                     <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                     <input
                       type="date"
-                      min={getTodayInKolkata()}
+                      min={bookingMinDate}
+                      max={bookingMaxDate}
                       value={rescheduleData.date}
                       onChange={(e) => setRescheduleData(prev => ({ ...prev, date: e.target.value }))}
                       className="w-full h-14 pl-12 pr-4 bg-gray-50 rounded-2xl border border-transparent focus:border-teal-500 focus:bg-white focus:outline-none text-sm font-bold text-gray-700 transition-all"

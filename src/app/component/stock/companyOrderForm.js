@@ -128,7 +128,7 @@ const CompanyOrderForm = ({ products, plans, onSubmit, onCancel, loading }) => {
           <div key={`plan-${idx}`} className="flex items-center justify-between p-3 border-2 border-yellow-200 rounded-xl bg-yellow-50 shadow-sm animate-in fade-in slide-in-from-left-2">
             <div className="flex flex-col">
               <span className="font-bold text-yellow-800">PLAN: {p.name}</span>
-              <span className="text-xs text-yellow-600 font-semibold">₹{p.price.toLocaleString()} / unit (Branch Price)</span>
+              {/* <span className="text-xs text-yellow-600 font-semibold">₹{p.price.toLocaleString()} / unit (Branch Price)</span> */}
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center border-2 border-yellow-200 rounded-lg bg-white overflow-hidden shadow-sm">
@@ -163,7 +163,7 @@ const CompanyOrderForm = ({ products, plans, onSubmit, onCancel, loading }) => {
           <div key={`prod-${idx}`} className="flex items-center justify-between p-3 border rounded-xl bg-gray-50 shadow-sm animate-in fade-in slide-in-from-left-2">
             <div className="flex flex-col">
               <span className="font-semibold text-gray-800">{p.name}</span>
-              <span className="text-xs text-gray-500">₹{p.price.toLocaleString()} / unit (Branch Price)</span>
+              {/* <span className="text-xs text-gray-500">₹{p.price.toLocaleString()} / unit (Branch Price)</span> */}
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center border rounded-lg bg-white overflow-hidden shadow-sm">
@@ -195,14 +195,14 @@ const CompanyOrderForm = ({ products, plans, onSubmit, onCancel, loading }) => {
         ))}
       </div>
 
-      {(selectedProducts.length > 0 || selectedPlans.length > 0) && (
+      {/* {(selectedProducts.length > 0 || selectedPlans.length > 0) && (
         <div className="p-4 bg-[#134D41]/5 rounded-xl border border-[#134D41]/20">
           <div className="flex justify-between items-center text-lg font-bold">
             <span className="text-gray-700 font-black tracking-tighter uppercase text-sm">Grand Total (Incl. Discounts):</span>
             <span className="text-[#134D41] text-2xl tracking-tighter">₹{totalAmount.toLocaleString()}</span>
           </div>
         </div>
-      )}
+      )} */}
 
       <div className="flex justify-end gap-3 pt-6 border-t mt-8">
         <button

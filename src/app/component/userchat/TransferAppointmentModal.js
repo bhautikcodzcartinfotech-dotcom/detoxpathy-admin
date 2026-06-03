@@ -6,7 +6,30 @@ import {
   generateSlots,
   requestTransferAppointment,
   listSubAdmins,
+  getSetting,
 } from "../../../Api/AllApi";
+
+const getTodayInKolkata = () => {
+  const d = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, '0'),
+    String(d.getDate()).padStart(2, '0')
+  ].join('-');
+};
+
+const getMaxBookingDateInKolkata = (advanceDays) => {
+  const todayStr = getTodayInKolkata();
+  const [year, month, day] = todayStr.split('-').map(Number);
+  const date = new Date(year, month - 1, day);
+  const days = typeof advanceDays !== 'undefined' && advanceDays !== null ? Number(advanceDays) : 30;
+  date.setDate(date.getDate() + (isNaN(days) ? 30 : days) - 1);
+  return [
+    date.getFullYear(),
+    String(date.getMonth() + 1).padStart(2, '0'),
+    String(date.getDate()).padStart(2, '0')
+  ].join('-');
+};
 
 export default function TransferAppointmentModal({ isOpen, onClose, selectedUser, allBranches }) {
   const [loading, setLoading] = useState(false);
@@ -24,6 +47,8 @@ export default function TransferAppointmentModal({ isOpen, onClose, selectedUser
   const [loadingDoctors, setLoadingDoctors] = useState(false);
   const [selectedDoctorId, setSelectedDoctorId] = useState("");
   const [transferring, setTransferring] = useState(false);
+  const [advanceBookingDays, setAdvanceBookingDays] = useState(30);
+  const [bookingSlotDays, setBookingSlotDays] = useState(0);
 
   // Track whether modal was previously open to detect open event (avoid re-init on every render)
   const wasOpenRef = useRef(false);
@@ -51,6 +76,35 @@ export default function TransferAppointmentModal({ isOpen, onClose, selectedUser
       wasOpenRef.current = false;
     }
   }, [isOpen, selectedUser?.id]);
+
+  useEffect(() => {
+    const fetchDays = async () => {
+      try {
+        const response = await getSetting();
+        let settingsData;
+        if (response && response.data) {
+          settingsData = response.data;
+        } else if (response && response.setting) {
+          settingsData = response.setting;
+        } else if (response && response._id) {
+          settingsData = response;
+        }
+        if (settingsData) {
+          if (typeof settingsData.advanceBookingDays !== "undefined") {
+            setAdvanceBookingDays(settingsData.advanceBookingDays);
+          }
+          if (typeof settingsData.bookingSlotDays !== "undefined") {
+            setBookingSlotDays(settingsData.bookingSlotDays);
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    if (isOpen) {
+      fetchDays();
+    }
+  }, [isOpen]);
 
   const fetchUserAppointments = async (userId) => {
     const id = userId || selectedUser?.id;
@@ -161,6 +215,28 @@ export default function TransferAppointmentModal({ isOpen, onClose, selectedUser
     setRequestSent(false);
     onClose();
   };
+
+  const getBookingBounds = () => {
+    const today = getTodayInKolkata();
+    if (Number(bookingSlotDays) > 0) {
+      // Window = today → today + bookingSlotDays - 1
+      const [year, month, day] = today.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
+      date.setDate(date.getDate() + Number(bookingSlotDays) - 1);
+      const endDateStr = [
+        date.getFullYear(),
+        String(date.getMonth() + 1).padStart(2, '0'),
+        String(date.getDate()).padStart(2, '0')
+      ].join('-');
+      return { min: today, max: endDateStr };
+    }
+    return {
+      min: today,
+      max: getMaxBookingDateInKolkata(advanceBookingDays)
+    };
+  };
+
+  const { min: bookingMinDate, max: bookingMaxDate } = getBookingBounds();
 
   if (!isOpen) return null;
 
@@ -280,7 +356,8 @@ export default function TransferAppointmentModal({ isOpen, onClose, selectedUser
                   <input
                     type="date"
                     value={transferDate}
-                    min={new Date().toISOString().split("T")[0]}
+                    min={bookingMinDate}
+                    max={bookingMaxDate}
                     onChange={(e) => { setTransferDate(e.target.value); setSelectedSlot(null); setSlots([]); }}
                     className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-yellow-400 outline-none"
                   />

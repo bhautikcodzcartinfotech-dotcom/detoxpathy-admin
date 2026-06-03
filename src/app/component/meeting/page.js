@@ -12,6 +12,7 @@ import {
     updateMeetingRecording,
     syncMeetingRecording,
     uploadMeetingRecordingFile,
+    listSubAdmins,
     API_BASE,
     API_HOST
 } from "@/Api/AllApi";
@@ -42,6 +43,13 @@ export default function MeetingPage() {
     const [topic, setTopic] = useState("");
     const [scheduledAt, setScheduledAt] = useState("");
 
+    // Doctor selection state
+    const [doctors, setDoctors] = useState([]);
+    const [allDoctorsSelected, setAllDoctorsSelected] = useState(true);
+    const [selectedDoctors, setSelectedDoctors] = useState([]);
+    const [doctorDropdownOpen, setDoctorDropdownOpen] = useState(false);
+    const doctorDropdownRef = React.useRef(null);
+
     // Recording modal states (both URL pasting and direct MP4 uploading fallbacks)
     const [recordingModalOpen, setRecordingModalOpen] = useState(false);
     const [selectedMeeting, setSelectedMeeting] = useState(null);
@@ -65,9 +73,76 @@ export default function MeetingPage() {
         }
     };
 
+    const fetchDoctors = async () => {
+        try {
+            const data = await listSubAdmins();
+            setDoctors(Array.isArray(data) ? data : []);
+        } catch (err) {
+            console.error("Failed to load doctors:", err);
+        }
+    };
+
     useEffect(() => {
         fetchData();
+        if (isSuperAdmin) {
+            fetchDoctors();
+        }
+    }, [role]);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (doctorDropdownRef.current && !doctorDropdownRef.current.contains(event.target)) {
+                setDoctorDropdownOpen(false);
+            }
+        };
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    const toggleDoctor = (docId) => {
+        if (allDoctorsSelected) {
+            setAllDoctorsSelected(false);
+            setSelectedDoctors([docId]);
+        } else {
+            setSelectedDoctors(prev => {
+                if (prev.includes(docId)) {
+                    const next = prev.filter(id => id !== docId);
+                    if (next.length === 0) {
+                        setAllDoctorsSelected(true);
+                    }
+                    return next;
+                } else {
+                    return [...prev, docId];
+                }
+            });
+        }
+    };
+
+    const toggleAllDoctors = () => {
+        setAllDoctorsSelected(true);
+        setSelectedDoctors([]);
+    };
+
+    const getDoctorDropdownLabel = () => {
+        if (allDoctorsSelected) return "All Doctors";
+        if (selectedDoctors.length === 0) return "Select Doctors";
+        const selectedNames = doctors
+            .filter(d => selectedDoctors.includes(d._id))
+            .map(d => d.username);
+        if (selectedNames.length <= 2) {
+            return selectedNames.join(", ");
+        }
+        return `${selectedNames.length} Doctors Selected`;
+    };
+
+    const handleCloseDrawer = () => {
+        setTopic("");
+        setScheduledAt("");
+        setAllDoctorsSelected(true);
+        setSelectedDoctors([]);
+        setDoctorDropdownOpen(false);
+        setDrawerOpen(false);
+    };
 
     const handleCreate = async (e) => {
         e.preventDefault();
@@ -80,16 +155,16 @@ export default function MeetingPage() {
             setBtnLoading(true);
             const payload = {
                 topic: topic.trim(),
-                scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined
+                scheduledAt: scheduledAt ? new Date(scheduledAt).toISOString() : undefined,
+                allDoctors: allDoctorsSelected,
+                allowedDoctors: selectedDoctors
             };
             const response = await createMeeting(payload);
             toast.success("Meeting scheduled successfully. It is set to record automatically.");
             setMeetings([response, ...meetings]);
             
             // Reset form
-            setTopic("");
-            setScheduledAt("");
-            setDrawerOpen(false);
+            handleCloseDrawer();
         } catch (err) {
             toast.error(err?.response?.data?.message || "Failed to schedule meeting");
         } finally {
@@ -270,7 +345,20 @@ export default function MeetingPage() {
                                                         </div>
                                                         <div>
                                                             <span className="font-semibold text-gray-900 block">{meeting.topic}</span>
-                                                            <span className="text-xs text-gray-400">ID: {meeting._id.substring(meeting._id.length - 8).toUpperCase()}</span>
+                                                            <div className="flex items-center gap-1.5 mt-0.5">
+                                                                <span className="text-xs text-gray-400">ID: {meeting._id.substring(meeting._id.length - 8).toUpperCase()}</span>
+                                                                <span className="text-gray-300">•</span>
+                                                                <span 
+                                                                    className="text-xs font-semibold text-[#134D41] cursor-help"
+                                                                    title={
+                                                                        !meeting.allDoctors && meeting.allowedDoctors?.length > 0
+                                                                            ? meeting.allowedDoctors.map(d => d.username).join(", ")
+                                                                            : undefined
+                                                                    }
+                                                                >
+                                                                    {meeting.allDoctors ? "All Doctors Allowed" : `${meeting.allowedDoctors?.length || 0} Doctors Allowed`}
+                                                                </span>
+                                                            </div>
                                                         </div>
                                                     </div>
                                                 </td>
@@ -415,16 +503,16 @@ export default function MeetingPage() {
                 )}
 
                 {/* Create Meeting Drawer */}
-                <Drawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)}>
+                <Drawer isOpen={drawerOpen} onClose={handleCloseDrawer}>
                     <div className="flex flex-col h-full bg-white">
                         {/* Header */}
                         <div className="flex items-center justify-between pb-6 mb-6 border-b border-gray-100">
                             <div>
                                 <h2 className="text-2xl font-bold text-gray-900">Schedule Consultation</h2>
-                                <p className="text-xs text-gray-400 mt-1">Host a video session open to all doctors.</p>
+                                <p className="text-xs text-gray-400 mt-1">Host a video session for selected doctors.</p>
                             </div>
                             <button 
-                                onClick={() => setDrawerOpen(false)}
+                                onClick={handleCloseDrawer}
                                 className="p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-all duration-200"
                             >
                                 <MdClose size={22} />
@@ -458,11 +546,79 @@ export default function MeetingPage() {
                                 />
                             </div>
 
+                            {/* Doctor Selection Input */}
+                            <div className="space-y-2 relative" ref={doctorDropdownRef}>
+                                <label className="text-sm font-bold text-gray-700 block">Select Doctors</label>
+                                <div
+                                    onClick={() => setDoctorDropdownOpen(!doctorDropdownOpen)}
+                                    className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-[#134D41]/20 focus:border-[#134D41] transition-all duration-200 text-sm placeholder-gray-400 text-gray-700 bg-white flex justify-between items-center cursor-pointer select-none"
+                                >
+                                    <span className="truncate">{getDoctorDropdownLabel()}</span>
+                                    <svg
+                                        className={`w-4 h-4 flex-shrink-0 text-gray-400 transition-transform duration-300 ${
+                                            doctorDropdownOpen ? "rotate-180" : "rotate-0"
+                                        }`}
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth={2.5}
+                                            d="M19 9l-7 7-7-7"
+                                        />
+                                    </svg>
+                                </div>
+
+                                {doctorDropdownOpen && (
+                                    <div className="absolute left-0 z-50 w-full mt-1 bg-white border border-gray-200 rounded-2xl shadow-xl max-h-60 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
+                                        <ul className="py-1">
+                                            <li
+                                                onClick={toggleAllDoctors}
+                                                className={`px-4 py-2.5 transition-all flex items-center gap-3 cursor-pointer hover:bg-gray-50 text-sm ${
+                                                    allDoctorsSelected ? "font-bold text-[#134D41] bg-emerald-50/50" : "text-gray-600"
+                                                }`}
+                                            >
+                                                <input
+                                                    type="checkbox"
+                                                    checked={allDoctorsSelected}
+                                                    onChange={() => {}}
+                                                    className="rounded text-[#134D41] focus:ring-[#134D41] cursor-pointer"
+                                                />
+                                                <span className="select-none">All Doctors</span>
+                                            </li>
+                                            <div className="border-t border-gray-100 my-1"></div>
+                                            {doctors.map((doc) => {
+                                                const isChecked = selectedDoctors.includes(doc._id);
+                                                return (
+                                                    <li
+                                                        key={doc._id}
+                                                        onClick={() => toggleDoctor(doc._id)}
+                                                        className={`px-4 py-2.5 transition-all flex items-center gap-3 cursor-pointer hover:bg-gray-50 text-sm ${
+                                                            isChecked ? "font-bold text-[#134D41] bg-emerald-50/50" : "text-gray-600"
+                                                        }`}
+                                                    >
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isChecked}
+                                                            onChange={() => {}}
+                                                            className="rounded text-[#134D41] focus:ring-[#134D41] cursor-pointer"
+                                                        />
+                                                        <span className="select-none">{doc.username} ({doc.email})</span>
+                                                    </li>
+                                                );
+                                            })}
+                                        </ul>
+                                    </div>
+                                )}
+                            </div>
+
                             {/* Submit Button */}
                             <div className="mt-auto pt-6 border-t border-gray-100 flex gap-3">
                                 <button
                                     type="button"
-                                    onClick={() => setDrawerOpen(false)}
+                                    onClick={handleCloseDrawer}
                                     className="flex-1 py-3 px-4 border border-gray-200 text-gray-500 rounded-xl hover:bg-gray-50 transition-all duration-200 font-semibold text-sm"
                                 >
                                     Cancel

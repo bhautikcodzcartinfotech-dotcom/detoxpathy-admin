@@ -852,6 +852,42 @@ const ReportsPage = () => {
     };
   }, [viewType, filteredData]);
 
+  // Appointment Conversion Stats Calculation
+  const appointmentConversionStats = useMemo(() => {
+    if (reportType !== "appointments" || !filteredData.length || !allUsersList.length) {
+      return {
+        totalAppointments: 0,
+        usersWithPlan: 0,
+        conversionPercentage: 0
+      };
+    }
+
+    const uniqueUserIdsFromAppointments = new Set();
+    filteredData.forEach(appointment => {
+      const userId = typeof appointment.userId === 'object' ? appointment.userId?._id : appointment.userId;
+      if (userId) uniqueUserIdsFromAppointments.add(String(userId));
+    });
+
+    let usersWithPlan = 0;
+    uniqueUserIdsFromAppointments.forEach(userId => {
+      const user = allUsersList.find(u => String(u._id) === userId);
+      if (user && (user.plan || user.planId)) {
+        usersWithPlan++;
+      }
+    });
+
+    const conversionPercentage = uniqueUserIdsFromAppointments.size > 0 
+      ? ((usersWithPlan / uniqueUserIdsFromAppointments.size) * 100).toFixed(1) 
+      : 0;
+
+    return {
+      totalAppointments: filteredData.length,
+      totalUniqueUsers: uniqueUserIdsFromAppointments.size,
+      usersWithPlan,
+      conversionPercentage
+    };
+  }, [reportType, filteredData, allUsersList]);
+
   const reportOptions = [
     { label: "All Users", value: "users" },
     { label: "Appointments", value: "appointments" },
@@ -1900,7 +1936,7 @@ const ReportsPage = () => {
 
   return (
     <RoleGuard allow={["Admin", "subadmin"]} permission="show reports page">
-      <div className="w-full h-full px-6 py-6 flex flex-col gap-6 bg-gray-50/30">
+      <div className="w-full h-full px-6 py-6 flex flex-col gap-8 bg-gray-50/30">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-8 bg-white rounded-[2rem] border border-gray-100 shadow-sm relative z-40 overflow-visible">
           <div className="absolute inset-0 overflow-hidden rounded-[2rem] pointer-events-none">
             <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full -mr-16 -mt-16 blur-3xl opacity-50"></div>
@@ -1942,239 +1978,7 @@ const ReportsPage = () => {
           </div>
         </div>
 
-        {/* Summary Stat Cards - Row 1 */}
-        {viewType === "videoReports" ? (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
-              <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500"></div>
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Total Users</span>
-                <div className="flex items-end gap-2 mt-2">
-                  <span className="text-4xl font-black text-gray-900 leading-none">{videoReportStats.totalUsers}</span>
-                </div>
-                <div className="mt-4 flex items-center gap-2">
-                  <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
-                    <div className="h-full bg-indigo-500 w-full opacity-20"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
-              <div className="absolute top-0 left-0 w-full h-1 bg-purple-500"></div>
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Avg Watch Percentage</span>
-                <div className="flex items-end gap-2 mt-2">
-                  <span className="text-4xl font-black text-purple-600 leading-none">{videoReportStats.avgWatchPercentage}%</span>
-                </div>
-                <div className="mt-4 flex items-center gap-2">
-                  <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
-                    <div className="h-full bg-purple-500 transition-all placeholder:text-black duration-500" style={{
-                      width: `${Math.min(100, Number(videoReportStats.avgWatchPercentage))}%`
-                    }}></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
-              <div className="absolute top-0 left-0 w-full h-1 bg-green-500"></div>
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Completed</span>
-                <div className="flex items-end gap-2 mt-2">
-                  <span className="text-4xl font-black text-green-600 leading-none">{videoReportStats.completedCount}</span>
-                  <div className="flex flex-col ml-2">
-                    <span className="text-xs text-black font-bold text-gray-400 uppercase tracking-tighter leading-tight">
-                      {filteredData.length > 0 ? ((videoReportStats.completedCount / filteredData.length) * 100).toFixed(1) : 0}%
-                    </span>
-                  </div>
-                </div>
-                <div className="mt-4 flex items-center gap-2">
-                  <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
-                    <div className="h-full bg-green-500 transition-all placeholder:text-black duration-500" style={{
-                      width: `${filteredData.length > 0 ? (videoReportStats.completedCount / filteredData.length) * 100 : 0}%`
-                    }}></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
-              <div className="absolute top-0 left-0 w-full h-1 bg-amber-500"></div>
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Total Watch Time</span>
-                <div className="flex items-end gap-2 mt-2">
-                  <span className="text-4xl font-black text-amber-600 leading-none">
-                    {Math.floor(videoReportStats.totalWatchedSeconds / 60)}m
-                  </span>
-                  <span className="text-lg font-bold text-gray-500">
-                    {videoReportStats.totalWatchedSeconds % 60}s
-                  </span>
-                </div>
-                <div className="mt-4 flex items-center gap-2">
-                  <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
-                    <div className="h-full bg-amber-500 w-full opacity-20"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : viewType !== "highest_selling_products" && (
-          <>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
-            <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500"></div>
-            <div className="flex flex-col gap-1">
-              <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Total Results</span>
-              <div className="flex items-end gap-2 mt-2">
-                <span className="text-4xl font-black text-gray-900 leading-none">{filteredData.length}</span>
-                <div className="flex flex-col ml-2">
-                  <span className="text-xs text-black font-bold text-gray-400 uppercase tracking-tighter leading-tight">Records Found</span>
-                  <span className="text-xs text-black font-bold text-indigo-500 uppercase tracking-tighter leading-tight">
-                    {totalUserCount > 0 ? ((filteredData.length / totalUserCount) * 100).toFixed(1) : 0}% of All Users
-                  </span>
-                </div>
-              </div>
-              <div className="mt-4 flex items-center gap-2">
-                <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
-                  <div className="h-full bg-indigo-500 w-full opacity-20"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
-            <div className="absolute top-0 left-0 w-full h-1 bg-green-500"></div>
-            <div className="flex flex-col gap-1">
-              <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Active Status</span>
-              <div className="flex items-end gap-2 mt-2">
-                <span className="text-4xl font-black text-green-600 leading-none">{activeCount}</span>
-                <div className="flex flex-col ml-2">
-                  <span className="text-xs text-black font-bold text-gray-400 uppercase tracking-tighter leading-tight">
-                    {filteredData.length > 0 ? ((activeCount / filteredData.length) * 100).toFixed(1) : 0}% of Filter
-                  </span>
-                  <span className="text-xs text-black font-bold text-green-500 uppercase tracking-tighter leading-tight">
-                    {totalUserCount > 0 ? ((activeCount / totalUserCount) * 100).toFixed(1) : 0}% of All
-                  </span>
-                </div>
-              </div>
-              <div className="mt-4 flex items-center gap-2">
-                <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
-                  <div className="h-full bg-green-500 transition-all placeholder:text-black duration-500" style={{
-                    width: `${filteredData.length > 0 ? (activeCount / filteredData.length) * 100 : 0}%`
-                  }}></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
-            <div className="absolute top-0 left-0 w-full h-1 bg-red-500"></div>
-            <div className="flex flex-col gap-1">
-              <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Inactive Status</span>
-              <div className="flex items-end gap-2 mt-2">
-                <span className="text-4xl font-black text-red-600 leading-none">{inactiveCount}</span>
-                <div className="flex flex-col ml-2">
-                  <span className="text-xs text-black font-bold text-gray-400 uppercase tracking-tighter leading-tight">
-                    {filteredData.length > 0 ? ((inactiveCount / filteredData.length) * 100).toFixed(1) : 0}% of Filter
-                  </span>
-                  <span className="text-xs text-black font-bold text-red-500 uppercase tracking-tighter leading-tight">
-                    {totalUserCount > 0 ? ((inactiveCount / totalUserCount) * 100).toFixed(1) : 0}% of All
-                  </span>
-                </div>
-              </div>
-              <div className="mt-4 flex items-center gap-2">
-                <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
-                  <div className="h-full bg-red-500 transition-all placeholder:text-black duration-500" style={{
-                    width: `${filteredData.length > 0 ? (inactiveCount / filteredData.length) * 100 : 0}%`
-                  }}></div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* New Analytics Boxes - Row 2 */}
-        {reportType === "users" && !checklistReportEnabled && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
-            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all placeholder:text-black hover:shadow-md">
-              <div className="absolute top-0 left-0 w-full h-1 bg-blue-400"></div>
-              <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Avg Weight & Height</span>
-              <div className="mt-3 flex flex-col gap-1">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-black font-bold text-gray-600">Weight</span>
-                  <span className="text-lg font-black text-gray-900">{advancedStats.avgWeight} kg</span>
-                </div>
-                <div className="flex justify-between items-center text-xs text-black text-gray-400 font-bold uppercase">
-                  <span>High: {advancedStats.highestWeight}</span>
-                  <span>Low: {advancedStats.lowestWeight}</span>
-                </div>
-                <div className="h-0.5 bg-gray-50 mt-1"></div>
-                <div className="flex justify-between items-center mt-1">
-                  <span className="text-xs text-black font-bold text-gray-600">Height</span>
-                  <span className="text-lg font-black text-gray-900">{advancedStats.avgHeight} cm</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all placeholder:text-black hover:shadow-md">
-              <div className="absolute top-0 left-0 w-full h-1 bg-purple-400"></div>
-              <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Ideal Weight & Geography</span>
-              <div className="mt-3 flex flex-col gap-2">
-                <div>
-                  <span className="text-xs text-black text-gray-400 font-bold uppercase block">Avg Ideal Weight</span>
-                  <span className="text-xl font-black text-purple-600">{advancedStats.avgIdealWeight} kg</span>
-                </div>
-                <div>
-                  <span className="text-xs text-black text-gray-400 font-bold uppercase block">Top Booking State</span>
-                  <span className="text-[11px] font-black text-gray-800 truncate">{advancedStats.topState}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all placeholder:text-black hover:shadow-md">
-              <div className="absolute top-0 left-0 w-full h-1 bg-amber-400"></div>
-              <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Referral Performance</span>
-              <div className="mt-3 flex flex-col gap-2">
-                <div>
-                  <span className="text-xs text-black text-gray-400 font-bold uppercase block text-amber-600">Highest Source</span>
-                  <span className="text-[11px] font-black text-gray-800 truncate">{advancedStats.refPerformance.highest}</span>
-                </div>
-                <div>
-                  <span className="text-xs text-black text-gray-400 font-bold uppercase block text-gray-400">Lowest Source</span>
-                  <span className="text-[11px] font-black text-gray-600 truncate">{advancedStats.refPerformance.lowest}</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all placeholder:text-black hover:shadow-md">
-              <div className="absolute top-0 left-0 w-full h-1 bg-rose-400"></div>
-              <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Engagement Overview</span>
-              <div className="mt-3 flex flex-col gap-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-black text-gray-400 font-bold uppercase">Video Viewers</span>
-                  <span className="text-lg font-black text-rose-500">
-                    {filteredData.filter(item => {
-                      const u = checklistReportEnabled || reportType === 'appointments' || reportType === 'orders' ? item.userId : (reportType === 'reschedule' ? item.user : item);
-                      return u?.seeVideo;
-                    }).length}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-black text-gray-400 font-bold uppercase">Answered Qs</span>
-                  <span className="text-lg font-black text-rose-500">
-                    {filteredData.filter(item => {
-                      const u = checklistReportEnabled || reportType === 'appointments' || reportType === 'orders' ? item.userId : (reportType === 'reschedule' ? item.user : item);
-                      return u?.giveAnswer;
-                    }).length}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-        </>
-        )}        {/* Ultra-Compact 6-Column Precision Grid */}
+        {/* Ultra-Compact 6-Column Precision Grid */}
         <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm relative overflow-visible">
           <div className="px-6 py-5 flex flex-col gap-5">
             {viewType === "videoReports" ? (
@@ -2526,6 +2330,266 @@ const ReportsPage = () => {
           </div>
         </div>
 
+        {/* Summary Stat Cards - Row 1 */}
+        {viewType === "videoReports" ? (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
+              <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500"></div>
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Total Users</span>
+                <div className="flex items-end gap-2 mt-2">
+                  <span className="text-4xl font-black text-gray-900 leading-none">{videoReportStats.totalUsers}</span>
+                </div>
+                <div className="mt-4 flex items-center gap-2">
+                  <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
+                    <div className="h-full bg-indigo-500 w-full opacity-20"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
+              <div className="absolute top-0 left-0 w-full h-1 bg-purple-500"></div>
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Avg Watch Percentage</span>
+                <div className="flex items-end gap-2 mt-2">
+                  <span className="text-4xl font-black text-purple-600 leading-none">{videoReportStats.avgWatchPercentage}%</span>
+                </div>
+                <div className="mt-4 flex items-center gap-2">
+                  <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
+                    <div className="h-full bg-purple-500 transition-all placeholder:text-black duration-500" style={{
+                      width: `${Math.min(100, Number(videoReportStats.avgWatchPercentage))}%`
+                    }}></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
+              <div className="absolute top-0 left-0 w-full h-1 bg-green-500"></div>
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Completed</span>
+                <div className="flex items-end gap-2 mt-2">
+                  <span className="text-4xl font-black text-green-600 leading-none">{videoReportStats.completedCount}</span>
+                  <div className="flex flex-col ml-2">
+                    <span className="text-xs text-black font-bold text-gray-400 uppercase tracking-tighter leading-tight">
+                      {filteredData.length > 0 ? ((videoReportStats.completedCount / filteredData.length) * 100).toFixed(1) : 0}%
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center gap-2">
+                  <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
+                    <div className="h-full bg-green-500 transition-all placeholder:text-black duration-500" style={{
+                      width: `${filteredData.length > 0 ? (videoReportStats.completedCount / filteredData.length) * 100 : 0}%`
+                    }}></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
+              <div className="absolute top-0 left-0 w-full h-1 bg-amber-500"></div>
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Total Watch Time</span>
+                <div className="flex items-end gap-2 mt-2">
+                  <span className="text-4xl font-black text-amber-600 leading-none">
+                    {Math.floor(videoReportStats.totalWatchedSeconds / 60)}m
+                  </span>
+                  <span className="text-lg font-bold text-gray-500">
+                    {videoReportStats.totalWatchedSeconds % 60}s
+                  </span>
+                </div>
+                <div className="mt-4 flex items-center gap-2">
+                  <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
+                    <div className="h-full bg-amber-500 w-full opacity-20"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : viewType !== "highest_selling_products" && (
+          <>
+            <div className={`grid grid-cols-1 md:grid-cols-3 ${reportType === "appointments" ? "lg:grid-cols-4" : ""} gap-6`}>
+              <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
+            <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500"></div>
+            <div className="flex flex-col gap-1">
+              <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Total Results</span>
+              <div className="flex items-end gap-2 mt-2">
+                <span className="text-4xl font-black text-gray-900 leading-none">{filteredData.length}</span>
+                <div className="flex flex-col ml-2">
+                  <span className="text-xs text-black font-bold text-gray-400 uppercase tracking-tighter leading-tight">Records Found</span>
+                  <span className="text-xs text-black font-bold text-indigo-500 uppercase tracking-tighter leading-tight">
+                    {totalUserCount > 0 ? ((filteredData.length / totalUserCount) * 100).toFixed(1) : 0}% of All Users
+                  </span>
+                </div>
+              </div>
+              <div className="mt-4 flex items-center gap-2">
+                <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
+                  <div className="h-full bg-indigo-500 w-full opacity-20"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
+            <div className="absolute top-0 left-0 w-full h-1 bg-green-500"></div>
+            <div className="flex flex-col gap-1">
+              <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Active Status</span>
+              <div className="flex items-end gap-2 mt-2">
+                <span className="text-4xl font-black text-green-600 leading-none">{activeCount}</span>
+                <div className="flex flex-col ml-2">
+                  <span className="text-xs text-black font-bold text-gray-400 uppercase tracking-tighter leading-tight">
+                    {filteredData.length > 0 ? ((activeCount / filteredData.length) * 100).toFixed(1) : 0}% of Filter
+                  </span>
+                  <span className="text-xs text-black font-bold text-green-500 uppercase tracking-tighter leading-tight">
+                    {totalUserCount > 0 ? ((activeCount / totalUserCount) * 100).toFixed(1) : 0}% of All
+                  </span>
+                </div>
+              </div>
+              <div className="mt-4 flex items-center gap-2">
+                <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
+                  <div className="h-full bg-green-500 transition-all placeholder:text-black duration-500" style={{
+                    width: `${filteredData.length > 0 ? (activeCount / filteredData.length) * 100 : 0}%`
+                  }}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
+            <div className="absolute top-0 left-0 w-full h-1 bg-red-500"></div>
+            <div className="flex flex-col gap-1">
+              <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Inactive Status</span>
+              <div className="flex items-end gap-2 mt-2">
+                <span className="text-4xl font-black text-red-600 leading-none">{inactiveCount}</span>
+                <div className="flex flex-col ml-2">
+                  <span className="text-xs text-black font-bold text-gray-400 uppercase tracking-tighter leading-tight">
+                    {filteredData.length > 0 ? ((inactiveCount / filteredData.length) * 100).toFixed(1) : 0}% of Filter
+                  </span>
+                  <span className="text-xs text-black font-bold text-red-500 uppercase tracking-tighter leading-tight">
+                    {totalUserCount > 0 ? ((inactiveCount / totalUserCount) * 100).toFixed(1) : 0}% of All
+                  </span>
+                </div>
+              </div>
+              <div className="mt-4 flex items-center gap-2">
+                <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
+                  <div className="h-full bg-red-500 transition-all placeholder:text-black duration-500" style={{
+                    width: `${filteredData.length > 0 ? (inactiveCount / filteredData.length) * 100 : 0}%`
+                  }}></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {reportType === "appointments" && (
+            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
+              <div className="absolute top-0 left-0 w-full h-1 bg-teal-500"></div>
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Plan Conversion</span>
+                <div className="flex items-end gap-2 mt-2">
+                  <span className="text-4xl font-black text-teal-600 leading-none">{appointmentConversionStats.usersWithPlan}</span>
+                  <div className="flex flex-col ml-2">
+                    <span className="text-xs text-black font-bold text-gray-400 uppercase tracking-tighter leading-tight">
+                      {appointmentConversionStats.conversionPercentage}% Conversion
+                    </span>
+                    <span className="text-xs text-black font-bold text-teal-500 uppercase tracking-tighter leading-tight">
+                      of {appointmentConversionStats.totalUniqueUsers} Users
+                    </span>
+                  </div>
+                </div>
+                <div className="mt-4 flex items-center gap-2">
+                  <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
+                    <div className="h-full bg-teal-500 transition-all placeholder:text-black duration-500" style={{
+                      width: `${appointmentConversionStats.conversionPercentage}%`
+                    }}></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* New Analytics Boxes - Row 2 */}
+        {reportType === "users" && !checklistReportEnabled && (
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
+            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all placeholder:text-black hover:shadow-md">
+              <div className="absolute top-0 left-0 w-full h-1 bg-blue-400"></div>
+              <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Avg Weight & Height</span>
+              <div className="mt-3 flex flex-col gap-1">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-black font-bold text-gray-600">Weight</span>
+                  <span className="text-lg font-black text-gray-900">{advancedStats.avgWeight} kg</span>
+                </div>
+                <div className="flex justify-between items-center text-xs text-black text-gray-400 font-bold uppercase">
+                  <span>High: {advancedStats.highestWeight}</span>
+                  <span>Low: {advancedStats.lowestWeight}</span>
+                </div>
+                <div className="h-0.5 bg-gray-50 mt-1"></div>
+                <div className="flex justify-between items-center mt-1">
+                  <span className="text-xs text-black font-bold text-gray-600">Height</span>
+                  <span className="text-lg font-black text-gray-900">{advancedStats.avgHeight} cm</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all placeholder:text-black hover:shadow-md">
+              <div className="absolute top-0 left-0 w-full h-1 bg-purple-400"></div>
+              <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Ideal Weight & Geography</span>
+              <div className="mt-3 flex flex-col gap-2">
+                <div>
+                  <span className="text-xs text-black text-gray-400 font-bold uppercase block">Avg Ideal Weight</span>
+                  <span className="text-xl font-black text-purple-600">{advancedStats.avgIdealWeight} kg</span>
+                </div>
+                <div>
+                  <span className="text-xs text-black text-gray-400 font-bold uppercase block">Top Booking State</span>
+                  <span className="text-[11px] font-black text-gray-800 truncate">{advancedStats.topState}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all placeholder:text-black hover:shadow-md">
+              <div className="absolute top-0 left-0 w-full h-1 bg-amber-400"></div>
+              <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Referral Performance</span>
+              <div className="mt-3 flex flex-col gap-2">
+                <div>
+                  <span className="text-xs text-black text-gray-400 font-bold uppercase block text-amber-600">Highest Source</span>
+                  <span className="text-[11px] font-black text-gray-800 truncate">{advancedStats.refPerformance.highest}</span>
+                </div>
+                <div>
+                  <span className="text-xs text-black text-gray-400 font-bold uppercase block text-gray-400">Lowest Source</span>
+                  <span className="text-[11px] font-black text-gray-600 truncate">{advancedStats.refPerformance.lowest}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all placeholder:text-black hover:shadow-md">
+              <div className="absolute top-0 left-0 w-full h-1 bg-rose-400"></div>
+              <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Engagement Overview</span>
+              <div className="mt-3 flex flex-col gap-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-black text-gray-400 font-bold uppercase">Video Viewers</span>
+                  <span className="text-lg font-black text-rose-500">
+                    {filteredData.filter(item => {
+                      const u = checklistReportEnabled || reportType === 'appointments' || reportType === 'orders' ? item.userId : (reportType === 'reschedule' ? item.user : item);
+                      return u?.seeVideo;
+                    }).length}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-xs text-black text-gray-400 font-bold uppercase">Answered Qs</span>
+                  <span className="text-lg font-black text-rose-500">
+                    {filteredData.filter(item => {
+                      const u = checklistReportEnabled || reportType === 'appointments' || reportType === 'orders' ? item.userId : (reportType === 'reschedule' ? item.user : item);
+                      return u?.giveAnswer;
+                    }).length}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        </>
+        )}
         <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden min-h-[400px]">
           <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-gradient-to-r from-gray-50/50 to-transparent">
             <h2 className="font-black text-gray-900 flex items-center gap-3 text-lg">

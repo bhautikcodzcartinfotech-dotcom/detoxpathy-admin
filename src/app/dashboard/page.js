@@ -200,13 +200,81 @@ const DashboardPage = () => {
   if (!stats) return null;
 
   const orderStatusMap = {
-    1: { label: "Pending", class: "bg-amber-100 text-amber-700" },
-    2: { label: "Packed", class: "bg-blue-100 text-blue-700" },
-    3: { label: "Processing", class: "bg-teal-100 text-teal-700" },
-    4: { label: "In Transit", class: "bg-orange-100 text-orange-700" },
-    5: { label: "Delivered", class: "bg-green-100 text-green-700" },
-    6: { label: "Cancelled", class: "bg-red-100 text-red-700" },
-  };
+            1: { label: "Pending", class: "bg-amber-100 text-amber-700" },
+            2: { label: "Packed", class: "bg-blue-100 text-blue-700" },
+            3: { label: "Processing", class: "bg-teal-100 text-teal-700" },
+            4: { label: "In Transit", class: "bg-orange-100 text-orange-700" },
+            5: { label: "Delivered", class: "bg-green-100 text-green-700" },
+            6: { label: "Cancelled", class: "bg-red-100 text-red-700" },
+        };
+
+        // Original top stats for everyone
+        let topStats = [
+            { 
+                title: `TOTAL USERS (${getRangeLabel(dateRange).toUpperCase()})`, 
+                value: stats.totalUsers || 0, 
+                sub: dateRange === "all" ? "cumulative total" : `new users ${getRangeLabel(dateRange).toLowerCase()}`, 
+                color: "border-teal-600 shadow-teal-900/5",
+                icon: Users
+            },
+            { 
+                title: `REVENUE (${getRangeLabel(dateRange).toUpperCase()})`, 
+                value: stats.revenue?.custom >= 100000 
+                    ? `₹${((stats.revenue?.custom || 0) / 100000).toFixed(2)}L` 
+                    : `₹${(stats.revenue?.custom || 0).toLocaleString('en-IN')}`, 
+                sub: dateRange === "all" ? "total cumulative revenue" : `revenue for ${getRangeLabel(dateRange).toLowerCase()}`, 
+                color: "border-orange-500 shadow-orange-900/5",
+                icon: TrendingUp
+            },
+            { 
+                title: "ACTIVE PROGRAMS", 
+                value: stats.activePrograms || stats.activePlanUsers || 0, 
+                sub: "currently running", 
+                color: "border-green-500 shadow-green-900/5",
+                icon: Activity 
+            },
+            { 
+                title: "UNASSIGNED LEADS", 
+                value: stats.pendingUsers || 0, 
+                sub: "currently pending", 
+                subColor: "text-red-500 font-bold",
+                color: "border-red-500 shadow-red-900/5",
+                icon: AlertCircle
+            },
+        ];
+
+        // Only add extra stats for SUBADMIN
+        let subAdminExtraStats = [];
+        let branchStockBox = null;
+
+        if (role === "subadmin") {
+            subAdminExtraStats = [
+                { 
+                    title: "TODAY'S FOLLOW-UPS", 
+                    value: stats.todayFollowUps || 0, 
+                    sub: "follow-ups scheduled", 
+                    color: "border-blue-500 shadow-blue-900/5",
+                    icon: Calendar 
+                },
+                { 
+                    title: "TODAY'S APPOINTMENTS", 
+                    value: stats.appointmentsToday?.length || 0, 
+                    sub: "scheduled for today", 
+                    color: "border-orange-500 shadow-orange-900/5",
+                    icon: Clock
+                },
+            ];
+
+            branchStockBox = { 
+                title: "BRANCH STOCK ITEMS", 
+                value: stats.branchStock?.length || 0, 
+                sub: "products in stock", 
+                color: "border-teal-600 shadow-teal-900/5",
+            };
+        }
+
+        // Combine all stats for subadmin
+        const allSubAdminStats = [...topStats, ...subAdminExtraStats, branchStockBox].filter(Boolean);
 
   return (
     <div className="p-6 sm:p-10 space-y-8 bg-[#F8FAFC] min-h-screen">
@@ -258,55 +326,51 @@ const DashboardPage = () => {
         </div>
       </div>
 
-      {/* Top Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {[
-          { 
-            title: `TOTAL USERS (${getRangeLabel(dateRange).toUpperCase()})`, 
-            value: stats.totalUsers || 0, 
-            sub: dateRange === "all" ? "cumulative total" : `new users ${getRangeLabel(dateRange).toLowerCase()}`, 
-            color: "border-teal-600 shadow-teal-900/5",
-            icon: Users
-          },
-          { 
-            title: `REVENUE (${getRangeLabel(dateRange).toUpperCase()})`, 
-            value: stats.revenue?.custom >= 100000 
-              ? `₹${((stats.revenue?.custom || 0) / 100000).toFixed(2)}L` 
-              : `₹${(stats.revenue?.custom || 0).toLocaleString('en-IN')}`, 
-            sub: dateRange === "all" ? "total cumulative revenue" : `revenue for ${getRangeLabel(dateRange).toLowerCase()}`, 
-            color: "border-orange-500 shadow-orange-900/5",
-            icon: TrendingUp
-          },
-          { 
-            title: "ACTIVE PROGRAMS", 
-            value: stats.activePlanUsers || 0, 
-            sub: "currently running", 
-            color: "border-green-500 shadow-green-900/5",
-            icon: Activity 
-          },
-          { 
-            title: "UNASSIGNED LEADS", 
-            value: stats.pendingUsers || 0, 
-            sub: "currently pending", 
-            subColor: "text-red-500 font-bold",
-            color: "border-red-500 shadow-red-900/5",
-            icon: AlertCircle
-          },
-        ].map((stat, i) => (
-          <div key={i} className={`bg-white p-6 rounded-none border-t-4 ${stat.color} shadow-xl hover:scale-[1.02] transition-all relative overflow-hidden group`}>
-            <div className="relative z-10 flex flex-col justify-between h-full">
-              <div>
-                <p className="text-[10px] font-black text-gray-400 mb-4 uppercase">{stat.title}</p>
-                <h3 className="text-3xl font-black text-gray-900 mb-2">{stat.value.toLocaleString()}</h3>
+      {/* Original Top Stats Grid for ADMIN: 4 boxes */}
+      {role !== "subadmin" && (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {topStats.map((stat, i) => (
+            <div 
+              key={i} 
+              className={`bg-white p-6 rounded-none border-t-4 ${stat.color} shadow-xl hover:scale-[1.02] transition-all relative overflow-hidden group ${stat.isClickable ? 'cursor-pointer' : ''}`}
+              onClick={stat.isClickable ? () => router.push('/component/order') : undefined}
+            >
+              <div className="relative z-10 flex flex-col justify-between h-full">
+                <div>
+                  <p className="text-[10px] font-black text-gray-400 mb-4 uppercase">{stat.title}</p>
+                  <h3 className="text-3xl font-black text-gray-900 mb-2">{typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}</h3>
+                </div>
+                <p className={`text-[10px] ${stat.subColor || 'text-gray-500'} font-bold`}>{stat.sub}</p>
               </div>
-              <p className={`text-[10px] ${stat.subColor || 'text-gray-500'} font-bold`}>{stat.sub}</p>
+              {stat.icon && <stat.icon className="absolute top-6 right-6 w-12 h-12 text-gray-50 opacity-10 group-hover:opacity-20 transition-all group-hover:-rotate-12" />}
             </div>
-            <stat.icon className="absolute top-6 right-6 w-12 h-12 text-gray-50 opacity-10 group-hover:opacity-20 transition-all group-hover:-rotate-12" />
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
+      )}
 
-      {/* Middle Section: Branch Performance & Recent Orders */}
+      {/* Top Stats Grid for SUBADMIN: single responsive grid */}
+      {role === "subadmin" && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {allSubAdminStats.map((stat, i) => (
+            <div 
+              key={i} 
+              className={`bg-white p-6 rounded-none border-t-4 ${stat.color} shadow-xl hover:scale-[1.02] transition-all relative overflow-hidden group ${stat.isClickable ? 'cursor-pointer' : ''}`}
+              onClick={stat.isClickable ? () => router.push('/component/order') : undefined}
+            >
+              <div className="relative z-10 flex flex-col justify-between h-full">
+                <div>
+                  <p className="text-[10px] font-black text-gray-400 mb-4 uppercase">{stat.title}</p>
+                  <h3 className="text-3xl font-black text-gray-900 mb-2">{typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}</h3>
+                </div>
+                <p className={`text-[10px] ${stat.subColor || 'text-gray-500'} font-bold`}>{stat.sub}</p>
+              </div>
+              {stat.icon && <stat.icon className="absolute top-6 right-6 w-12 h-12 text-gray-50 opacity-10 group-hover:opacity-20 transition-all group-hover:-rotate-12" />}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Middle Section: Branch Performance & Recent Orders - Show for ALL roles */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Branch Performance */}
         <div className="lg:col-span-1 bg-white p-8 rounded-none shadow-xl shadow-teal-900/5 border border-gray-100 flex flex-col">
@@ -379,42 +443,81 @@ const DashboardPage = () => {
         </div>
       </div>
 
-      {/* Bottom Section: Today's Appointments, Lead Pipeline, Quick Actions */}
+      {/* Bottom Section: Today's Appointments, Lead Pipeline, Quick Actions OR Today's + Upcoming Appointments */}
       <div className="grid grid-cols-1 lg:grid-cols-4 xl:grid-cols-12 gap-8">
         {/* Today's Appointments */}
-        <div className="lg:col-span-2 xl:col-span-4 bg-white rounded-none shadow-xl shadow-teal-900/5 border border-gray-100 overflow-hidden flex flex-col">
-          <div className="p-8 border-b border-gray-100">
-            <h2 className="text-sm font-black text-gray-900 uppercase tracking-widest">Today's Appointments</h2>
-          </div>
-          <div className="flex-1 overflow-y-auto max-h-[350px] scrollbar-hide">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50/30 sticky top-0 backdrop-blur-md">
-                  <th className="px-6 py-3 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Time</th>
-                  <th className="px-6 py-3 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Patient</th>
-                  <th className="px-6 py-3 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Branch</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {stats.appointmentsToday?.map((apt, i) => (
-                  <tr key={i} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-6 py-5 text-[12px] font-bold text-gray-900 flex items-center gap-2">
-                       <Clock className="w-3 h-3 text-teal-600" />
-                       {apt.startTime}
-                    </td>
-                    <td className="px-6 py-5 text-[12px] font-bold text-gray-700">{apt.userId?.name} {apt.userId?.surname}</td>
-                    <td className="px-6 py-5 text-[12px] font-black text-teal-700 uppercase tracking-tighter">{apt.branchId?.name || "Main Branch"}</td>
+        <div className={`${role === "subadmin" ? "lg:col-span-2 xl:col-span-6" : "lg:col-span-2 xl:col-span-4"} bg-white rounded-none shadow-xl shadow-teal-900/5 border border-gray-100 overflow-hidden flex flex-col`}>
+            <div className="p-8 border-b border-gray-100">
+              <h2 className="text-sm font-black text-gray-900 uppercase tracking-widest">Today's Appointments</h2>
+            </div>
+            <div className="flex-1 overflow-y-auto max-h-[350px] scrollbar-hide">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50/30 sticky top-0 backdrop-blur-md">
+                    <th className="px-6 py-3 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Time</th>
+                    <th className="px-6 py-3 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Patient</th>
+                    <th className="px-6 py-3 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Branch</th>
                   </tr>
-                ))}
-                {(!stats.appointmentsToday || stats.appointmentsToday.length === 0) && (
-                  <tr><td colSpan="3" className="px-6 py-10 text-center text-gray-400 text-xs font-bold uppercase italic tracking-widest">No appointments today</td></tr>
-                )}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {stats.appointmentsToday?.map((apt, i) => (
+                    <tr key={i} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-5 text-[12px] font-bold text-gray-900 flex items-center gap-2">
+                         <Clock className="w-3 h-3 text-teal-600" />
+                         {apt.startTime}
+                      </td>
+                      <td className="px-6 py-5 text-[12px] font-bold text-gray-700">{apt.userId?.name} {apt.userId?.surname}</td>
+                      <td className="px-6 py-5 text-[12px] font-black text-teal-700 uppercase tracking-tighter">{apt.branchId?.name || "Main Branch"}</td>
+                    </tr>
+                  ))}
+                  {(!stats.appointmentsToday || stats.appointmentsToday.length === 0) && (
+                    <tr><td colSpan="3" className="px-6 py-10 text-center text-gray-400 text-xs font-bold uppercase italic tracking-widest">No appointments today</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
 
-        {/* Lead Pipeline */}
+        {/* For Subadmin: Upcoming Appointments */}
+        {role === "subadmin" && (
+          <div className="lg:col-span-2 xl:col-span-6 bg-white rounded-none shadow-xl shadow-teal-900/5 border border-gray-100 overflow-hidden flex flex-col">
+            <div className="p-8 border-b border-gray-100">
+              <h2 className="text-sm font-black text-gray-900 uppercase tracking-widest">Upcoming Appointments</h2>
+            </div>
+            <div className="flex-1 overflow-y-auto max-h-[350px] scrollbar-hide">
+              <table className="w-full">
+                <thead>
+                  <tr className="bg-gray-50/30 sticky top-0 backdrop-blur-md">
+                    <th className="px-6 py-3 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Date</th>
+                    <th className="px-6 py-3 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Time</th>
+                    <th className="px-6 py-3 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Patient</th>
+                    <th className="px-6 py-3 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Branch</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {stats.upcomingAppointments?.map((apt, i) => (
+                    <tr key={i} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-5 text-[12px] font-bold text-gray-700">
+                        {new Date(apt.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                      </td>
+                      <td className="px-6 py-5 text-[12px] font-bold text-gray-900 flex items-center gap-2">
+                         <Clock className="w-3 h-3 text-teal-600" />
+                         {apt.startTime}
+                      </td>
+                      <td className="px-6 py-5 text-[12px] font-bold text-gray-700">{apt.userId?.name} {apt.userId?.surname}</td>
+                      <td className="px-6 py-5 text-[12px] font-black text-teal-700 uppercase tracking-tighter">{apt.branchId?.name || "Main Branch"}</td>
+                    </tr>
+                  ))}
+                  {(!stats.upcomingAppointments || stats.upcomingAppointments.length === 0) && (
+                    <tr><td colSpan="4" className="px-6 py-10 text-center text-gray-400 text-xs font-bold uppercase italic tracking-widest">No upcoming appointments</td></tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* Lead Pipeline (for both Admin and Subadmin) */}
         <div className="lg:col-span-2 xl:col-span-4 bg-white p-8 rounded-none shadow-xl shadow-teal-900/5 border border-gray-100">
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-sm font-black text-gray-900 uppercase tracking-widest">Lead Pipeline</h2>
@@ -446,27 +549,27 @@ const DashboardPage = () => {
                     onClick={() => setIsAddDoctorModalOpen(true)}
                     variant="primary"
                     className="w-full h-14"
-                   >
+                  >
                       <PlusCircle className="w-4 h-4" /> Add Doctor
                    </Button>
                    <Button 
                     onClick={() => router.push('/component/users')}
                     variant="secondary"
                     className="w-full h-14"
-                   >
+                  >
                       <UserPlus className="w-4 h-4 text-teal-600" /> Add User
                    </Button>
                    <Button 
                     onClick={() => router.push('/component/video')}
                     variant="secondary"
                     className="w-full h-14"
-                   >
+                  >
                       <Video className="w-4 h-4 text-teal-600" /> Upload Video
                    </Button>
                    <Button 
                     variant="primary"
                     className="w-full h-14 text-white"
-                   >
+                  >
                       Trigger Payout
                    </Button>
                 </div>
