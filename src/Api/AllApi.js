@@ -1,8 +1,8 @@
 import axios from "axios";
 
-// export const API_BASE = "http://192.168.29.204:3002/api/v1";
+//export const API_BASE = "http://192.168.29.204:3002/api/v1";
 // export const API_BASE = "http://69.62.73.194:4009/api/v1";
-  export const API_BASE = "https://admin.detoxpathy.com/api/v1";
+ export const API_BASE = "https://admin.detoxpathy.com/api/v1";
 // export const API_BASE = "https://backend.fatendfit.com/api/v1";
 // Host base used to resolve file URLs coming from multer (e.g., uploads/..)
 export const API_HOST = API_BASE.replace(/\/?api\/?v1\/?$/, "").replace(
@@ -675,6 +675,18 @@ export const createVideoApi = async (payload) => {
   if (typeof payload.zoomStartUrl !== "undefined") {
     data.append("zoomStartUrl", payload.zoomStartUrl);
   }
+  if (typeof payload.sessionName !== "undefined") {
+    data.append("sessionName", payload.sessionName);
+  }
+  if (typeof payload.sessionPassword !== "undefined") {
+    data.append("sessionPassword", payload.sessionPassword);
+  }
+  if (typeof payload.jwtToken !== "undefined") {
+    data.append("jwtToken", payload.jwtToken);
+  }
+  if (typeof payload.accessToken !== "undefined") {
+    data.append("accessToken", payload.accessToken);
+  }
 
   const res = await axios.post(`${API_BASE}/admin/video/create`, data, {
     headers: { ...getAuthHeaders(), "Content-Type": "multipart/form-data" },
@@ -774,6 +786,18 @@ export const updateVideoById = async (id, payload) => {
   if (payload.plan) data.append("plan", payload.plan);
   if (typeof payload.zoomStartUrl !== "undefined") {
     data.append("zoomStartUrl", payload.zoomStartUrl);
+  }
+  if (typeof payload.sessionName !== "undefined") {
+    data.append("sessionName", payload.sessionName);
+  }
+  if (typeof payload.sessionPassword !== "undefined") {
+    data.append("sessionPassword", payload.sessionPassword);
+  }
+  if (typeof payload.jwtToken !== "undefined") {
+    data.append("jwtToken", payload.jwtToken);
+  }
+  if (typeof payload.accessToken !== "undefined") {
+    data.append("accessToken", payload.accessToken);
   }
 
   const res = await axios.put(`${API_BASE}/admin/video/update/${id}`, data, {

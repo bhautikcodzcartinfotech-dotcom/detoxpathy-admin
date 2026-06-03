@@ -47,6 +47,10 @@ const VideoForm = ({
     plan: "",
     requiredCorrectAnswer: "",
     zoomStartUrl: "",
+    sessionName: "",
+    sessionPassword: "",
+    jwtToken: "",
+    accessToken: "",
   });
   const [errors, setErrors] = useState({});
   const [categories, setCategories] = useState([]);
@@ -145,6 +149,10 @@ const VideoForm = ({
             : initialValues.plan?._id ?? "",
         requiredCorrectAnswer: initialValues.requiredCorrectAnswer ?? "",
         zoomStartUrl: initialValues.zoomStartUrl ?? "",
+        sessionName: initialValues.sessionName ?? "",
+        sessionPassword: initialValues.sessionPassword ?? "",
+        jwtToken: initialValues.jwtToken ?? "",
+        accessToken: initialValues.accessToken ?? "",
       }));
       setErrors({});
     } else {
@@ -176,6 +184,10 @@ const VideoForm = ({
         plan: "",
         requiredCorrectAnswer: "",
         zoomStartUrl: "",
+        sessionName: "",
+        sessionPassword: "",
+        jwtToken: "",
+        accessToken: "",
       });
       setErrors({});
     }
@@ -342,6 +354,10 @@ const VideoForm = ({
       plan: !isZoomSession && Number(form.type) === 8 ? form.plan : undefined,
       requiredCorrectAnswer: isZoomSession ? 0 : (form.requiredCorrectAnswer ? Number(form.requiredCorrectAnswer) : 0),
       zoomStartUrl: isZoomSession ? form.zoomStartUrl : undefined,
+      sessionName: isZoomSession ? form.sessionName : undefined,
+      sessionPassword: isZoomSession ? form.sessionPassword : undefined,
+      jwtToken: isZoomSession ? form.jwtToken : undefined,
+      accessToken: isZoomSession ? form.accessToken : undefined,
     });
   };
 
@@ -406,6 +422,10 @@ const VideoForm = ({
               video_hindi_url: "",
               videoSecond: "",
               zoomStartUrl: "",
+              sessionName: "",
+              sessionPassword: "",
+              jwtToken: "",
+              accessToken: "",
             }))
           }
         />
@@ -490,23 +510,8 @@ const VideoForm = ({
 
       {Number(form.videoType) === 3 && (
         <div className="space-y-2">
-          <label className="block mb-1 font-semibold text-gray-700">Zoom Meeting URL</label>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={form.video_english_url || ""}
-              onChange={(e) => {
-                const url = e.target.value;
-                setForm((f) => ({
-                  ...f,
-                  video_english_url: url,
-                  video_gujarati_url: url,
-                  video_hindi_url: url,
-                }));
-              }}
-              className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition bg-gray-50"
-              placeholder="https://zoom.us/j/1234567890?pwd=xxxx"
-            />
+          <label className="block mb-1 font-semibold text-gray-700">Zoom Session</label>
+          <div className="flex items-center gap-3">
             <button
               type="button"
               disabled={generatingMeeting}
@@ -522,6 +527,10 @@ const VideoForm = ({
                       video_gujarati_url: result.joinUrl,
                       video_hindi_url: result.joinUrl,
                       zoomStartUrl: result.startUrl || "",
+                      sessionName: result.sessionName || topic,
+                      sessionPassword: result.sessionPassword || "",
+                      jwtToken: result.jwtToken || "",
+                      accessToken: result.accessToken || "",
                     }));
                     toast.success("Zoom meeting generated successfully!");
                   } else {
@@ -540,6 +549,14 @@ const VideoForm = ({
             >
               {generatingMeeting ? "Generating..." : "Generate Zoom URL"}
             </button>
+            {form.video_english_url && (
+              <span className="text-sm text-emerald-600 font-semibold flex items-center gap-1">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                </svg>
+                Zoom Session Generated
+              </span>
+            )}
           </div>
           {errors.video_english_url && <p className="text-red-500 text-sm mt-1">{errors.video_english_url}</p>}
         </div>
