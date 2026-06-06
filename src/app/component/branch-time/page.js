@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import RoleGuard from "@/components/RoleGuard";
 import { Header, Button } from "@/utils/header";
 import Drawer from "@/utils/formanimation";
@@ -16,9 +16,13 @@ import {
 import { useAuth } from "@/contexts/AuthContext";
 import BranchTimeForm from "./branchTimeForm";
 import Dropdown from "@/utils/dropdown";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 
 const BranchTimePage = () => {
   const { role, branches, permissions } = useAuth();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
   const [loading, setLoading] = useState(true);
   const [formLoading, setFormLoading] = useState(false);
   const [branchTimeData, setBranchTimeData] = useState(null);
@@ -28,6 +32,30 @@ const BranchTimePage = () => {
   const [requests, setRequests] = useState([]);
   const [selectedRequestId, setSelectedRequestId] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  const initialized = useRef(false);
+
+  const updateUrlParams = (params) => {
+    const newParams = new URLSearchParams(searchParams.toString());
+
+    if (params.branch !== undefined) {
+      if (params.branch) {
+        newParams.set("branch", params.branch);
+      } else {
+        newParams.delete("branch");
+      }
+    }
+
+    if (params.drawer !== undefined) {
+      if (params.drawer === "true") {
+        newParams.set("drawer", "true");
+      } else {
+        newParams.delete("drawer");
+      }
+    }
+
+    const newUrl = `${pathname}${newParams.toString() ? `?${newParams.toString()}` : ""}`;
+    router.replace(newUrl, { scroll: false });
+  };
 
   const daysMap = {
     1: "Monday",
@@ -43,7 +71,26 @@ const BranchTimePage = () => {
     try {
       const data = await getAllBranches();
       setAllBranches(data);
-      if (data.length > 0 && !selectedBranchId) {
+
+      const urlBranch = searchParams.get("branch");
+      const urlDrawer = searchParams.get("drawer");
+
+      if (urlBranch) {
+        const branchExists = data.find(b => b._id === urlBranch);
+        if (branchExists) {
+          setSelectedBranchId(urlBranch);
+        } else if (data.length > 0) {
+          if (role === "subadmin" && branches.length > 0) {
+            setSelectedBranchId(branches[0]);
+          } else {
+            const mainBranch = data.find(b => b.isMainBranch);
+            const defaultBranch = mainBranch || data[0];
+            if (defaultBranch) {
+              setSelectedBranchId(defaultBranch._id);
+            }
+          }
+        }
+      } else if (data.length > 0 && !selectedBranchId) {
         if (role === "subadmin" && branches.length > 0) {
           setSelectedBranchId(branches[0]);
         } else {
@@ -54,6 +101,12 @@ const BranchTimePage = () => {
           }
         }
       }
+
+      if (urlDrawer === "true") {
+        setIsOpen(true);
+      }
+
+      initialized.current = true;
     } catch (e) {
       console.error(e);
     }
@@ -106,6 +159,16 @@ const BranchTimePage = () => {
     }
   }, [selectedBranchId]);
 
+  useEffect(() => {
+    if (!initialized.current) return;
+    updateUrlParams({ branch: selectedBranchId });
+  }, [selectedBranchId]);
+
+  useEffect(() => {
+    if (!initialized.current) return;
+    updateUrlParams({ drawer: isOpen ? "true" : "false" });
+  }, [isOpen]);
+
   const handleRequestChange = (requestId) => {
     setSelectedRequestId(requestId);
     if (requestId) {
@@ -148,6 +211,10 @@ const BranchTimePage = () => {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const handleCancel = () => {
+    setIsOpen(false);
   };
 
   const handleSubmit = async (formData) => {
@@ -356,7 +423,7 @@ const BranchTimePage = () => {
           </div>
         )}
 
-        <Drawer isOpen={isOpen} onClose={() => setIsOpen(false)}>
+        <Drawer isOpen={isOpen} onClose={handleCancel}>
           <div className="mb-8">
             <h2 className="text-3xl font-black text-gray-900 tracking-tighter mb-2">
               {branchTimeData ? "Update Schedule" : "Initialize Time"}
@@ -366,10 +433,11 @@ const BranchTimePage = () => {
 
           <BranchTimeForm
             onSubmit={handleSubmit}
-            onCancel={() => setIsOpen(false)}
+            onCancel={handleCancel}
             loading={formLoading}
             initialValues={branchTimeData}
             submitLabel={branchTimeData ? "Save Changes" : "Create Schedule"}
+            branchId={selectedBranchId}
           />
         </Drawer>
       </div>

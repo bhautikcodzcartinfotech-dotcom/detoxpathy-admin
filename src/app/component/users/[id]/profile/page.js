@@ -6,12 +6,14 @@ import { Header, Button } from "@/utils/header";
 import Loader from "@/utils/loader";
 import {
   API_BASE,
+  API_HOST,
   getUserOverview,
   holdUserPlan,
   resumeUserPlan,
   getUserVideoAnswers,
   downloadConsultationPdfApi,
   getAllOrders,
+  getRecordingsByUserId,
 } from "@/Api/AllApi";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import toast from "react-hot-toast";
@@ -75,6 +77,8 @@ const UserProfilePage = () => {
     type: "warning",
     onConfirm: null,
   });
+  const [recordings, setRecordings] = useState([]);
+  const [recordingsLoading, setRecordingsLoading] = useState(false);
 
   useEffect(() => {
     const load = async () => {
@@ -97,6 +101,17 @@ const UserProfilePage = () => {
           setUserOrders(oData?.orders || []);
         } catch (err) {
           console.error("Failed to load user orders", err);
+        }
+
+        // Fetch user recordings
+        try {
+          setRecordingsLoading(true);
+          const rData = await getRecordingsByUserId(userId);
+          setRecordings(rData || []);
+        } catch (err) {
+          console.error("Failed to load user recordings", err);
+        } finally {
+          setRecordingsLoading(false);
         }
       } catch {
         setOverview(null);
@@ -1278,6 +1293,72 @@ const UserProfilePage = () => {
                 </div>
               ) : (
                 <div className="text-gray-500 italic">No consultations recorded yet.</div>
+              )}
+            </div>
+
+            {/* ------------------ Recordings ------------------ */}
+            <div className="p-6 mx-8 bg-white rounded-2xl shadow-lg border border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-gray-800">Appointment Recordings</h3>
+              </div>
+              {recordingsLoading ? (
+                <div className="flex justify-center py-8">
+                  <Loader />
+                </div>
+              ) : recordings && recordings.length > 0 ? (
+                <div className="space-y-4">
+                  {recordings.map((recording) => (
+                    <div
+                      key={recording._id}
+                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl border border-purple-100 bg-purple-50/30 hover:bg-purple-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-800">
+                            Appointment Recording
+                          </div>
+                          <div className="text-sm text-gray-500 flex flex-wrap gap-x-3 gap-y-1">
+                            <span>📅 {recording.appointmentId?.date || new Date(recording.createdAt).toLocaleDateString()}</span>
+                            <span>⏰ {recording.appointmentId?.startTime || "N/A"} - {recording.appointmentId?.endTime || "N/A"}</span>
+                            <span>🏥 {recording.appointmentId?.branchId?.name || "N/A"}</span>
+                            <span>👨‍⚕️ {recording.appointmentId?.doctor?.username || "N/A"}</span>
+                            <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                              recording.status === 'recording' ? 'bg-red-100 text-red-700' :
+                              recording.status === 'paused' ? 'bg-yellow-100 text-yellow-700' :
+                              'bg-green-100 text-green-700'
+                            }`}>
+                              {recording.status.charAt(0).toUpperCase() + recording.status.slice(1)}
+                            </span>
+                            {recording.duration > 0 && (
+                              <span>⏱️ {Math.floor(recording.duration / 60)} min {recording.duration % 60} sec</span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      {recording.videoUrl ? (
+                        <button
+                          onClick={() => window.open(`${API_HOST}${recording.videoUrl}`, '_blank')}
+                          className="w-full sm:w-auto px-4 py-2 bg-white border border-purple-200 text-purple-600 rounded-lg text-sm font-bold hover:bg-purple-600 hover:text-white transition-all flex items-center justify-center gap-2"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                          Play Recording
+                        </button>
+                      ) : (
+                        <span className="text-sm text-gray-400 italic">Video not available</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-gray-500 italic">No recordings available.</div>
               )}
             </div>
 

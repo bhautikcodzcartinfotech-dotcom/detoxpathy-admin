@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import TimeButton from "@/utils/timebutton";
 import toast from "react-hot-toast";
 
@@ -9,6 +9,7 @@ const BranchTimeForm = ({
   loading,
   initialValues = null,
   submitLabel = "Save",
+  branchId = null,
 }) => {
   const daysSelection = [
     { value: "1", label: "Monday" },
@@ -23,12 +24,78 @@ const BranchTimeForm = ({
   const [availability, setAvailability] = useState([
     { day: "1", startTime: "09:00 AM", endTime: "05:00 PM", breakStartTime: "", breakEndTime: "", slotDuration: 30, bufferTime: 10 },
   ]);
+  const initializedBranches = useRef(new Set());
+
+  const getDraftKey = () => {
+    if (!branchId) return null;
+    return `branchTimeDraft_${branchId}`;
+  };
+
+  const loadDraft = () => {
+    const key = getDraftKey();
+    if (!key) return;
+    try {
+      const saved = localStorage.getItem(key);
+      if (saved) {
+        const data = JSON.parse(saved);
+        setAvailability(data.availability);
+      }
+    } catch (e) {
+      console.error("Failed to load draft:", e);
+    }
+  };
+
+  const saveDraft = (newAvailability) => {
+    const key = getDraftKey();
+    if (!key) return;
+    try {
+      localStorage.setItem(key, JSON.stringify({ availability: newAvailability }));
+    } catch (e) {
+      console.error("Failed to save draft:", e);
+    }
+  };
+
+  const clearDraft = () => {
+    const key = getDraftKey();
+    if (!key) return;
+    try {
+      localStorage.removeItem(key);
+    } catch (e) {
+      console.error("Failed to clear draft:", e);
+    }
+  };
 
   useEffect(() => {
-    if (initialValues && initialValues.availability) {
+    if (!branchId) return;
+    if (initializedBranches.current.has(branchId)) return;
+
+    // First check if we have a draft
+    const key = getDraftKey();
+    let hasDraft = false;
+
+    if (key) {
+      try {
+        const saved = localStorage.getItem(key);
+        hasDraft = !!saved;
+      } catch (e) {
+        hasDraft = false;
+      }
+    }
+
+    if (hasDraft) {
+      loadDraft();
+    } else if (initialValues && initialValues.availability) {
       setAvailability(initialValues.availability);
     }
-  }, [initialValues]);
+
+    initializedBranches.current.add(branchId);
+  }, [branchId, initialValues]);
+
+  useEffect(() => {
+    if (branchId) {
+      saveDraft(availability);
+    }
+  }, [availability, branchId]);
 
   const handleAddRow = () => {
     setAvailability([
@@ -64,7 +131,13 @@ const BranchTimeForm = ({
       return;
     }
     
+    clearDraft();
     onSubmit({ availability });
+  };
+
+  const handleCancel = () => {
+    clearDraft();
+    onCancel();
   };
 
   return (
@@ -177,7 +250,7 @@ const BranchTimeForm = ({
       <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
         <button
           type="button"
-          onClick={onCancel}
+          onClick={handleCancel}
           className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded-xl transition font-bold"
         >
           Cancel

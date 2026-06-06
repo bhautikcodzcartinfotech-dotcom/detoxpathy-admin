@@ -1,7 +1,6 @@
 import axios from "axios";
 
-//export const API_BASE = "http://192.168.29.204:3002/api/v1";
-// export const API_BASE = "http://69.62.73.194:4009/api/v1";
+// export const API_BASE = "http://192.168.1.5:3002/api/v1";// export const API_BASE = "http://69.62.73.194:4009/api/v1";
  export const API_BASE = "https://admin.detoxpathy.com/api/v1";
 // export const API_BASE = "https://backend.fatendfit.com/api/v1";
 // Host base used to resolve file URLs coming from multer (e.g., uploads/..)
@@ -1235,6 +1234,98 @@ export const endAppointmentCall = async (appointmentId) => {
       headers: getAuthHeaders(),
     }
   );
+  return res.data.data;
+};
+
+/* -------------------- RECORDING APIs -------------------- */
+export const startRecording = async (appointmentId) => {
+  const res = await axios.post(
+    `${API_BASE}/admin/recording/start`,
+    { appointmentId },
+    {
+      headers: getAuthHeaders(),
+    }
+  );
+  return res.data.data;
+};
+
+export const pauseRecording = async (recordingId) => {
+  const res = await axios.post(
+    `${API_BASE}/admin/recording/pause/${recordingId}`,
+    {},
+    {
+      headers: getAuthHeaders(),
+    }
+  );
+  return res.data.data;
+};
+
+export const resumeRecording = async (recordingId) => {
+  const res = await axios.post(
+    `${API_BASE}/admin/recording/resume/${recordingId}`,
+    {},
+    {
+      headers: getAuthHeaders(),
+    }
+  );
+  return res.data.data;
+};
+
+export const stopRecording = async (recordingId) => {
+  const res = await axios.post(
+    `${API_BASE}/admin/recording/stop/${recordingId}`,
+    {},
+    {
+      headers: getAuthHeaders(),
+    }
+  );
+  return res.data.data;
+};
+
+export const getRecordingById = async (recordingId) => {
+  const res = await axios.get(`${API_BASE}/admin/recording/${recordingId}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const getRecordingsByAppointment = async (appointmentId) => {
+  const res = await axios.get(`${API_BASE}/admin/recording/appointment/${appointmentId}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const updateRecording = async (recordingId, videoUrl) => {
+  const res = await axios.put(
+    `${API_BASE}/admin/recording/${recordingId}`,
+    { videoUrl },
+    {
+      headers: getAuthHeaders(),
+    }
+  );
+  return res.data.data;
+};
+
+export const uploadRecordingVideo = async (recordingId, videoFile) => {
+  const formData = new FormData();
+  formData.append('video', videoFile);
+  
+  const res = await axios.post(
+    `${API_BASE}/admin/recording/upload/${recordingId}`,
+    formData,
+    {
+      headers: getAuthHeaders(),
+    }
+  );
+  return res.data.data;
+};
+
+// Get recordings for a specific user (admin use)
+export const getRecordingsByUserId = async (userId) => {
+  const res = await axios.get(`${API_BASE}/admin/recording/user/${userId}`, {
+    headers: getAuthHeaders(),
+  });
   return res.data.data;
 };
 

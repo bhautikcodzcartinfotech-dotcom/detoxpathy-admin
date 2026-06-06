@@ -21,7 +21,8 @@ import {
   ShieldCheck,
   Mail,
   Lock,
-  Camera
+  Camera,
+  Wallet
 } from "lucide-react";
 import { getDashboardStats, createSubAdminApi, getAllBranches } from "@/Api/AllApi";
 import Loader from "@/utils/loader";
@@ -227,6 +228,15 @@ const DashboardPage = () => {
                 icon: TrendingUp
             },
             { 
+                title: "AVAILABLE CASH", 
+                value: stats.availableCash >= 100000 
+                    ? `₹${((stats.availableCash || 0) / 100000).toFixed(2)}L` 
+                    : `₹${(stats.availableCash || 0).toLocaleString('en-IN')}`, 
+                sub: dateRange === "all" ? "cumulative cash balance" : `cash balance up to ${getRangeLabel(dateRange).toLowerCase()}`, 
+                color: "border-blue-600 shadow-blue-900/5",
+                icon: Wallet
+            },
+            { 
                 title: "ACTIVE PROGRAMS", 
                 value: stats.activePrograms || stats.activePlanUsers || 0, 
                 sub: "currently running", 
@@ -326,9 +336,9 @@ const DashboardPage = () => {
         </div>
       </div>
 
-      {/* Original Top Stats Grid for ADMIN: 4 boxes */}
+      {/* Original Top Stats Grid for ADMIN: 5 boxes */}
       {role !== "subadmin" && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
           {topStats.map((stat, i) => (
             <div 
               key={i} 

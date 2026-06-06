@@ -25,6 +25,12 @@ import {
   acceptTransferAppointment,
   rejectTransferAppointment,
   getSetting,
+  startRecording,
+  pauseRecording,
+  resumeRecording,
+  stopRecording,
+  getRecordingsByAppointment,
+  uploadRecordingVideo,
 } from "@/Api/AllApi";
 import { io } from "socket.io-client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -140,6 +146,13 @@ const AppointmentPage = () => {
   const [transferRequests, setTransferRequests] = useState([]);
   const [transferActionLoadingId, setTransferActionLoadingId] = useState(null);
 
+  // Recording state
+  const [currentRecording, setCurrentRecording] = useState(null);
+  const [recordingLoading, setRecordingLoading] = useState(false);
+  const recordingChunksRef = useRef([]);
+  const mediaRecorderRef = useRef(null);
+  const recordedVideoRef = useRef(null);
+
   const [currency, setCurrency] = useState("₹");
   const [advanceBookingDays, setAdvanceBookingDays] = useState(30);
   const [bookingSlotDays, setBookingSlotDays] = useState(0);
@@ -151,6 +164,7 @@ const AppointmentPage = () => {
     localAudioTrack: null,
     localVideoTrack: null,
   });
+  const remoteUserRef = useRef(null);
 
 
   const [filterDate, setFilterDate] = useState(getTodayInKolkata());
@@ -821,6 +835,7 @@ const AppointmentPage = () => {
 
         try {
           await client.subscribe(user, mediaType);
+          remoteUserRef.current = user;
 
           if (mediaType === "video") {
             // Explicitly request high-quality stream for the remote user
@@ -982,6 +997,10 @@ const AppointmentPage = () => {
 
     try {
       setCallLoadingId(appointment._id);
+      // Stop recording if active
+      if (currentRecording && currentRecording.status !== 'stopped') {
+        await handleStopRecording();
+      }
       await cleanupAgoraSession();
       const updatedAppointment = await endAppointmentCall(appointment._id);
       updateAppointmentCallState(
@@ -1005,6 +1024,139 @@ const AppointmentPage = () => {
       );
     } finally {
       setCallLoadingId(null);
+    }
+  };
+
+  // Recording handlers
+  const handleStartRecording = async () => {
+    if (!activeCallAppointment?._id) return;
+    try {
+      setRecordingLoading(true);
+      const recording = await startRecording(activeCallAppointment._id);
+      setCurrentRecording(recording);
+      
+      // Start MediaRecorder
+      const tracks = [];
+      
+      // Add remote video track if available
+      if (remoteUserRef.current?.videoTrack) {
+        tracks.push(remoteUserRef.current.videoTrack.getMediaStreamTrack());
+      }
+      
+      // Add audio tracks (remote + local)
+      if (remoteUserRef.current?.audioTrack) {
+        tracks.push(remoteUserRef.current.audioTrack.getMediaStreamTrack());
+      }
+      if (agoraSessionRef.current.localAudioTrack) {
+        tracks.push(agoraSessionRef.current.localAudioTrack.getMediaStreamTrack());
+      }
+      
+      if (tracks.length === 0) {
+        toast.error("No video/audio tracks available to record");
+        return;
+      }
+      
+      const mediaStream = new MediaStream(tracks);
+      const mediaRecorder = new MediaRecorder(mediaStream);
+      mediaRecorderRef.current = mediaRecorder;
+      recordingChunksRef.current = [];
+      
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) {
+          recordingChunksRef.current.push(e.data);
+        }
+      };
+      
+      mediaRecorder.onstop = async () => {
+        const blob = new Blob(recordingChunksRef.current, { type: 'video/webm' });
+        const videoFile = new File([blob], `recording-${Date.now()}.webm`, { type: 'video/webm' });
+        recordedVideoRef.current = videoFile;
+      };
+      
+      mediaRecorder.start();
+      toast.success("Recording started");
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || "Failed to start recording");
+    } finally {
+      setRecordingLoading(false);
+    }
+  };
+
+  const handlePauseRecording = async () => {
+    if (!currentRecording?._id) return;
+    try {
+      setRecordingLoading(true);
+      const recording = await pauseRecording(currentRecording._id);
+      setCurrentRecording(recording);
+      
+      // Pause MediaRecorder
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.pause();
+      }
+      
+      toast.success("Recording paused");
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || "Failed to pause recording");
+    } finally {
+      setRecordingLoading(false);
+    }
+  };
+
+  const handleResumeRecording = async () => {
+    if (!currentRecording?._id) return;
+    try {
+      setRecordingLoading(true);
+      const recording = await resumeRecording(currentRecording._id);
+      setCurrentRecording(recording);
+      
+      // Resume MediaRecorder
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
+        mediaRecorderRef.current.resume();
+      }
+      
+      toast.success("Recording resumed");
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || "Failed to resume recording");
+    } finally {
+      setRecordingLoading(false);
+    }
+  };
+
+  const handleStopRecording = async () => {
+    if (!currentRecording?._id) return;
+    try {
+      setRecordingLoading(true);
+      const recording = await stopRecording(currentRecording._id);
+      setCurrentRecording(recording);
+      
+      // Stop MediaRecorder and upload
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
+        
+        // Wait for onstop to create the blob/file
+        setTimeout(async () => {
+          if (recordedVideoRef.current) {
+            try {
+              toast.success("Uploading recording...");
+              await uploadRecordingVideo(currentRecording._id, recordedVideoRef.current);
+              toast.success("Recording uploaded successfully");
+            } catch (uploadError) {
+              console.error(uploadError);
+              toast.error("Failed to upload recording");
+            }
+          }
+        }, 500);
+      }
+      
+      toast.success("Recording stopped");
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || "Failed to stop recording");
+    } finally {
+      setRecordingLoading(false);
     }
   };
 
@@ -1082,6 +1234,33 @@ const AppointmentPage = () => {
     fetchTransferRequests();
     fetchSettings();
   }, [role]);
+
+  // Handle recording state when call modal opens/closes
+  useEffect(() => {
+    if (isCallModalOpen && activeCallAppointment?._id) {
+      // Fetch existing recordings for this appointment
+      const fetchRecordings = async () => {
+        try {
+          const recordings = await getRecordingsByAppointment(activeCallAppointment._id);
+          // Find the most recent active or paused recording
+          const activeRecording = recordings
+            .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+            .find(r => r.status !== 'stopped');
+          if (activeRecording) {
+            setCurrentRecording(activeRecording);
+          } else {
+            setCurrentRecording(null);
+          }
+        } catch (error) {
+          console.error("Failed to fetch recordings:", error);
+        }
+      };
+      fetchRecordings();
+    } else {
+      // Reset recording state when modal closes
+      setCurrentRecording(null);
+    }
+  }, [isCallModalOpen, activeCallAppointment?._id]);
 
   useEffect(() => {
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
@@ -2066,6 +2245,68 @@ const AppointmentPage = () => {
                         <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                         Live
                       </span>
+                      
+                      {/* Recording Controls */}
+                      {!currentRecording || currentRecording.status === 'stopped' ? (
+                        <button
+                          onClick={handleStartRecording}
+                          disabled={recordingLoading}
+                          className="inline-flex items-center gap-1.5 rounded-full px-3 sm:px-6 py-1.5 sm:py-2.5 text-[9px] sm:text-xs font-black uppercase tracking-widest transition-all bg-red-600 text-white hover:bg-red-700 shadow-lg disabled:opacity-50"
+                        >
+                          {recordingLoading ? (
+                            <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <div className="w-3 h-3 rounded-full bg-white" />
+                          )}
+                          <span>Record</span>
+                        </button>
+                      ) : (
+                        <>
+                          {currentRecording.status === 'paused' ? (
+                            <button
+                              onClick={handleResumeRecording}
+                              disabled={recordingLoading}
+                              className="inline-flex items-center gap-1.5 rounded-full px-3 sm:px-6 py-1.5 sm:py-2.5 text-[9px] sm:text-xs font-black uppercase tracking-widest transition-all bg-green-600 text-white hover:bg-green-700 shadow-lg disabled:opacity-50"
+                            >
+                              {recordingLoading ? (
+                                <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <div className="w-0 h-0 border-t-4 border-t-transparent border-b-4 border-b-transparent border-l-6 border-l-white" />
+                              )}
+                              <span>Resume</span>
+                            </button>
+                          ) : (
+                            <button
+                              onClick={handlePauseRecording}
+                              disabled={recordingLoading}
+                              className="inline-flex items-center gap-1.5 rounded-full px-3 sm:px-6 py-1.5 sm:py-2.5 text-[9px] sm:text-xs font-black uppercase tracking-widest transition-all bg-yellow-600 text-white hover:bg-yellow-700 shadow-lg disabled:opacity-50"
+                            >
+                              {recordingLoading ? (
+                                <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <div className="flex gap-1">
+                                  <div className="w-1 h-4 bg-white rounded-sm" />
+                                  <div className="w-1 h-4 bg-white rounded-sm" />
+                                </div>
+                              )}
+                              <span>Pause</span>
+                            </button>
+                          )}
+                          <button
+                            onClick={handleStopRecording}
+                            disabled={recordingLoading}
+                            className="inline-flex items-center gap-1.5 rounded-full px-3 sm:px-6 py-1.5 sm:py-2.5 text-[9px] sm:text-xs font-black uppercase tracking-widest transition-all bg-slate-700 text-white hover:bg-slate-800 shadow-lg disabled:opacity-50"
+                          >
+                            {recordingLoading ? (
+                              <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                            ) : (
+                              <div className="w-3 h-3 rounded-sm bg-white" />
+                            )}
+                            <span>Stop</span>
+                          </button>
+                        </>
+                      )}
+
                       <button
                         onClick={toggleUserProfile}
                         className={`inline-flex items-center gap-1.5 rounded-full px-3 sm:px-6 py-1.5 sm:py-2.5 text-[9px] sm:text-xs font-black uppercase tracking-widest transition-all ${showUserProfile ? 'bg-teal-600 text-white shadow-lg' : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 shadow-sm'}`}
