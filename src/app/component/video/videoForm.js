@@ -51,6 +51,7 @@ const VideoForm = ({
     sessionPassword: "",
     jwtToken: "",
     accessToken: "",
+    meetingNumber: "",
   });
   const [errors, setErrors] = useState({});
   const [categories, setCategories] = useState([]);
@@ -153,6 +154,7 @@ const VideoForm = ({
         sessionPassword: initialValues.sessionPassword ?? "",
         jwtToken: initialValues.jwtToken ?? "",
         accessToken: initialValues.accessToken ?? "",
+        meetingNumber: initialValues.meetingNumber ?? "",
       }));
       setErrors({});
     } else {
@@ -188,6 +190,7 @@ const VideoForm = ({
         sessionPassword: "",
         jwtToken: "",
         accessToken: "",
+        meetingNumber: "",
       });
       setErrors({});
     }
@@ -354,6 +357,7 @@ const VideoForm = ({
       plan: !isZoomSession && Number(form.type) === 8 ? form.plan : undefined,
       requiredCorrectAnswer: isZoomSession ? 0 : (form.requiredCorrectAnswer ? Number(form.requiredCorrectAnswer) : 0),
       zoomStartUrl: isZoomSession ? form.zoomStartUrl : undefined,
+      meetingNumber: isZoomSession ? form.meetingNumber : undefined,
       sessionName: isZoomSession ? form.sessionName : undefined,
       sessionPassword: isZoomSession ? form.sessionPassword : undefined,
       jwtToken: isZoomSession ? form.jwtToken : undefined,
@@ -426,6 +430,7 @@ const VideoForm = ({
               sessionPassword: "",
               jwtToken: "",
               accessToken: "",
+              meetingNumber: "",
             }))
           }
         />
@@ -509,56 +514,100 @@ const VideoForm = ({
       )}
 
       {Number(form.videoType) === 3 && (
-        <div className="space-y-2">
-          <label className="block mb-1 font-semibold text-gray-700">Zoom Session</label>
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              disabled={generatingMeeting}
-              onClick={async () => {
-                try {
-                  setGeneratingMeeting(true);
-                  const topic = form.title_english || "Detoxpathy Session Meeting";
-                  const result = await generateZoomMeetingApi(topic);
-                  if (result && result.joinUrl) {
-                    setForm((f) => ({
-                      ...f,
-                      video_english_url: result.joinUrl,
-                      video_gujarati_url: result.joinUrl,
-                      video_hindi_url: result.joinUrl,
-                      zoomStartUrl: result.startUrl || "",
-                      sessionName: result.sessionName || topic,
-                      sessionPassword: result.sessionPassword || "",
-                      jwtToken: result.jwtToken || "",
-                      accessToken: result.accessToken || "",
-                    }));
-                    toast.success("Zoom meeting generated successfully!");
-                  } else {
-                    toast.error("Failed to generate Zoom meeting. Invalid response.");
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <label className="block mb-1 font-semibold text-gray-700">Zoom Session</label>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                disabled={generatingMeeting}
+                onClick={async () => {
+                  try {
+                    setGeneratingMeeting(true);
+                    const topic = form.title_english || "Detoxpathy Session Meeting";
+                    const result = await generateZoomMeetingApi(topic);
+                    if (result && result.joinUrl) {
+                      setForm((f) => ({
+                        ...f,
+                        video_english_url: result.joinUrl,
+                        video_gujarati_url: result.joinUrl,
+                        video_hindi_url: result.joinUrl,
+                        zoomStartUrl: result.startUrl || "",
+                        sessionName: result.sessionName || topic,
+                        sessionPassword: result.sessionPassword || "",
+                        jwtToken: result.jwtToken || "",
+                        accessToken: result.accessToken || "",
+                        meetingNumber: result.meetingNumber || "",
+                      }));
+                      toast.success("Zoom meeting generated successfully!");
+                    } else {
+                      toast.error("Failed to generate Zoom meeting. Invalid response.");
+                    }
+                  } catch (err) {
+                    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || "Failed to generate meeting";
+                    toast.error(errorMsg);
+                  } finally {
+                    setGeneratingMeeting(false);
                   }
-                } catch (err) {
-                  const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || "Failed to generate meeting";
-                  toast.error(errorMsg);
-                } finally {
-                  setGeneratingMeeting(false);
-                }
-              }}
-              className={`px-6 py-3 text-white rounded-xl transition duration-300 font-semibold text-xs uppercase tracking-wider whitespace-nowrap shadow-md hover:shadow-lg ${
-                generatingMeeting ? "bg-gray-400 cursor-not-allowed" : "bg-[#134D41] hover:bg-[#0f3d33]"
-              }`}
-            >
-              {generatingMeeting ? "Generating..." : "Generate Zoom URL"}
-            </button>
-            {form.video_english_url && (
-              <span className="text-sm text-emerald-600 font-semibold flex items-center gap-1">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                </svg>
-                Zoom Session Generated
-              </span>
-            )}
+                }}
+                className={`px-6 py-3 text-white rounded-xl transition duration-300 font-semibold text-xs uppercase tracking-wider whitespace-nowrap shadow-md hover:shadow-lg ${
+                  generatingMeeting ? "bg-gray-400 cursor-not-allowed" : "bg-[#134D41] hover:bg-[#0f3d33]"
+                }`}
+              >
+                {generatingMeeting ? "Generating..." : "Generate Zoom URL"}
+              </button>
+              {form.video_english_url && (
+                <span className="text-sm text-emerald-600 font-semibold flex items-center gap-1">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                  </svg>
+                  Zoom Session Generated
+                </span>
+              )}
+            </div>
+            {errors.video_english_url && <p className="text-red-500 text-sm mt-1">{errors.video_english_url}</p>}
           </div>
-          {errors.video_english_url && <p className="text-red-500 text-sm mt-1">{errors.video_english_url}</p>}
+
+          {form.meetingNumber && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 border border-gray-200 rounded-2xl">
+              <div>
+                <label className="block mb-1 font-semibold text-xs text-gray-500 uppercase tracking-wider">Meeting Number</label>
+                <input
+                  type="text"
+                  readOnly
+                  value={form.meetingNumber}
+                  className="w-full border border-gray-200 rounded-xl p-3 bg-gray-100 cursor-not-allowed focus:outline-none text-gray-700 text-sm font-semibold"
+                />
+              </div>
+              <div>
+                <label className="block mb-1 font-semibold text-xs text-gray-500 uppercase tracking-wider">Session Name</label>
+                <input
+                  type="text"
+                  readOnly
+                  value={form.sessionName}
+                  className="w-full border border-gray-200 rounded-xl p-3 bg-gray-100 cursor-not-allowed focus:outline-none text-gray-700 text-sm font-semibold"
+                />
+              </div>
+              <div>
+                <label className="block mb-1 font-semibold text-xs text-gray-500 uppercase tracking-wider">Session Password</label>
+                <input
+                  type="text"
+                  readOnly
+                  value={form.sessionPassword}
+                  className="w-full border border-gray-200 rounded-xl p-3 bg-gray-100 cursor-not-allowed focus:outline-none text-gray-700 text-sm font-semibold"
+                />
+              </div>
+              <div>
+                <label className="block mb-1 font-semibold text-xs text-gray-500 uppercase tracking-wider">Meeting Join URL</label>
+                <input
+                  type="text"
+                  readOnly
+                  value={form.video_english_url}
+                  className="w-full border border-gray-200 rounded-xl p-3 bg-gray-100 cursor-not-allowed focus:outline-none text-gray-700 text-sm font-semibold truncate"
+                />
+              </div>
+            </div>
+          )}
         </div>
       )}
 

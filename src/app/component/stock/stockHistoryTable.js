@@ -71,8 +71,10 @@ const StockHistoryTable = ({ history, loading, currentPage, totalPages, onPageCh
               <th className="px-4 py-3 font-black">Item</th>
               <th className="px-4 py-3 font-black">Location</th>
               <th className="px-4 py-3 font-black text-center">Type</th>
-              <th className="px-4 py-3 font-black text-center">Change</th>
-              <th className="px-4 py-3 font-black text-center">New Available</th>
+              <th className="px-4 py-3 font-black text-center">Avail. Change</th>
+              <th className="px-4 py-3 font-black text-center">New Avail.</th>
+              <th className="px-4 py-3 font-black text-center">Breakage Change</th>
+              <th className="px-4 py-3 font-black text-center">New Breakage</th>
               <th className="px-4 py-3 font-black">Document</th>
             </tr>
           </thead>
@@ -81,8 +83,13 @@ const StockHistoryTable = ({ history, loading, currentPage, totalPages, onPageCh
               const name = item.productId?.name || item.planId?.name || "Unknown Item";
               const location = item.branchId?.name || "Company Master";
               const type = item.type;
-              const change = item.availableChange > 0 ? `+${item.availableChange}` : item.availableChange;
-              const changeColor = item.availableChange > 0 ? "text-green-600" : (item.availableChange < 0 ? "text-red-600" : "text-gray-400");
+              
+              const availChange = item.availableChange > 0 ? `+${item.availableChange}` : item.availableChange;
+              const availChangeColor = item.availableChange > 0 ? "text-green-600" : (item.availableChange < 0 ? "text-red-600" : "text-gray-400");
+              
+              const breakChange = item.breakageChange > 0 ? `+${item.breakageChange}` : item.breakageChange || 0;
+              const breakChangeColor = item.breakageChange > 0 ? "text-green-600" : (item.breakageChange < 0 ? "text-red-600" : "text-gray-400");
+              
               const isSelected = selectedIds.includes(item._id);
 
               return (
@@ -120,10 +127,16 @@ const StockHistoryTable = ({ history, loading, currentPage, totalPages, onPageCh
                     </span>
                   </td>
                   <td className="py-4 text-center font-bold">
-                    <span className={changeColor}>{change}</span>
+                    <span className={availChangeColor}>{availChange}</span>
                   </td>
                   <td className="py-4 text-center font-black text-gray-900">
                     {item.newAvailable?.toLocaleString() || 0}
+                  </td>
+                  <td className="py-4 text-center font-bold">
+                    <span className={breakChangeColor}>{breakChange}</span>
+                  </td>
+                  <td className="py-4 text-center font-black text-gray-900">
+                    {item.newBreakage?.toLocaleString() || 0}
                   </td>
                   <td className="py-4">
                     {item.document && item.document !== "manual" && item.document !== "purchase" ? (

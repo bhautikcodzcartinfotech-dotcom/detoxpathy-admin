@@ -1,6 +1,7 @@
 import axios from "axios";
 
-// export const API_BASE = "http://192.168.1.5:3002/api/v1";// export const API_BASE = "http://69.62.73.194:4009/api/v1";
+// export const API_BASE = "http://192.168.1.14:3002/api/v1";
+// export const API_BASE = "http://69.62.73.194:4009/api/v1";
  export const API_BASE = "https://admin.detoxpathy.com/api/v1";
 // export const API_BASE = "https://backend.fatendfit.com/api/v1";
 // Host base used to resolve file URLs coming from multer (e.g., uploads/..)
@@ -674,6 +675,9 @@ export const createVideoApi = async (payload) => {
   if (typeof payload.zoomStartUrl !== "undefined") {
     data.append("zoomStartUrl", payload.zoomStartUrl);
   }
+  if (typeof payload.meetingNumber !== "undefined") {
+    data.append("meetingNumber", payload.meetingNumber);
+  }
   if (typeof payload.sessionName !== "undefined") {
     data.append("sessionName", payload.sessionName);
   }
@@ -786,6 +790,9 @@ export const updateVideoById = async (id, payload) => {
   if (typeof payload.zoomStartUrl !== "undefined") {
     data.append("zoomStartUrl", payload.zoomStartUrl);
   }
+  if (typeof payload.meetingNumber !== "undefined") {
+    data.append("meetingNumber", payload.meetingNumber);
+  }
   if (typeof payload.sessionName !== "undefined") {
     data.append("sessionName", payload.sessionName);
   }
@@ -819,6 +826,17 @@ export const generateZoomMeetingApi = async (topic) => {
     { headers: getAuthHeaders() }
   );
   return res.data;
+};
+
+export const getEmergencyAlerts = async (branchId, params = {}) => {
+  const res = await axios.get(`${API_BASE}/admin/emergency/all`, {
+    headers: getAuthHeaders(),
+    params: {
+      ...params,
+      branchId
+    }
+  });
+  return res.data.data;
 };
 
 export const getVideoReports = async (params = {}) => {

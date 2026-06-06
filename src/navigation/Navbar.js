@@ -5,7 +5,7 @@ import { MdAccountCircle } from "react-icons/md";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "../contexts/AuthContext";
-import { FiBell, FiUserPlus, FiMessageSquare, FiCalendar, FiTrash2, FiCheckCircle, FiX } from "react-icons/fi";
+import { FiBell, FiUserPlus, FiMessageSquare, FiCalendar, FiTrash2, FiCheckCircle, FiX, FiShoppingCart } from "react-icons/fi";
 import { io } from "socket.io-client";
 import { API_HOST } from "../Api/AllApi";
 import { collection, onSnapshot } from "firebase/firestore";
@@ -296,6 +296,13 @@ const Navbar = () => {
           iconBg: "bg-violet-100/80 text-violet-600 shadow-sm shadow-violet-100/20",
           icon: <FiMessageSquare size={16} />
         };
+      case "order_create":
+        return {
+          cardBg: read ? "bg-white" : "bg-gradient-to-br from-amber-500/[0.04] to-yellow-500/[0.04]",
+          cardBorder: read ? "border-gray-100" : "border-amber-100/50",
+          iconBg: "bg-amber-100/80 text-amber-600 shadow-sm shadow-amber-100/20",
+          icon: <FiShoppingCart size={16} />
+        };
       case "appointment_create":
       case "appointment_reschedule":
         return {
@@ -382,7 +389,7 @@ const Navbar = () => {
     }
 
     // Default fallback cleanly stripped of emoji prefixes
-    const cleanMessage = message.replace(/^[🆕💬📅🚨]\s*/, "");
+    const cleanMessage = message.replace(/^[🆕💬📅🚨🛒]\s*/, "");
     return <p className="text-[12.5px] leading-relaxed text-gray-700">{cleanMessage}</p>;
   };
 

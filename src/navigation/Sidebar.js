@@ -367,6 +367,15 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
             {!isCollapsed && <span>Supports</span>}
           </Link>
           )}
+          {(role === "Admin" || can("show emergency page")) && (
+          <Link
+            href="/component/emergency"
+            className={linkClasses("/component/emergency")}
+          >
+            <MdReportProblem size={20} />
+            {!isCollapsed && <span>Emergency</span>}
+          </Link>
+          )}
           {(role === "Admin" || can("show reports page")) && (
           <Link
             href="/component/reports"

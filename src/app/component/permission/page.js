@@ -41,6 +41,7 @@ const PERMISSION_GROUPS = [
       { label: "Show Staff Page", value: "show staff page" },
       { label: "Show Accounting Page", value: "show accounting page" },
       { label: "Show Complaints Page", value: "show complaints page" },
+      { label: "Show Emergency Page", value: "show emergency page" },
       { label: "Show GST Reports Page", value: "show gst reports page" },
       { label: "Show Medical Condition Page", value: "show medical condition page" },
       { label: "Show FAQ Page", value: "show faq page" },

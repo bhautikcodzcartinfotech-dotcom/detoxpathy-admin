@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "../contexts/AuthContext";
 import Sidebar from "../navigation/Sidebar";
 import Navbar from "../navigation/Navbar";
@@ -13,7 +13,7 @@ import Loader from "@/utils/loader";
 import { trackPanelOpen, trackPanelClose, API_BASE, API_HOST, getSetting } from "@/Api/AllApi";
 import { io } from "socket.io-client";
 import toast from "react-hot-toast";
-import { FiUserPlus, FiMessageSquare, FiCalendar, FiBell, FiX } from "react-icons/fi";
+import { FiUserPlus, FiMessageSquare, FiCalendar, FiBell, FiX, FiShoppingCart } from "react-icons/fi";
 
 const renderNotificationMessage = (message, type) => {
   if (!message) return null;
@@ -78,7 +78,7 @@ const renderNotificationMessage = (message, type) => {
     console.error("Error parsing toast notification message", e);
   }
 
-  const cleanMessage = message.replace(/^[🆕💬📅🚨]\s*/, "");
+  const cleanMessage = message.replace(/^[🆕💬📅🚨🛒]\s*/, "");
   return <p className="text-[12.5px] leading-relaxed text-gray-700">{cleanMessage}</p>;
 };
 
@@ -88,6 +88,61 @@ export default function MainLayout({ children }) {
   const { isAuthenticated, loading } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [emergencyModal, setEmergencyModal] = useState({ isOpen: false, data: null });
+  const [settings, setSettings] = useState(null);
+  // Keep a ref so the socket handler always sees the latest settings
+  // without needing to be re-registered (avoids stale-closure problem).
+  const settingsRef = useRef(null);
+  // Whether the browser has allowed audio (requires at least one user gesture).
+  const audioUnlocked = useRef(false);
+  // If a notification arrives before the user has interacted, we queue the
+  // audio URL here and play it on their very next click / keydown.
+  const pendingAudioUrl = useRef(null);
+
+  // Mirror settings into ref so socket handler always sees fresh value.
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
+
+  // Helper: play an audio URL. Returns true on success, false if blocked.
+  const playAudio = (url) => {
+    const audio = new Audio(url);
+    audio.volume = 1;
+    return audio.play()
+      .then(() => true)
+      .catch(() => false);
+  };
+
+  // Unlock browser audio on first user interaction and drain any queued sound.
+  useEffect(() => {
+    const unlock = () => {
+      audioUnlocked.current = true;
+      // If a notification arrived before the user clicked, play it now.
+      if (pendingAudioUrl.current) {
+        const url = pendingAudioUrl.current;
+        pendingAudioUrl.current = null;
+        const audio = new Audio(url);
+        audio.volume = 1;
+        audio.play().catch(() => {}); // inside a real click handler – always works
+      }
+    };
+    window.addEventListener("click", unlock, { once: true });
+    window.addEventListener("keydown", unlock, { once: true });
+    return () => {
+      window.removeEventListener("click", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isAuthenticated() && !loading) {
+      getSetting()
+        .then((res) => {
+          const data = res?.data || res?.setting || res;
+          if (data) setSettings(data);
+        })
+        .catch((err) => console.error("Failed to load settings in MainLayout:", err));
+    }
+  }, [isAuthenticated, loading]);
 
 
   // Track panel open/close with refresh detection
@@ -195,6 +250,28 @@ export default function MainLayout({ children }) {
         if (isEmergency) {
           setEmergencyModal({ isOpen: true, data });
         } else {
+          // Play custom sound alert for new orders if configured.
+          // settingsRef.current always has the latest value (no stale closure).
+          const currentSettings = settingsRef.current;
+          if (data.type === 'order_create' && currentSettings?.audio) {
+            const audioUrl = currentSettings.audio.startsWith('http')
+              ? currentSettings.audio
+              : `${API_HOST}/${currentSettings.audio}`;
+
+            if (audioUnlocked.current) {
+              // User has already interacted – play straight away.
+              const audio = new Audio(audioUrl);
+              audio.volume = 1;
+              audio.play().catch(() => {});
+            } else {
+              // User hasn't clicked yet. Queue the URL; the unlock listener
+              // above will play it on their very next interaction.
+              // (Only the most recent notification is kept – overwrites older.)
+              pendingAudioUrl.current = audioUrl;
+              console.log("Audio queued – will play on next user interaction.");
+            }
+          }
+
           // Custom styling depending on the type
           let icon = <FiBell className="w-5 h-5" />;
           let iconBg = "bg-gray-100 text-gray-600 border border-gray-200/50";
@@ -216,10 +293,15 @@ export default function MainLayout({ children }) {
             iconBg = "bg-emerald-50 text-emerald-600 border border-emerald-100";
             borderCol = "border-emerald-100";
             redirectUrl = `/component/appointment`;
+          } else if (data.type === "order_create") {
+            icon = <FiShoppingCart className="w-5 h-5" />;
+            iconBg = "bg-amber-50 text-amber-600 border border-amber-100";
+            borderCol = "border-amber-100";
+            redirectUrl = `/component/order`;
           }
 
           // Clean emoji prefixes from message if any
-          const cleanMessage = data.message ? data.message.replace(/^[🆕💬📅🚨]\s*/, "") : "";
+          const cleanMessage = data.message ? data.message.replace(/^[🆕💬📅🚨🛒]\s*/, "") : "";
 
           toast.custom(
             (t) => (
@@ -240,6 +322,8 @@ export default function MainLayout({ children }) {
                       ? "New Member"
                       : data.type === "support"
                       ? "Support Message"
+                      : data.type === "order_create"
+                      ? "New Order Alert"
                       : "Appointment Alert"}
                   </div>
                   <div className="mt-1">

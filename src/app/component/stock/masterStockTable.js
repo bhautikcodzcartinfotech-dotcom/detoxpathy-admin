@@ -20,16 +20,19 @@ const MasterStockTable = ({ stocks, loading, onEdit }) => {
         <thead className="bg-gradient-to-r from-yellow-400 to-amber-300">
           <tr className="text-[10px] uppercase tracking-widest text-gray-700">
             <th className="px-4 py-3 font-black">Product / Plan</th>
-            <th className="px-4 py-3 font-black text-center">Available</th>
-            <th className="px-4 py-3 font-black text-center">Sold</th>
             <th className="px-4 py-3 font-black text-center">Total</th>
+            <th className="px-4 py-3 font-black text-center">Sold</th>
+            <th className="px-4 py-3 font-black text-center">Available</th>
+            <th className="px-4 py-3 font-black text-center">Expiry</th>
+            <th className="px-4 py-3 font-black text-center">Breakage</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">
           {stocks.map((stock) => {
             const name = stock.productId?.name || stock.planId?.name || "Unknown Item";
-            const total = (stock.available || 0) + (stock.sold || 0);
-            const isOutOfStock = stock.available === 0;
+            const available = stock.available || 0;
+            const isOutOfStock = available === 0;
+            const isExpired = stock.expiry && new Date(stock.expiry) < new Date();
 
             return (
               <tr 
@@ -47,16 +50,24 @@ const MasterStockTable = ({ stocks, loading, onEdit }) => {
                     )}
                   </div>
                 </td>
-                <td className="py-4 text-center">
-                  <span className={`font-bold ${isOutOfStock ? "text-red-500" : "text-green-600"}`}>
-                    {(stock.available || 0).toLocaleString()}
-                  </span>
+                <td className="py-4 text-center font-bold text-gray-700">
+                  {((stock.available || 0) + (stock.sold || 0)).toLocaleString()}
                 </td>
                 <td className="py-4 text-center font-bold text-gray-700">
                   {(stock.sold || 0).toLocaleString()}
                 </td>
-                <td className="py-4 text-center font-black text-gray-900 border-l border-transparent group-hover:border-gray-100">
-                  {total.toLocaleString()}
+                <td className="py-4 text-center border-l border-transparent group-hover:border-gray-100">
+                  <span className={`font-black ${isOutOfStock ? "text-red-500" : "text-green-600"}`}>
+                    {available.toLocaleString()}
+                  </span>
+                </td>
+                <td className={`py-4 text-center font-bold ${isExpired ? "text-red-600" : "text-gray-700"}`}>
+                  {stock.expiry 
+                    ? new Date(stock.expiry).toLocaleDateString('en-GB') 
+                    : "-"}
+                </td>
+                <td className="py-4 text-center font-bold text-gray-700">
+                  {(stock.breakage || 0).toLocaleString()}
                 </td>
               </tr>
             );

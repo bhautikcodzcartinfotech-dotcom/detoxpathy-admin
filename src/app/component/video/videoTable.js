@@ -130,9 +130,16 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                         }[video.type] || (video.videoType === 3 ? "Zoom Session" : video.type)}
                       </span>
                       {video.videoType === 3 && (
-                        <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${video.isExpired ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-700'}`}>
-                          {video.isExpired ? "Expired" : "Active"}
-                        </span>
+                        <>
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${video.isExpired ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-700'}`}>
+                            {video.isExpired ? "Expired" : "Active"}
+                          </span>
+                          {video.meetingNumber && (
+                            <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs font-semibold">
+                              Meeting ID: {video.meetingNumber}
+                            </span>
+                          )}
+                        </>
                       )}
                       {video.videoType !== 3 && video.type !== 10 && (
                         <>

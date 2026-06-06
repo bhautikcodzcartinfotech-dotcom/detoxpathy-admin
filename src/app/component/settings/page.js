@@ -85,6 +85,7 @@ const SettingsPage = () => {
   const [saving, setSaving] = useState(false);
   const [isUploadingImage, setIsUploadingImage] = useState(false);
   const [isUploadingBanner, setIsUploadingBanner] = useState(false);
+  const [isUploadingAudio, setIsUploadingAudio] = useState(false);
   const [settings, setSettings] = useState(null);
 
   const [formData, setFormData] = useState({});
@@ -181,7 +182,7 @@ const SettingsPage = () => {
 
       console.log("Updating settings with data:", updateData);
 
-      if (formData.bannerFile) {
+      if (formData.bannerFile || formData.audioFile) {
         const data = new FormData();
         Object.keys(updateData).forEach(key => {
           if (typeof updateData[key] === 'object' && updateData[key] !== null) {
@@ -190,7 +191,8 @@ const SettingsPage = () => {
             data.append(key, updateData[key]);
           }
         });
-        data.append('banner', formData.bannerFile);
+        if (formData.bannerFile) data.append('banner', formData.bannerFile);
+        if (formData.audioFile) data.append('audio', formData.audioFile);
         await updateSettingById(settings._id, data);
       } else {
         await updateSettingById(settings._id, updateData);
@@ -263,6 +265,24 @@ const SettingsPage = () => {
     };
     reader.readAsDataURL(file);
     toast.success("Banner selected! Click 'Update Settings' to save.");
+  };
+
+  // Handle audio upload (local preview selection)
+  const handleAudioUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    // Preview the audio locally
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFormData(prev => ({
+        ...prev,
+        audio: reader.result, // Local base64 string for direct playback preview
+        audioFile: file       // Keep file to upload during handleUpdate
+      }));
+    };
+    reader.readAsDataURL(file);
+    toast.success("Order sound selected! Click 'Update Settings' to save.");
   };
 
 
@@ -870,6 +890,74 @@ const SettingsPage = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                   </svg>
                   {formData.banner ? "Replace Current Banner" : "Upload Banner Image"}
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* Order Notification Sound */}
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 transition-all hover:shadow-2xl">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-12 h-12 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-600 shadow-inner">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12-3c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Order Notification Sound</h3>
+                <p className="text-sm text-gray-500">Upload a custom audio file (.mp3, .wav) to play on new orders</p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              {formData.audio ? (
+                <div className="p-6 rounded-2xl bg-amber-50/50 border border-amber-200/60 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-amber-800 uppercase tracking-widest">Active Sound File</span>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, audio: "", audioFile: null }))}
+                      className="text-xs text-red-500 hover:text-red-600 font-bold hover:underline"
+                    >
+                      Remove Sound
+                    </button>
+                  </div>
+                  <audio
+                    src={formData.audio.startsWith('data:') ? formData.audio : getVideoUrl(formData.audio)}
+                    controls
+                    className="w-full"
+                  />
+                </div>
+              ) : (
+                <div className="relative group w-full">
+                  <label htmlFor="audio-upload-main" className="flex flex-col items-center justify-center w-full min-h-[140px] cursor-pointer p-6 border-4 border-dashed border-gray-200 rounded-[2rem] bg-gray-50 hover:bg-amber-50/30 hover:border-amber-300 transition-all duration-300 shadow-inner">
+                    <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-md mb-3 text-gray-300 group-hover:text-amber-400 transition-colors">
+                      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-semibold text-gray-500 group-hover:text-amber-600 transition-colors">Select an audio file</p>
+                    <p className="text-[10px] text-gray-400 mt-1">Accepts MP3, WAV or AAC (Max 5MB)</p>
+                  </label>
+                </div>
+              )}
+
+              <div className="flex justify-center">
+                <input
+                  type="file"
+                  accept="audio/*"
+                  onChange={handleAudioUpload}
+                  className="hidden"
+                  id="audio-upload-main"
+                />
+                <label
+                  htmlFor="audio-upload-main"
+                  className="group px-8 py-4 bg-gradient-to-r from-gray-900 to-gray-800 text-white font-bold rounded-2xl hover:from-amber-600 hover:to-amber-500 transition-all duration-300 cursor-pointer flex items-center gap-3 shadow-xl hover:shadow-amber-200 hover:-translate-y-0.5"
+                >
+                  <svg className="w-5 h-5 transition-transform group-hover:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                  {formData.audio ? "Replace Sound File" : "Upload Sound File"}
                 </label>
               </div>
             </div>

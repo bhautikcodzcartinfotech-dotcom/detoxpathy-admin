@@ -7,6 +7,8 @@ const StockForm = ({ initialValues, products, plans, branches, onSubmit, onCance
     planId: "",
     branchId: "null", // Default to Master
     available: 0,
+    breakage: 0,
+    expiry: "",
     isIncrement: true,
     type: "product", // Helper for selection
   });
@@ -18,6 +20,8 @@ const StockForm = ({ initialValues, products, plans, branches, onSubmit, onCance
         planId: initialValues.planId?._id || "",
         branchId: initialValues.branchId?._id || "null",
         available: initialValues.available || 0,
+        breakage: initialValues.breakage || 0,
+        expiry: initialValues.expiry ? new Date(initialValues.expiry).toISOString().split('T')[0] : "",
         isIncrement: false,
         type: initialValues.planId ? "plan" : "product",
       });
@@ -25,6 +29,8 @@ const StockForm = ({ initialValues, products, plans, branches, onSubmit, onCance
        setFormData(prev => ({
          ...prev,
          available: 0,
+         breakage: 0,
+         expiry: "",
          isIncrement: true
        }));
     }
@@ -105,7 +111,7 @@ const StockForm = ({ initialValues, products, plans, branches, onSubmit, onCance
 
       <div className="border-t pt-4 mt-4">
         <p className="text-xs font-semibold text-gray-400 uppercase mb-4">Stock Levels</p>
-        <div className="">
+        <div className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Available Quantity</label>
             <input
@@ -114,6 +120,29 @@ const StockForm = ({ initialValues, products, plans, branches, onSubmit, onCance
               value={formData.available}
               onChange={handleChange}
               placeholder="Enter quantity"
+              className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-[#134D41]/20 focus:border-[#134D41] outline-none transition-all"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Breakage Quantity</label>
+            <input
+              type="number"
+              name="breakage"
+              value={formData.breakage}
+              onChange={handleChange}
+              placeholder="Enter breakage quantity"
+              className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-[#134D41]/20 focus:border-[#134D41] outline-none transition-all"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
+            <input
+              type="date"
+              name="expiry"
+              value={formData.expiry}
+              onChange={handleChange}
               className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-[#134D41]/20 focus:border-[#134D41] outline-none transition-all"
             />
           </div>
