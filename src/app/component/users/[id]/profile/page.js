@@ -93,6 +93,7 @@ const UserProfilePage = () => {
           setVideoAnswers(vData || []);
         } catch (err) {
           console.error("Failed to load video answers", err);
+          setVideoAnswers([]);
         }
 
         // Fetch user orders
@@ -101,6 +102,7 @@ const UserProfilePage = () => {
           setUserOrders(oData?.orders || []);
         } catch (err) {
           console.error("Failed to load user orders", err);
+          setUserOrders([]);
         }
 
         // Fetch user recordings
@@ -110,6 +112,8 @@ const UserProfilePage = () => {
           setRecordings(rData || []);
         } catch (err) {
           console.error("Failed to load user recordings", err);
+          // Silently fail - recordings feature might not be available
+          setRecordings([]);
         } finally {
           setRecordingsLoading(false);
         }
@@ -310,6 +314,9 @@ const UserProfilePage = () => {
         <title>Invoices - User USR-${userId.slice(-6).toUpperCase()}</title>
         <meta charset="utf-8">
         <style>
+          * {
+            box-sizing: border-box;
+          }
           body {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             color: #1e293b;
@@ -320,12 +327,13 @@ const UserProfilePage = () => {
             background-color: #f8fafc;
           }
           .container {
-            max-width: 800px;
+            max-width: 1200px;
             margin: 0 auto;
+            width: 100%;
           }
           .invoice-page {
             background-color: #ffffff;
-            padding: 40px;
+            padding: 50px;
             box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
             margin-bottom: 40px;
             border-radius: 8px;
@@ -333,72 +341,79 @@ const UserProfilePage = () => {
           }
           h1 {
             color: #0d9488;
-            font-size: 28px;
-            margin: 0 0 5px 0;
+            font-size: 36px;
+            margin: 0 0 8px 0;
             font-weight: 800;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
           }
           .subtitle {
-            font-size: 10px;
+            font-size: 12px;
             font-weight: 700;
             text-transform: uppercase;
             color: #1e293b;
-            margin-bottom: 25px;
-            letter-spacing: 1px;
+            margin-bottom: 30px;
+            letter-spacing: 1.5px;
           }
           h2 {
-            font-size: 18px;
+            font-size: 22px;
             font-weight: 800;
-            margin: 0 0 12px 0;
+            margin: 0 0 15px 0;
             color: #1e293b;
-            letter-spacing: 0.5px;
+            letter-spacing: 1px;
             text-transform: uppercase;
           }
           .metadata {
-            font-size: 12px;
-            margin-bottom: 12px;
+            font-size: 14px;
+            margin-bottom: 15px;
             color: #1e293b;
+            line-height: 1.8;
           }
           .metadata strong {
             font-weight: 700;
           }
           hr {
             border: 0;
-            border-top: 1px solid #cbd5e1;
-            margin: 15px 0;
+            border-top: 2px solid #cbd5e1;
+            margin: 20px 0;
           }
           .info-section {
-            margin: 15px 0;
-            font-size: 12px;
-            line-height: 1.6;
+            margin: 20px 0;
+            font-size: 14px;
+            line-height: 1.8;
           }
           .info-section p {
-            margin: 4px 0;
+            margin: 8px 0;
           }
           .info-section strong {
             font-weight: 700;
+            display: inline-block;
+            min-width: 120px;
           }
           table {
             width: 100%;
             border-collapse: collapse;
-            margin: 20px 0;
+            margin: 25px 0;
           }
           th {
             background-color: #f8fafc;
             color: #1e293b;
             font-weight: 700;
             text-align: left;
-            padding: 8px 12px;
-            font-size: 11px;
-            border-top: 1px solid #cbd5e1;
-            border-bottom: 1px solid #cbd5e1;
+            padding: 12px 15px;
+            font-size: 12px;
+            border-top: 2px solid #cbd5e1;
+            border-bottom: 2px solid #cbd5e1;
             text-transform: uppercase;
+            letter-spacing: 0.5px;
           }
           td {
-            padding: 10px 12px;
+            padding: 14px 15px;
             border-bottom: 1px solid #e2e8f0;
-            font-size: 12px;
+            font-size: 14px;
+          }
+          tbody tr:last-child td {
+            border-bottom: 2px solid #cbd5e1;
           }
           .text-center {
             text-align: center;
@@ -407,28 +422,52 @@ const UserProfilePage = () => {
             text-align: right;
           }
           .summary-line {
-            font-size: 12px;
-            margin: 15px 0;
+            font-size: 14px;
+            margin: 20px 0;
             color: #1e293b;
-            padding: 5px 0;
+            padding: 8px 0;
+            line-height: 1.8;
+          }
+          .summary-line strong {
+            font-weight: 700;
           }
           .footer {
             text-align: center;
-            font-size: 11px;
+            font-size: 12px;
             color: #64748b;
-            margin-top: 40px;
+            margin-top: 50px;
+            padding-top: 20px;
+            border-top: 1px solid #e2e8f0;
+          }
+          @media screen and (max-width: 1024px) {
+            .container {
+              max-width: 800px;
+            }
+            .invoice-page {
+              padding: 40px;
+            }
+            h1 {
+              font-size: 28px;
+            }
+            h2 {
+              font-size: 18px;
+            }
           }
           @media print {
             body {
               background-color: #ffffff;
               padding: 0;
             }
+            .container {
+              max-width: 100%;
+            }
             .invoice-page {
               box-shadow: none;
               border: none;
-              padding: 0;
+              padding: 40px;
               margin: 0;
               page-break-after: always;
+              max-width: 210mm;
             }
             .invoice-page:last-child {
               page-break-after: avoid;
