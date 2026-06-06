@@ -1,7 +1,7 @@
 import axios from "axios";
 
 // export const API_BASE = "http://192.168.1.5:3002/api/v1";// export const API_BASE = "http://69.62.73.194:4009/api/v1";
- export const API_BASE = "https://admin.detoxpathy.com/api/v1";
+  export const API_BASE = "https://admin.detoxpathy.com/api/v1";
 // export const API_BASE = "https://backend.fatendfit.com/api/v1";
 // Host base used to resolve file URLs coming from multer (e.g., uploads/..)
 export const API_HOST = API_BASE.replace(/\/?api\/?v1\/?$/, "").replace(
@@ -24,7 +24,7 @@ if (typeof window !== "undefined" && !axios.__AUTH_INTERCEPTOR_INSTALLED__) {
       const status = error?.response?.status;
       const message = error?.response?.data?.message || "";
       const code =
-        error?.response?.data?.code || error?.response?.data?.errorCode;
+        error?.response?.data?.code || error?.response?.data?.errorCode;  
 
       const isAuthError =
         status === 401 ||
@@ -2074,3 +2074,49 @@ export const getDRSImage = async (imageId) => {
   return res.data.data;
 };
 
+
+/* -------------------- COUPON APIs -------------------- */
+export const listCoupons = async () => {
+  const res = await axios.get(`${API_BASE}/admin/coupon/get-all`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const createCoupon = async (payload) => {
+  const res = await axios.post(`${API_BASE}/admin/coupon/add`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const updateCoupon = async (id, payload) => {
+  const res = await axios.put(`${API_BASE}/admin/coupon/update/${id}`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const deleteCoupon = async (id) => {
+  const res = await axios.delete(`${API_BASE}/admin/coupon/delete/${id}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const validateCouponApi = async (couponCode) => {
+  const res = await axios.post(`${API_BASE}/admin/coupon/apply`, { couponCode }, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+/* -------------------- BULK NOTIFICATION APIs -------------------- */
+export const sendNotificationToAllApi = async (title, message) => {
+  const res = await axios.post(
+    `${API_BASE}/admin/user/send-notification-all`,
+    { title, message },
+    { headers: getAuthHeaders() }
+  );
+  return res.data;
+};

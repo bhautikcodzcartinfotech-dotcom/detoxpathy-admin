@@ -310,7 +310,7 @@ const SettingsPage = () => {
   }
 
   return (
-    <RoleGuard allow={["Admin"]}>
+    <RoleGuard allow={["Admin", "subadmin"]} permission="show settings page">
       <style jsx global>{`
         .html-content h1,
         .html-content h2,

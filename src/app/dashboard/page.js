@@ -229,10 +229,10 @@ const DashboardPage = () => {
             },
             { 
                 title: "AVAILABLE CASH", 
-                value: stats.availableCash >= 100000 
-                    ? `₹${((stats.availableCash || 0) / 100000).toFixed(2)}L` 
+                value: stats.availableCash >= 1000 
+                    ? `₹${((stats.availableCash || 0) / 1000).toFixed(1)}K` 
                     : `₹${(stats.availableCash || 0).toLocaleString('en-IN')}`, 
-                sub: dateRange === "all" ? "cumulative cash balance" : `cash balance up to ${getRangeLabel(dateRange).toLowerCase()}`, 
+                sub: `₹${(stats.availableCash || 0).toLocaleString('en-IN')}`,
                 color: "border-blue-600 shadow-blue-900/5",
                 icon: Wallet
             },
