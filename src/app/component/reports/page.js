@@ -102,6 +102,14 @@ const screenFields = [
   { key: "privacyPolicyScreen", label: "Privacy Policy" }
 ];
 
+const formatPercent = (value, total) => {
+  const numericValue = Number(value) || 0;
+  const numericTotal = Number(total) || 0;
+  if (numericTotal <= 0) return "0.0";
+
+  return Math.min(100, Math.max(0, (numericValue / numericTotal) * 100)).toFixed(1);
+};
+
 const ReportsPage = () => {
   const { role, branches } = useAuth();
   const [reportType, setReportType] = useState("users");
@@ -121,7 +129,6 @@ const ReportsPage = () => {
 
   // Advanced User Filters (Matching Users Page)
   const [statusFilter, setStatusFilter] = useState("all"); // all | active | inactive
-  const [totalUserCount, setTotalUserCount] = useState(0);
   const [selectedLanguage, setSelectedLanguage] = useState("");
   const [selectedGender, setSelectedGender] = useState("");
   const [selectedCity, setSelectedCity] = useState("");
@@ -219,9 +226,6 @@ const ReportsPage = () => {
       setMedicalConditions(medicalList || []);
       setAppReferences(referenceList || []);
       setAllUsersList(allUsers || []);
-
-      // Set total user count for percentage calculations
-      setTotalUserCount(Array.isArray(allUsers) ? allUsers.length : 0);
 
       const doctors = (subAdmins || []).filter(s => {
         const type = String(s.adminType || "").toLowerCase();
@@ -457,7 +461,7 @@ const ReportsPage = () => {
             result = users || [];
             break;
           case "videoReports":
-            const videoReportsData = await getVideoReports({ minPercentage: videoReportMinPercentage });
+            const videoReportsData = await getVideoReports({ minPercentage: selectedMinPercentageOption });
             result = videoReportsData || [];
             break;
           case "appointments":
@@ -721,6 +725,11 @@ const ReportsPage = () => {
   }, [sortedFilteredData, currentPage, itemsPerPage]);
 
   const totalPages = Math.ceil(sortedFilteredData.length / itemsPerPage);
+
+  const reportTotalCount = rawData.length;
+  const reportTotalLabel = reportType === "users" || reportType === "video" || reportType === "screen"
+    ? "All Users"
+    : "All Records";
 
   const { activeCount, inactiveCount } = useMemo(() => {
     let active = 0;
@@ -1929,7 +1938,6 @@ const ReportsPage = () => {
     setFilterSleep("");
     setLocalOnlineFilter("");
     setRescheduleFilter("");
-    setVideoReportMinPercentage("");
     setSelectedMinPercentageOption("");
     setSelectedVideoId("");
   };
@@ -2419,7 +2427,7 @@ const ReportsPage = () => {
                 <div className="flex flex-col ml-2">
                   <span className="text-xs text-black font-bold text-gray-400 uppercase tracking-tighter leading-tight">Records Found</span>
                   <span className="text-xs text-black font-bold text-indigo-500 uppercase tracking-tighter leading-tight">
-                    {totalUserCount > 0 ? ((filteredData.length / totalUserCount) * 100).toFixed(1) : 0}% of All Users
+                    {formatPercent(filteredData.length, reportTotalCount)}% of {reportTotalLabel}
                   </span>
                 </div>
               </div>
@@ -2442,7 +2450,7 @@ const ReportsPage = () => {
                     {filteredData.length > 0 ? ((activeCount / filteredData.length) * 100).toFixed(1) : 0}% of Filter
                   </span>
                   <span className="text-xs text-black font-bold text-green-500 uppercase tracking-tighter leading-tight">
-                    {totalUserCount > 0 ? ((activeCount / totalUserCount) * 100).toFixed(1) : 0}% of All
+                    {formatPercent(activeCount, reportTotalCount)}% of All
                   </span>
                 </div>
               </div>
@@ -2467,7 +2475,7 @@ const ReportsPage = () => {
                     {filteredData.length > 0 ? ((inactiveCount / filteredData.length) * 100).toFixed(1) : 0}% of Filter
                   </span>
                   <span className="text-xs text-black font-bold text-red-500 uppercase tracking-tighter leading-tight">
-                    {totalUserCount > 0 ? ((inactiveCount / totalUserCount) * 100).toFixed(1) : 0}% of All
+                    {formatPercent(inactiveCount, reportTotalCount)}% of All
                   </span>
                 </div>
               </div>
