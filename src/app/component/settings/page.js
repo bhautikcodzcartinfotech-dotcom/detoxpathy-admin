@@ -128,6 +128,8 @@ const SettingsPage = () => {
         ...settingsData,
         screenshotProtectionActive: typeof settingsData.screenshotProtectionActive !== 'undefined' ? settingsData.screenshotProtectionActive : true,
         currency: settingsData.currency || "₹",
+        shippingCharges: typeof settingsData.shippingCharges !== 'undefined' ? settingsData.shippingCharges : 0,
+        iosVersion: typeof settingsData.iosVersion !== 'undefined' ? settingsData.iosVersion : 1,
         advanceBookingDays: typeof settingsData.advanceBookingDays !== 'undefined' ? settingsData.advanceBookingDays : 30,
         bookingSlotDays: typeof settingsData.bookingSlotDays !== 'undefined' ? settingsData.bookingSlotDays : 0,
         appoinmentDescription: typeof settingsData.appoinmentDescription === 'object' && settingsData.appoinmentDescription !== null
@@ -540,15 +542,31 @@ const SettingsPage = () => {
               </div>
             </div>
 
-            {/* Version */}
+            {/* Version Android */}
             <div className="bg-gradient-to-br from-white to-amber-50 rounded-2xl shadow-lg border border-amber-200 p-6">
               <h3 className="text-sm font-bold text-gray-700 mb-4 tracking-wide">
-                App Version
+                App Version ( Android )
               </h3>
               <input
                 type="number"
                 value={formData.version || ""}
                 onChange={(e) => handleInputChange("version", e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-amber-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
+                min="1"
+                step="0.1"
+                placeholder="1.0"
+              />
+            </div>
+
+            {/* Version iOS */}
+            <div className="bg-gradient-to-br from-white to-amber-50 rounded-2xl shadow-lg border border-amber-200 p-6">
+              <h3 className="text-sm font-bold text-gray-700 mb-4 tracking-wide">
+                App Version (IOS)
+              </h3>
+              <input
+                type="number"
+                value={formData.iosVersion || ""}
+                onChange={(e) => handleInputChange("iosVersion", e.target.value)}
                 className="w-full px-4 py-3 rounded-xl border border-amber-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
                 min="1"
                 step="0.1"
@@ -565,6 +583,22 @@ const SettingsPage = () => {
                 type="number"
                 value={formData.videoPrice ?? ""}
                 onChange={(e) => handleInputChange("videoPrice", e.target.value === "" ? "" : e.target.value)}
+                className="w-full px-4 py-3 rounded-xl border border-yellow-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
+                min="0"
+                step="0.01"
+                placeholder="0"
+              />
+            </div>
+
+            {/* Shipping Charges */}
+            <div className="bg-gradient-to-br from-white to-yellow-50 rounded-2xl shadow-lg border border-yellow-200 p-6">
+              <h3 className="text-sm font-bold text-gray-700 mb-4 tracking-wide">
+                Shipping Charges per kg ({formData.currency || "₹"})
+              </h3>
+              <input
+                type="number"
+                value={formData.shippingCharges ?? ""}
+                onChange={(e) => handleInputChange("shippingCharges", e.target.value === "" ? "" : Number(e.target.value))}
                 className="w-full px-4 py-3 rounded-xl border border-yellow-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
                 min="0"
                 step="0.01"
@@ -1220,71 +1254,6 @@ const SettingsPage = () => {
               </div>
             </div>
           </div>
-
-          {/* Video Display */}
-          {formData.resumeLink && (
-            <div className="bg-gradient-to-br from-white to-yellow-50 rounded-2xl shadow-lg border border-yellow-200 p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-                {/* Resume Video */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <svg
-                      className="w-6 h-6 text-yellow-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                      />
-                    </svg>
-                    Resume Video Preview
-                  </h3>
-
-                  <video
-                    src={getVideoUrl(formData.resumeLink)}
-                    controls
-                    className="w-full rounded-xl shadow-lg"
-                  >
-                    Your browser does not support the video tag.
-                  </video>
-                </div>
-
-                {/* Trial Video */}
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                    <svg
-                      className="w-6 h-6 text-yellow-600"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                      />
-                    </svg>
-                    Trial Video Preview
-                  </h3>
-
-                  <video
-                    src={getVideoUrl(formData.trialLink || formData.resumeLink)}
-                    controls
-                    className="w-full rounded-xl shadow-lg"
-                  >
-                    Your browser does not support the video tag.
-                  </video>
-                </div>
-
-              </div>
-            </div>
-          )}
         </form>
       </div>
     </RoleGuard>

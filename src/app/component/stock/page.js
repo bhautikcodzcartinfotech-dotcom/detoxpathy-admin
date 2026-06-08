@@ -26,7 +26,7 @@ import CompanyOrderForm from "./companyOrderForm";
 import Dropdown from "@/utils/dropdown";
 
 const StockManagementPage = () => {
-  const { role, permissions } = useAuth();
+  const { role, permissions, branches: authBranches } = useAuth();
   const [masterStocks, setMasterStocks] = useState([]);
   const [branchStocks, setBranchStocks] = useState([]);
   const [history, setHistory] = useState([]);
@@ -72,10 +72,12 @@ const StockManagementPage = () => {
       setMasterStocks(Array.isArray(masterData) ? masterData : []);
       
       const allBranchList = Array.isArray(branchData) ? branchData : [];
-      setBranches(allBranchList);
+      const filteredBranchList = role === "Admin" ? allBranchList : allBranchList.filter(b => authBranches.includes(b._id));
+      setBranches(filteredBranchList);
       
       const otherBranchStocks = Array.isArray(branchStockData) ? branchStockData : [];
-      setBranchStocks(otherBranchStocks);
+      const filteredBranchStocksData = role === "Admin" ? otherBranchStocks : otherBranchStocks.filter(s => authBranches.includes(s.branchId?._id));
+      setBranchStocks(filteredBranchStocksData);
 
       setProducts(Array.isArray(productData?.products) ? productData.products : []);
       setPlans(Array.isArray(planData) ? planData : []);
@@ -187,13 +189,43 @@ const StockManagementPage = () => {
           </p>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div className={role === "Admin" ? "grid grid-cols-1 lg:grid-cols-2 gap-8" : "grid grid-cols-1 gap-8"}>
           {/* Company Master Stock */}
+          {role === "Admin" && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-xl font-bold text-gray-800">Company Master Stock</h3>
+                <div className="flex items-center gap-4">
+                  {(role === "Admin" || (role === "subadmin" && permissions?.includes("manage inventory"))) && (
+                    <>
+                      <label className="bg-amber-50 text-amber-700 hover:bg-amber-100 font-black text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer px-3 py-2 rounded-xl border border-amber-200 shadow-sm">
+                        <input type="file" className="hidden" accept=".pdf" onChange={handleFileUpload} disabled={loading} />
+                        <span>+ Upload PDF</span>
+                      </label>
+                      <button 
+                        onClick={handleAddProduct}
+                        className="bg-gradient-to-r from-yellow-400 to-amber-500 text-white font-black text-[10px] uppercase tracking-widest flex items-center gap-1.5 px-4 py-2 rounded-xl shadow-lg shadow-yellow-200 transition-all hover:from-yellow-500 hover:to-amber-600 active:scale-95 cursor-pointer"
+                      >
+                        + Add Stock
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+              <MasterStockTable 
+                stocks={Array.isArray(masterStocks) ? masterStocks : []} 
+                loading={loading} 
+                onEdit={handleEditStock}
+              />
+            </div>
+          )}
+
+          {/* Branch Stock Levels */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-800">Company Master Stock</h3>
-              <div className="flex items-center gap-4">
-                {(role === "Admin" || (role === "subadmin" && permissions?.includes("manage inventory"))) && (
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+              <h3 className="text-xl font-bold text-gray-800">Branch Stock Levels</h3>
+              <div className="flex flex-wrap items-center gap-4">
+                {role !== "Admin" && (role === "subadmin" && permissions?.includes("manage inventory")) && (
                   <>
                     <label className="bg-amber-50 text-amber-700 hover:bg-amber-100 font-black text-[10px] uppercase tracking-widest flex items-center gap-2 transition-all cursor-pointer px-3 py-2 rounded-xl border border-amber-200 shadow-sm">
                       <input type="file" className="hidden" accept=".pdf" onChange={handleFileUpload} disabled={loading} />
@@ -207,26 +239,14 @@ const StockManagementPage = () => {
                     </button>
                   </>
                 )}
-              </div>
-            </div>
-            <MasterStockTable 
-              stocks={Array.isArray(masterStocks) ? masterStocks : []} 
-              loading={loading} 
-              onEdit={handleEditStock}
-            />
-          </div>
-
-          {/* Branch Stock Levels */}
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-800">Branch Stock Levels</h3>
-              <div className="w-64">
-                <Dropdown
-                  options={[{ label: "Select Branch", value: "" }, ...branches.map((b) => ({ label: b.name, value: b._id }))]}
-                  value={selectedBranchId}
-                  onChange={setSelectedBranchId}
-                  placeholder="Select Branch"
-                />
+                <div className="w-64">
+                  <Dropdown
+                    options={[{ label: "Select Branch", value: "" }, ...branches.map((b) => ({ label: b.name, value: b._id }))]}
+                    value={selectedBranchId}
+                    onChange={setSelectedBranchId}
+                    placeholder="Select Branch"
+                  />
+                </div>
               </div>
             </div>
             <BranchStockTable 
@@ -258,6 +278,7 @@ const StockManagementPage = () => {
               {editingStock ? "Update Stock" : "Add Stock Record"}
             </h2>
             <StockForm
+              role={role}
               initialValues={editingStock}
               products={products}
               plans={plans}

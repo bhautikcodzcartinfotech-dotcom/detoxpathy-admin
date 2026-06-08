@@ -144,7 +144,7 @@ const SubAdminPage = () => {
         <Drawer isOpen={isOpen} onClose={() => setIsOpen(false)}>
           <div className="mb-6 text-center">
             <h2 className="text-3xl font-bold text-yellow-600">
-              {editing ? "Update Sub Admin" : "Create Sub Admin"}
+              {editing ? "Update Doctor" : "Create New Doctor"}
             </h2>
           </div>
           <SubAdminForm

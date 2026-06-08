@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 
-const StockForm = ({ initialValues, products, plans, branches, onSubmit, onCancel, loading }) => {
+const StockForm = ({ role, initialValues, products, plans, branches, onSubmit, onCancel, loading }) => {
   const [formData, setFormData] = useState({
     productId: "",
     planId: "",
@@ -28,13 +28,14 @@ const StockForm = ({ initialValues, products, plans, branches, onSubmit, onCance
     } else {
        setFormData(prev => ({
          ...prev,
+         branchId: (role !== "Admin" && branches && branches.length > 0) ? branches[0]._id : "null",
          available: 0,
          breakage: 0,
          expiry: "",
          isIncrement: true
        }));
     }
-  }, [initialValues]);
+  }, [initialValues, role, branches]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -68,7 +69,7 @@ const StockForm = ({ initialValues, products, plans, branches, onSubmit, onCance
           disabled={!!initialValues}
           className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-[#134D41]/20 focus:border-[#134D41] outline-none transition-all disabled:bg-gray-50"
         >
-          <option value="null">Company Master Stock</option>
+          {role === "Admin" && <option value="null">Company Master Stock</option>}
           {Array.isArray(branches) && branches.map((b) => (
             <option key={b._id} value={b._id}>{b.name}</option>
           ))}

@@ -18,16 +18,6 @@ const OrderForm = ({ onCancel, onSuccess }) => {
   const [paymentMethod, setPaymentMethod] = useState("Offline");
   const [onlineAmount, setOnlineAmount] = useState("");
   const [offlineAmount, setOfflineAmount] = useState("");
-  const [shippingAddress, setShippingAddress] = useState({
-    name: "",
-    mobile: "",
-    addressLine1: "",
-    addressLine2: "",
-    city: "",
-    state: "",
-    postalCode: "",
-    country: ""
-  });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -118,6 +108,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
     if (!selectedUser) return toast.error("Please select a user");
     if (selectedProducts.length === 0 && selectedPlans.length === 0) return toast.error("Please add at least one product or a plan");
 
+
     const onlinePay = paymentMethod === "Split" ? Number(onlineAmount) || 0 : 0;
     const offlinePay = paymentMethod === "Split" ? Number(offlineAmount) || 0 : 0;
 
@@ -137,7 +128,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
         products: selectedProducts.map(({ productId, quantity }) => ({ productId, quantity })),
         plans: selectedPlans.map(p => p.planId),
         type: paymentMethod === "Offline" ? 2 : 1,
-        shippingAddress: shippingAddress.name ? shippingAddress : undefined,
+
         paymentMethod:
           paymentMethod === "Online"
             ? "Razorpay"
@@ -232,7 +223,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
   const itemsSubtotal = selectedProducts.reduce((sum, p) => sum + (getItemPrice(p) * p.quantity), 0) + 
                        selectedPlans.reduce((sum, p) => sum + getItemPrice(p), 0);
 
-  const shippingCost = (totalWeight / 1000) * shippingRate;
+  const shippingCost = 0; // Admin created orders have no shipping charges
 
   const totalAmount = itemsSubtotal + shippingCost;
 
@@ -321,9 +312,9 @@ const OrderForm = ({ onCancel, onSuccess }) => {
             />
           </div>
           <div>
-            {/* <label className="block mb-1 text-sm font-semibold text-gray-700">
+            <label className="block mb-1 text-sm font-semibold text-gray-700">
               Offline Amount ({currency}) *
-            </label> */}
+            </label>
             <input
               type="number"
               min="0"
@@ -414,10 +405,6 @@ const OrderForm = ({ onCancel, onSuccess }) => {
             <span>Total Weight:</span>
             <span className="text-gray-800">{(totalWeight / 1000).toFixed(2)} kg ({totalWeight}g)</span>
           </div>
-          <div className="flex justify-between items-center text-sm font-semibold text-gray-600">
-            <span>Shipping Cost ({currency}{shippingRate}/kg):</span>
-            <span className="text-gray-800">{currency}{shippingCost.toFixed(2)}</span>
-          </div>
           <hr className="border-yellow-200 my-1" />
           <div className="flex justify-between items-center text-lg font-bold">
             <span className="text-gray-700">Total Estimation:</span>
@@ -426,84 +413,6 @@ const OrderForm = ({ onCancel, onSuccess }) => {
         </div>
       )}
 
-      {/* Shipping Address (Optional) */}
-      <div className="border-t pt-4 space-y-3">
-        <div className="grid grid-cols-2 gap-4">
-          <input
-            type="text"
-            placeholder="Full Name"
-            className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            value={shippingAddress.name}
-            onChange={(e) => setShippingAddress({ ...shippingAddress, name: e.target.value })}
-          />
-          <input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            maxLength={10}
-            placeholder="Mobile Number"
-            className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            value={shippingAddress.mobile}
-            onChange={(e) => {
-              const onlyDigits = e.target.value.replace(/\D/g, "");
-              if (onlyDigits.length <= 10) {
-                setShippingAddress({ ...shippingAddress, mobile: onlyDigits });
-              }
-            }}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <input
-            type="text"
-            placeholder="Address Line 1"
-            className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            value={shippingAddress.addressLine1}
-            onChange={(e) => setShippingAddress({ ...shippingAddress, addressLine1: e.target.value })}
-          />
-          <input
-            type="text"
-            placeholder="Address Line 2"
-            className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            value={shippingAddress.addressLine2}
-            onChange={(e) => setShippingAddress({ ...shippingAddress, addressLine2: e.target.value })}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <input
-            type="text"
-            placeholder="City"
-            className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            value={shippingAddress.city}
-            onChange={(e) => setShippingAddress({ ...shippingAddress, city: e.target.value })}
-          />
-          <input
-            type="text"
-            placeholder="State"
-            className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            value={shippingAddress.state}
-            onChange={(e) => setShippingAddress({ ...shippingAddress, state: e.target.value })}
-          />
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <input
-            type="text"
-            placeholder="Postal Code"
-            className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            value={shippingAddress.postalCode}
-            onChange={(e) => setShippingAddress({ ...shippingAddress, postalCode: e.target.value })}
-          />
-          <input
-            type="text"
-            placeholder="Country"
-            className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400"
-            value={shippingAddress.country}
-            onChange={(e) => setShippingAddress({ ...shippingAddress, country: e.target.value })}
-          />
-        </div>
-      </div>
 
       <div className="flex justify-end gap-3 pt-6 border-t mt-8">
         <button

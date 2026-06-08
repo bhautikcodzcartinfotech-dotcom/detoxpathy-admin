@@ -441,7 +441,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
               {!isCollapsed && <span>Feedbacks</span>}
             </Link>
           )}
-          {role === "Admin" && (
+          {/* {role === "Admin" && (
             <Link
               href="/component/user-requests"
               className={linkClasses("/component/user-requests")}
@@ -449,7 +449,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
               <MdAssignment size={20} />
               {!isCollapsed && <span>User Requests</span>}
             </Link>
-          )}
+          )} */}
         </div>
 
         {/* Section: SETTINGS */}
