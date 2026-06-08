@@ -4,7 +4,7 @@ import TimeButton from "@/utils/timebutton";
 import toast from "react-hot-toast";
 import { validateForm } from "@/utils/validation";
 import Dropdown from "@/utils/dropdown";
-import { getAllCategoriesApi, getAllPlans, generateZoomMeetingApi } from "@/Api/AllApi";
+import { getAllCategoriesApi, getAllPlans, generateZoomMeetingApi, generateAgoraSessionApi } from "@/Api/AllApi";
 import MultiLanguageInput from "@/components/MultiLanguageInput";
 
 const VideoForm = ({
@@ -52,6 +52,11 @@ const VideoForm = ({
     jwtToken: "",
     accessToken: "",
     meetingNumber: "",
+    // Agora settings
+    agoraAppId: "",
+    agoraChannelName: "",
+    agoraToken: "",
+    agoraUid: "",
   });
   const [errors, setErrors] = useState({});
   const [categories, setCategories] = useState([]);
@@ -155,6 +160,10 @@ const VideoForm = ({
         jwtToken: initialValues.jwtToken ?? "",
         accessToken: initialValues.accessToken ?? "",
         meetingNumber: initialValues.meetingNumber ?? "",
+        agoraAppId: initialValues.agoraAppId ?? "",
+        agoraChannelName: initialValues.agoraChannelName ?? "",
+        agoraToken: initialValues.agoraToken ?? "",
+        agoraUid: initialValues.agoraUid ?? "",
       }));
       setErrors({});
     } else {
@@ -191,6 +200,10 @@ const VideoForm = ({
         jwtToken: "",
         accessToken: "",
         meetingNumber: "",
+        agoraAppId: "",
+        agoraChannelName: "",
+        agoraToken: "",
+        agoraUid: "",
       });
       setErrors({});
     }
@@ -250,7 +263,7 @@ const VideoForm = ({
     const videoTypeNum = Number(form.videoType);
     const thumbTypeNum = Number(form.thumbnailType);
     const typeNum = Number(form.type);
-    const isZoomSession = videoTypeNum === 3;
+    const isAgoraSession = videoTypeNum === 3;
 
     let errs = validateForm({
       title_english: {
@@ -266,16 +279,20 @@ const VideoForm = ({
         rules: isUpdate ? [] : [required("Hindi Title")],
       },
       video_english_url: {
-        value: videoTypeNum === 2 || videoTypeNum === 3 ? form.video_english_url : "ok",
-        rules: isUpdate ? [] : [required(isZoomSession ? "Zoom Meeting URL" : "English Video URL")],
+        value: videoTypeNum === 2 ? form.video_english_url : "ok",
+        rules: isUpdate ? [] : [required("English Video URL")],
       },
       video_gujarati_url: {
-        value: videoTypeNum === 2 || videoTypeNum === 3 ? form.video_gujarati_url : "ok",
-        rules: isUpdate ? [] : [required(isZoomSession ? "Zoom Meeting URL" : "Gujarati Video URL")],
+        value: videoTypeNum === 2 ? form.video_gujarati_url : "ok",
+        rules: isUpdate ? [] : [required("Gujarati Video URL")],
       },
       video_hindi_url: {
-        value: videoTypeNum === 2 || videoTypeNum === 3 ? form.video_hindi_url : "ok",
-        rules: isUpdate ? [] : [required(isZoomSession ? "Zoom Meeting URL" : "Hindi Video URL")],
+        value: videoTypeNum === 2 ? form.video_hindi_url : "ok",
+        rules: isUpdate ? [] : [required("Hindi Video URL")],
+      },
+      agoraChannelName: {
+        value: videoTypeNum === 3 ? form.agoraChannelName : "ok",
+        rules: isUpdate ? [] : [required("Agora Session must be generated before saving")],
       },
       video_english: {
         value: videoTypeNum === 1 ? form.video_english : "ok",
@@ -317,21 +334,21 @@ const VideoForm = ({
         value: thumbTypeNum === 1 ? form.thumbnail_hindi : "ok",
         rules: isUpdate ? [] : [required("Hindi Thumbnail file")],
       },
-      type: { value: isZoomSession ? 10 : typeNum, rules: [required("Type")] },
+      type: { value: isAgoraSession ? 10 : typeNum, rules: [required("Type")] },
       day: {
-        value: isZoomSession ? "ok" : (typeNum === 1 ? form.day : "ok"),
+        value: isAgoraSession ? "ok" : (typeNum === 1 ? form.day : "ok"),
         rules: isUpdate ? [numberRule("Day")] : [required("Day"), numberRule("Day")],
       },
       category: {
-        value: isZoomSession ? "ok" : ([2, 4].includes(typeNum) ? (form.category ? "ok" : "") : "ok"),
+        value: isAgoraSession ? "ok" : ([2, 4].includes(typeNum) ? (form.category ? "ok" : "") : "ok"),
         rules: isUpdate ? [] : [required("Category")],
       },
       plan: {
-        value: isZoomSession ? "ok" : (typeNum === 8 ? (form.plan ? "ok" : "") : "ok"),
+        value: isAgoraSession ? "ok" : (typeNum === 8 ? (form.plan ? "ok" : "") : "ok"),
         rules: [required("Plan")],
       },
       requiredCorrectAnswer: {
-        value: isZoomSession ? "0" : form.requiredCorrectAnswer,
+        value: isAgoraSession ? "0" : form.requiredCorrectAnswer,
         rules: isUpdate ? [numberRule("Required Correct Answer")] : [required("Required Correct Answer"), numberRule("Required Correct Answer")],
       },
     });
@@ -348,20 +365,19 @@ const VideoForm = ({
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validate()) return;
-    const isZoomSession = Number(form.videoType) === 3;
+    const isAgoraSession = Number(form.videoType) === 3;
     await onSubmit({
       ...form,
-      type: isZoomSession ? 10 : Number(form.type),
-      videoSecond: isZoomSession ? 0 : (form.videoSecond ? Number(form.videoSecond) : undefined),
-      day: isZoomSession ? undefined : (form.day ? Number(form.day) : undefined),
-      plan: !isZoomSession && Number(form.type) === 8 ? form.plan : undefined,
-      requiredCorrectAnswer: isZoomSession ? 0 : (form.requiredCorrectAnswer ? Number(form.requiredCorrectAnswer) : 0),
-      zoomStartUrl: isZoomSession ? form.zoomStartUrl : undefined,
-      meetingNumber: isZoomSession ? form.meetingNumber : undefined,
-      sessionName: isZoomSession ? form.sessionName : undefined,
-      sessionPassword: isZoomSession ? form.sessionPassword : undefined,
-      jwtToken: isZoomSession ? form.jwtToken : undefined,
-      accessToken: isZoomSession ? form.accessToken : undefined,
+      type: isAgoraSession ? 10 : Number(form.type),
+      videoSecond: isAgoraSession ? 0 : (form.videoSecond ? Number(form.videoSecond) : undefined),
+      day: isAgoraSession ? undefined : (form.day ? Number(form.day) : undefined),
+      plan: !isAgoraSession && Number(form.type) === 8 ? form.plan : undefined,
+      requiredCorrectAnswer: isAgoraSession ? 0 : (form.requiredCorrectAnswer ? Number(form.requiredCorrectAnswer) : 0),
+      agoraAppId: isAgoraSession ? form.agoraAppId : undefined,
+      agoraChannelName: isAgoraSession ? form.agoraChannelName : undefined,
+      agoraToken: isAgoraSession ? form.agoraToken : undefined,
+      agoraUid: isAgoraSession ? (form.agoraUid ? Number(form.agoraUid) : 0) : undefined,
+      sessionName: isAgoraSession ? form.sessionName : undefined,
     });
   };
 
@@ -379,7 +395,7 @@ const VideoForm = ({
   const videoTypeOptions = [
     { label: "Upload File", value: 1 },
     { label: "Video URL", value: 2 },
-    { label: "Zoom session", value: 3 },
+    { label: "Agora session", value: 3 },
   ];
 
   const thumbTypeOptions = [
@@ -516,7 +532,7 @@ const VideoForm = ({
       {Number(form.videoType) === 3 && (
         <div className="space-y-4">
           <div className="space-y-2">
-            <label className="block mb-1 font-semibold text-gray-700">Zoom Session</label>
+            <label className="block mb-1 font-semibold text-gray-700">Agora Session</label>
             <div className="flex items-center gap-3">
               <button
                 type="button"
@@ -525,26 +541,22 @@ const VideoForm = ({
                   try {
                     setGeneratingMeeting(true);
                     const topic = form.title_english || "Detoxpathy Session Meeting";
-                    const result = await generateZoomMeetingApi(topic);
-                    if (result && result.joinUrl) {
+                    const result = await generateAgoraSessionApi(topic);
+                    if (result && result.channelName) {
                       setForm((f) => ({
                         ...f,
-                        video_english_url: result.joinUrl,
-                        video_gujarati_url: result.joinUrl,
-                        video_hindi_url: result.joinUrl,
-                        zoomStartUrl: result.startUrl || "",
+                        agoraAppId: result.appId || "",
+                        agoraChannelName: result.channelName || "",
+                        agoraToken: result.token || "",
+                        agoraUid: result.uid || "",
                         sessionName: result.sessionName || topic,
-                        sessionPassword: result.sessionPassword || "",
-                        jwtToken: result.jwtToken || "",
-                        accessToken: result.accessToken || "",
-                        meetingNumber: result.meetingNumber || "",
                       }));
-                      toast.success("Zoom meeting generated successfully!");
+                      toast.success("Agora session generated successfully!");
                     } else {
-                      toast.error("Failed to generate Zoom meeting. Invalid response.");
+                      toast.error("Failed to generate Agora session. Invalid response.");
                     }
                   } catch (err) {
-                    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || "Failed to generate meeting";
+                    const errorMsg = err?.response?.data?.message || err?.response?.data?.error || err.message || "Failed to generate session";
                     toast.error(errorMsg);
                   } finally {
                     setGeneratingMeeting(false);
@@ -554,56 +566,56 @@ const VideoForm = ({
                   generatingMeeting ? "bg-gray-400 cursor-not-allowed" : "bg-[#134D41] hover:bg-[#0f3d33]"
                 }`}
               >
-                {generatingMeeting ? "Generating..." : "Generate Zoom URL"}
+                {generatingMeeting ? "Generating..." : "Generate Agora Session"}
               </button>
-              {form.video_english_url && (
+              {form.agoraChannelName && (
                 <span className="text-sm text-emerald-600 font-semibold flex items-center gap-1">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                   </svg>
-                  Zoom Session Generated
+                  Agora Session Generated
                 </span>
               )}
             </div>
-            {errors.video_english_url && <p className="text-red-500 text-sm mt-1">{errors.video_english_url}</p>}
+            {errors.agoraChannelName && <p className="text-red-500 text-sm mt-1">{errors.agoraChannelName}</p>}
           </div>
 
-          {form.meetingNumber && (
+          {form.agoraChannelName && (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 border border-gray-200 rounded-2xl">
               <div>
-                <label className="block mb-1 font-semibold text-xs text-gray-500 uppercase tracking-wider">Meeting Number</label>
+                <label className="block mb-1 font-semibold text-xs text-gray-500 uppercase tracking-wider">Agora App ID</label>
                 <input
                   type="text"
                   readOnly
-                  value={form.meetingNumber}
+                  value={form.agoraAppId}
                   className="w-full border border-gray-200 rounded-xl p-3 bg-gray-100 cursor-not-allowed focus:outline-none text-gray-700 text-sm font-semibold"
                 />
               </div>
               <div>
-                <label className="block mb-1 font-semibold text-xs text-gray-500 uppercase tracking-wider">Session Name</label>
+                <label className="block mb-1 font-semibold text-xs text-gray-500 uppercase tracking-wider">Channel Name</label>
                 <input
                   type="text"
                   readOnly
-                  value={form.sessionName}
+                  value={form.agoraChannelName}
                   className="w-full border border-gray-200 rounded-xl p-3 bg-gray-100 cursor-not-allowed focus:outline-none text-gray-700 text-sm font-semibold"
                 />
               </div>
               <div>
-                <label className="block mb-1 font-semibold text-xs text-gray-500 uppercase tracking-wider">Session Password</label>
+                <label className="block mb-1 font-semibold text-xs text-gray-500 uppercase tracking-wider">Token</label>
                 <input
                   type="text"
                   readOnly
-                  value={form.sessionPassword}
-                  className="w-full border border-gray-200 rounded-xl p-3 bg-gray-100 cursor-not-allowed focus:outline-none text-gray-700 text-sm font-semibold"
-                />
-              </div>
-              <div>
-                <label className="block mb-1 font-semibold text-xs text-gray-500 uppercase tracking-wider">Meeting Join URL</label>
-                <input
-                  type="text"
-                  readOnly
-                  value={form.video_english_url}
+                  value={form.agoraToken}
                   className="w-full border border-gray-200 rounded-xl p-3 bg-gray-100 cursor-not-allowed focus:outline-none text-gray-700 text-sm font-semibold truncate"
+                />
+              </div>
+              <div>
+                <label className="block mb-1 font-semibold text-xs text-gray-500 uppercase tracking-wider">UID</label>
+                <input
+                  type="text"
+                  readOnly
+                  value={form.agoraUid}
+                  className="w-full border border-gray-200 rounded-xl p-3 bg-gray-100 cursor-not-allowed focus:outline-none text-gray-700 text-sm font-semibold"
                 />
               </div>
             </div>

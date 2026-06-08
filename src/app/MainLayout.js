@@ -376,6 +376,7 @@ export default function MainLayout({ children }) {
     "/register",
     "/forgot-password",
     "/admin/reset-password",
+    "/video-call",
   ];
   const showLayout = !hideLayout.includes(pathname) && isAuthenticated();
 

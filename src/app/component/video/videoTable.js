@@ -126,17 +126,17 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                           7: "Body Detoxification",
                           8: "Instruction",
                           9: "Hold Video",
-                          10: "Zoom Session",
-                        }[video.type] || (video.videoType === 3 ? "Zoom Session" : video.type)}
+                          10: "Agora Session",
+                        }[video.type] || (video.videoType === 3 ? "Agora Session" : video.type)}
                       </span>
                       {video.videoType === 3 && (
                         <>
-                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${video.isExpired ? 'bg-red-100 text-red-600' : 'bg-emerald-100 text-emerald-700'}`}>
-                            {video.isExpired ? "Expired" : "Active"}
+                          <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700`}>
+                            Active
                           </span>
-                          {video.meetingNumber && (
+                          {video.agoraChannelName && (
                             <span className="bg-gray-100 text-gray-700 px-2 py-0.5 rounded text-xs font-semibold">
-                              Meeting ID: {video.meetingNumber}
+                              Channel: {video.agoraChannelName}
                             </span>
                           )}
                         </>
@@ -161,6 +161,19 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {video.videoType === 3 && (
+                    <a
+                      href={`/video-call?videoId=${video._id}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold text-xs uppercase tracking-wider px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-sm hover:shadow transition-all duration-300 transform hover:-translate-y-0.5"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                      </svg>
+                      Join Call
+                    </a>
+                  )}
                   <ActionButton type="edit" onClick={() => onEdit(video)} />
                   <ActionButton
                     type="delete"
@@ -246,10 +259,10 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                       )}
                     </div>
 
-                    {/* Video / Zoom Session */}
+                    {/* Video / Agora Session */}
                     <div>
                       <p className="text-xs font-medium text-gray-600 mb-2">
-                        {video.videoType === 3 ? "Zoom URL" : "Video"}
+                        {video.videoType === 3 ? "Agora Session" : "Video"}
                       </p>
                       {video.videoType === 3 ? (
                         <div className="flex flex-col justify-center items-center bg-gray-50 p-3 h-auto min-h-40 rounded-xl border border-dashed border-gray-200 text-center gap-2">
@@ -258,24 +271,12 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                             </svg>
                           </div>
-                          <span className="text-[11px] font-bold text-gray-700 font-sans">Zoom Session</span>
-                          <span className="text-[9px] text-gray-500 font-sans">Credentials Saved</span>
-                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider font-sans ${video.isExpired ? 'bg-red-50 text-red-500 border border-red-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
-                            {video.isExpired ? "Expired" : "Active"}
+                          <span className="text-[11px] font-bold text-gray-700 font-sans">Agora Session</span>
+                          <span className="text-[9px] text-gray-500 font-sans">Channel: {video.agoraChannelName || "N/A"}</span>
+                          <span className="text-[8px] text-gray-400 font-sans break-all max-w-[150px] truncate" title={video.agoraToken}>Token: {video.agoraToken ? `${video.agoraToken.substring(0, 15)}...` : "N/A"}</span>
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider font-sans bg-emerald-50 text-emerald-600 border border-emerald-100">
+                            Active
                           </span>
-                          {!video.isExpired && video.zoomStartUrl && (
-                            <a
-                              href={video.zoomStartUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="w-full py-2 bg-[#134D41] hover:bg-[#0f3d33] text-white rounded-xl transition duration-300 font-semibold text-[10px] flex items-center justify-center gap-1.5 shadow-md mt-1.5 uppercase tracking-wider"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                              </svg>
-                              Join as Host
-                            </a>
-                          )}
                         </div>
                       ) : (
                         getTextInLanguage(
@@ -369,10 +370,10 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                       )}
                     </div>
 
-                    {/* Video / Zoom Session */}
+                    {/* Video / Agora Session */}
                     <div>
                       <p className="text-xs font-medium text-gray-600 mb-2">
-                        {video.videoType === 3 ? "Zoom URL" : "Video"}
+                        {video.videoType === 3 ? "Agora Session" : "Video"}
                       </p>
                       {video.videoType === 3 ? (
                         <div className="flex flex-col justify-center items-center bg-gray-50 p-3 h-auto min-h-40 rounded-xl border border-dashed border-gray-200 text-center gap-2">
@@ -381,24 +382,12 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                             </svg>
                           </div>
-                          <span className="text-[11px] font-bold text-gray-700 font-sans">Zoom Session</span>
-                          <span className="text-[9px] text-gray-500 font-sans">Credentials Saved</span>
-                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider font-sans ${video.isExpired ? 'bg-red-50 text-red-500 border border-red-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
-                            {video.isExpired ? "Expired" : "Active"}
+                          <span className="text-[11px] font-bold text-gray-700 font-sans">Agora Session</span>
+                          <span className="text-[9px] text-gray-500 font-sans">Channel: {video.agoraChannelName || "N/A"}</span>
+                          <span className="text-[8px] text-gray-400 font-sans break-all max-w-[150px] truncate" title={video.agoraToken}>Token: {video.agoraToken ? `${video.agoraToken.substring(0, 15)}...` : "N/A"}</span>
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider font-sans bg-emerald-50 text-emerald-600 border border-emerald-100">
+                            Active
                           </span>
-                          {!video.isExpired && video.zoomStartUrl && (
-                            <a
-                              href={video.zoomStartUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="w-full py-2 bg-[#134D41] hover:bg-[#0f3d33] text-white rounded-xl transition duration-300 font-semibold text-[10px] flex items-center justify-center gap-1.5 shadow-md mt-1.5 uppercase tracking-wider"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                              </svg>
-                              Join as Host
-                            </a>
-                          )}
                         </div>
                       ) : (
                         getTextInLanguage(
@@ -492,10 +481,10 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                       )}
                     </div>
 
-                    {/* Video / Zoom Session */}
+                    {/* Video / Agora Session */}
                     <div>
                       <p className="text-xs font-medium text-gray-600 mb-2">
-                        {video.videoType === 3 ? "Zoom URL" : "Video"}
+                        {video.videoType === 3 ? "Agora Session" : "Video"}
                       </p>
                       {video.videoType === 3 ? (
                         <div className="flex flex-col justify-center items-center bg-gray-50 p-3 h-auto min-h-40 rounded-xl border border-dashed border-gray-200 text-center gap-2">
@@ -504,24 +493,12 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                             </svg>
                           </div>
-                          <span className="text-[11px] font-bold text-gray-700 font-sans">Zoom Session</span>
-                          <span className="text-[9px] text-gray-500 font-sans">Credentials Saved</span>
-                          <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider font-sans ${video.isExpired ? 'bg-red-50 text-red-500 border border-red-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100'}`}>
-                            {video.isExpired ? "Expired" : "Active"}
+                          <span className="text-[11px] font-bold text-gray-700 font-sans">Agora Session</span>
+                          <span className="text-[9px] text-gray-500 font-sans">Channel: {video.agoraChannelName || "N/A"}</span>
+                          <span className="text-[8px] text-gray-400 font-sans break-all max-w-[150px] truncate" title={video.agoraToken}>Token: {video.agoraToken ? `${video.agoraToken.substring(0, 15)}...` : "N/A"}</span>
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider font-sans bg-emerald-50 text-emerald-600 border border-emerald-100">
+                            Active
                           </span>
-                          {!video.isExpired && video.zoomStartUrl && (
-                            <a
-                              href={video.zoomStartUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="w-full py-2 bg-[#134D41] hover:bg-[#0f3d33] text-white rounded-xl transition duration-300 font-semibold text-[10px] flex items-center justify-center gap-1.5 shadow-md mt-1.5 uppercase tracking-wider"
-                            >
-                              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                              </svg>
-                              Join as Host
-                            </a>
-                          )}
                         </div>
                       ) : (
                         getTextInLanguage(

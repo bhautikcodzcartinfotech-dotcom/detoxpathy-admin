@@ -1,8 +1,8 @@
 import axios from "axios";
 
-// export const API_BASE = "http://192.168.1.14:3002/api/v1";
+export const API_BASE = "http://192.168.1.14:3002/api/v1";
 // export const API_BASE = "http://69.62.73.194:4009/api/v1";
- export const API_BASE = "https://admin.detoxpathy.com/api/v1";
+// export const API_BASE = "https://admin.detoxpathy.com/api/v1";
 // export const API_BASE = "https://backend.fatendfit.com/api/v1";
 // Host base used to resolve file URLs coming from multer (e.g., uploads/..)
 export const API_HOST = API_BASE.replace(/\/?api\/?v1\/?$/, "").replace(
@@ -690,6 +690,18 @@ export const createVideoApi = async (payload) => {
   if (typeof payload.accessToken !== "undefined") {
     data.append("accessToken", payload.accessToken);
   }
+  if (typeof payload.agoraAppId !== "undefined") {
+    data.append("agoraAppId", payload.agoraAppId);
+  }
+  if (typeof payload.agoraChannelName !== "undefined") {
+    data.append("agoraChannelName", payload.agoraChannelName);
+  }
+  if (typeof payload.agoraToken !== "undefined") {
+    data.append("agoraToken", payload.agoraToken);
+  }
+  if (typeof payload.agoraUid !== "undefined") {
+    data.append("agoraUid", String(payload.agoraUid));
+  }
 
   const res = await axios.post(`${API_BASE}/admin/video/create`, data, {
     headers: { ...getAuthHeaders(), "Content-Type": "multipart/form-data" },
@@ -805,6 +817,18 @@ export const updateVideoById = async (id, payload) => {
   if (typeof payload.accessToken !== "undefined") {
     data.append("accessToken", payload.accessToken);
   }
+  if (typeof payload.agoraAppId !== "undefined") {
+    data.append("agoraAppId", payload.agoraAppId);
+  }
+  if (typeof payload.agoraChannelName !== "undefined") {
+    data.append("agoraChannelName", payload.agoraChannelName);
+  }
+  if (typeof payload.agoraToken !== "undefined") {
+    data.append("agoraToken", payload.agoraToken);
+  }
+  if (typeof payload.agoraUid !== "undefined") {
+    data.append("agoraUid", String(payload.agoraUid));
+  }
 
   const res = await axios.put(`${API_BASE}/admin/video/update/${id}`, data, {
     headers: { ...getAuthHeaders(), "Content-Type": "multipart/form-data" },
@@ -819,9 +843,32 @@ export const deleteVideoById = async (id) => {
   return res.data;
 };
 
+export const getVideoByIdApi = async (id) => {
+  const res = await axios.get(`${API_BASE}/admin/video/byId/${id}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const getAgoraTokenApi = async (id) => {
+  const res = await axios.get(`${API_BASE}/admin/video/${id}/agora-token`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
 export const generateZoomMeetingApi = async (topic) => {
   const res = await axios.post(
     `${API_BASE}/admin/video/generate-zoom-meeting`,
+    { topic },
+    { headers: getAuthHeaders() }
+  );
+  return res.data;
+};
+
+export const generateAgoraSessionApi = async (topic) => {
+  const res = await axios.post(
+    `${API_BASE}/admin/video/generate-agora-session`,
     { topic },
     { headers: getAuthHeaders() }
   );

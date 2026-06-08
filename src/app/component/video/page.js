@@ -152,7 +152,7 @@ const VideoPage = () => {
             { label: "Body Detoxification", value: "7" },
             { label: "Instruction", value: "8" },
             { label: "Hold Video", value: "9" },
-            { label: "Zoom Session", value: "10" },
+            { label: "Agora Session", value: "10" },
           ]}
           filterValue={typeFilter}
           filterLabel="Type"
