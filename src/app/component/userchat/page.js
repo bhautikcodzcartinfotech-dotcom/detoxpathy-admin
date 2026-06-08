@@ -118,6 +118,13 @@ export default function ChatPage() {
   });
 
   const messagesEndRef = useRef(null);
+  const canvasRef = useRef(null);
+  const animationRef = useRef(null);
+  const analyserRef = useRef(null);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const recordingTimerRef = useRef(null);
+  const [audioPreviewUrl, setAudioPreviewUrl] = useState(null);
+  const [lightboxUrl, setLightboxUrl] = useState(null);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [chatId, setChatId] = useState(null);
@@ -646,6 +653,7 @@ export default function ChatPage() {
       }
 
       setAudioBlob(null);
+      setAudioPreviewUrl(null);
       setUploadProgress(0);
       setIsUploading(false);
     } catch (err) {
@@ -699,13 +707,10 @@ export default function ChatPage() {
   // Recording
   const startVoiceRecording = async () => {
     try {
-      // Check if mediaDevices is available
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         setShowMicErrorModal(true);
         return;
       }
-
-      // Check if there are any audio input devices
       const devices = await navigator.mediaDevices.enumerateDevices();
       const audioDevices = devices.filter(device => device.kind === "audioinput");
       if (audioDevices.length === 0) {
@@ -714,15 +719,76 @@ export default function ChatPage() {
       }
 
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mime =
-        MediaRecorder.isTypeSupported("audio/webm;codecs=opus") &&
-        "audio/webm;codecs=opus";
+
+      // Setup analyser for waveform
+      const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      const analyser = audioCtx.createAnalyser();
+      analyser.fftSize = 256;
+      const source = audioCtx.createMediaStreamSource(stream);
+      source.connect(analyser);
+      analyserRef.current = analyser;
+
+      // Draw waveform on canvas
+      const drawWaveform = () => {
+        const canvas = canvasRef.current;
+        if (!canvas) {
+          animationRef.current = requestAnimationFrame(drawWaveform);
+          return;
+        }
+        const ctx = canvas.getContext("2d");
+        const bufferLength = analyser.frequencyBinCount;
+        const dataArray = new Uint8Array(bufferLength);
+        analyser.getByteFrequencyData(dataArray);
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Draw rounded bars with theme color
+        const totalBars = 28;
+        const barWidth = 3;
+        const gap = 2;
+        const startX = (canvas.width - totalBars * (barWidth + gap)) / 2;
+
+        for (let i = 0; i < totalBars; i++) {
+          const dataIndex = Math.floor((i / totalBars) * bufferLength);
+          const value = dataArray[dataIndex] / 255;
+          const barHeight = Math.max(3, value * canvas.height * 0.85);
+          const x = startX + i * (barWidth + gap);
+          const y = (canvas.height - barHeight) / 2;
+
+          // Green theme gradient
+          const gradient = ctx.createLinearGradient(0, y, 0, y + barHeight);
+          gradient.addColorStop(0, `rgba(20, 184, 166, ${0.6 + value * 0.4})`);
+          gradient.addColorStop(1, `rgba(19, 77, 65, ${0.7 + value * 0.3})`);
+          ctx.fillStyle = gradient;
+
+          // Rounded bars
+          ctx.beginPath();
+          ctx.roundRect(x, y, barWidth, barHeight, 2);
+          ctx.fill();
+        }
+        animationRef.current = requestAnimationFrame(drawWaveform);
+      };
+      setTimeout(drawWaveform, 100);
+
+      // Timer
+      setRecordingSeconds(0);
+      recordingTimerRef.current = setInterval(() => {
+        setRecordingSeconds(prev => prev + 1);
+      }, 1000);
+
+      const mime = MediaRecorder.isTypeSupported("audio/webm;codecs=opus") && "audio/webm;codecs=opus";
       const recorder = new MediaRecorder(stream, { mimeType: mime });
       const chunks = [];
       recorder.ondataavailable = (e) => e.data.size > 0 && chunks.push(e.data);
       recorder.onstop = () => {
-        setAudioBlob(new Blob(chunks, { type: mime }));
+        const blob = new Blob(chunks, { type: mime });
+        setAudioBlob(blob);
+        setAudioPreviewUrl(URL.createObjectURL(blob));
         stream.getTracks().forEach((t) => t.stop());
+        cancelAnimationFrame(animationRef.current);
+        clearInterval(recordingTimerRef.current);
+        // Clear canvas
+        const canvas = canvasRef.current;
+        if (canvas) canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
       };
       recorder.start();
       setMediaRecorder(recorder);
@@ -738,6 +804,8 @@ export default function ChatPage() {
     mediaRecorder?.stop();
     setRecording(false);
     setIsListening(false);
+    clearInterval(recordingTimerRef.current);
+    cancelAnimationFrame(animationRef.current);
   };
 
   const getMessageRef = async (msgId, msgData) => {
@@ -1144,14 +1212,36 @@ export default function ChatPage() {
                   </div>
                 ) : messages.length > 0 ? (
                   <div className="space-y-4">
-                    {messages.map((msg) => (
-                      <div
-                        key={msg.id}
-                        className={`flex ${msg.senderId === selectedUser?.customerCareId
-                            ? "justify-end"
-                            : "justify-start"
-                          }`}
-                      >
+                    {(() => {
+                      const getDateLabel = (ts) => {
+                        const d = new Date(ts);
+                        const today = new Date();
+                        const yesterday = new Date();
+                        yesterday.setDate(today.getDate() - 1);
+                        if (d.toDateString() === today.toDateString()) return "Today";
+                        if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
+                        return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+                      };
+                      let lastLabel = null;
+                      return messages.map((msg) => {
+                        const label = getDateLabel(msg.createdAt);
+                        const showSeparator = label !== lastLabel;
+                        lastLabel = label;
+                        return (
+                          <div key={msg.id}>
+                            {showSeparator && (
+                              <div className="flex items-center justify-center my-2">
+                                <span className="bg-gray-200 text-gray-500 text-[11px] font-semibold px-3 py-1 rounded-full select-none">
+                                  {label}
+                                </span>
+                              </div>
+                            )}
+                            <div
+                              className={`flex ${msg.senderId === selectedUser?.customerCareId
+                                  ? "justify-end"
+                                  : "justify-start"
+                                }`}
+                            >
                         <div
                           className={`group relative max-w-[75%] transition-all duration-300 ${
                             msg.deletedByDoctor
@@ -1159,9 +1249,10 @@ export default function ChatPage() {
                               : msg.senderId === selectedUser?.customerCareId
                                 ? "bg-gradient-to-r from-yellow-400 to-amber-300 text-black shadow-lg"
                                 : "bg-white/80 backdrop-blur-sm text-gray-800 shadow-lg"
-                          } hover:shadow-xl rounded-3xl`}
+                          } overflow-hidden rounded-3xl`}
                         >
-                          {/* Message Action Menu (Inside bubble at top right) */}
+                          {/* Message Action Menu (Inside bubble at top right) — hidden for image (image has its own) */}
+                          {msg.type !== "image" && (
                           <div className="absolute top-2.5 right-2.5 z-20">
                             <button
                               onClick={(e) => {
@@ -1208,6 +1299,7 @@ export default function ChatPage() {
                               </div>
                             )}
                           </div>
+                          )}
 
                           {/* Deleted Message Banner */}
                           {msg.deletedByDoctor && (
@@ -1277,24 +1369,103 @@ export default function ChatPage() {
                               </div>
                             ) : msg.type === "image" &&
                               (msg.audioUrl || msg.mediaUrl) ? (
-                              <div className="space-y-2 pr-6">
-                                <img
-                                  src={resolveAudioUrl(
-                                    msg.audioUrl || msg.mediaUrl
-                                  )}
-                                  alt="Shared image"
-                                  className="max-w-full max-h-64 rounded-2xl shadow-lg object-cover cursor-pointer hover:scale-105 transition-transform"
-                                   onClick={() => {
-                                     window.location.href = resolveAudioUrl(
-                                       msg.audioUrl || msg.mediaUrl
-                                     );
-                                   }}
-                                />
-                                {msg.fileName && (
-                                  <p className="text-xs opacity-75 truncate">
-                                    {msg.fileName}
-                                  </p>
-                                )}
+                              <div className="img-outer">
+                                {/* Image with overlays */}
+                                <div className="relative">
+                                  <img
+                                    src={resolveAudioUrl(msg.audioUrl || msg.mediaUrl)}
+                                    alt="Shared image"
+                                    className="max-w-full max-h-64 object-cover block cursor-pointer w-full"
+                                    onClick={() => setLightboxUrl(resolveAudioUrl(msg.audioUrl || msg.mediaUrl))}
+                                    onError={(e) => {
+                                      const wrapper = e.target.parentElement;
+                                      e.target.style.display = "none";
+                                      if (wrapper) {
+                                        // hide all overlays (three-dot + bottom bar)
+                                        wrapper.querySelectorAll(".img-msg-overlay").forEach(el => el.style.display = "none");
+                                        // show placeholder
+                                        const fallback = wrapper.querySelector(".img-msg-fallback");
+                                        if (fallback) fallback.style.display = "flex";
+                                      }
+                                      // show the info row below
+                                      const infoRow = e.target.closest(".img-outer")?.querySelector(".img-info-fallback-row");
+                                      if (infoRow) infoRow.style.display = "flex";
+                                    }}
+                                  />
+                                  {/* Placeholder when image fails */}
+                                  <div
+                                    className="img-msg-fallback w-full h-24 items-center justify-center gap-2 text-gray-400 text-xs rounded-lg"
+                                    style={{ display: "none" }}
+                                  >
+                                    <BsImage size={28} className="opacity-40" />
+                                    <span>Image unavailable</span>
+                                  </div>
+                                  {/* ⋮ Three-dot menu — overlaid top-right on image */}
+                                  <div className="img-msg-overlay absolute top-2.5 right-2.5 z-20">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setActiveMessageMenuId(activeMessageMenuId === msg.id ? null : msg.id);
+                                      }}
+                                      className="message-menu-btn p-1 rounded-full transition-all duration-200 shadow-sm border border-black/5 bg-black/30 hover:bg-black/50 text-white"
+                                    >
+                                      <BsThreeDotsVertical size={13} />
+                                    </button>
+                                    {activeMessageMenuId === msg.id && (
+                                      <div
+                                        className="absolute mt-1 w-32 bg-white rounded-xl shadow-2xl border border-gray-150 z-50 overflow-hidden text-left right-0 top-full"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        {msg.deletedByDoctor ? (
+                                          <button
+                                            onClick={() => { handleRestoreMessage(msg.docId || msg.id, msg); setActiveMessageMenuId(null); }}
+                                            className="w-full text-left px-4 py-3 text-sm text-emerald-600 hover:bg-emerald-50 transition-colors font-medium flex items-center gap-1.5"
+                                          >
+                                            <span>✅</span> Restore
+                                          </button>
+                                        ) : (
+                                          <button
+                                            onClick={() => { handleDeleteMessage(msg.docId || msg.id, msg); setActiveMessageMenuId(null); }}
+                                            className="w-full text-left px-4 py-3 text-sm text-rose-600 hover:bg-rose-50 transition-colors font-medium flex items-center gap-1.5"
+                                          >
+                                            <span>🗑️</span> Delete
+                                          </button>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                  {/* Filename & time — overlaid at bottom of image (normal case) */}
+                                  <div className="img-msg-overlay absolute bottom-0 left-0 right-0 flex items-center justify-between px-3 py-1.5 gap-2 bg-black/30">
+                                    <span className="text-xs font-medium text-white break-all truncate">
+                                      {msg.fileName || ""}
+                                    </span>
+                                    <div className="flex items-center gap-1 shrink-0 text-white">
+                                      <span className="text-xs opacity-90">
+                                        {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                      </span>
+                                      {msg.status === "sent" && <IoMdCheckmarkCircle size={13} />}
+                                      {msg.status === "delivered" && <IoMdCheckmarkCircle size={13} />}
+                                      {msg.status === "read" && <IoMdCheckmarkCircle size={13} className="text-white" />}
+                                    </div>
+                                  </div>
+                                </div>
+                                {/* Fallback info row — only visible when image fails to load */}
+                                <div
+                                  className="img-info-fallback-row items-center justify-between px-1 pt-1.5 pb-0.5 gap-2"
+                                  style={{ display: "none" }}
+                                >
+                                  <span className="text-xs font-medium opacity-75 break-all truncate">
+                                    {msg.fileName || ""}
+                                  </span>
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <span className="text-xs opacity-75">
+                                      {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                    </span>
+                                    {msg.status === "sent" && <IoMdCheckmarkCircle size={13} />}
+                                    {msg.status === "delivered" && <IoMdCheckmarkCircle size={13} />}
+                                    {msg.status === "read" && <IoMdCheckmarkCircle size={13} className="text-gray-600" />}
+                                  </div>
+                                </div>
                               </div>
                             ) : msg.type === "file" &&
                               (msg.audioUrl || msg.mediaUrl || msg.fileUrl) ? (
@@ -1329,6 +1500,7 @@ export default function ChatPage() {
                           </div>
 
                           {/* Message Footer */}
+                          {msg.type !== "image" && (
                           <div
                             className={`flex items-center justify-between px-4 pb-2 text-xs ${msg.senderId === selectedUser?.customerCareId
                                 ? "text-gray-700"
@@ -1356,9 +1528,13 @@ export default function ChatPage() {
                               )}
                             </div>
                           </div>
+                          )}
                         </div>
                       </div>
-                    ))}
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-gray-400">
@@ -1441,21 +1617,59 @@ export default function ChatPage() {
 
                 {/* Main Input */}
                 <div className="flex items-center gap-3">
+                  {/* Recording UI — waveform during recording, preview after */}
+                  {(recording || audioBlob) ? (
+                    <div className="flex-1 flex items-center gap-3 bg-white/80 rounded-2xl px-4 py-2 shadow-lg border border-yellow-200">
+                      {recording ? (
+                        <>
+                          {/* Stop button */}
+                          <button
+                            onClick={stopVoiceRecording}
+                            className="p-2 rounded-full bg-red-500 text-white animate-pulse shrink-0"
+                          >
+                            <IoMdPause size={20} />
+                          </button>
+                          {/* Waveform canvas */}
+                          <canvas ref={canvasRef} width={140} height={32} className="rounded-xl bg-[#134D41]/5" style={{ maxWidth: 140 }} />
+                          {/* Timer */}
+                          <span className="text-xs font-bold text-red-500 shrink-0">
+                            {String(Math.floor(recordingSeconds / 60)).padStart(2, "0")}:{String(recordingSeconds % 60).padStart(2, "0")}
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          {/* Discard */}
+                          <button
+                            onClick={() => { setAudioBlob(null); setAudioPreviewUrl(null); }}
+                            className="p-2 rounded-full bg-gray-100 hover:bg-red-50 text-gray-500 hover:text-red-500 transition shrink-0"
+                          >
+                            <FiX size={18} />
+                          </button>
+                          {/* Audio preview player */}
+                          <audio src={audioPreviewUrl} controls className="flex-1 h-8" style={{ minWidth: 0 }} />
+                        </>
+                      )}
+                      {/* Send button */}
+                      {!recording && (
+                        <button
+                          onClick={sendVoiceMessage}
+                          disabled={isSending}
+                          className="p-3 rounded-2xl bg-gradient-to-r from-yellow-400 to-amber-300 text-black shadow hover:shadow-lg transition shrink-0"
+                        >
+                          {isSending
+                            ? <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                            : <IoMdSend size={20} />}
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <>
                   {/* Voice Recording Button */}
                   <button
-                    onClick={
-                      recording ? stopVoiceRecording : startVoiceRecording
-                    }
-                    className={`p-4 rounded-2xl transition-all duration-300 ${recording
-                        ? "bg-red-500 text-white animate-pulse shadow-lg"
-                        : "bg-white/80 hover:bg-red-50 text-gray-600 hover:text-red-600 shadow-lg hover:shadow-xl"
-                      }`}
+                    onClick={startVoiceRecording}
+                    className="p-4 rounded-2xl bg-white/80 hover:bg-red-50 text-gray-600 hover:text-red-600 shadow-lg hover:shadow-xl transition-all duration-300"
                   >
-                    {recording ? (
-                      <IoMdPause size={24} />
-                    ) : (
-                      <IoMdMic size={24} />
-                    )}
+                    <IoMdMic size={24} />
                   </button>
 
                   {/* File Upload Button */}
@@ -1507,25 +1721,20 @@ export default function ChatPage() {
 
                   {/* Send Button */}
                   <button
-                    onClick={audioBlob ? sendVoiceMessage : sendMessage}
-                    disabled={
-                      isSending ||
-                      (!audioBlob && !newMessage.trim()) ||
-                      isUploading
-                    }
-                    className={`p-4 rounded-2xl text-black transition-all duration-300 shadow-lg hover:shadow-xl ${audioBlob
+                    onClick={sendMessage}
+                    disabled={isSending || !newMessage.trim() || isUploading}
+                    className={`p-4 rounded-2xl text-black transition-all duration-300 shadow-lg hover:shadow-xl ${
+                      newMessage.trim()
                         ? "bg-gradient-to-r from-yellow-400 to-amber-300 hover:from-yellow-500 hover:to-amber-400"
-                        : newMessage.trim()
-                          ? "bg-gradient-to-r from-yellow-400 to-amber-300 hover:from-yellow-500 hover:to-amber-400"
-                          : "bg-gray-300 cursor-not-allowed"
-                      }`}
+                        : "bg-gray-300 cursor-not-allowed"
+                    }`}
                   >
-                    {isSending ? (
-                      <div className="w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
-                    ) : (
-                      <IoMdSend size={24} />
-                    )}
+                    {isSending
+                      ? <div className="w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin" />
+                      : <IoMdSend size={24} />}
                   </button>
+                    </>
+                  )}
                 </div>
               </div>
             </>
@@ -1557,6 +1766,27 @@ export default function ChatPage() {
         allBranches={allBranches}
       />
 
+      {/* Image Lightbox */}
+      {lightboxUrl && (
+        <div
+          className="fixed inset-0 bg-black/90 z-[9999] flex items-center justify-center"
+          onClick={() => setLightboxUrl(null)}
+        >
+          <button
+            onClick={() => setLightboxUrl(null)}
+            className="absolute top-4 right-4 text-white bg-white/20 hover:bg-white/30 rounded-full p-2 transition"
+          >
+            <FiX size={24} />
+          </button>
+          <img
+            src={lightboxUrl}
+            alt="Full size"
+            className="max-w-[90vw] max-h-[90vh] object-contain rounded-lg shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
+
       {/* Custom Delete/Restore Confirmation Modal */}
       {confirmModal.isOpen && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[9999] flex items-center justify-center p-4">
@@ -1570,7 +1800,7 @@ export default function ChatPage() {
                 onClick={() => setConfirmModal({ isOpen: false, type: "delete", msgId: null, msgData: null })}
                 className="p-1.5 hover:bg-gray-200 rounded-full transition-colors text-gray-400 hover:text-gray-600"
               >
-                <FiX size={18} />
+                <FiX size={18} /> 
               </button>
             </div>
 
