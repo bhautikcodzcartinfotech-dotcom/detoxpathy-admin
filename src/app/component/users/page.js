@@ -56,6 +56,8 @@ const UsersPage = () => {
 
   const [stats, setStats] = useState({
     total: 0,
+    currentMonthTotal: 0,
+    currentMonthBranchSummary: "",
     active: 0,
     completed: 0,
     inactive: 0,
@@ -121,8 +123,29 @@ const UsersPage = () => {
     const minWeight = weights.length > 0 ? Math.min(...weights) : 0;
     const avgIdealWeight = idealWeights.length > 0 ? (idealWeights.reduce((a, b) => a + b, 0) / idealWeights.length).toFixed(1) : 0;
 
+    const now = new Date();
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const currentMonthUsers = users.filter((u) => {
+      const createdAt = u.createdAt ? new Date(u.createdAt) : null;
+      return createdAt && createdAt >= startOfMonth && createdAt <= now;
+    });
+
+    const branchCounts = currentMonthUsers.reduce((acc, u) => {
+      const branchName = (u.branch && (typeof u.branch === "object" ? u.branch.name : u.branch)) || "Unassigned";
+      acc[branchName] = (acc[branchName] || 0) + 1;
+      return acc;
+    }, {});
+
+    const currentMonthBranchSummary = Object.entries(branchCounts)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([name, count]) => `${name}: ${count}`)
+      .join(" | ");
+
     setStats({
       total,
+      currentMonthTotal: currentMonthUsers.length,
+      currentMonthBranchSummary: currentMonthBranchSummary || "Branch-wise users",
       active,
       completed,
       inactive,
@@ -445,10 +468,11 @@ const UsersPage = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
           {[
             {
-              label: "TOTAL USERS",
-              value: stats.total.toLocaleString(),
+              label: role === "subadmin" ? "CURRENT MONTH USERS" : "TOTAL USERS",
+              value: role === "subadmin" ? stats.currentMonthTotal.toLocaleString() : stats.total.toLocaleString(),
               color: "border-teal-600",
-              icon: UsersIcon
+              icon: UsersIcon,
+              sub: role === "subadmin" ? stats.currentMonthBranchSummary : undefined
             },
             {
               label: "ACTIVE PROGRAMS",
@@ -475,6 +499,7 @@ const UsersPage = () => {
                 <item.icon className="w-4 h-4 text-gray-300" />
               </div>
               <p className="text-4xl font-black text-gray-900">{item.value}</p>
+              {item.sub && <p className="text-xs text-gray-500 mt-2 font-bold uppercase tracking-[0.2em]">{item.sub}</p>}
             </div>
           ))}
         </div>
@@ -550,7 +575,6 @@ const UsersPage = () => {
         <div className="mb-4 flex-shrink-0">
           <SearchComponent
             onSearch={handleSearch}
-            onFilterChange={setFilter}
             searchLoading={searchLoading}
             searchPlaceholder="Search by name, mobile, or branch..."
             filterOptions={
@@ -564,91 +588,43 @@ const UsersPage = () => {
             }
             filterValue={filter}
             filterLabel="Status"
-            planOptions={plans.map((p) => ({ label: p.name, value: p._id }))}
-            selectedPlan={selectedPlan}
-            onPlanChange={setSelectedPlan}
-            selectedDate={selectedDate}
-            onDateChange={setSelectedDate}
-            planHistoryFilter={planHistoryFilter}
-            onPlanHistoryFilterChange={setPlanHistoryFilter}
-            languageOptions={[
+            planOptions={role === "subadmin" ? [] : plans.map((p) => ({ label: p.name, value: p._id }))}
+            selectedPlan={role === "subadmin" ? "" : selectedPlan}
+            onPlanChange={role === "subadmin" ? null : setSelectedPlan}
+            selectedDate={role === "subadmin" ? "" : selectedDate}
+            onDateChange={role === "subadmin" ? null : setSelectedDate}
+            planHistoryFilter={role === "subadmin" ? null : planHistoryFilter}
+            onPlanHistoryFilterChange={role === "subadmin" ? null : setPlanHistoryFilter}
+            languageOptions={role === "subadmin" ? [] : [
               { label: "English", value: "english" },
               { label: "Hindi", value: "hindi" },
               { label: "Gujarati", value: "gujarati" },
             ]}
-            selectedLanguage={selectedLanguage}
-            onLanguageChange={setSelectedLanguage}
-            selectedGender={selectedGender}
-            onGenderChange={setSelectedGender}
-            selectedCity={selectedCity}
-            onCityChange={setSelectedCity}
-            selectedState={selectedState}
-            onStateChange={setSelectedState}
-            selectedCountry={selectedCountry}
-            onCountryChange={setSelectedCountry}
-            skipBodyMeasurement={skipBodyMeasurement}
-            onSkipBodyMeasurementChange={setSkipBodyMeasurement}
-
-
-            referrerOptions={users
+            selectedLanguage={role === "subadmin" ? "" : selectedLanguage}
+            onLanguageChange={role === "subadmin" ? null : setSelectedLanguage}
+            selectedGender={role === "subadmin" ? "" : selectedGender}
+            onGenderChange={role === "subadmin" ? null : setSelectedGender}
+            selectedCity={role === "subadmin" ? "" : selectedCity}
+            onCityChange={role === "subadmin" ? null : setSelectedCity}
+            selectedState={role === "subadmin" ? "" : selectedState}
+            onStateChange={role === "subadmin" ? null : setSelectedState}
+            selectedCountry={role === "subadmin" ? "" : selectedCountry}
+            onCountryChange={role === "subadmin" ? null : setSelectedCountry}
+            skipBodyMeasurement={role === "subadmin" ? "" : skipBodyMeasurement}
+            onSkipBodyMeasurementChange={role === "subadmin" ? null : setSkipBodyMeasurement}
+            referrerOptions={role === "subadmin" ? [] : users
               .filter((u) => u.referralCode)
               .map((u) => ({
                 label: `${u.name} ${u.surname || ""} (${u.referralCode})`,
                 value: u.referralCode,
               }))}
-            selectedReferrer={selectedReferrer}
-            onReferrerChange={setSelectedReferrer}
-            selectedAgeRange={selectedAgeRange}
-            onAgeRangeChange={setSelectedAgeRange}
+            selectedReferrer={role === "subadmin" ? "" : selectedReferrer}
+            onReferrerChange={role === "subadmin" ? null : setSelectedReferrer}
+            selectedAgeRange={role === "subadmin" ? "" : selectedAgeRange}
+            onAgeRangeChange={role === "subadmin" ? null : setSelectedAgeRange}
           />
         </div>
 
-        {!listLoading && (() => {
-          const finalCount = funnelSteps[funnelSteps.length - 1] || 0;
-
-          // The base for percentage should be the result of the LAST active filter stage before the final one
-          // We look for the largest stage in activeStages that is less than the last active stage
-          const lastActiveIdx = activeStages.length - 1;
-          const currentStage = activeStages[lastActiveIdx];
-          const previousStage = activeStages[lastActiveIdx - 1] ?? 0;
-
-          const baseCount = funnelSteps[previousStage] ?? users.length;
-          const percentage = baseCount > 0 ? ((finalCount / baseCount) * 100).toFixed(1) : 0;
-          const isDeepFiltered = activeStages.length > 2; // More than [Base, Status]
-
-          return (
-            <div className="mb-6 flex items-center justify-between bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
-              <div className="flex items-center gap-4">
-                <div className="flex flex-col">
-                  <span className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Filtered Results</span>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-2xl font-black text-gray-900">{finalCount}</span>
-                    <span className="text-sm font-bold text-gray-400">
-                      of {baseCount} {isDeepFiltered ? "matching users" : "Total Users"}
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="flex flex-col items-end gap-2">
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                  {isDeepFiltered ? "Relative Group Share" : "Overall Representation"}
-                </span>
-                <div className="flex items-center gap-3">
-                  <div className="w-32 h-2 bg-gray-100 rounded-full overflow-hidden">
-                    <div
-                      className="h-full bg-teal-500 transition-all duration-500"
-                      style={{ width: `${percentage}%` }}
-                    />
-                  </div>
-                  <span className="text-lg font-black text-teal-600">
-                    {percentage}%
-                  </span>
-                </div>
-              </div>
-            </div>
-          );
-        })()}
 
         <div className="flex-1 min-h-0">
           <UserList

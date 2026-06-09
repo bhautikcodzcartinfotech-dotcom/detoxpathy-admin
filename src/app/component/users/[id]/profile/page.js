@@ -70,6 +70,7 @@ const UserProfilePage = () => {
   const [planActionLoading, setPlanActionLoading] = useState(false);
   const [videoAnswers, setVideoAnswers] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [playingVideoUrl, setPlayingVideoUrl] = useState(null);
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
     title: "",
@@ -124,7 +125,7 @@ const UserProfilePage = () => {
       }
     };
     if (userId) load();
-  }, [userId]);
+  }, [userId, role]);
 
   // handle popup close with fade-out
   const closePopup = () => {
@@ -768,6 +769,51 @@ const UserProfilePage = () => {
               </div>
             </div>
 
+            {/* ------------------ Consultations ------------------ */}
+            <div className="p-6 mx-8 bg-white rounded-2xl shadow-lg border border-gray-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-gray-800">Consultations</h3>
+              </div>
+              {overview.consultations && overview.consultations.length > 0 ? (
+                <div className="space-y-4">
+                  {overview.consultations.map((c) => (
+                    <div
+                      key={c._id}
+                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl border border-teal-100 bg-teal-50/30 hover:bg-teal-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center">
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                          </svg>
+                        </div>
+                        <div>
+                          <div className="font-semibold text-gray-800">
+                            {c.isFirstConsultation ? "First Consultation" : "Follow-up Consultation"}
+                          </div>
+                          <div className="text-sm text-gray-500 flex flex-wrap gap-x-3">
+                            <span>📅 {c.appointmentId?.date || new Date(c.createdAt).toLocaleDateString()}</span>
+                            <span>⏰ {c.appointmentId?.startTime || "N/A"} - {c.appointmentId?.endTime || "N/A"}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => downloadConsultationPdfApi(c._id)}
+                        className="w-full sm:w-auto px-4 py-2 bg-white border border-teal-200 text-teal-600 rounded-lg text-sm font-bold hover:bg-teal-600 hover:text-white transition-all flex items-center justify-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                        </svg>
+                        Download PDF
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-gray-500 italic">No consultations recorded yet.</div>
+              )}
+            </div>
+
             {/* ------------------ Plan Management Section ------------------ */}
             {overview?.user?.plan && (
               <div className="p-8 mx-8 bg-white rounded-2xl shadow-lg border border-gray-200">
@@ -977,6 +1023,121 @@ const UserProfilePage = () => {
               </div>
             )}
 
+            {/* ------------------ Plan History ------------------ */}
+            <div className="p-6 mx-8 bg-white rounded-2xl shadow-lg">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-xl font-bold text-gray-800">
+                  Plan History
+                </h3>
+                <span className="text-sm text-gray-500">Recent first</span>
+              </div>
+              {Array.isArray(overview.planHistory) &&
+                overview.planHistory.length ? (
+                <div className="space-y-4">
+                  {overview.planHistory.map((h) => (
+                    <div
+                      key={h._id}
+                      className="flex items-center justify-between rounded-xl bg-amber-100 shadow-md p-4  hover:shadow-lg transition"
+                    >
+                      <div>
+                        <div className="font-semibold text-gray-800 text-base">
+                          {h.plan?.name ? `${h.plan.name} (₹${h.plan.price || 0})` : "Plan"}
+                        </div>
+                        <div className="text-sm text-gray-600">
+                          {h.plan?.days ? `${h.plan.days} days` : ""}
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {new Date(h.createdAt).toLocaleString()}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-gray-500">No plan changes yet.</div>
+              )}
+            </div>
+
+            {/* ------------------ Program Progress ------------------ */}
+            <div className="mx-8 bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
+              <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-gray-50/50">
+                <h3 className="text-lg font-bold text-gray-800">
+                  Program Progress
+                </h3>
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
+                  {overview.user?.plan?.name || "Standard Plan"} • {overview.user?.plan?.days || 0} Days
+                </span>
+              </div>
+
+              {overview?.user?.plan?.days ? (
+                <div className="overflow-x-auto">
+                  <table className="min-w-full divide-y divide-gray-200">
+                    <thead className="bg-[#134D41]">
+                      <tr className="text-[10px] font-black text-white uppercase tracking-widest whitespace-nowrap">
+                        <th className="px-4 py-4 text-left">Day</th>
+                        <th className="px-4 py-4 text-left">Weight</th>
+                        <th className="px-4 py-4 text-left">Water</th>
+                        <th className="px-4 py-4 text-left">Sleep</th>
+                        <th className="px-4 py-4 text-left">Exercise</th>
+                        <th className="px-4 py-4 text-left">Juice</th>
+                        <th className="px-4 py-4 text-left">Pranayama</th>
+                        <th className="px-4 py-4 text-left">Video</th>
+                        <th className="px-6 py-4 text-left">Food Mistake</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-100">
+                      {Array.from({ length: overview.user.plan.days })
+                        .slice(0, overview.user.planCurrentDay || 0)
+                        .map((_, index) => {
+                          const dayNum = index + 1;
+                          const isCompleted = dayNum <= (overview.user.planCurrentDay || 0);
+                          const isCurrent = dayNum === (overview.user.planCurrentDay || 0);
+
+                          const videoDayData = overview.progress?.find((p) => p.day === dayNum);
+                          const checklistData = overview.dailyChecklist?.find((c) => c.day === dayNum);
+
+                          return (
+                            <tr key={dayNum} className={`hover:bg-teal-50/30 transition-colors ${isCurrent ? 'bg-teal-50/50 font-bold' : ''}`}>
+                              <td className="px-4 py-4 whitespace-nowrap text-xs font-bold text-gray-700">
+                                Day {dayNum}
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
+                                {checklistData?.todayWeight ? `${checklistData.todayWeight} kg` : '-'}
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
+                                {checklistData?.waterIntake ? `${checklistData.waterIntake} L` : '-'}
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
+                                {checklistData?.sleepHours ? `${checklistData.sleepHours} hr` : '-'}
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
+                                {checklistData?.exerciseMinutes ? `${checklistData.exerciseMinutes} min` : '-'}
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
+                                {checklistData?.greenJuice ? `${checklistData.greenJuice}x` : '-'}
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
+                                {checklistData?.pranayamaMinutes ? `${checklistData.pranayamaMinutes} min` : '-'}
+                              </td>
+                              <td className="px-4 py-4 whitespace-nowrap text-[10px] font-bold">
+                                {videoDayData?.dayProgressPercent > 0 ? (
+                                  <span className="text-red-600 uppercase tracking-tight">Watched</span>
+                                ) : <span className="text-gray-300">-</span>}
+                              </td>
+                              <td className="px-6 py-4 text-xs text-red-500 max-w-[200px] truncate" title={checklistData?.dietMistake}>
+                                {checklistData?.dietMistake || '-'}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div className="p-10 text-center text-gray-500 italic">No program plan active.</div>
+              )}
+            </div>
+
             {/* ------------------ Transformation Journey ------------------ */}
             <div className="mx-8 bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
               <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-gray-50/50">
@@ -1123,121 +1284,6 @@ const UserProfilePage = () => {
               </div>
             </div>
 
-            {/* ------------------ Program Progress ------------------ */}
-            <div className="mx-8 bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-              <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-gray-50/50">
-                <h3 className="text-lg font-bold text-gray-800">
-                  Program Progress
-                </h3>
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                  {overview.user?.plan?.name || "Standard Plan"} • {overview.user?.plan?.days || 0} Days
-                </span>
-              </div>
-
-              {overview?.user?.plan?.days ? (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-[#134D41]">
-                      <tr className="text-[10px] font-black text-white uppercase tracking-widest whitespace-nowrap">
-                        <th className="px-4 py-4 text-left">Day</th>
-                        <th className="px-4 py-4 text-left">Weight</th>
-                        <th className="px-4 py-4 text-left">Water</th>
-                        <th className="px-4 py-4 text-left">Sleep</th>
-                        <th className="px-4 py-4 text-left">Exercise</th>
-                        <th className="px-4 py-4 text-left">Juice</th>
-                        <th className="px-4 py-4 text-left">Pranayama</th>
-                        <th className="px-4 py-4 text-left">Video</th>
-                        <th className="px-6 py-4 text-left">Diet Mistake</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-100">
-                      {Array.from({ length: overview.user.plan.days })
-                        .slice(0, overview.user.planCurrentDay || 0)
-                        .map((_, index) => {
-                          const dayNum = index + 1;
-                          const isCompleted = dayNum <= (overview.user.planCurrentDay || 0);
-                          const isCurrent = dayNum === (overview.user.planCurrentDay || 0);
-
-                          const videoDayData = overview.progress?.find((p) => p.day === dayNum);
-                          const checklistData = overview.dailyChecklist?.find((c) => c.day === dayNum);
-
-                          return (
-                            <tr key={dayNum} className={`hover:bg-teal-50/30 transition-colors ${isCurrent ? 'bg-teal-50/50 font-bold' : ''}`}>
-                              <td className="px-4 py-4 whitespace-nowrap text-xs font-bold text-gray-700">
-                                Day {dayNum}
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
-                                {checklistData?.todayWeight ? `${checklistData.todayWeight} kg` : '-'}
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
-                                {checklistData?.waterIntake ? `${checklistData.waterIntake} L` : '-'}
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
-                                {checklistData?.sleepHours ? `${checklistData.sleepHours} hr` : '-'}
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
-                                {checklistData?.exerciseMinutes ? `${checklistData.exerciseMinutes} min` : '-'}
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
-                                {checklistData?.greenJuice ? `${checklistData.greenJuice}x` : '-'}
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
-                                {checklistData?.pranayamaMinutes ? `${checklistData.pranayamaMinutes} min` : '-'}
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap text-[10px] font-bold">
-                                {videoDayData ? (
-                                  <span className="text-red-600 uppercase tracking-tight">Watched</span>
-                                ) : <span className="text-gray-300">-</span>}
-                              </td>
-                              <td className="px-6 py-4 text-xs text-red-500 max-w-[200px] truncate" title={checklistData?.dietMistake}>
-                                {checklistData?.dietMistake || '-'}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                    </tbody>
-                  </table>
-                </div>
-              ) : (
-                <div className="p-10 text-center text-gray-500 italic">No program plan active.</div>
-              )}
-            </div>
-
-            {/* ------------------ Plan History ------------------ */}
-            <div className="p-6 mx-8 bg-white rounded-2xl shadow-lg">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-gray-800">
-                  Plan History
-                </h3>
-                <span className="text-sm text-gray-500">Recent first</span>
-              </div>
-              {Array.isArray(overview.planHistory) &&
-                overview.planHistory.length ? (
-                <div className="space-y-4">
-                  {overview.planHistory.map((h) => (
-                    <div
-                      key={h._id}
-                      className="flex items-center justify-between rounded-xl bg-amber-100 shadow-md p-4  hover:shadow-lg transition"
-                    >
-                      <div>
-                        <div className="font-semibold text-gray-800 text-base">
-                          {h.plan?.name ? `${h.plan.name} (₹${h.plan.price || 0})` : "Plan"}
-                        </div>
-                        <div className="text-sm text-gray-600">
-                          {h.plan?.days ? `${h.plan.days} days` : ""}
-                        </div>
-                      </div>
-                      <div className="text-xs text-gray-500">
-                        {new Date(h.createdAt).toLocaleString()}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-gray-500">No plan changes yet.</div>
-              )}
-            </div>
-
             {/* ------------------ Video Answers ------------------ */}
             <div className="p-6 mx-8 bg-white rounded-2xl shadow-lg">
               <div className="flex items-center justify-between mb-4">
@@ -1267,17 +1313,24 @@ const UserProfilePage = () => {
                       </div>
                       <div className="p-4 bg-yellow-50 flex flex-col gap-3">
                         {va.answers && va.answers.length > 0 ? (
-                          va.answers.map((ans, i) => (
-                            <div key={i} className="flex flex-col border-b border-yellow-200 pb-2 last:border-0 last:pb-0">
-                              <span className="text-sm font-medium text-gray-700 tracking-wide">Question : {ans.questionId?.questionText?.english || ans.questionId || "Unknown Question"}</span>
-                              <div className="flex items-center gap-2 mt-1">
-                                <span className="text-md text-gray-900 font-semibold">Answer : {ans.answer}</span>
-                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${ans.isCorrect ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                  {ans.isCorrect ? 'Correct' : 'Incorrect'}
-                                </span>
-                              </div>
-                            </div>
-                          ))
+                          (() => {
+                            const wrongAnswers = va.answers.filter((ans) => !ans.isCorrect);
+                            return wrongAnswers.length > 0 ? (
+                              wrongAnswers.map((ans, i) => (
+                                <div key={i} className="flex flex-col border-b border-yellow-200 pb-2 last:border-0 last:pb-0">
+                                  <span className="text-sm font-medium text-gray-700 tracking-wide">Question : {ans.questionId?.questionText?.english || ans.questionId || "Unknown Question"}</span>
+                                  <div className="flex items-center gap-2 mt-1">
+                                    <span className="text-md text-gray-900 font-semibold">Answer : {ans.answer}</span>
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-red-100 text-red-700">
+                                      Incorrect
+                                    </span>
+                                  </div>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="text-sm text-gray-500">No wrong answers. All answers were correct.</div>
+                            );
+                          })()
                         ) : (
                           <div className="text-sm text-gray-500">No answers recorded.</div>
                         )}
@@ -1287,51 +1340,6 @@ const UserProfilePage = () => {
                 </div>
               ) : (
                 <div className="text-gray-500">No video answers available.</div>
-              )}
-            </div>
-
-            {/* ------------------ Consultations ------------------ */}
-            <div className="p-6 mx-8 bg-white rounded-2xl shadow-lg border border-gray-200">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-xl font-bold text-gray-800">Consultations</h3>
-              </div>
-              {overview.consultations && overview.consultations.length > 0 ? (
-                <div className="space-y-4">
-                  {overview.consultations.map((c) => (
-                    <div
-                      key={c._id}
-                      className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 rounded-xl border border-teal-100 bg-teal-50/30 hover:bg-teal-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="w-10 h-10 rounded-full bg-teal-100 text-teal-600 flex items-center justify-center">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                          </svg>
-                        </div>
-                        <div>
-                          <div className="font-semibold text-gray-800">
-                            {c.isFirstConsultation ? "First Consultation" : "Follow-up Consultation"}
-                          </div>
-                          <div className="text-sm text-gray-500 flex flex-wrap gap-x-3">
-                            <span>📅 {c.appointmentId?.date || new Date(c.createdAt).toLocaleDateString()}</span>
-                            <span>⏰ {c.appointmentId?.startTime || "N/A"} - {c.appointmentId?.endTime || "N/A"}</span>
-                          </div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => downloadConsultationPdfApi(c._id)}
-                        className="w-full sm:w-auto px-4 py-2 bg-white border border-teal-200 text-teal-600 rounded-lg text-sm font-bold hover:bg-teal-600 hover:text-white transition-all flex items-center justify-center gap-2"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
-                        Download PDF
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-gray-500 italic">No consultations recorded yet.</div>
               )}
             </div>
 
@@ -1380,16 +1388,41 @@ const UserProfilePage = () => {
                         </div>
                       </div>
                       {recording.videoUrl ? (
-                        <button
-                          onClick={() => window.open(`${API_HOST}${recording.videoUrl}`, '_blank')}
-                          className="w-full sm:w-auto px-4 py-2 bg-white border border-purple-200 text-purple-600 rounded-lg text-sm font-bold hover:bg-purple-600 hover:text-white transition-all flex items-center justify-center gap-2"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          Play Recording
-                        </button>
+                        <div className="flex items-center gap-2">
+                          {(role === "Admin" || role === "subadmin") && (
+                            <button
+                              onClick={() => setPlayingVideoUrl(`${API_HOST}${recording.videoUrl}`)}
+                              className="px-4 py-2 bg-white border border-purple-200 text-purple-600 rounded-lg text-sm font-bold hover:bg-purple-600 hover:text-white transition-all flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0"
+                            >
+                              <svg className="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              <span className="whitespace-nowrap">Play Recording</span>
+                            </button>
+                          )}
+                          
+                          {role === "Admin" && (
+                            <a
+                              href={`${API_HOST}${recording.videoUrl}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              download
+                              className="px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-bold hover:bg-purple-700 transition-all flex items-center justify-center gap-2 whitespace-nowrap"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                              </svg>
+                              Download
+                            </a>
+                          )}
+
+                          {role !== "Admin" && role !== "subadmin" && (
+                            <span className="text-sm text-gray-600 italic">
+                              Recording available (playback restricted)
+                            </span>
+                          )}
+                        </div>
                       ) : (
                         <span className="text-sm text-gray-400 italic">Video not available</span>
                       )}
@@ -1571,6 +1604,33 @@ const UserProfilePage = () => {
               className="max-w-full max-h-full object-contain rounded-lg shadow-2xl animate-zoom-in"
               onClick={(e) => e.stopPropagation()}
             />
+          </div>
+        )}
+
+        {/* Video Viewer Modal */}
+        {playingVideoUrl && (
+          <div
+            className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-sm flex items-center justify-center p-4 md:p-10 animate-fade-in"
+            onClick={() => setPlayingVideoUrl(null)}
+          >
+            <button
+              className="absolute top-6 right-6 text-white/50 hover:text-white transition-colors p-2"
+              onClick={() => setPlayingVideoUrl(null)}
+            >
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <div className="w-full max-w-4xl bg-black rounded-lg overflow-hidden shadow-2xl relative" onClick={(e) => e.stopPropagation()}>
+              <video
+                src={playingVideoUrl}
+                controls
+                autoPlay
+                controlsList={role === "subadmin" ? "nodownload" : undefined}
+                onContextMenu={role === "subadmin" ? (e) => e.preventDefault() : undefined}
+                className="w-full h-auto max-h-[80vh] rounded-lg"
+              />
+            </div>
           </div>
         )}
       </div>

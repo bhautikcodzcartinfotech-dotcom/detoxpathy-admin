@@ -1357,6 +1357,8 @@ export default function ChatPage() {
                                       msg.audioUrl || msg.mediaUrl
                                     )}
                                     controls
+                                    controlsList={role === "subadmin" ? "nodownload" : undefined}
+                                    onContextMenu={role === "subadmin" ? (e) => e.preventDefault() : undefined}
                                     className="max-w-full max-h-64 rounded-2xl shadow-lg"
                                     poster={msg.thumbnail}
                                   />

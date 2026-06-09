@@ -3,6 +3,7 @@ import React, { useState } from "react";
 import Loader from "@/utils/loader";
 import NotFoundCard from "@/components/NotFoundCard";
 import { ActionButton } from "@/utils/actionbutton";
+import { useAuth } from "@/contexts/AuthContext";
 
 import { API_BASE } from "@/Api/AllApi";
 
@@ -28,6 +29,7 @@ export const toAbsolute = (path = "") => {
 };
 
 const VideoTable = ({ items, loading, onEdit, onDelete }) => {
+  const { role } = useAuth();
   const [expandedCards, setExpandedCards] = useState({});
   const toggleCard = (cardId) => {
     setExpandedCards((prev) => ({
@@ -291,6 +293,8 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                               )
                             )}
                             controls
+                            controlsList={role === "subadmin" ? "nodownload" : undefined}
+                            onContextMenu={role === "subadmin" ? (e) => e.preventDefault() : undefined}
                             className="w-full h-40 rounded-xl border border-yellow-200 object-cover"
                           />
                         ) : (
@@ -402,6 +406,8 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                               )
                             )}
                             controls
+                            controlsList={role === "subadmin" ? "nodownload" : undefined}
+                            onContextMenu={role === "subadmin" ? (e) => e.preventDefault() : undefined}
                             className="w-full h-40 rounded-xl border border-amber-200 object-cover"
                           />
                         ) : (
@@ -513,6 +519,8 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                               )
                             )}
                             controls
+                            controlsList={role === "subadmin" ? "nodownload" : undefined}
+                            onContextMenu={role === "subadmin" ? (e) => e.preventDefault() : undefined}
                             className="w-full h-40 rounded-xl border border-yellow-200 object-cover"
                           />
                         ) : (

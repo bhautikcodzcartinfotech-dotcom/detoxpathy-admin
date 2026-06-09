@@ -228,6 +228,9 @@ const OrderPage = () => {
 
   const handleBulkDownload = () => {
     if (selectedIds.length === 0) return toast.error("No orders selected");
+    if (role === 'subadmin' && !permissions?.includes('generate order invoice')) {
+      return toast.error("You do not have permission to download invoices");
+    }
 
     const selectedOrders = orders.filter(o => selectedIds.includes(o._id));
     if (selectedOrders.length === 0) {
@@ -625,14 +628,16 @@ const OrderPage = () => {
                     </Button>
                   </>
                 )}
-                <Button
-                  onClick={handleBulkDownload}
-                  disabled={loading || selectedIds.length === 0}
-                  variant="primary"
-                  className="h-9 px-4 text-xs"
-                >
-                  Download Selected
-                </Button>
+                {(role === 'Admin' || permissions?.includes('generate order invoice')) && (
+                  <Button
+                    onClick={handleBulkDownload}
+                    disabled={loading || selectedIds.length === 0}
+                    variant="primary"
+                    className="h-9 px-4 text-xs"
+                  >
+                    Download Selected
+                  </Button>
+                )}
                 <Button
                   variant="secondary"
                   onClick={() => setSelectedIds([])}

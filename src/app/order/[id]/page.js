@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { getOrderDetails, updateOrderStatus, downloadOrderInvoiceApi, API_BASE, getOrderTracking, getDRSImage } from "@/Api/AllApi";
+import { useAuth } from "@/contexts/AuthContext";
 import Loader from "@/utils/loader";
 import toast from "react-hot-toast";
 import { ChevronLeft, Package, User, MapPin, Truck, CreditCard, ExternalLink, Calendar, Eye, Download, X, CheckCircle2, AlertCircle, FileText, Phone, Building, Printer } from "lucide-react";
@@ -10,6 +11,7 @@ import { ChevronLeft, Package, User, MapPin, Truck, CreditCard, ExternalLink, Ca
 const OrderDetailsPage = () => {
   const { id } = useParams();
   const router = useRouter();
+  const { role, permissions } = useAuth();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -954,12 +956,14 @@ const OrderDetailsPage = () => {
               </div>
             </div>
 
-            <button
-              onClick={handlePrintInvoice}
-              className="w-full py-2.5 border border-teal-600 text-teal-600 rounded-xl text-sm font-bold hover:bg-teal-50 transition"
-            >
-              Print Invoice
-            </button>
+            {(role === "Admin" || permissions?.includes("generate order invoice")) && (
+              <button
+                onClick={handlePrintInvoice}
+                className="w-full py-2.5 border border-teal-600 text-teal-600 rounded-xl text-sm font-bold hover:bg-teal-50 transition"
+              >
+                Print Invoice
+              </button>
+            )}
             {order.trackingId && (
               <button
                 onClick={handlePrintShippingLabel}

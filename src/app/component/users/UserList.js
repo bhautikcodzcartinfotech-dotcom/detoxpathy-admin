@@ -267,7 +267,7 @@ const UserList = ({ users, loading, onEdit, onDelete, onRestore, onBulkDelete, o
                     {u.branch?.name || u.branch || "-"}
                   </td>
                   <td className="hidden sm:table-cell px-2 py-3 lg:px-4 whitespace-normal text-xs lg:text-sm text-gray-700">
-                    {u.plan?.name ? `${u.plan.name} (₹${u.plan.price || 0})` : u.plan || "-"}
+                    {u.plan?.name ? `${u.plan.name} ` : u.plan || "-"}
                   </td>
                   <td className="px-2 py-3 lg:px-4 text-center text-xs lg:text-sm">
                     <span

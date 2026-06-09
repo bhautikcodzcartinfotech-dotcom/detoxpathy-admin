@@ -243,14 +243,7 @@ const DashboardPage = () => {
                 color: "border-green-500 shadow-green-900/5",
                 icon: Activity 
             },
-            { 
-                title: "UNASSIGNED LEADS", 
-                value: stats.pendingUsers || 0, 
-                sub: "currently pending", 
-                subColor: "text-red-500 font-bold",
-                color: "border-red-500 shadow-red-900/5",
-                icon: AlertCircle
-            },
+            
         ];
 
         // Only add extra stats for SUBADMIN
@@ -283,8 +276,12 @@ const DashboardPage = () => {
             };
         }
 
+        const filteredTopStats = role === "subadmin"
+            ? topStats.filter(stat => stat.title !== "UNASSIGNED LEADS")
+            : topStats;
+
         // Combine all stats for subadmin
-        const allSubAdminStats = [...topStats, ...subAdminExtraStats, branchStockBox].filter(Boolean);
+        const allSubAdminStats = [...filteredTopStats, ...subAdminExtraStats, branchStockBox].filter(Boolean);
 
   return (
     <div className="p-6 sm:p-10 space-y-8 bg-[#F8FAFC] min-h-screen">
@@ -338,7 +335,7 @@ const DashboardPage = () => {
 
       {/* Original Top Stats Grid for ADMIN: 5 boxes */}
       {role !== "subadmin" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-4 gap-6">
           {topStats.map((stat, i) => (
             <div 
               key={i} 
@@ -527,27 +524,7 @@ const DashboardPage = () => {
           </div>
         )}
 
-        {/* Lead Pipeline (for both Admin and Subadmin) */}
-        <div className="lg:col-span-2 xl:col-span-4 bg-white p-8 rounded-none shadow-xl shadow-teal-900/5 border border-gray-100">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-sm font-black text-gray-900 uppercase tracking-widest">Lead Pipeline</h2>
-            <button className="text-[10px] font-black text-teal-600 uppercase tracking-widest hover:underline">CRM</button>
-          </div>
-          <div className="space-y-6">
-            {[
-              { label: "New (Unassigned)", value: stats.pipeline?.new || 0, color: "text-red-500" },
-              { label: "Contacted", value: stats.pipeline?.contacted || 0, color: "text-gray-800" },
-              { label: "Interested", value: stats.pipeline?.interested || 0, color: "text-gray-800" },
-              { label: "Converted Today", value: stats.pipeline?.converted || 0, color: "text-green-600" },
-              { label: "Lost This Week", value: stats.pipeline?.lost || 0, color: "text-gray-400" },
-            ].map((lead, i) => (
-              <div key={i} className="flex justify-between items-center group cursor-pointer hover:bg-gray-50 p-2 rounded-xl transition-all">
-                <span className="text-[13px] font-bold text-gray-600 group-hover:text-gray-900">{lead.label}</span>
-                <span className={`text-[15px] font-black ${lead.color}`}>{lead.value}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+        {/* Lead Pipeline removed as requested */}
 
         {/* Quick Actions - Only for Super Admin */}
         {role === "Admin" && (

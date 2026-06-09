@@ -4,19 +4,18 @@ import { motion } from "framer-motion";
 import { X, Plus, Trash2, Save, Loader2, ClipboardCheck } from "lucide-react";
 import toast from "react-hot-toast";
 import {
-    createMedicineApi,
     createPatientHistoryApi,
-    downloadConsultationPdfApi,
+    deletePatientHistoryApi,
     getMedicinesApi,
     getPatientHistoriesApi,
     submitConsultationForm
 } from "@/Api/AllApi";
 
 const ConsultationForm = ({ appointment, onClose, onSaveSuccess }) => {
-    const [medicineSuggestions, setMedicineSuggestions] = useState([]);
     const [patientHistoryOptions, setPatientHistoryOptions] = useState([]);
-    const [showMedicineSuggestions, setShowMedicineSuggestions] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [medicineSuggestions, setMedicineSuggestions] = useState([]);
+    const [activeMedIdx, setActiveMedIdx] = useState(null);
     const [formData, setFormData] = useState({
         appointmentId: appointment?._id,
         userId: appointment?.userId?._id,
@@ -45,6 +44,7 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess }) => {
         addiction: "",
         stress: "",
         other: "",
+        bimaiDiseases: [{ disease: "", medication: "" }],
         pastSurgery: {
             hasSurgery: false,
             duration: ""
@@ -122,56 +122,6 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess }) => {
         };
     }, [appointment?.userId?._id]);
 
-    const parseMedicineNames = (value = "") =>
-        value
-            .split(",")
-            .map((medicine) => medicine.trim())
-            .filter(Boolean);
-
-    const getCurrentMedicineSearch = (value = "") => {
-        const parts = value.split(",");
-        return parts[parts.length - 1]?.trim().toLowerCase() || "";
-    };
-
-    useEffect(() => {
-        const currentSearch = getCurrentMedicineSearch(formData.currentMedicine);
-
-        if (!showMedicineSuggestions || !currentSearch) {
-            setMedicineSuggestions([]);
-            return;
-        }
-
-        let cancelled = false;
-        const selectedMedicines = new Set(
-            parseMedicineNames(formData.currentMedicine).map((medicine) =>
-                medicine.toLowerCase()
-            )
-        );
-
-        const timer = setTimeout(async () => {
-            try {
-                const list = await getMedicinesApi({ search: currentSearch, limit: 8 });
-                if (cancelled) return;
-                setMedicineSuggestions(
-                    (Array.isArray(list) ? list : []).filter(
-                        (medicine) =>
-                            !selectedMedicines.has(medicine.name.toLowerCase())
-                    )
-                );
-            } catch (err) {
-                if (!cancelled) {
-                    console.error("Error fetching medicines", err);
-                    setMedicineSuggestions([]);
-                }
-            }
-        }, 150);
-
-        return () => {
-            cancelled = true;
-            clearTimeout(timer);
-        };
-    }, [formData.currentMedicine, showMedicineSuggestions]);
-
     const setConsultationVisit = (visit) => {
         setFormData((prev) => ({
             ...prev,
@@ -199,13 +149,20 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess }) => {
         }
     };
 
-    const handleHistoryToggle = (option) => {
-        setFormData(prev => ({
-            ...prev,
-            patientHistory: prev.patientHistory.includes(option)
-                ? prev.patientHistory.filter(h => h !== option)
-                : [...prev.patientHistory, option]
-        }));
+    const handleHistoryToggle = (optionName) => {
+        setFormData(prev => {
+            const exists = prev.patientHistory.find(ph => ph.name === optionName);
+            if (exists) {
+                return { ...prev, patientHistory: prev.patientHistory.filter(ph => ph.name !== optionName) };
+            }
+
+            // find option ID if available
+            const opt = patientHistoryOptions.find(p => p.name === optionName || p._id === optionName);
+            const newEntry = { name: optionName, duration: '' };
+            if (opt && opt._id) newEntry._id = opt._id;
+
+            return { ...prev, patientHistory: [...prev.patientHistory, newEntry] };
+        });
     };
 
     const handleAddPatientHistory = async () => {
@@ -230,9 +187,9 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess }) => {
 
             setFormData((prev) => ({
                 ...prev,
-                patientHistory: prev.patientHistory.includes(createdHistory.name)
+                patientHistory: prev.patientHistory.some(ph => ph.name === createdHistory.name)
                     ? prev.patientHistory
-                    : [...prev.patientHistory, createdHistory.name]
+                    : [...prev.patientHistory, { name: createdHistory.name, duration: '', _id: createdHistory._id }]
             }));
             setCustomHistory("");
         } catch (err) {
@@ -259,28 +216,46 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess }) => {
         setFormData(prev => ({ ...prev, weightLossHistory: newHistory }));
     };
 
+    const handleBimaiChange = (index, field, value) => {
+        const updated = [...formData.bimaiDiseases];
+        updated[index][field] = value;
+        setFormData(prev => ({ ...prev, bimaiDiseases: updated }));
+    };
+
+    const addBimaiRow = () => {
+        setFormData(prev => ({
+            ...prev,
+            bimaiDiseases: [...prev.bimaiDiseases, { disease: "", medication: "" }]
+        }));
+    };
+
+    const removeBimaiRow = (index) => {
+        const updated = formData.bimaiDiseases.filter((_, i) => i !== index);
+        setFormData(prev => ({ ...prev, bimaiDiseases: updated }));
+    };
+
+    const handleMedicineInput = async (idx, value) => {
+        handleBimaiChange(idx, "medication", value);
+        setActiveMedIdx(idx);
+        if (!value.trim()) {
+            setMedicineSuggestions([]);
+            return;
+        }
+        try {
+            const list = await getMedicinesApi({ search: value.trim(), limit: 8 });
+            setMedicineSuggestions(Array.isArray(list) ? list : []);
+        } catch {
+            setMedicineSuggestions([]);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
             setLoading(true);
 
-            // Add new medicines if they don't exist
-            if (formData.currentMedicine) {
-                const enteredMedicines = [...new Set(parseMedicineNames(formData.currentMedicine))];
-                for (const med of enteredMedicines) {
-                    try {
-                        await createMedicineApi({ name: med });
-                    } catch (err) {
-                        console.error("Failed to add new medicine", err);
-                    }
-                }
-            }
-
-            const normalizedCurrentMedicine = parseMedicineNames(formData.currentMedicine).join(", ");
-
             const consultation = await submitConsultationForm({
                 ...formData,
-                currentMedicine: normalizedCurrentMedicine,
                 appointmentId: appointment._id,
                 userId: appointment.userId._id
             });
@@ -377,7 +352,7 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess }) => {
                         </div>
                         <div className="space-y-1.5 md:col-span-2">
                             <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">C/O</label>
-                            <textarea name="co" value={formData.co} onChange={handleChange} placeholder="Chief complaint..." className="w-full h-20 p-4 rounded-2xl bg-white border border-slate-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all text-sm font-medium resize-none shadow-sm" />
+                            <textarea name="co" value={formData.co} onChange={handleChange}  className="w-full h-20 p-4 rounded-2xl bg-white border border-slate-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all text-sm font-medium resize-none shadow-sm" />
                         </div>
                         <div className="space-y-1.5 md:col-span-2">
                             <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Blood Report</label>
@@ -495,7 +470,7 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess }) => {
                                 type="button"
                                 onClick={() => handleHistoryToggle(option.name)}
                                 className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
-                                    formData.patientHistory.includes(option.name)
+                                    formData.patientHistory.some(ph => ph.name === option.name)
                                     ? 'bg-teal-600 text-white border-teal-600 shadow-lg shadow-teal-100 scale-105'
                                     : 'bg-white text-slate-500 border-slate-100 hover:border-teal-200 hover:bg-teal-50/30'
                                 }`}
@@ -504,86 +479,129 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess }) => {
                             </button>
                         ))}
                     </div>
-                    {patientHistoryOptions.length === 0 && (
-                        <p className="text-xs text-slate-400">No patient history added for this user yet.</p>
-                    )}
+                        {patientHistoryOptions.length === 0 && (
+                            <p className="text-xs text-slate-400">No patient history added for this user yet.</p>
+                        )}
+
+                        {/* Selected histories with duration inputs */}
+                        {formData.patientHistory && formData.patientHistory.length > 0 && (
+                            <div className="mt-3 space-y-2">
+                                {formData.patientHistory.map((h, idx) => (
+                                    <div key={h.name || idx} className="flex items-center gap-2">
+                                        <div className="flex-1">
+                                            <div className="text-sm font-medium text-slate-700">{h.name}</div>
+                                        </div>
+                                        <input
+                                            value={h.duration}
+                                            onChange={(e) => {
+                                                const newPH = [...formData.patientHistory];
+                                                newPH[idx] = { ...newPH[idx], duration: e.target.value };
+                                                setFormData(prev => ({ ...prev, patientHistory: newPH }));
+                                            }}
+                                            placeholder="Duration (e.g. 2 years)"
+                                            className="w-40 p-2 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500/20"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={async () => {
+                                                // if this history is persisted (has _id), delete it from server
+                                                if (h._id) {
+                                                    try {
+                                                        await deletePatientHistoryApi(h._id);
+                                                        // remove from options and formData
+                                                        setPatientHistoryOptions(prev => prev.filter(p => p._id !== h._id));
+                                                        setFormData(prev => ({ ...prev, patientHistory: prev.patientHistory.filter(ph => ph._id !== h._id) }));
+                                                        return;
+                                                    } catch (err) {
+                                                        console.error('Failed to delete patient history', err);
+                                                        toast.error(err.response?.data?.message || 'Failed to delete history');
+                                                    }
+                                                }
+                                                // fallback: just toggle
+                                                handleHistoryToggle(h.name);
+                                            }}
+                                            className="text-red-400 p-2 hover:text-red-600 transition-colors"
+                                            title="Remove"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                 </div>
 
                 {/* Medical Details */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-2 mb-2">
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
                             <div className="h-4 w-1 bg-teal-500 rounded-full" />
                             <h3 className="text-base font-extrabold text-slate-800 uppercase tracking-wider">Clinical Details</h3>
                         </div>
-                        <div className="space-y-4">
-                            <div className="space-y-1.5 relative">
-                                <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Current Medicines</label>
-                                <input 
-                                    name="currentMedicine" value={formData.currentMedicine} 
-                                    onChange={(e) => {
-                                        handleChange(e);
-                                        setShowMedicineSuggestions(true);
-                                    }}
-                                    onFocus={() => setShowMedicineSuggestions(true)}
-                                    // Delay hiding suggestions to allow click events to register
-                                    onBlur={() => setTimeout(() => setShowMedicineSuggestions(false), 200)}
-                                    autoComplete="off"
-                                    placeholder="Type medicine name, separated by commas"
-                                    className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm"
+                        <button
+                            type="button"
+                            onClick={addBimaiRow}
+                            className="bg-teal-50 text-teal-600 p-2 rounded-xl hover:bg-teal-100 transition-colors"
+                        >
+                            <Plus size={18} />
+                        </button>
+                    </div>
+                    <div className="space-y-3">
+                        {formData.bimaiDiseases.map((item, idx) => (
+                            <div key={idx} className="flex gap-2 items-center group">
+                                <input
+                                    value={item.disease}
+                                    onChange={(e) => handleBimaiChange(idx, "disease", e.target.value)}
+                                    placeholder="Disease"
+                                    className="flex-1 p-3 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400 outline-none transition-all"
                                 />
-                                {showMedicineSuggestions && medicineSuggestions.length > 0 && (
-                                    <div className="absolute z-10 w-full bg-white border border-slate-200 mt-1 rounded-xl shadow-lg max-h-40 overflow-y-auto">
-                                        {medicineSuggestions.map((medicine) => (
-                                            <div 
-                                                key={medicine._id || medicine.name}
-                                                className="p-3 hover:bg-slate-50 cursor-pointer text-sm text-slate-700 font-medium border-b border-slate-50 last:border-0"
-                                                onMouseDown={(e) => e.preventDefault()}
-                                                onClick={() => {
-                                                    const parts = formData.currentMedicine.split(",");
-                                                    parts[parts.length - 1] = ` ${medicine.name}`;
-                                                    const newValue = `${parts.join(",").replace(/^ /, "")}, `;
-                                                    handleChange({ target: { name: "currentMedicine", value: newValue, type: "text" } });
-                                                    setShowMedicineSuggestions(false);
-                                                }}
-                                            >
-                                                {medicine.name}
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
+                                <div className="flex-1 relative">
+                                    <input
+                                        value={item.medication}
+                                        onChange={(e) => handleMedicineInput(idx, e.target.value)}
+                                        onFocus={() => setActiveMedIdx(idx)}
+                                        onBlur={() => setTimeout(() => { setActiveMedIdx(null); setMedicineSuggestions([]); }, 200)}
+                                        autoComplete="off"
+                                        placeholder="Current Medicine"
+                                        className="w-full p-3 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400 outline-none transition-all"
+                                    />
+                                    {activeMedIdx === idx && medicineSuggestions.length > 0 && (
+                                        <div className="absolute z-20 w-full bg-white border border-slate-200 mt-1 rounded-xl shadow-lg max-h-40 overflow-y-auto">
+                                            {medicineSuggestions.map((med) => (
+                                                <div
+                                                    key={med._id || med.name}
+                                                    className="p-3 hover:bg-teal-50 cursor-pointer text-sm text-slate-700 font-medium border-b border-slate-50 last:border-0"
+                                                    onMouseDown={(e) => e.preventDefault()}
+                                                    onClick={() => {
+                                                        handleBimaiChange(idx, "medication", med.name);
+                                                        setMedicineSuggestions([]);
+                                                        setActiveMedIdx(null);
+                                                    }}
+                                                >
+                                                    {med.name}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => removeBimaiRow(idx)}
+                                    className="text-red-400 p-2 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
+                                >
+                                    <Trash2 size={16} />
+                                </button>
                             </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Addiction / Habits</label>
-                                <input 
-                                    name="addiction" value={formData.addiction} onChange={handleChange}
-                                    className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm"
-                                />
-                            </div>
-                        </div>
+                        ))}
                     </div>
 
-                    <div className="space-y-4">
-                        <div className="flex items-center gap-2 mb-2">
-                            <div className="h-4 w-1 bg-teal-500 rounded-full" />
-                            <h3 className="text-base font-extrabold text-slate-800 uppercase tracking-wider">State of Mind</h3>
-                        </div>
-                        <div className="space-y-4">
-                            <div className="space-y-1.5">
-                                <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Stress Levels</label>
-                                <input 
-                                    name="stress" value={formData.stress} onChange={handleChange}
-                                    className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm"
-                                />
-                            </div>
-                            <div className="space-y-1.5">
-                                <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Other Remarks</label>
-                                <input 
-                                    name="other" value={formData.other} onChange={handleChange}
-                                    className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm"
-                                />
-                            </div>
-                        </div>
+                    {/* Addiction */}
+                    <div className="space-y-1.5">
+                        <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Addiction / Habits</label>
+                        <input
+                            name="addiction" value={formData.addiction} onChange={handleChange}
+                            className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm"
+                        />
                     </div>
                 </div>
 
@@ -661,7 +679,7 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess }) => {
                 <button 
                     onClick={handleSubmit} 
                     disabled={loading}
-                    className="bg-slate-900 border border-slate-800 px-8 py-3 rounded-2xl text-[11px] font-bold text-white hover:bg-black transition-all shadow-xl shadow-slate-200 flex items-center gap-2 uppercase tracking-[0.1em] disabled:opacity-50"
+                    className="bg-slate-900 border border-slate-800 px-8 py-3 rounded-2xl text-[11px] font-bold text-white hover:bg-black transition-all shadow-xl shadow-slate-200 flex items-center gap-2 uppercase tracking-widest disabled:opacity-50"
                 >
                     {loading ? <Loader2 className="animate-spin" size={16} /> : <Save size={16} />}
                     {loading ? "Saving..." : "Save Consultation"}

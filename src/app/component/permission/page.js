@@ -77,6 +77,7 @@ const PERMISSION_GROUPS = [
       { label: "Update Order Status", value: "update order status" },
       { label: "Edit Order", value: "edit order" },
       { label: "Delete Order", value: "delete order" },
+      { label: "Generate Order Invoice", value: "generate order invoice" },
     ]
   },
   {

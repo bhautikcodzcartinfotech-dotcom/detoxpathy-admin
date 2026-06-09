@@ -593,7 +593,7 @@ const SettingsPage = () => {
             {/* Shipping Charges */}
             <div className="bg-gradient-to-br from-white to-yellow-50 rounded-2xl shadow-lg border border-yellow-200 p-6">
               <h3 className="text-sm font-bold text-gray-700 mb-4 tracking-wide">
-                Shipping Charges per kg ({formData.currency || "₹"})
+                Shipping Charges per 500g ({formData.currency || "₹"})
               </h3>
               <input
                 type="number"
