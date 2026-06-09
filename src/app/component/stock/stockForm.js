@@ -62,18 +62,27 @@ const StockForm = ({ role, initialValues, products, plans, branches, onSubmit, o
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Stock Location</label>
-        <select
-          name="branchId"
-          value={formData.branchId}
-          onChange={handleChange}
-          disabled={!!initialValues}
-          className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-[#134D41]/20 focus:border-[#134D41] outline-none transition-all disabled:bg-gray-50"
-        >
-          {role === "Admin" && <option value="null">Company Master Stock</option>}
-          {Array.isArray(branches) && branches.map((b) => (
-            <option key={b._id} value={b._id}>{b.name}</option>
-          ))}
-        </select>
+        {role === "Admin" ? (
+          <select
+            name="branchId"
+            value={formData.branchId}
+            onChange={handleChange}
+            disabled={!!initialValues}
+            className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-[#134D41]/20 focus:border-[#134D41] outline-none transition-all disabled:bg-gray-50"
+          >
+            <option value="null">Company Master Stock</option>
+            {Array.isArray(branches) && branches.map((b) => (
+              <option key={b._id} value={b._id}>{b.name}</option>
+            ))}
+          </select>
+        ) : (
+          <input
+            type="text"
+            readOnly
+            value={(Array.isArray(branches) && branches.find(b => b._id === formData.branchId)?.name) || "Your Branch"}
+            className="w-full border border-gray-300 rounded-lg p-2.5 bg-gray-50 text-gray-700 outline-none"
+          />
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4">

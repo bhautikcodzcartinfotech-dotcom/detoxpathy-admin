@@ -72,6 +72,30 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
 
   const can = (p) => role === "Admin" || (role === "subadmin" && permissions?.includes(p));
 
+  const hasInventoryAccess = role === "Admin" ||
+    can("show stock page") ||
+    can("show supplier page") ||
+    can("manage purchase entry") ||
+    can("manage expense entry") ||
+    can("manage stock transfer") ||
+    can("show accounting page") ||
+    can("show gst reports page");
+
+  const hasCommunicationAccess = role === "Admin" ||
+    can("show supports page") ||
+    can("show emergency page") ||
+    can("show reports page") ||
+    can("show contact categories") ||
+    can("show contact page") ||
+    can("show messages page") ||
+    can("show notes page") ||
+    can("show feedback page");
+
+  const hasSettingsAccess = role === "Admin" ||
+    can("show Logs page") ||
+    can("show medical condition page") ||
+    can("show faq page");
+
   const linkClasses = (path) =>
     `flex items-center ${isCollapsed ? "justify-center" : "gap-3 px-3"
     } py-3 rounded-xl text-sm font-medium transition-all duration-300 ${pathname === path
@@ -281,9 +305,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
         </div>
 
         {/* Section: INVENTORY */}
-        {(role === "Admin" ||
-          can("show stock page") ||
-          can("show supplier page")) && (
+        {hasInventoryAccess && (
           <div>
             {!isCollapsed && (
               <h2 className="text-xs font-semibold text-gray-400 uppercase mb-2">
@@ -357,183 +379,187 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
         )}
 
         {/* Section: COMMUNICATION */}
-        <div>
-          {!isCollapsed && (
-            <h2 className="text-xs font-semibold text-gray-400 uppercase mb-2">
-              COMMUNICATION
-            </h2>
-          )}
-          {(role === "Admin" || can("show supports page")) && (
+        {hasCommunicationAccess && (
+          <div>
+            {!isCollapsed && (
+              <h2 className="text-xs font-semibold text-gray-400 uppercase mb-2">
+                COMMUNICATION
+              </h2>
+            )}
+            {(role === "Admin" || can("show supports page")) && (
+              <Link
+                href="/component/userchat"
+                className={linkClasses("/component/userchat")}
+              >
+                <MdChat size={20} />
+                {!isCollapsed && <span>Supports</span>}
+              </Link>
+            )}
+            {(role === "Admin" || can("show emergency page")) && (
             <Link
-              href="/component/userchat"
-              className={linkClasses("/component/userchat")}
-            >
-              <MdChat size={20} />
-              {!isCollapsed && <span>Supports</span>}
-            </Link>
-          )}
-          {(role === "Admin" || can("show emergency page")) && (
-          <Link
-            href="/component/emergency"
-            className={linkClasses("/component/emergency")}
-          >
-            <MdReportProblem size={20} />
-            {!isCollapsed && <span>Emergency</span>}
-          </Link>
-          )}
-          {(role === "Admin" || can("show reports page")) && (
-            <Link
-              href="/component/reports"
-              className={linkClasses("/component/reports")}
-            >
-              <MdSummarize size={20} />
-              {!isCollapsed && <span>Reports</span>}
-            </Link>
-          )}
-          {(role === "Admin" ||
-            (role === "subadmin" &&
-              permissions?.includes("show contact categories"))) && (
-            <Link
-              href="/component/contact-category"
-              className={linkClasses("/component/contact-category")}
-            >
-              <MdCategory size={20} />
-              {!isCollapsed && <span>Contact Categories</span>}
-            </Link>
-          )}
-          {(role === "Admin" ||
-            (role === "subadmin" &&
-              permissions?.includes("show contact page"))) && (
-            <Link
-              href="/component/contact"
-              className={linkClasses("/component/contact")}
-            >
-              <MdPeople size={20} />
-              {!isCollapsed && <span>Contacts</span>}
-            </Link>
-          )}
-          {(role === "Admin" || can("show messages page")) && (
-            <Link
-              href="/component/message"
-              className={linkClasses("/component/message")}
-            >
-              <FiMessageCircle size={20} />
-              {!isCollapsed && <span>Quick Replies</span>}
-            </Link>
-          )}
-          {(role === "Admin" || can("show notes page")) && (
-            <Link
-              href="/component/complaints"
-              className={linkClasses("/component/complaints")}
+              href="/component/emergency"
+              className={linkClasses("/component/emergency")}
             >
               <MdReportProblem size={20} />
-              {!isCollapsed && <span>Notes</span>}
+              {!isCollapsed && <span>Emergency</span>}
             </Link>
-          )}
-          {(role === "Admin" ||
-            (role === "subadmin" &&
-              permissions?.includes("show feedback page"))) && (
-            <Link
-              href="/component/feedback"
-              className={linkClasses("/component/feedback")}
-            >
-              <MdFeedback size={20} />
-              {!isCollapsed && <span>Feedbacks</span>}
-            </Link>
-          )}
-          {/* {role === "Admin" && (
-            <Link
-              href="/component/user-requests"
-              className={linkClasses("/component/user-requests")}
-            >
-              <MdAssignment size={20} />
-              {!isCollapsed && <span>User Requests</span>}
-            </Link>
-          )} */}
-        </div>
-
-        {/* Section: SETTINGS */}
-        <div>
-          {!isCollapsed && (
-            <h2 className="text-xs font-semibold text-gray-400 uppercase mb-2">
-              SETTINGS
-            </h2>
-          )}
-          {(role === "Admin" ||
-            (role === "subadmin" &&
-              permissions?.includes("show Logs page"))) && (
-            <Link
-              href="/component/logs"
-              className={linkClasses("/component/logs")}
-            >
-              <MdHistory size={20} />
-              {!isCollapsed && <span>Logs</span>}
-            </Link>
-          )}
-          {(role === "Admin" || can("show settings page")) && (
-            <Link
-              href="/component/settings"
-              className={linkClasses("/component/settings")}
-            >
-              <MdSettings size={20} />
-              {!isCollapsed && <span>App Settings</span>}
-            </Link>
-          )}
-          {role === "Admin" && (
-            <>
+            )}
+            {(role === "Admin" || can("show reports page")) && (
               <Link
-                href="/component/app-reference"
-                className={linkClasses("/component/app-reference")}
+                href="/component/reports"
+                className={linkClasses("/component/reports")}
+              >
+                <MdSummarize size={20} />
+                {!isCollapsed && <span>Reports</span>}
+              </Link>
+            )}
+            {(role === "Admin" ||
+              (role === "subadmin" &&
+                permissions?.includes("show contact categories"))) && (
+              <Link
+                href="/component/contact-category"
+                className={linkClasses("/component/contact-category")}
+              >
+                <MdCategory size={20} />
+                {!isCollapsed && <span>Contact Categories</span>}
+              </Link>
+            )}
+            {(role === "Admin" ||
+              (role === "subadmin" &&
+                permissions?.includes("show contact page"))) && (
+              <Link
+                href="/component/contact"
+                className={linkClasses("/component/contact")}
+              >
+                <MdPeople size={20} />
+                {!isCollapsed && <span>Contacts</span>}
+              </Link>
+            )}
+            {(role === "Admin" || can("show messages page")) && (
+              <Link
+                href="/component/message"
+                className={linkClasses("/component/message")}
+              >
+                <FiMessageCircle size={20} />
+                {!isCollapsed && <span>Quick Replies</span>}
+              </Link>
+            )}
+            {(role === "Admin" || can("show notes page")) && (
+              <Link
+                href="/component/complaints"
+                className={linkClasses("/component/complaints")}
+              >
+                <MdReportProblem size={20} />
+                {!isCollapsed && <span>Notes</span>}
+              </Link>
+            )}
+            {(role === "Admin" ||
+              (role === "subadmin" &&
+                permissions?.includes("show feedback page"))) && (
+              <Link
+                href="/component/feedback"
+                className={linkClasses("/component/feedback")}
+              >
+                <MdFeedback size={20} />
+                {!isCollapsed && <span>Feedbacks</span>}
+              </Link>
+            )}
+            {/* {role === "Admin" && (
+              <Link
+                href="/component/user-requests"
+                className={linkClasses("/component/user-requests")}
               >
                 <MdAssignment size={20} />
-                {!isCollapsed && <span>App References</span>}
+                {!isCollapsed && <span>User Requests</span>}
               </Link>
-              {(role === "Admin" || can("show medical condition page")) && (
-                <Link
-                  href="/component/medical-condition"
-                  className={linkClasses("/component/medical-condition")}
-                >
-                  <MdAssignment size={20} />
-                  {!isCollapsed && <span>Medical Conditions</span>}
-                </Link>
-              )}
+            )} */}
+          </div>
+        )}
+
+        {/* Section: SETTINGS */}
+        {hasSettingsAccess && (
+          <div>
+            {!isCollapsed && (
+              <h2 className="text-xs font-semibold text-gray-400 uppercase mb-2">
+                SETTINGS
+              </h2>
+            )}
+            {(role === "Admin" ||
+              (role === "subadmin" &&
+                permissions?.includes("show Logs page"))) && (
               <Link
-                href="/component/permission"
-                className={linkClasses("/component/permission")}
+                href="/component/logs"
+                className={linkClasses("/component/logs")}
+              >
+                <MdHistory size={20} />
+                {!isCollapsed && <span>Logs</span>}
+              </Link>
+            )}
+            {role === "Admin" && (
+              <Link
+                href="/component/settings"
+                className={linkClasses("/component/settings")}
               >
                 <MdSettings size={20} />
-                {!isCollapsed && <span>Permissions</span>}
+                {!isCollapsed && <span>App Settings</span>}
               </Link>
-            </>
-          )}
-          {(role === "Admin" || can("show faq page")) && (
-            <Link
-              href="/component/faq"
-              className={linkClasses("/component/faq")}
-            >
-              <MdQuiz size={20} />
-              {!isCollapsed && <span>FAQs</span>}
-            </Link>
-          )}
-          {role === "Admin" && (
-            <Link
-              href="/component/promo-vault"
-              className={linkClasses("/component/promo-vault")}
-            >
-              <MdReceipt size={20} />
-              {!isCollapsed && <span>Coupon Code</span>}
-            </Link>
-          )}
-          {role === "Admin" && (
-            <Link
-              href="/component/notification-center"
-              className={linkClasses("/component/notification-center")}
-            >
-              <MdSettings size={20} />
-              {!isCollapsed && <span>Notification Center</span>}
-            </Link>
-          )}
-        </div>
+            )}
+            {role === "Admin" && (
+              <>
+                <Link
+                  href="/component/app-reference"
+                  className={linkClasses("/component/app-reference")}
+                >
+                  <MdAssignment size={20} />
+                  {!isCollapsed && <span>App References</span>}
+                </Link>
+                {(role === "Admin" || can("show medical condition page")) && (
+                  <Link
+                    href="/component/medical-condition"
+                    className={linkClasses("/component/medical-condition")}
+                  >
+                    <MdAssignment size={20} />
+                    {!isCollapsed && <span>Medical Conditions</span>}
+                  </Link>
+                )}
+                <Link
+                  href="/component/permission"
+                  className={linkClasses("/component/permission")}
+                >
+                  <MdSettings size={20} />
+                  {!isCollapsed && <span>Permissions</span>}
+                </Link>
+              </>
+            )}
+            {(role === "Admin" || can("show faq page")) && (
+              <Link
+                href="/component/faq"
+                className={linkClasses("/component/faq")}
+              >
+                <MdQuiz size={20} />
+                {!isCollapsed && <span>FAQs</span>}
+              </Link>
+            )}
+            {role === "Admin" && (
+              <Link
+                href="/component/promo-vault"
+                className={linkClasses("/component/promo-vault")}
+              >
+                <MdReceipt size={20} />
+                {!isCollapsed && <span>Coupon Code</span>}
+              </Link>
+            )}
+            {role === "Admin" && (
+              <Link
+                href="/component/notification-center"
+                className={linkClasses("/component/notification-center")}
+              >
+                <MdSettings size={20} />
+                {!isCollapsed && <span>Notification Center</span>}
+              </Link>
+            )}
+          </div>
+        )}
 
         {/* Section: Exit Impersonation */}
         {isImpersonating && (

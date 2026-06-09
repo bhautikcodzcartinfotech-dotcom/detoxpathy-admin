@@ -44,7 +44,7 @@ const PurchaseEntry = () => {
       setSuppliers(s);
       setProducts(p.products || []);
       setBranches(b);
-      
+
       let settingsData;
       if (settingsRes && settingsRes.data) {
         settingsData = settingsRes.data;

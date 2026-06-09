@@ -253,18 +253,39 @@ const DashboardPage = () => {
         if (role === "subadmin") {
             subAdminExtraStats = [
                 { 
+                    title: "CURRENT MONTH USERS", 
+                    value: stats.currentMonthUsers || 0, 
+                    sub: "new users this month", 
+                    color: "border-teal-600 shadow-teal-900/5",
+                    icon: UserPlus
+                },
+                { 
                     title: "TODAY'S FOLLOW-UPS", 
                     value: stats.todayFollowUps || 0, 
-                    sub: "follow-ups scheduled", 
+                    sub: "follow-ups scheduled today", 
                     color: "border-blue-500 shadow-blue-900/5",
                     icon: Calendar 
                 },
                 { 
                     title: "TODAY'S APPOINTMENTS", 
                     value: stats.appointmentsToday?.length || 0, 
-                    sub: "scheduled for today", 
+                    sub: "appointments scheduled today", 
                     color: "border-orange-500 shadow-orange-900/5",
                     icon: Clock
+                },
+                { 
+                    title: "UPCOMING APPOINTMENTS", 
+                    value: stats.upcomingAppointments?.length || 0, 
+                    sub: "in the next 7 days", 
+                    color: "border-purple-500 shadow-purple-900/5",
+                    icon: Briefcase
+                },
+                { 
+                    title: "CURRENT MONTH ACTIVE", 
+                    value: stats.currentMonthActiveUsers || 0, 
+                    sub: "active plan users this month", 
+                    color: "border-green-500 shadow-green-900/5",
+                    icon: UserCheck
                 },
             ];
 
@@ -281,7 +302,7 @@ const DashboardPage = () => {
             : topStats;
 
         // Combine all stats for subadmin
-        const allSubAdminStats = [...filteredTopStats, ...subAdminExtraStats, branchStockBox].filter(Boolean);
+        const allSubAdminStats = [...topStats, ...subAdminExtraStats, branchStockBox].filter(Boolean);
 
   return (
     <div className="p-6 sm:p-10 space-y-8 bg-[#F8FAFC] min-h-screen">
@@ -357,7 +378,7 @@ const DashboardPage = () => {
 
       {/* Top Stats Grid for SUBADMIN: single responsive grid */}
       {role === "subadmin" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
           {allSubAdminStats.map((stat, i) => (
             <div 
               key={i} 

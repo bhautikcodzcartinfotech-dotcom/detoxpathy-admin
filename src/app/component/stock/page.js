@@ -36,12 +36,12 @@ const StockManagementPage = () => {
   const [products, setProducts] = useState([]);
   const [plans, setPlans] = useState([]);
   const [users, setUsers] = useState([]);
-  
+
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [loading, setLoading] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editingStock, setEditingStock] = useState(null);
-  
+
   // Delete Modal State
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemsToDelete, setItemsToDelete] = useState([]);
@@ -70,11 +70,11 @@ const StockManagementPage = () => {
       ]);
 
       setMasterStocks(Array.isArray(masterData) ? masterData : []);
-      
+
       const allBranchList = Array.isArray(branchData) ? branchData : [];
       const filteredBranchList = role === "Admin" ? allBranchList : allBranchList.filter(b => authBranches.includes(b._id));
       setBranches(filteredBranchList);
-      
+
       const otherBranchStocks = Array.isArray(branchStockData) ? branchStockData : [];
       const filteredBranchStocksData = role === "Admin" ? otherBranchStocks : otherBranchStocks.filter(s => authBranches.includes(s.branchId?._id));
       setBranchStocks(filteredBranchStocksData);
@@ -82,11 +82,15 @@ const StockManagementPage = () => {
       setProducts(Array.isArray(productData?.products) ? productData.products : []);
       setPlans(Array.isArray(planData) ? planData : []);
       setUsers(Array.isArray(userData?.users) ? userData.users : (Array.isArray(userData) ? userData : []));
-      
+
       await fetchHistory(1);
 
-      if (allBranchList.length > 0 && !selectedBranchId) {
-        setSelectedBranchId(allBranchList[0]._id);
+      const defaultBranchId = role === "Admin"
+        ? (allBranchList.length > 0 ? allBranchList[0]._id : "")
+        : (filteredBranchList.length > 0 ? filteredBranchList[0]._id : "");
+
+      if (defaultBranchId && !selectedBranchId) {
+        setSelectedBranchId(defaultBranchId);
       }
     } catch (error) {
       console.error("Error fetching stock data:", error);
@@ -120,18 +124,18 @@ const StockManagementPage = () => {
     try {
       setLoading(true);
       const res = await addStockFromDocument(file);
-      
+
       const successCount = res.results.filter(r => r.status === 'success').length;
       const failCount = res.results.filter(r => r.status === 'failed').length;
-      
+
       toast.dismiss(loadingToast);
       toast.success(`Reconciled stock: ${successCount} items added successfully.`, { duration: 4000 });
-      
+
       if (failCount > 0) {
         const failedNames = res.results.filter(r => r.status === 'failed').map(r => r.name).join(', ');
         toast.error(`Failed to find ${failCount} items: ${failedNames}`, { duration: 6000 });
       }
-      
+
       fetchData();
     } catch (error) {
       toast.dismiss(loadingToast);
@@ -175,7 +179,7 @@ const StockManagementPage = () => {
     }
   };
 
-  const filteredBranchStocks = Array.isArray(branchStocks) 
+  const filteredBranchStocks = Array.isArray(branchStocks)
     ? branchStocks.filter((s) => s.branchId?._id === selectedBranchId)
     : [];
 
@@ -202,7 +206,7 @@ const StockManagementPage = () => {
                         <input type="file" className="hidden" accept=".pdf" onChange={handleFileUpload} disabled={loading} />
                         <span>+ Upload PDF</span>
                       </label>
-                      <button 
+                      <button
                         onClick={handleAddProduct}
                         className="bg-gradient-to-r from-yellow-400 to-amber-500 text-white font-black text-[10px] uppercase tracking-widest flex items-center gap-1.5 px-4 py-2 rounded-xl shadow-lg shadow-yellow-200 transition-all hover:from-yellow-500 hover:to-amber-600 active:scale-95 cursor-pointer"
                       >
@@ -212,9 +216,9 @@ const StockManagementPage = () => {
                   )}
                 </div>
               </div>
-              <MasterStockTable 
-                stocks={Array.isArray(masterStocks) ? masterStocks : []} 
-                loading={loading} 
+              <MasterStockTable
+                stocks={Array.isArray(masterStocks) ? masterStocks : []}
+                loading={loading}
                 onEdit={handleEditStock}
               />
             </div>
@@ -231,7 +235,7 @@ const StockManagementPage = () => {
                       <input type="file" className="hidden" accept=".pdf" onChange={handleFileUpload} disabled={loading} />
                       <span>+ Upload PDF</span>
                     </label>
-                    <button 
+                    <button
                       onClick={handleAddProduct}
                       className="bg-gradient-to-r from-yellow-400 to-amber-500 text-white font-black text-[10px] uppercase tracking-widest flex items-center gap-1.5 px-4 py-2 rounded-xl shadow-lg shadow-yellow-200 transition-all hover:from-yellow-500 hover:to-amber-600 active:scale-95 cursor-pointer"
                     >
@@ -239,19 +243,21 @@ const StockManagementPage = () => {
                     </button>
                   </>
                 )}
-                <div className="w-64">
-                  <Dropdown
-                    options={[{ label: "Select Branch", value: "" }, ...branches.map((b) => ({ label: b.name, value: b._id }))]}
-                    value={selectedBranchId}
-                    onChange={setSelectedBranchId}
-                    placeholder="Select Branch"
-                  />
-                </div>
+                {role === "Admin" && (
+                  <div className="w-64">
+                    <Dropdown
+                      options={[{ label: "Select Branch", value: "" }, ...branches.map((b) => ({ label: b.name, value: b._id }))]}
+                      value={selectedBranchId}
+                      onChange={setSelectedBranchId}
+                      placeholder="Select Branch"
+                    />
+                  </div>
+                )}
               </div>
             </div>
-            <BranchStockTable 
-              stocks={filteredBranchStocks} 
-              loading={loading} 
+            <BranchStockTable
+              stocks={filteredBranchStocks}
+              loading={loading}
               onEdit={handleEditStock}
             />
           </div>
@@ -262,9 +268,9 @@ const StockManagementPage = () => {
             <h3 className="text-xl font-bold text-gray-800">Stock History</h3>
             <span className="text-xs text-gray-400">Records per page: 20</span>
           </div>
-          <StockHistoryTable 
-            history={history} 
-            loading={loading} 
+          <StockHistoryTable
+            history={history}
+            loading={loading}
             currentPage={historyPage}
             totalPages={historyTotalPages}
             onPageChange={fetchHistory}
@@ -303,13 +309,13 @@ const StockManagementPage = () => {
                   You are about to delete <span className="font-bold text-red-600">{itemsToDelete.length}</span> history record(s). This action cannot be undone.
                 </p>
                 <div className="flex gap-4 w-full">
-                  <button 
+                  <button
                     onClick={() => setShowDeleteModal(false)}
                     className="flex-1 px-6 py-3 rounded-xl border border-gray-200 text-gray-600 font-bold hover:bg-gray-50 transition-all active:scale-95"
                   >
                     Cancel
                   </button>
-                  <button 
+                  <button
                     onClick={confirmDeleteHistory}
                     disabled={loading}
                     className="flex-1 px-6 py-3 rounded-xl bg-red-600 text-white font-bold hover:bg-red-700 shadow-lg shadow-red-200 transition-all active:scale-95 disabled:opacity-50"

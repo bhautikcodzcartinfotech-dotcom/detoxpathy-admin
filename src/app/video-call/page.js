@@ -82,6 +82,15 @@ function VideoCallClient() {
           throw new Error("Agora Channel Name is not configured for this video.");
         }
 
+        if (data.createdAt) {
+          const createdAtTime = new Date(data.createdAt).getTime();
+          const elapsedMs = Date.now() - createdAtTime;
+          const limitMs = 40 * 60 * 1000;
+          if (elapsedMs > limitMs) {
+            throw new Error("This consultation session has expired (40-minute limit exceeded).");
+          }
+        }
+
         setVideoDetails(data);
       } catch (err) {
         console.error("Failed to load video details:", err);
@@ -108,9 +117,22 @@ function VideoCallClient() {
 
   // Timer Effect
   useEffect(() => {
-    if (joined) {
+    if (joined && videoDetails) {
       timerIntervalRef.current = setInterval(() => {
         setDuration((prev) => prev + 1);
+
+        if (videoDetails.createdAt) {
+          const createdAtTime = new Date(videoDetails.createdAt).getTime();
+          const elapsedMs = Date.now() - createdAtTime;
+          const limitMs = 40 * 60 * 1000;
+          if (elapsedMs >= limitMs) {
+            clearInterval(timerIntervalRef.current);
+            toast.error("Session limit of 40 minutes reached. Disconnecting call...", { duration: 4000 });
+            setTimeout(() => {
+              handleLeaveCall();
+            }, 3000);
+          }
+        }
       }, 1000);
     } else {
       if (timerIntervalRef.current) {
@@ -124,7 +146,7 @@ function VideoCallClient() {
         clearInterval(timerIntervalRef.current);
       }
     };
-  }, [joined]);
+  }, [joined, videoDetails]);
 
   // Dynamic script loader for Agora SDK
   const ensureAgoraSdk = () => {
@@ -222,11 +244,13 @@ function VideoCallClient() {
             const remoteContainer = ensureRemoteTile(user.uid);
             if (remoteContainer) {
               remoteContainer.innerHTML = ""; // Clear loader/old video
-              user.videoTrack.play(remoteContainer, { fit: "cover" });
+              user.videoTrack.play(remoteContainer, { fit: "contain" });
 
               // Hide camera-off placeholder and show video body
               const tile = remoteVideoGridRef.current?.querySelector(`[data-uid="${user.uid}"]`);
               if (tile) {
+                tile.setAttribute("data-video-enabled", "true");
+                updateRemoteControlsUI(tile);
                 const placeholder = tile.querySelector("[data-video-placeholder]");
                 if (placeholder) placeholder.style.display = "none";
                 const videoBody = tile.querySelector("[data-video-body]");
@@ -243,6 +267,8 @@ function VideoCallClient() {
             // Update mic status icon inside overlay label to active/muted
             const tile = remoteVideoGridRef.current?.querySelector(`[data-uid="${user.uid}"]`);
             if (tile) {
+              tile.setAttribute("data-audio-enabled", isMuted ? "false" : "true");
+              updateRemoteControlsUI(tile);
               const audioIndicator = tile.querySelector("[data-audio-indicator]");
               if (audioIndicator) {
                 if (isMuted) {
@@ -281,6 +307,8 @@ function VideoCallClient() {
           // Instead of removing tile, show placeholder
           const tile = remoteVideoGridRef.current?.querySelector(`[data-uid="${user.uid}"]`);
           if (tile) {
+            tile.setAttribute("data-video-enabled", "false");
+            updateRemoteControlsUI(tile);
             const placeholder = tile.querySelector("[data-video-placeholder]");
             if (placeholder) placeholder.style.display = "flex";
             const videoBody = tile.querySelector("[data-video-body]");
@@ -290,6 +318,8 @@ function VideoCallClient() {
           // Update mic status icon inside overlay label to muted
           const tile = remoteVideoGridRef.current?.querySelector(`[data-uid="${user.uid}"]`);
           if (tile) {
+            tile.setAttribute("data-audio-enabled", "false");
+            updateRemoteControlsUI(tile);
             const audioIndicator = tile.querySelector("[data-audio-indicator]");
             if (audioIndicator) {
               audioIndicator.innerHTML = `
@@ -402,7 +432,8 @@ function VideoCallClient() {
               }
             }
           } else {
-            // Target is remote user, apply volume changes locally to mute/unmute their sound instantly
+            // Target is remote user
+            const tile = remoteVideoGridRef.current?.querySelector(`[data-uid="${targetUid}"]`);
             if (action === "audio") {
               if (state) {
                 mutedUidsRef.current.delete(Number(targetUid));
@@ -416,8 +447,9 @@ function VideoCallClient() {
               }
               
               // Update remote user's tile mic status icon in the UI
-              const tile = remoteVideoGridRef.current?.querySelector(`[data-uid="${targetUid}"]`);
               if (tile) {
+                tile.setAttribute("data-audio-enabled", String(state));
+                updateRemoteControlsUI(tile);
                 const audioIndicator = tile.querySelector("[data-audio-indicator]");
                 if (audioIndicator) {
                   if (state) {
@@ -433,6 +465,35 @@ function VideoCallClient() {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
                       </svg>
                     `;
+                  }
+                }
+              }
+            } else if (action === "video") {
+              // Update remote user's tile video status attributes and placeholders
+              if (tile) {
+                tile.setAttribute("data-video-enabled", String(state));
+                updateRemoteControlsUI(tile);
+
+                const placeholder = tile.querySelector("[data-video-placeholder]");
+                const videoBody = tile.querySelector("[data-video-body]");
+
+                if (state) {
+                  if (placeholder) placeholder.style.display = "none";
+                  if (videoBody) {
+                    videoBody.style.display = "block";
+                    const remoteUser = client.remoteUsers.find(u => u.uid === Number(targetUid));
+                    if (remoteUser && remoteUser.videoTrack) {
+                      videoBody.innerHTML = "";
+                      remoteUser.videoTrack.play(videoBody, { fit: "contain" });
+                    }
+                  }
+                } else {
+                  if (placeholder) placeholder.style.display = "flex";
+                  if (videoBody) videoBody.style.display = "none";
+                  
+                  const remoteUser = client.remoteUsers.find(u => u.uid === Number(targetUid));
+                  if (remoteUser && remoteUser.videoTrack) {
+                    remoteUser.videoTrack.stop();
                   }
                 }
               }
@@ -452,6 +513,55 @@ function VideoCallClient() {
       console.error("[AGORA] Join room crash error:", err);
       toast.error(err.message || "Failed to establish Agora WebRTC call connection.");
       cleanupAgoraSession();
+    }
+  };
+
+  const updateRemoteControlsUI = (tile) => {
+    if (!tile) return;
+    const audioEnabled = tile.getAttribute("data-audio-enabled") !== "false";
+    const videoEnabled = tile.getAttribute("data-video-enabled") !== "false";
+
+    const muteBtn = tile.querySelector("[data-control-mute]");
+    if (muteBtn) {
+      if (audioEnabled) {
+        muteBtn.className = "w-9 h-9 rounded-xl bg-slate-900/60 hover:bg-red-600/90 backdrop-blur-md border border-slate-700/50 flex items-center justify-center text-white transition-all cursor-pointer shadow-md active:scale-95";
+        muteBtn.innerHTML = `
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+          </svg>
+        `;
+        muteBtn.title = "Mute Remote Mic";
+      } else {
+        muteBtn.className = "w-9 h-9 rounded-xl bg-red-600 border border-red-500/50 flex items-center justify-center text-white transition-all cursor-pointer shadow-md active:scale-95";
+        muteBtn.innerHTML = `
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
+          </svg>
+        `;
+        muteBtn.title = "Unmute Remote Mic";
+      }
+    }
+
+    const videoBtn = tile.querySelector("[data-control-video]");
+    if (videoBtn) {
+      if (videoEnabled) {
+        videoBtn.className = "w-9 h-9 rounded-xl bg-slate-900/60 hover:bg-red-600/90 backdrop-blur-md border border-slate-700/50 flex items-center justify-center text-white transition-all cursor-pointer shadow-md active:scale-95";
+        videoBtn.innerHTML = `
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+        `;
+        videoBtn.title = "Stop Remote Video";
+      } else {
+        videoBtn.className = "w-9 h-9 rounded-xl bg-red-600 border border-red-500/50 flex items-center justify-center text-white transition-all cursor-pointer shadow-md active:scale-95";
+        videoBtn.innerHTML = `
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+          </svg>
+        `;
+        videoBtn.title = "Start Remote Video";
+      }
     }
   };
 
@@ -476,6 +586,9 @@ function VideoCallClient() {
     tile.style.position = "relative";
     tile.style.overflow = "hidden";
     tile.style.borderRadius = "1.5rem";
+
+    tile.setAttribute("data-audio-enabled", "true");
+    tile.setAttribute("data-video-enabled", "true");
 
     // Video Container inside Frame (hidden by default until video starts playing)
     const body = document.createElement("div");
@@ -521,85 +634,52 @@ function VideoCallClient() {
 
     // Mute Mic Button
     const muteBtn = document.createElement("button");
-    muteBtn.className = "w-9 h-9 rounded-xl bg-slate-900/60 hover:bg-red-600/90 backdrop-blur-md border border-slate-700/50 flex items-center justify-center text-white transition-all cursor-pointer shadow-md active:scale-95";
-    muteBtn.innerHTML = `
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-      </svg>
-    `;
-    muteBtn.title = "Mute Remote Mic";
+    muteBtn.setAttribute("data-control-mute", "true");
     
-    let remoteAudioEnabled = true;
     muteBtn.onclick = () => {
-      remoteAudioEnabled = !remoteAudioEnabled;
+      const currentAudio = tile.getAttribute("data-audio-enabled") !== "false";
+      const nextAudio = !currentAudio;
+      tile.setAttribute("data-audio-enabled", String(nextAudio));
+      updateRemoteControlsUI(tile);
+
       if (socketRef.current && videoDetails) {
         socketRef.current.emit("control_device", {
           channelName: videoDetails.agoraChannelName,
           targetUid: Number(uid),
           action: "audio",
-          state: remoteAudioEnabled
+          state: nextAudio
         });
       }
-      if (remoteAudioEnabled) {
-        muteBtn.className = "w-9 h-9 rounded-xl bg-slate-900/60 hover:bg-red-600/90 backdrop-blur-md border border-slate-700/50 flex items-center justify-center text-white transition-all cursor-pointer shadow-md active:scale-95";
-        muteBtn.innerHTML = `
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-          </svg>
-        `;
-        muteBtn.title = "Mute Remote Mic";
+      
+      if (nextAudio) {
         toast.success("Sent request to unmute patient's microphone");
       } else {
-        muteBtn.className = "w-9 h-9 rounded-xl bg-red-600 border border-red-500/50 flex items-center justify-center text-white transition-all cursor-pointer shadow-md active:scale-95";
-        muteBtn.innerHTML = `
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z" />
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2" />
-          </svg>
-        `;
-        muteBtn.title = "Unmute Remote Mic";
         toast.success("Muted patient's microphone");
       }
     };
 
     // Mute Camera Button
     const videoBtn = document.createElement("button");
-    videoBtn.className = "w-9 h-9 rounded-xl bg-slate-900/60 hover:bg-red-600/90 backdrop-blur-md border border-slate-700/50 flex items-center justify-center text-white transition-all cursor-pointer shadow-md active:scale-95";
-    videoBtn.innerHTML = `
-      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-      </svg>
-    `;
-    videoBtn.title = "Stop Remote Video";
+    videoBtn.setAttribute("data-control-video", "true");
 
-    let remoteVideoEnabled = true;
     videoBtn.onclick = () => {
-      remoteVideoEnabled = !remoteVideoEnabled;
+      const currentVideo = tile.getAttribute("data-video-enabled") !== "false";
+      const nextVideo = !currentVideo;
+      tile.setAttribute("data-video-enabled", String(nextVideo));
+      updateRemoteControlsUI(tile);
+
       if (socketRef.current && videoDetails) {
         socketRef.current.emit("control_device", {
           channelName: videoDetails.agoraChannelName,
           targetUid: Number(uid),
           action: "video",
-          state: remoteVideoEnabled
+          state: nextVideo
         });
       }
-      if (remoteVideoEnabled) {
-        videoBtn.className = "w-9 h-9 rounded-xl bg-slate-900/60 hover:bg-red-600/90 backdrop-blur-md border border-slate-700/50 flex items-center justify-center text-white transition-all cursor-pointer shadow-md active:scale-95";
-        videoBtn.innerHTML = `
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-          </svg>
-        `;
-        videoBtn.title = "Stop Remote Video";
+      
+      if (nextVideo) {
         toast.success("Sent request to turn on patient's video");
       } else {
-        videoBtn.className = "w-9 h-9 rounded-xl bg-red-600 border border-red-500/50 flex items-center justify-center text-white transition-all cursor-pointer shadow-md active:scale-95";
-        videoBtn.innerHTML = `
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-          </svg>
-        `;
-        videoBtn.title = "Start Remote Video";
         toast.success("Turned off patient's video");
       }
     };
@@ -607,6 +687,8 @@ function VideoCallClient() {
     controlsTray.appendChild(muteBtn);
     controlsTray.appendChild(videoBtn);
     tile.appendChild(controlsTray);
+
+    updateRemoteControlsUI(tile);
 
     remoteVideoGridRef.current.appendChild(tile);
     return body;
@@ -988,7 +1070,6 @@ function VideoCallClient() {
           overflow: hidden !important;
         }
         .agora_video_player video {
-          object-fit: cover !important;
           border-radius: 1.5rem !important;
         }
       `}</style>

@@ -45,7 +45,7 @@ const OrderDetailsPage = () => {
       setLoading(true);
       const data = await getOrderDetails(id);
       setOrder(data);
-      
+
       const courierTypeStr = String(data.courier || '').trim().toLowerCase();
       if (data.trackingId && (courierTypeStr === 'shree tirupati courier' || courierTypeStr === 'shree tirupati' || courierTypeStr === 'tirupati')) {
         fetchTracking(data._id);
@@ -113,7 +113,7 @@ const OrderDetailsPage = () => {
       setProofLoading(true);
       setProofError("");
       setProofImageBase64("");
-      
+
       const data = await getDRSImage(imageId);
       if (data && data.OpStatus === 'SUCCEED') {
         setProofImageBase64(data.ImgData);
@@ -415,11 +415,6 @@ const OrderDetailsPage = () => {
   };
 
   const handlePrintShippingLabel = () => {
-    if (!order.trackingId) {
-      toast.error("No AWB/Tracking number assigned. Please assign a courier first.");
-      return;
-    }
-
     const printWindow = window.open("", "_blank");
     if (!printWindow) {
       toast.error("Popup blocker prevented opening print window");
@@ -441,8 +436,61 @@ const OrderDetailsPage = () => {
     const orderIdShort = `ORD-${order._id.slice(-6).toUpperCase()}`;
     const orderDate = new Date(order.createdAt).toLocaleDateString("en-GB");
 
-    // Using a reliable online barcode generation API
-    const barcodeUrl = `https://bwipjs-api.metafloor.com/?bcid=code128&text=${encodeURIComponent(order.trackingId)}&scale=2&rotate=N&includetext`;
+
+
+    let itemsHtml = "";
+    let itemsCount = 0;
+    if (order.plans && order.plans.length > 0) {
+      order.plans.forEach(p => {
+        itemsHtml += `
+          <tr>
+            <td style="text-align: center; font-weight: 800;">${p.quantity || 1}</td>
+            <td>${p.name || 'Membership Plan'}</td>
+          </tr>
+        `;
+        itemsCount++;
+      });
+    } else if (order.plan) {
+      itemsHtml += `
+        <tr>
+          <td style="text-align: center; font-weight: 800;">1</td>
+          <td>${order.plan.name || 'Membership Plan'}</td>
+        </tr>
+      `;
+      itemsCount++;
+    }
+    if (order.products && order.products.length > 0) {
+      order.products.forEach(p => {
+        itemsHtml += `
+          <tr>
+            <td style="text-align: center; font-weight: 800;">${p.quantity}</td>
+            <td>${p.name || 'Product'}</td>
+          </tr>
+        `;
+        itemsCount++;
+      });
+    }
+    
+    const labelClass = itemsCount > 4 ? "label-container compact-large" : (itemsCount > 2 ? "label-container compact" : "label-container");
+
+    const itemsSectionHtml = itemsHtml
+      ? `
+        <div class="items-section">
+          <div class="section-title">ITEMS / PLANS:</div>
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th style="width: 40px; text-align: center;">QTY</th>
+                <th>ITEM DESCRIPTION</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${itemsHtml}
+            </tbody>
+          </table>
+        </div>
+      `
+      : "";
 
     const htmlContent = `
       <!DOCTYPE html>
@@ -473,6 +521,79 @@ const OrderDetailsPage = () => {
             padding: 8px;
             box-sizing: border-box;
           }
+          .compact {
+            padding: 6px;
+          }
+          .compact .header {
+            margin-bottom: 4px;
+            padding-bottom: 4px;
+          }
+          .compact .barcode-placeholder {
+            width: 140px;
+            height: 45px;
+            margin: 0 auto 4px auto;
+          }
+          .compact .barcode-section {
+            margin-bottom: 4px;
+            padding: 4px 0;
+          }
+          .compact .to-section {
+            margin-bottom: 6px;
+          }
+          .compact .items-section {
+            margin-top: 4px;
+            margin-bottom: 4px;
+          }
+          .compact .from-section {
+            padding-top: 4px;
+          }
+          
+          .compact-large {
+            padding: 4px;
+          }
+          .compact-large .header {
+            margin-bottom: 2px;
+            padding-bottom: 2px;
+          }
+          .compact-large .courier-title {
+            font-size: 14px;
+          }
+          .compact-large .barcode-placeholder {
+            width: 120px;
+            height: 35px;
+            margin: 0 auto 2px auto;
+          }
+          .compact-large .barcode-section {
+            margin-bottom: 2px;
+            padding: 2px 0;
+          }
+          .compact-large .awb-text {
+            font-size: 12px;
+            margin-top: 2px;
+          }
+          .compact-large .blank-line {
+            width: 100px;
+            height: 12px;
+          }
+          .compact-large .to-section {
+            margin-bottom: 4px;
+            font-size: 11px;
+          }
+          .compact-large .to-name {
+            font-size: 12px;
+          }
+          .compact-large .items-section {
+            margin-top: 2px;
+            margin-bottom: 2px;
+          }
+
+          .compact-large .from-section {
+            padding-top: 2px;
+            font-size: 11px;
+          }
+          .compact-large .section-title {
+            font-size: 10px;
+          }
           .header {
             text-align: center;
             border-bottom: 2px dashed #000;
@@ -480,7 +601,7 @@ const OrderDetailsPage = () => {
             margin-bottom: 8px;
           }
           .courier-title {
-            font-size: 14px;
+            font-size: 16px;
             font-weight: 900;
             text-transform: uppercase;
             letter-spacing: 1px;
@@ -500,30 +621,47 @@ const OrderDetailsPage = () => {
           }
           .awb-text {
             font-family: monospace;
-            font-size: 12px;
+            font-size: 14px;
             font-weight: bold;
             margin-top: 4px;
             margin-bottom: 0;
           }
+          .barcode-placeholder {
+            width: 160px;
+            height: 55px;
+            border: 1.5px dashed #000;
+            margin: 0 auto 8px auto;
+            border-radius: 4px;
+          }
+          .blank-line {
+            display: inline-block;
+            width: 130px;
+            margin-left: 4px;
+            vertical-align: bottom;
+            height: 15px;
+          }
           .address-section {
             flex-grow: 1;
-            font-size: 10px;
+            font-size: 12px;
             line-height: 1.4;
+            display: flex;
+            flex-direction: column;
           }
           .section-title {
-            font-size: 9px;
+            font-size: 10px;
             font-weight: 800;
             text-transform: uppercase;
-            color: #333;
-            margin-bottom: 2px;
-            border-bottom: 1px solid #ddd;
-            padding-bottom: 1px;
+            color: #000;
+            margin-bottom: 4px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 2px;
+            letter-spacing: 0.5px;
           }
           .to-section {
             margin-bottom: 10px;
           }
           .to-name {
-            font-size: 11px;
+            font-size: 13px;
             font-weight: 800;
             margin-bottom: 1px;
           }
@@ -532,26 +670,57 @@ const OrderDetailsPage = () => {
             padding-top: 8px;
             margin-top: auto;
           }
+          .items-section {
+            margin-top: 8px;
+            margin-bottom: 8px;
+          }
+          .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 4px;
+          }
+          .items-table th, .items-table td {
+            border: 1px solid #000;
+            padding: 4px 6px;
+            font-size: 11px;
+            text-align: left;
+          }
+          .items-table th {
+            background-color: #fff;
+            font-weight: 800;
+            text-transform: uppercase;
+          }
+          .items-table td {
+            font-weight: bold;
+          }
+          .compact .items-table th, .compact .items-table td {
+            padding: 3px 5px;
+            font-size: 10px;
+          }
+          .compact-large .items-table th, .compact-large .items-table td {
+            padding: 2px 4px;
+            font-size: 9px;
+          }
           .footer {
-            border-top: 1px solid #000;
+            border-top: 2px solid #000;
             padding-top: 4px;
             margin-top: 6px;
             display: flex;
             justify-content: space-between;
-            font-size: 8px;
+            font-size: 10px;
             font-weight: bold;
           }
         </style>
       </head>
       <body>
-        <div class="label-container">
+        <div class="${labelClass}">
           <div class="header">
             <h1 class="courier-title">${order.courier || "Shree Tirupati Courier"}</h1>
           </div>
           
           <div class="barcode-section">
-            <img class="barcode-img" src="${barcodeUrl}" alt="AWB Barcode" />
-            <p class="awb-text">AWB: ${order.trackingId}</p>
+            <div class="barcode-placeholder"></div>
+            <p class="awb-text">AWB: <span class="blank-line">&nbsp;</span></p>
           </div>
           
           <div class="address-section">
@@ -561,11 +730,13 @@ const OrderDetailsPage = () => {
               <div style="font-weight: bold; margin-bottom: 2px;">Mob: ${mobile}</div>
               <div>${addressLine1}</div>
               ${addressLine2 ? `<div>${addressLine2}</div>` : ""}
-              <div style="font-weight: bold; font-size: 11px; margin-top: 2px;">
+              <div style="font-weight: bold; font-size: 13px; margin-top: 2px;">
                 ${city.toUpperCase()}, ${state.toUpperCase()} - ${postalCode}
               </div>
               <div>${country.toUpperCase()}</div>
             </div>
+            
+            ${itemsSectionHtml}
             
             <div class="from-section">
               <div class="section-title">SHIP FROM (SENDER):</div>
@@ -751,7 +922,7 @@ const OrderDetailsPage = () => {
                   AWB: {order.trackingId}
                 </span>
               </div>
-              
+
               <div className="p-6">
                 {trackingLoading ? (
                   <div className="flex flex-col items-center justify-center py-10 space-y-3">
@@ -804,23 +975,21 @@ const OrderDetailsPage = () => {
                         {trackingData.TrackData && [...trackingData.TrackData].reverse().map((step, idx) => {
                           const isLatest = idx === 0;
                           const isDelivered = step.OpType === "DRS" || String(step.Description).toLowerCase().includes("delivered");
-                          
+
                           return (
                             <div key={idx} className="relative group">
                               {/* Timeline Point */}
-                              <span className={`absolute -left-[31px] top-1.5 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${
-                                isLatest 
-                                  ? (isDelivered ? "bg-green-600 border-green-600 ring-4 ring-green-100" : "bg-teal-600 border-teal-600 ring-4 ring-teal-100") 
-                                  : "bg-white border-gray-300 group-hover:border-teal-500"
-                              }`} />
+                              <span className={`absolute -left-[31px] top-1.5 w-4 h-4 rounded-full border-2 flex items-center justify-center transition-all ${isLatest
+                                ? (isDelivered ? "bg-green-600 border-green-600 ring-4 ring-green-100" : "bg-teal-600 border-teal-600 ring-4 ring-teal-100")
+                                : "bg-white border-gray-300 group-hover:border-teal-500"
+                                }`} />
 
                               <div className="space-y-1">
                                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1">
-                                  <span className={`text-[11px] font-black uppercase px-2 py-0.5 rounded-md ${
-                                    isLatest 
-                                      ? (isDelivered ? "bg-green-100 text-green-700" : "bg-teal-100 text-teal-700") 
-                                      : "bg-gray-100 text-gray-600"
-                                  }`}>
+                                  <span className={`text-[11px] font-black uppercase px-2 py-0.5 rounded-md ${isLatest
+                                    ? (isDelivered ? "bg-green-100 text-green-700" : "bg-teal-100 text-teal-700")
+                                    : "bg-gray-100 text-gray-600"
+                                    }`}>
                                     {step.OpType || "Scan"}
                                   </span>
                                   <div className="flex items-center gap-1.5 text-xs text-gray-400">
@@ -836,7 +1005,7 @@ const OrderDetailsPage = () => {
                                     Receiver Name: <span className="font-bold text-gray-600">{step.Receiver}</span>
                                   </p>
                                 )}
-                                
+
                                 {step.ImageID && (
                                   <button
                                     onClick={() => handleViewProof(step.ImageID)}
@@ -964,14 +1133,12 @@ const OrderDetailsPage = () => {
                 Print Invoice
               </button>
             )}
-            {order.trackingId && (
-              <button
-                onClick={handlePrintShippingLabel}
-                className="w-full py-2.5 mt-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition"
-              >
-                Print Shipping Label
-              </button>
-            )}
+            <button
+              onClick={handlePrintShippingLabel}
+              className="w-full py-2.5 mt-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition"
+            >
+              Print Shipping Label
+            </button>
           </div>
         </div>
       </div>
@@ -985,14 +1152,14 @@ const OrderDetailsPage = () => {
                 <Truck className="w-5 h-5 text-teal-600" />
                 Fulfillment & Courier Details
               </h3>
-              <button 
+              <button
                 onClick={() => setIsCourierModalOpen(false)}
                 className="text-gray-400 hover:text-gray-600 transition"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <form onSubmit={handleSaveCourierDetails} className="p-6 space-y-4">
               <div>
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Courier Service</label>
@@ -1062,14 +1229,14 @@ const OrderDetailsPage = () => {
                 <FileText className="w-5 h-5 text-teal-600" />
                 Delivery Proof Scan / Signature
               </h3>
-              <button 
+              <button
                 onClick={() => setIsProofModalOpen(false)}
                 className="text-gray-400 hover:text-gray-600 transition"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <div className="p-6 flex flex-col items-center justify-center">
               {proofLoading ? (
                 <div className="flex flex-col items-center py-20 space-y-3">
@@ -1084,9 +1251,9 @@ const OrderDetailsPage = () => {
               ) : proofImageBase64 ? (
                 <div className="space-y-6 w-full">
                   <div className="border border-gray-200 rounded-xl overflow-hidden bg-gray-50 p-2 flex items-center justify-center max-h-[350px]">
-                    <img 
-                      src={`data:image/jpeg;base64,${proofImageBase64}`} 
-                      alt="Delivery Proof" 
+                    <img
+                      src={`data:image/jpeg;base64,${proofImageBase64}`}
+                      alt="Delivery Proof"
                       className="object-contain max-h-[330px] rounded-lg shadow-sm"
                     />
                   </div>

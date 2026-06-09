@@ -51,7 +51,6 @@ const PERMISSION_GROUPS = [
       { label: "Show Plans Page", value: "show plans page" },
       { label: "Show Products Page", value: "show products page" },
       { label: "Show Questions Page", value: "show questions page" },
-      { label: "Show Settings Page", value: "show settings page" },
       { label: "Show Subadmin Page", value: "show subadmin page" },
       { label: "Show User Chat Page", value: "show user chat page" },
     ]
@@ -206,12 +205,6 @@ const PERMISSION_GROUPS = [
       { label: "Manage Accounting", value: "manage accounting" },
       { label: "Manage GST Reports", value: "manage gst reports" },
       { label: "Manage Complaints", value: "manage complaints" },
-    ]
-  },
-  {
-    category: "Settings",
-    permissions: [
-      { label: "Manage Settings", value: "manage settings" },
     ]
   },
 ];

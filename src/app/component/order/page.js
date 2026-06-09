@@ -514,12 +514,12 @@ const OrderPage = () => {
               </Button>
             )}
             {(role === "Admin" || permissions?.includes("create order")) && (
-            <Button
-              onClick={() => setIsDrawerOpen(true)}
-              variant="primary"
-            >
-              Create New Order
-            </Button>
+              <Button
+                onClick={() => setIsDrawerOpen(true)}
+                variant="primary"
+              >
+                Create New Order
+              </Button>
             )}
           </div>
         </div>
