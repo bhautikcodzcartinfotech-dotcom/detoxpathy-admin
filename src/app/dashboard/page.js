@@ -37,7 +37,8 @@ const DashboardPage = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [dateRange, setDateRange] = useState("all");
+  // Subadmin always views the current month; other roles default to all time
+  const [dateRange, setDateRange] = useState(role === "subadmin" ? "thisMonth" : "all");
   const [customStartDate, setCustomStartDate] = useState("");
   const [customEndDate, setCustomEndDate] = useState("");
   
@@ -70,6 +71,7 @@ const DashboardPage = () => {
       case "today": return "Today";
       case "yesterday": return "Yesterday";
       case "7days": return "Last 7 Days";
+      case "thisMonth": return "This Month";
       case "month": return "Last Month";
       case "year": return "Last Year";
       case "custom": return "Custom Range";
@@ -106,6 +108,16 @@ const DashboardPage = () => {
       case "7days": {
         const s = new Date(now);
         s.setDate(s.getDate() - 7);
+        s.setHours(0, 0, 0, 0);
+        const e = new Date(now);
+        e.setHours(23, 59, 59, 999);
+        start = s.toISOString();
+        end = e.toISOString();
+        break;
+      }
+      case "thisMonth": {
+        // First day of the current month
+        const s = new Date(now.getFullYear(), now.getMonth(), 1);
         s.setHours(0, 0, 0, 0);
         const e = new Date(now);
         e.setHours(23, 59, 59, 999);
@@ -227,7 +239,7 @@ const DashboardPage = () => {
                 color: "border-orange-500 shadow-orange-900/5",
                 icon: TrendingUp
             },
-            { 
+          { 
                 title: "AVAILABLE CASH", 
                 value: stats.availableCash >= 1000 
                     ? `₹${((stats.availableCash || 0) / 1000).toFixed(1)}K` 
@@ -260,14 +272,14 @@ const DashboardPage = () => {
                     icon: UserPlus
                 },
                 { 
-                    title: "TODAY'S FOLLOW-UPS", 
+                    title: "THIS MONTH'S FOLLOW-UPS", 
                     value: stats.todayFollowUps || 0, 
-                    sub: "follow-ups scheduled today", 
+                    sub: "follow-ups this month today", 
                     color: "border-blue-500 shadow-blue-900/5",
                     icon: Calendar 
                 },
                 { 
-                    title: "TODAY'S APPOINTMENTS", 
+                    title: "THIS MONTH'S APPOINTMENTS", 
                     value: stats.appointmentsToday?.length || 0, 
                     sub: "appointments scheduled today", 
                     color: "border-orange-500 shadow-orange-900/5",
@@ -290,19 +302,43 @@ const DashboardPage = () => {
             ];
 
             branchStockBox = { 
-                title: "BRANCH STOCK ITEMS", 
+                title: "BRANCH STOCK ITEMS (THIS MONTH)", 
                 value: stats.branchStock?.length || 0, 
                 sub: "products in stock", 
                 color: "border-teal-600 shadow-teal-900/5",
             };
         }
 
-        const filteredTopStats = role === "subadmin"
-            ? topStats.filter(stat => stat.title !== "UNASSIGNED LEADS")
-            : topStats;
+        // Filtered top stats (remove Total Users and Revenue for subadmin)
+        let filteredTopStats = topStats;
+        if (role === "subadmin") {
+          filteredTopStats = topStats.filter(stat => 
+            !stat.title.includes("TOTAL USERS") && 
+            !stat.title.includes("REVENUE") &&
+            !stat.title.includes("AVAILABLE CASH") // We will add branch-specific ones instead
+          );
+
+          // Add Branch-wise Available Cash
+          if (stats.branchWiseCash && stats.branchWiseCash.length > 0) {
+            const branchCashStats = stats.branchWiseCash.map(branch => ({
+              title: `CASH: ${branch.name.toUpperCase()}`,
+              value: branch.balance >= 1000 
+                  ? `₹${(branch.balance / 1000).toFixed(1)}K` 
+                  : `₹${branch.balance.toLocaleString('en-IN')}`,
+              sub: `orders: ₹${branch.orders.toLocaleString()} | exp: ₹${branch.expenses.toLocaleString()}`,
+              color: "border-blue-600 shadow-blue-900/5",
+              icon: Wallet
+            }));
+            filteredTopStats = [...branchCashStats, ...filteredTopStats];
+          } else {
+            // Fallback to global if no branch-wise data
+            const globalCash = topStats.find(s => s.title === "AVAILABLE CASH");
+            if (globalCash) filteredTopStats = [globalCash, ...filteredTopStats];
+          }
+        }
 
         // Combine all stats for subadmin
-        const allSubAdminStats = [...topStats, ...subAdminExtraStats, branchStockBox].filter(Boolean);
+        const allSubAdminStats = [...filteredTopStats, ...subAdminExtraStats, branchStockBox].filter(Boolean);
 
   return (
     <div className="p-6 sm:p-10 space-y-8 bg-[#F8FAFC] min-h-screen">
@@ -317,41 +353,52 @@ const DashboardPage = () => {
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <div className="w-[220px]">
-            <Dropdown
-              options={[
-                { label: "All Time", value: "all" },
-                { label: "Today", value: "today" },
-                { label: "Yesterday", value: "yesterday" },
-                { label: "Last 7 Days", value: "7days" },
-                { label: "Last Month", value: "month" },
-                { label: "Last Year", value: "year" },
-                { label: "Custom Range", value: "custom" },
-              ]}
-              value={dateRange}
-              onChange={setDateRange}
-              placeholder="Data View"
-            />
-          </div>
-          {dateRange === "custom" && (
-            <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-none border border-gray-200 shadow-sm animate-in fade-in zoom-in-95">
-              <input 
-                type="date" 
-                value={customStartDate} 
-                onChange={(e) => setCustomStartDate(e.target.value)}
-                className="text-xs font-bold text-gray-700 focus:outline-none"
-              />
-              <span className="text-gray-300 text-xs">-</span>
-              <input 
-                type="date" 
-                value={customEndDate} 
-                onChange={(e) => setCustomEndDate(e.target.value)}
-                className="text-xs font-bold text-gray-700 focus:outline-none"
+        {/* Date range filter hidden for subadmin (always current month) */}
+        {role !== "subadmin" && (
+          <div className="flex items-center gap-3">
+            <div className="w-[220px]">
+              <Dropdown
+                options={[
+                  { label: "All Time", value: "all" },
+                  { label: "Today", value: "today" },
+                  { label: "Yesterday", value: "yesterday" },
+                  { label: "Last 7 Days", value: "7days" },
+                  { label: "Last Month", value: "month" },
+                  { label: "Last Year", value: "year" },
+                  { label: "Custom Range", value: "custom" },
+                ]}
+                value={dateRange}
+                onChange={setDateRange}
+                placeholder="Data View"
               />
             </div>
-          )}
-        </div>
+            {dateRange === "custom" && (
+              <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-none border border-gray-200 shadow-sm animate-in fade-in zoom-in-95">
+                <input 
+                  type="date" 
+                  value={customStartDate} 
+                  onChange={(e) => setCustomStartDate(e.target.value)}
+                  className="text-xs font-bold text-gray-700 focus:outline-none"
+                />
+                <span className="text-gray-300 text-xs">-</span>
+                <input 
+                  type="date" 
+                  value={customEndDate} 
+                  onChange={(e) => setCustomEndDate(e.target.value)}
+                  className="text-xs font-bold text-gray-700 focus:outline-none"
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Subadmin: static "This Month" label */}
+        {role === "subadmin" && (
+          <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-none border border-gray-200 shadow-sm">
+            <Calendar className="w-4 h-4 text-teal-600" />
+            <span className="text-[11px] font-black text-gray-700 uppercase tracking-widest">This Month</span>
+          </div>
+        )}
       </div>
 
       {/* Original Top Stats Grid for ADMIN: 5 boxes */}

@@ -41,6 +41,10 @@ const StockManagementPage = () => {
   const [loading, setLoading] = useState(false);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [editingStock, setEditingStock] = useState(null);
+  
+  // Filtering state
+  const [timeFilter, setTimeFilter] = useState("all");
+  const [customDate, setCustomDate] = useState("");
 
   // Delete Modal State
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -48,14 +52,41 @@ const StockManagementPage = () => {
 
   const fetchHistory = async (page = 1) => {
     try {
-      const historyData = await getStockHistory({ page, limit: 20 });
-      setHistory(Array.isArray(historyData?.history) ? historyData.history : []);
+      setLoading(true);
+      // Increase limit to allow frontend filtering to be more effective 
+      // since backend doesn't support date filters
+      const limit = timeFilter === "all" ? 20 : 1000; 
+      const historyData = await getStockHistory({ page, limit });
+      let filteredHistory = Array.isArray(historyData?.history) ? historyData.history : [];
+
+      if (timeFilter === "month") {
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+        filteredHistory = filteredHistory.filter(item => new Date(item.createdAt) >= startOfMonth);
+      } else if (timeFilter === "date" && customDate) {
+        const selectedDate = new Date(customDate);
+        filteredHistory = filteredHistory.filter(item => {
+          const itemDate = new Date(item.createdAt);
+          return itemDate.getFullYear() === selectedDate.getFullYear() &&
+                 itemDate.getMonth() === selectedDate.getMonth() &&
+                 itemDate.getDate() === selectedDate.getDate();
+        });
+      }
+
+      setHistory(filteredHistory);
       setHistoryPage(historyData?.page || 1);
-      setHistoryTotalPages(historyData?.pages || 1);
+      setHistoryTotalPages(timeFilter === "all" ? (historyData?.pages || 1) : 1);
     } catch (error) {
       console.error("Error fetching history:", error);
+    } finally {
+      setLoading(false);
     }
   };
+
+  useEffect(() => {
+    fetchHistory(1);
+  }, [timeFilter, customDate]);
 
   const fetchData = async () => {
     try {
@@ -82,15 +113,9 @@ const StockManagementPage = () => {
       setProducts(Array.isArray(productData?.products) ? productData.products : []);
       setPlans(Array.isArray(planData) ? planData : []);
       setUsers(Array.isArray(userData?.users) ? userData.users : (Array.isArray(userData) ? userData : []));
-
-      await fetchHistory(1);
-
-      const defaultBranchId = role === "Admin"
-        ? (allBranchList.length > 0 ? allBranchList[0]._id : "")
-        : (filteredBranchList.length > 0 ? filteredBranchList[0]._id : "");
-
-      if (defaultBranchId && !selectedBranchId) {
-        setSelectedBranchId(defaultBranchId);
+      
+      if (allBranchList.length > 0 && !selectedBranchId) {
+        setSelectedBranchId(allBranchList[0]._id);
       }
     } catch (error) {
       console.error("Error fetching stock data:", error);
@@ -264,9 +289,32 @@ const StockManagementPage = () => {
         </div>
 
         <div className="mt-8 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-gray-800">Stock History</h3>
-            <span className="text-xs text-gray-400">Records per page: 20</span>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-4">
+              <h3 className="text-xl font-bold text-gray-800">Stock History</h3>
+              <div className="flex items-center gap-2">
+                <div className="w-40">
+                  <Dropdown
+                    options={[
+                      { label: "All Time", value: "all" },
+                      { label: "This Month", value: "month" },
+                      { label: "Date Wise", value: "date" }
+                    ]}
+                    value={timeFilter}
+                    onChange={setTimeFilter}
+                  />
+                </div>
+                {timeFilter === "date" && (
+                  <input
+                    type="date"
+                    value={customDate}
+                    onChange={(e) => setCustomDate(e.target.value)}
+                    className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all"
+                  />
+                )}
+              </div>
+            </div>
+            <span className="text-xs text-gray-400">Records per page: {timeFilter === "all" ? 20 : "Filtered"}</span>
           </div>
           <StockHistoryTable
             history={history}
