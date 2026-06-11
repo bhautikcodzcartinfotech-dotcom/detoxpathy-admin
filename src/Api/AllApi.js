@@ -1,6 +1,6 @@
 import axios from "axios";
 
-// export const API_BASE = "http://192.168.1.42:3002/api/v1";
+// export const API_BASE = "http://192.168.1.6:3002/api/v1";
 // export const API_BASE = "http://69.62.73.194:4009/api/v1";
  export const API_BASE = "https://admin.detoxpathy.com/api/v1";
 // export const API_BASE = "https://backend.fatendfit.com/api/v1";
@@ -21,7 +21,7 @@ if (typeof window !== "undefined" && !axios.__AUTH_INTERCEPTOR_INSTALLED__) {
   axios.__AUTH_INTERCEPTOR_INSTALLED__ = true;
   axios.interceptors.response.use(
     (response) => response,
-    (error) => {
+    (error) => {  
       const status = error?.response?.status;
       const message = error?.response?.data?.message || "";
       const code =
@@ -1096,6 +1096,13 @@ export const createMedicineApi = async (payload) => {
 
 export const submitConsultationForm = async (payload) => {
   const res = await axios.post(`${API_BASE}/admin/consultation/create`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const getConsultationCountByUserId = async (userId) => {
+  const res = await axios.get(`${API_BASE}/admin/consultation/count/${userId}`, {
     headers: getAuthHeaders(),
   });
   return res.data.data;

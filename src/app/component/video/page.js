@@ -172,7 +172,7 @@ const VideoPage = () => {
           onDelete={handleDelete}
         />
 
-        <Drawer isOpen={isOpen} onClose={() => setIsOpen(false)}>
+        <Drawer isOpen={isOpen} onClose={() => !loading && setIsOpen(false)}>
           <div className="mb-6 text-center">
             <h2 className="text-3xl font-bold text-yellow-600">
               {editing ? "Update Video" : "Create Video"}
@@ -181,8 +181,10 @@ const VideoPage = () => {
           <VideoForm
             onSubmit={handleSubmit}
             onCancel={() => {
-              setIsOpen(false);
-              setEditing(null);
+              if (!loading) {
+                setIsOpen(false);
+                setEditing(null);
+              }
             }}
             loading={loading}
             initialValues={editing}
