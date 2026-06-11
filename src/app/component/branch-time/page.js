@@ -32,6 +32,7 @@ const BranchTimePage = () => {
   const [requests, setRequests] = useState([]);
   const [selectedRequestId, setSelectedRequestId] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
+  const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
   const initialized = useRef(false);
 
   const updateUrlParams = (params) => {
@@ -153,6 +154,7 @@ const BranchTimePage = () => {
       if (role === "Admin") {
         fetchRequests(selectedBranchId);
         setSelectedRequestId(""); // Reset request selection when branch changes
+        setIsRequestModalOpen(false);
       }
     } else {
       setLoading(false);
@@ -174,11 +176,16 @@ const BranchTimePage = () => {
     if (requestId) {
       const req = requests.find(r => r._id === requestId);
       if (req) {
-        setBranchTimeData(req);
+        setIsRequestModalOpen(true);
       }
     } else {
-      fetchBranchTimeData(selectedBranchId);
+      setIsRequestModalOpen(false);
     }
+  };
+
+  const closeRequestModal = () => {
+    setIsRequestModalOpen(false);
+    setSelectedRequestId("");
   };
 
   const handleApprove = async () => {
@@ -188,6 +195,7 @@ const BranchTimePage = () => {
       await approveBranchTimeRequest(selectedRequestId);
       toast.success("Request approved and schedule updated!");
       setSelectedRequestId("");
+      setIsRequestModalOpen(false);
       fetchRequests(selectedBranchId);
       fetchBranchTimeData(selectedBranchId);
     } catch (err) {
@@ -204,6 +212,7 @@ const BranchTimePage = () => {
       await rejectBranchTimeRequest(selectedRequestId);
       toast.success("Request rejected");
       setSelectedRequestId("");
+      setIsRequestModalOpen(false);
       fetchRequests(selectedBranchId);
       fetchBranchTimeData(selectedBranchId);
     } catch (err) {
@@ -278,15 +287,15 @@ const BranchTimePage = () => {
                   <div className="flex-1">
                     <Dropdown
                       options={[
-                        { label: "✅ Active Schedule", value: "" },
+                        { label: "📋Time change requests", value: "" },
                         ...requests.map(r => ({
-                          label: `⏳ ${r.requestedBy?.username || 'Doctor'} - ${new Date(r.createdAt).toLocaleDateString()}`,
+                          label: `${r.requestedBy?.username || 'Doctor'} - ${new Date(r.createdAt).toLocaleDateString()}`,
                           value: r._id
                         }))
                       ]}
                       value={selectedRequestId}
                       onChange={handleRequestChange}
-                      placeholder="Pending Requests"
+                      placeholder="Time Change Requests"
                       className="border-none bg-transparent shadow-none"
                     />
                   </div>
@@ -312,28 +321,99 @@ const BranchTimePage = () => {
                 {branchTimeData ? "Update Time" : "Initialize Time"}
               </Button>
             )}
-            {selectedRequestId && (role === "Admin" || permissions?.includes("approve branch time requests")) && (
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="primary"
-                  onClick={handleApprove}
-                  loading={actionLoading}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  Approve
-                </Button>
-                <Button
-                  variant="secondary"
-                  onClick={handleReject}
-                  loading={actionLoading}
-                  className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
-                >
-                  Reject
-                </Button>
-              </div>
-            )}
           </div>
         </div>
+
+        {isRequestModalOpen && selectedRequestId && (() => {
+          const req = requests.find(r => r._id === selectedRequestId);
+          if (!req) return null;
+          return (
+            <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-300">
+              <div className="bg-white rounded-3xl shadow-xl border border-gray-100 max-w-4xl w-full max-h-[85vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-300">
+                {/* Modal Header */}
+                <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-yellow-50 to-amber-50">
+                  <div>
+                    <h2 className="text-xl font-bold text-gray-900">Time Change Request</h2>
+                    <p className="text-sm text-gray-500 mt-1 font-medium">
+                      Requested by: <span className="font-semibold text-amber-700">{req.requestedBy?.username || 'N/A'}</span> ({req.requestedBy?.email || 'N/A'})
+                    </p>
+                  </div>
+                  <button
+                    onClick={closeRequestModal}
+                    className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors"
+                  >
+                    <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+
+                {/* Modal Body */}
+                <div className="p-6 overflow-y-auto flex-1">
+                  <h3 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Suggested Schedule</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {req.availability?.map((item, idx) => (
+                      <div key={idx} className="border border-gray-200 rounded-2xl p-4 flex flex-col gap-3 bg-gray-50/50">
+                        <span className="text-sm font-bold text-[#134D41] uppercase tracking-wide">
+                          {daysMap[item.day] || `Day ${item.day}`}
+                        </span>
+                        <div>
+                          <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Time Window</div>
+                          <div className="text-xs font-semibold text-gray-800 bg-white px-2 py-1 rounded-lg border border-gray-100 inline-block">
+                            {item.startTime} — {item.endTime}
+                          </div>
+                        </div>
+                        {item.breakStartTime && item.breakEndTime ? (
+                          <div>
+                            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Break Time</div>
+                            <div className="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100 inline-block">
+                              {item.breakStartTime} — {item.breakEndTime}
+                            </div>
+                          </div>
+                        ) : (
+                          <div>
+                            <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Break Time</div>
+                            <div className="text-xs font-medium text-gray-400">None</div>
+                          </div>
+                        )}
+                        <div className="flex gap-4 border-t border-gray-100 pt-2 text-[11px]">
+                          <div>
+                            <span className="text-gray-400">Duration: </span>
+                            <span className="font-bold text-gray-700">{item.slotDuration}m</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-400">Buffer: </span>
+                            <span className="font-bold text-gray-700">{item.bufferTime}m</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Modal Footer */}
+                <div className="p-6 border-t border-gray-100 bg-gray-50 flex justify-end gap-3">
+                  <Button
+                    variant="secondary"
+                    onClick={handleReject}
+                    loading={actionLoading}
+                    className="bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+                  >
+                    Reject
+                  </Button>
+                  <Button
+                    variant="primary"
+                    onClick={handleApprove}
+                    loading={actionLoading}
+                    className="bg-green-600 hover:bg-green-700 text-white"
+                  >
+                    Approve
+                  </Button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {loading ? (
           <div className="flex justify-center items-center h-64">

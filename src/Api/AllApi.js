@@ -7,7 +7,7 @@ import axios from "axios";
 // Host base used to resolve file URLs coming from multer (e.g., uploads/..)
 export const API_HOST = API_BASE.replace(/\/?api\/?v1\/?$/, "").replace(
   /\/$/,
-  ""
+  ""  
 );
 
 // Get auth headers from localStorage token
