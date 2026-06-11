@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import TimeButton from "@/utils/timebutton";
-import { getSetting } from "@/Api/AllApi";
+import { getSetting, API_HOST } from "@/Api/AllApi";
 import { validateForm } from "@/utils/validation";
 
 const PlanForm = ({
@@ -22,8 +22,10 @@ const PlanForm = ({
     weight: "",
     notificationDays: [],
     planCode: "",
+    image: null,
   });
   const [errors, setErrors] = useState({});
+  const [imagePreview, setImagePreview] = useState("");
 
   useEffect(() => {
     const fetchCurrency = async () => {
@@ -58,7 +60,13 @@ const PlanForm = ({
         weight: initialData.weight ?? 0,
         notificationDays: initialData.notificationDays || [],
         planCode: initialData.planCode || "",
+        image: null,
       });
+      if (initialData.image) {
+        setImagePreview(`${API_HOST}/${initialData.image}`);
+      } else {
+        setImagePreview("");
+      }
     } else {
       setForm({
         name: "",
@@ -69,10 +77,26 @@ const PlanForm = ({
         weight: "",
         notificationDays: [],
         planCode: "",
+        image: null,
       });
+      setImagePreview("");
     }
     setErrors({});
   }, [initialData]);
+
+  const handleImageChange = (e) => {
+    const file = e.target.files?.[0] || null;
+    setForm((f) => ({ ...f, image: file }));
+    if (file) {
+      setImagePreview(URL.createObjectURL(file));
+    } else {
+      if (initialData && initialData.image) {
+        setImagePreview(`${API_HOST}/${initialData.image}`);
+      } else {
+        setImagePreview("");
+      }
+    }
+  };
 
   const validate = () => {
     const required = (label) => (v) => (!v ? `${label} is required` : null);
@@ -109,7 +133,7 @@ const PlanForm = ({
         rules: [optionalNonNegativeNumber("Bulk Discount")],
       },
       weight: { value: form.weight, rules: [positiveNumberRule("Weight")] },
-      planCode: { value: form.planCode, rules: [optionalFourDigitRule("Plan Code")] },
+      planCode: { value: form.planCode, rules: [required("Plan Code"), optionalFourDigitRule("Plan Code")] },
     });
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -150,7 +174,7 @@ const PlanForm = ({
         </div>
 
         <div>
-          <label className="block mb-1 font-semibold text-gray-700">Plan Code (optional)</label>
+          <label className="block mb-1 font-semibold text-gray-700">Plan Code *</label>
           <input
             type="text"
             maxLength={4}
@@ -229,11 +253,11 @@ const PlanForm = ({
                         const checked = e.target.checked;
                         const newDays = checked
                           ? [...(form.notificationDays || []), day].sort(
-                              (a, b) => a - b,
-                            )
+                            (a, b) => a - b,
+                          )
                           : (form.notificationDays || []).filter(
-                              (d) => d !== day,
-                            );
+                            (d) => d !== day,
+                          );
                         setForm({ ...form, notificationDays: newDays });
                       }}
                       className="w-5 h-5 border-2 border-gray-300 rounded bg-white checked:bg-green-600 checked:border-green-600 focus:ring-green-500 transition-all cursor-pointer"
@@ -324,6 +348,50 @@ const PlanForm = ({
           {errors.weight && (
             <p className="text-red-500 text-sm mt-1">{errors.weight}</p>
           )}
+        </div>
+      </div>
+
+      {/* Plan Image Upload */}
+      <div className="space-y-2">
+        <label className="block font-semibold text-gray-700">Plan Image</label>
+        <div className="flex flex-col sm:flex-row items-center gap-4 p-4 border border-yellow-400/60 rounded-xl bg-yellow-50/30">
+          {imagePreview ? (
+            <div className="relative w-24 h-24 rounded-lg overflow-hidden border border-yellow-300 shadow-sm flex-shrink-0 bg-white">
+              <img
+                src={imagePreview}
+                alt="Preview"
+                className="w-full h-full object-cover"
+              />
+              <button
+                type="button"
+                onClick={() => {
+                  setForm((f) => ({ ...f, image: null }));
+                  setImagePreview("");
+                }}
+                className="absolute top-1 right-1 bg-red-500 hover:bg-red-600 text-white rounded-full p-1 shadow-md transition"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          ) : (
+            <div className="w-24 h-24 rounded-lg border-2 border-dashed border-yellow-300 bg-white flex flex-col items-center justify-center text-gray-400 flex-shrink-0">
+              <svg className="w-8 h-8 text-yellow-500/60" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span className="text-[10px] font-bold text-yellow-600/60 mt-1">NO IMAGE</span>
+            </div>
+          )}
+          <div className="flex-1 w-full">
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageChange}
+              className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-yellow-500 file:text-white hover:file:bg-yellow-600 file:cursor-pointer transition cursor-pointer"
+            />
+            <p className="text-xs text-gray-400 mt-1">Recommended size: Square (e.g. 500x500px). JPG, PNG, WEBP.</p>
+          </div>
         </div>
       </div>
 

@@ -93,7 +93,7 @@ const LeaveManagementModal = ({ isOpen, onClose, doctor, onUpdate }) => {
               </div>
               <div>
                 <h3 className="text-xl font-bold">Manage Leaves</h3>
-                <p className="text-yellow-50/80 text-sm">Doctor: {doctor.username}</p>
+                <p className="text-yellow-50/80 text-sm">Doctor: {doctor.username} {doctor.nickname ? `(${doctor.nickname})` : ""}</p>
               </div>
             </div>
             <button

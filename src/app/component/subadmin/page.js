@@ -59,6 +59,7 @@ const SubAdminPage = () => {
       if (editing) {
         await updateSubAdminById(editing._id, {
           username: formData.username,
+          nickname: formData.nickname,
           email: formData.email,
           password: formData.password || undefined,
           branch: formData.branchId ? [formData.branchId] : undefined,
@@ -70,6 +71,7 @@ const SubAdminPage = () => {
       } else {
         const payload = {
           username: formData.username,
+          nickname: formData.nickname,
           email: formData.email,
           password: formData.password,
           branch: formData.branchId ? [formData.branchId] : [],

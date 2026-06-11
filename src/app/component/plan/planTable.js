@@ -3,6 +3,7 @@ import { useState } from "react";
 import { ActionButton } from "@/utils/actionbutton";
 import NotFoundCard from "@/components/NotFoundCard";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
+import { API_HOST } from "@/Api/AllApi";
 
 const PlanTable = ({ plans, onEdit, onDelete, currency = "₹" }) => {
   const [deleteDialog, setDeleteDialog] = useState({
@@ -55,6 +56,9 @@ const PlanTable = ({ plans, onEdit, onDelete, currency = "₹" }) => {
           <thead className="bg-gradient-to-r from-yellow-400 to-amber-300">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                Image
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Name
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
@@ -86,6 +90,19 @@ const PlanTable = ({ plans, onEdit, onDelete, currency = "₹" }) => {
                 key={p._id}
                 className="hover:bg-yellow-50 transition-all duration-200 cursor-pointer"
               >
+                <td className="px-6 py-4 whitespace-nowrap">
+                  {p.image ? (
+                    <img
+                      src={`${API_HOST}/${p.image}`}
+                      alt={p.name}
+                      className="w-12 h-12 object-cover rounded-xl border border-yellow-200 shadow-sm"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-xl bg-gray-50 border border-dashed border-yellow-200 flex items-center justify-center text-[10px] text-yellow-600/60 font-black tracking-wider bg-yellow-50/10">
+                      NO IMG
+                    </div>
+                  )}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-800">
                   {p.name}
                 </td>

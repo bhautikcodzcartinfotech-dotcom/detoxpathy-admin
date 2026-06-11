@@ -4,8 +4,10 @@ import { FiPlus, FiTrash2, FiSave, FiFilter, FiCalendar, FiBriefcase, FiDollarSi
 import axios from "axios";
 import { API_BASE, getAuthHeaders, getAllBranches, createExpense, getAllExpenses, deleteExpense, createAccount, getSetting } from "@/Api/AllApi";
 import { toast } from "react-hot-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ExpenseEntry = () => {
+  const { role, branches: allowedBranchIds } = useAuth();
   const [expenses, setExpenses] = useState([]);
   const [branches, setBranches] = useState([]);
   const [accounts, setAccounts] = useState([]);
@@ -63,7 +65,16 @@ const ExpenseEntry = () => {
       // 2. Fetch Branches (Side Resource)
       try {
         const branchData = await getAllBranches();
-        setBranches(branchData || []);
+        const loadedBranches = branchData || [];
+        setBranches(loadedBranches);
+
+        if (role === "subadmin") {
+          const firstAllowed = loadedBranches.find(b => allowedBranchIds.includes(String(b._id)));
+          if (firstAllowed) {
+            setForm(f => ({ ...f, branchId: f.branchId || firstAllowed._id }));
+            setFilters(f => ({ ...f, branchId: f.branchId || firstAllowed._id }));
+          }
+        }
       } catch (err) {
         console.error("Failed to load branches list:", err);
       }
@@ -128,13 +139,14 @@ const ExpenseEntry = () => {
       toast.success("Expense successfully saved and ledger posted!");
       
       // Reset form
+      const firstAllowed = branches.find(b => allowedBranchIds.includes(String(b._id)));
       setForm({
         expenseAccountId: "",
         paidFromAccountId: "",
         amount: "",
         description: "",
         referenceNo: "",
-        branchId: "",
+        branchId: (role === "subadmin" && firstAllowed) ? firstAllowed._id : "",
         expenseDate: new Date().toISOString().split('T')[0]
       });
       
@@ -297,9 +309,12 @@ const ExpenseEntry = () => {
                   value={form.branchId}
                   onChange={e => setForm(f => ({ ...f, branchId: e.target.value }))}
                   className="w-full border border-gray-200 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 outline-none bg-white text-sm text-gray-800"
+                  required={role === "subadmin"}
                 >
-                  <option value="">Select Branch (Optional)</option>
-                  {branches.map(b => <option key={b._id} value={b._id}>{b.name}</option>)}
+                  {role !== "subadmin" && <option value="">Select Branch (Optional)</option>}
+                  {branches
+                    .filter(b => role !== "subadmin" || allowedBranchIds.includes(String(b._id)))
+                    .map(b => <option key={b._id} value={b._id}>{b.name}</option>)}
                 </select>
               </div>
             </div>
@@ -356,8 +371,10 @@ const ExpenseEntry = () => {
                 onChange={e => setFilters(f => ({ ...f, branchId: e.target.value }))}
                 className="w-full border border-gray-200 rounded-lg p-2 bg-white text-xs text-gray-700 outline-none"
               >
-                <option value="">All Branches</option>
-                {branches.map(b => <option key={b._id} value={b._id}>{b.name}</option>)}
+                {role !== "subadmin" && <option value="">All Branches</option>}
+                {branches
+                  .filter(b => role !== "subadmin" || allowedBranchIds.includes(String(b._id)))
+                  .map(b => <option key={b._id} value={b._id}>{b.name}</option>)}
               </select>
             </div>
 

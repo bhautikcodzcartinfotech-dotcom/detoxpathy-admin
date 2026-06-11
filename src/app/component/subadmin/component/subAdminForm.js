@@ -46,6 +46,7 @@ const SubAdminForm = ({
 }) => {
   const [form, setForm] = useState({
     username: "",
+    nickname: "",
     email: "",
     password: "",
     image: null,
@@ -63,6 +64,7 @@ const SubAdminForm = ({
       setForm((prev) => ({
         ...prev,
         username: initialValues.username || "",
+        nickname: initialValues.nickname || "",
         email: initialValues.email || "",
         password: "",
         image: null,
@@ -79,6 +81,7 @@ const SubAdminForm = ({
     } else {
       setForm({
         username: "",
+        nickname: "",
         email: "",
         password: "",
         image: null,
@@ -136,6 +139,7 @@ const SubAdminForm = ({
     await onSubmit(form);
     setForm({
       username: "",
+      nickname: "",
       email: "",
       password: "",
       image: null,
@@ -168,6 +172,20 @@ const SubAdminForm = ({
         {formErrors.username && (
           <p className="text-red-500 text-sm mt-1">{formErrors.username}</p>
         )}
+      </div>
+
+      {/* Nickname */}
+      <div>
+        <label className="block mb-1 font-semibold text-gray-700">
+          Nickname
+        </label>
+        <input
+          type="text"
+          value={form.nickname}
+          onChange={(e) => setForm((f) => ({ ...f, nickname: e.target.value }))}
+          placeholder="Enter Nickname"
+          className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+        />
       </div>
 
       {/* Email */}

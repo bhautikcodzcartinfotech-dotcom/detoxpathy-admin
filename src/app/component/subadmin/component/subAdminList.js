@@ -177,6 +177,7 @@ const SubAdminList = ({ subAdmins, appointments = [], onEdit, onDelete, onUpdate
             <tr>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Image</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Name</th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Nickname</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Email</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Branches</th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Role</th>
@@ -202,7 +203,12 @@ const SubAdminList = ({ subAdmins, appointments = [], onEdit, onDelete, onUpdate
                           <div className="w-10 h-10 rounded-full bg-gray-200" />
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-800 uppercase text-xs">{sa.username}</td>
+                      <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-800 uppercase text-xs">
+                        {sa.username}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-gray-700 text-sm">
+                        {sa.nickname || "-"}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-gray-700 text-sm">{sa.email}</td>
                       <td className="px-6 py-4 whitespace-nowrap text-gray-700 text-sm">
                         {Array.isArray(sa.branch) && sa.branch.length ? sa.branch.map((b) => b.name).join(", ") : "-"}
@@ -261,7 +267,12 @@ const SubAdminList = ({ subAdmins, appointments = [], onEdit, onDelete, onUpdate
                               <div className="w-10 h-10 rounded-full bg-gray-200" />
                             )}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-800 uppercase text-xs">{sd.username}</td>
+                          <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-800 uppercase text-xs">
+                            {sd.username}
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-700 text-sm">
+                            {sd.nickname || "-"}
+                          </td>
                           <td className="px-6 py-4 whitespace-nowrap text-gray-700 text-sm">{sd.email}</td>
                           <td className="px-6 py-4 whitespace-nowrap text-gray-700 text-sm">
                             {Array.isArray(sd.branch) && sd.branch.length ? sd.branch.map((b) => b.name).join(", ") : "-"}
@@ -309,7 +320,7 @@ const SubAdminList = ({ subAdmins, appointments = [], onEdit, onDelete, onUpdate
               })
             ) : (
               <tr>
-                <td colSpan={8} className="px-6 py-4 text-center text-gray-500 text-sm">No Doctors Found</td>
+                <td colSpan={9} className="px-6 py-4 text-center text-gray-500 text-sm">No Doctors Found</td>
               </tr>
             )}
           </tbody>
