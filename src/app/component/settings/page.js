@@ -129,6 +129,9 @@ const SettingsPage = () => {
         screenshotProtectionActive: typeof settingsData.screenshotProtectionActive !== 'undefined' ? settingsData.screenshotProtectionActive : true,
         currency: settingsData.currency || "₹",
         shippingCharges: typeof settingsData.shippingCharges !== 'undefined' ? settingsData.shippingCharges : 0,
+        shippingChargesGujaratMaharashtra: typeof settingsData.shippingChargesGujaratMaharashtra !== 'undefined' ? settingsData.shippingChargesGujaratMaharashtra : 0,
+        minShippingChargesOther: typeof settingsData.minShippingChargesOther !== 'undefined' ? settingsData.minShippingChargesOther : 0,
+        minShippingChargesGujaratMaharashtra: typeof settingsData.minShippingChargesGujaratMaharashtra !== 'undefined' ? settingsData.minShippingChargesGujaratMaharashtra : 0,
         iosVersion: typeof settingsData.iosVersion !== 'undefined' ? settingsData.iosVersion : 1,
         advanceBookingDays: typeof settingsData.advanceBookingDays !== 'undefined' ? settingsData.advanceBookingDays : 30,
         bookingSlotDays: typeof settingsData.bookingSlotDays !== 'undefined' ? settingsData.bookingSlotDays : 0,
@@ -606,45 +609,70 @@ const SettingsPage = () => {
 
             {/* Shipping Charges */}
             <div className="bg-gradient-to-br from-white to-yellow-50 rounded-2xl shadow-lg border border-yellow-200 p-6 lg:col-span-2">
-              <h3 className="text-sm font-bold text-gray-700 mb-4 tracking-wide uppercase">
-                Shipping Charges per 500g ({formData.currency || "₹"})
+              <h3 className="text-lg font-semibold text-gray-800 mb-6 flex items-center gap-2">
+                <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+                Shipping Charges & Minimum Value ({formData.currency || "₹"})
               </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-gray-500 uppercase">Other States</label>
-                  <input
-                    type="number"
-                    value={formData.shippingCharges ?? ""}
-                    onChange={(e) => handleInputChange("shippingCharges", e.target.value === "" ? "" : Number(e.target.value))}
-                    className="w-full px-4 py-3 rounded-xl border border-yellow-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
-                    min="0"
-                    step="0.01"
-                    placeholder="0"
-                  />
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Other States */}
+                <div className="bg-white/50 border border-yellow-100 p-5 rounded-xl space-y-4">
+                  <h4 className="text-md font-semibold text-gray-700 mb-2">Other States</h4>
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase">Charge per 500g</label>
+                    <input
+                      type="number"
+                      value={formData.shippingCharges ?? ""}
+                      onChange={(e) => handleInputChange("shippingCharges", e.target.value === "" ? "" : Number(e.target.value))}
+                      className="w-full px-4 py-3 rounded-xl border border-yellow-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
+                      min="0"
+                      step="0.01"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase">Minimum Order Value for Shipping</label>
+                    <input
+                      type="number"
+                      value={formData.minShippingChargesOther ?? ""}
+                      onChange={(e) => handleInputChange("minShippingChargesOther", e.target.value === "" ? "" : Number(e.target.value))}
+                      className="w-full px-4 py-3 rounded-xl border border-yellow-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
+                      min="0"
+                      step="0.01"
+                      placeholder="0"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-gray-500 uppercase">Maharashtra</label>
-                  <input
-                    type="number"
-                    value={formData.shippingChargesMaharashtra ?? ""}
-                    onChange={(e) => handleInputChange("shippingChargesMaharashtra", e.target.value === "" ? "" : Number(e.target.value))}
-                    className="w-full px-4 py-3 rounded-xl border border-yellow-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
-                    min="0"
-                    step="0.01"
-                    placeholder="0"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-semibold text-gray-500 uppercase">Gujarat</label>
-                  <input
-                    type="number"
-                    value={formData.shippingChargesGujarat ?? ""}
-                    onChange={(e) => handleInputChange("shippingChargesGujarat", e.target.value === "" ? "" : Number(e.target.value))}
-                    className="w-full px-4 py-3 rounded-xl border border-yellow-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
-                    min="0"
-                    step="0.01"
-                    placeholder="0"
-                  />
+
+                {/* Gujarat & Maharashtra */}
+                <div className="bg-white/50 border border-yellow-100 p-5 rounded-xl space-y-4">
+                  <h4 className="text-md font-semibold text-gray-700 mb-2">Gujarat & Maharashtra</h4>
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase">Charge per 500g</label>
+                    <input
+                      type="number"
+                      value={formData.shippingChargesGujaratMaharashtra ?? ""}
+                      onChange={(e) => handleInputChange("shippingChargesGujaratMaharashtra", e.target.value === "" ? "" : Number(e.target.value))}
+                      className="w-full px-4 py-3 rounded-xl border border-yellow-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
+                      min="0"
+                      step="0.01"
+                      placeholder="0"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="block text-xs font-semibold text-gray-500 uppercase">Minimum Order Value for Shipping</label>
+                    <input
+                      type="number"
+                      value={formData.minShippingChargesGujaratMaharashtra ?? ""}
+                      onChange={(e) => handleInputChange("minShippingChargesGujaratMaharashtra", e.target.value === "" ? "" : Number(e.target.value))}
+                      className="w-full px-4 py-3 rounded-xl border border-yellow-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
+                      min="0"
+                      step="0.01"
+                      placeholder="0"
+                    />
+                  </div>
                 </div>
               </div>
             </div>

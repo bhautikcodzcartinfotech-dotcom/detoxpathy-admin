@@ -27,8 +27,21 @@ const BranchTimePage = () => {
   const [formLoading, setFormLoading] = useState(false);
   const [branchTimeData, setBranchTimeData] = useState(null);
   const [allBranches, setAllBranches] = useState([]);
-  const [selectedBranchId, setSelectedBranchId] = useState("");
-  const [isOpen, setIsOpen] = useState(false);
+  const [selectedBranchId, setSelectedBranchId] = useState(() => {
+    if (typeof window !== "undefined") {
+      // Prioritize URL param, then localStorage
+      const urlBranch = new URLSearchParams(window.location.search).get("branch");
+      return urlBranch || localStorage.getItem('selectedBranchId') || "";
+    }
+    return "";
+  });
+  const [isOpen, setIsOpen] = useState(() => {
+    if (typeof window !== "undefined") {
+      const urlDrawer = new URLSearchParams(window.location.search).get("drawer");
+      return urlDrawer === "true";
+    }
+    return false;
+  });
   const [requests, setRequests] = useState([]);
   const [selectedRequestId, setSelectedRequestId] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
@@ -287,7 +300,7 @@ const BranchTimePage = () => {
                   <div className="flex-1">
                     <Dropdown
                       options={[
-                        { label: "📋Time change requests", value: "" },
+                        { label: "Time change requests", value: "" },
                         ...requests.map(r => ({
                           label: `${r.requestedBy?.username || 'Doctor'} - ${new Date(r.createdAt).toLocaleDateString()}`,
                           value: r._id

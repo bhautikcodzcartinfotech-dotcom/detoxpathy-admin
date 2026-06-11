@@ -45,8 +45,8 @@ const PERMISSION_GROUPS = [
       { label: "Show GST Reports Page", value: "show gst reports page" },
       { label: "Show Medical Condition Page", value: "show medical condition page" },
       { label: "Show FAQ Page", value: "show faq page" },
-      { label: "Show Messages Page", value: "show messages page" },
-      { label: "Show Party Page", value: "show party page" },
+      { label: "Show Quick Replies Page", value: "show messages page" },
+      { label: "Show Supplier Master Page", value: "show party page" },
       { label: "Show Permissions Page", value: "show permissions page" },
       { label: "Show Plans Page", value: "show plans page" },
       { label: "Show Products Page", value: "show products page" },
@@ -150,19 +150,19 @@ const PERMISSION_GROUPS = [
     ]
   },
   {
-    category: "Command Management",
+    category: "Quick Reply Management",
     permissions: [
-      { label: "Create Command", value: "create command" },
-      { label: "Edit Command", value: "edit command" },     
-      { label: "Delete Command", value: "delete command" },
+      { label: "Create Quick Reply", value: "create command" },
+      { label: "Edit Quick Reply", value: "edit command" },
+      { label: "Delete Quick Reply", value: "delete command" },
     ]
   },
   {
-    category: "Party Management",
+    category: "Supplier Management",
     permissions: [
-      { label: "Create Party", value: "create party" },
-      { label: "Edit Party", value: "edit party" },
-      { label: "Delete Party", value: "delete party" },
+      { label: "Create Supplier", value: "create party" },
+      { label: "Edit Supplier", value: "edit party" },
+      { label: "Delete Supplier", value: "delete party" },
     ]
   },
   {

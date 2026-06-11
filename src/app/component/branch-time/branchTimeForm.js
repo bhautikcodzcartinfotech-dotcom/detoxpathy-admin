@@ -97,11 +97,27 @@ const BranchTimeForm = ({
     }
   }, [availability, branchId]);
 
+  const scrollRef = useRef(null);
+
   const handleAddRow = () => {
+    const usedDays = new Set(availability.map(a => String(a.day)));
+    const unusedDay = daysSelection.find(d => !usedDays.has(d.value));
+    
+    if (!unusedDay) {
+        toast.error("All days are already configured");
+        return;
+    }
+
     setAvailability([
       ...availability,
-      { day: "1", startTime: "09:00 AM", endTime: "05:00 PM", breakStartTime: "", breakEndTime: "", slotDuration: 30, bufferTime: 10 },
+      { day: unusedDay.value, startTime: "09:00 AM", endTime: "05:00 PM", breakStartTime: "", breakEndTime: "", slotDuration: 30, bufferTime: 10 },
     ]);
+
+    setTimeout(() => {
+        if (scrollRef.current) {
+            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+        }
+    }, 100);
   };
 
   const handleRemoveRow = (index) => {
@@ -142,7 +158,7 @@ const BranchTimeForm = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
+      <div ref={scrollRef} className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
         {availability.map((item, index) => (
           <div key={index} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 relative group transition-all hover:shadow-md">
              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

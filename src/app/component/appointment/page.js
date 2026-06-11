@@ -105,7 +105,12 @@ const AppointmentPage = () => {
   const [loading, setLoading] = useState(true);
   const [appointments, setAppointments] = useState([]);
   const [allBranches, setAllBranches] = useState([]);
-  const [selectedBranchId, setSelectedBranchId] = useState("");
+  const [selectedBranchId, setSelectedBranchId] = useState(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem('selectedBranchId') || "";
+    }
+    return "";
+  });
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
   const [appointmentToDelete, setAppointmentToDelete] = useState(null);
   const [callLoadingId, setCallLoadingId] = useState(null);
@@ -315,7 +320,7 @@ const AppointmentPage = () => {
     const tile = document.createElement("div");
     tile.setAttribute("data-remote-uid", String(uid));
     tile.className =
-      "relative h-full w-full overflow-hidden rounded-2xl sm:rounded-[2rem] bg-slate-900 border border-white/5 shadow-2xl";
+      "relative h-full w-full aspect-video overflow-hidden rounded-2xl sm:rounded-[2rem] bg-slate-900 border border-white/5 shadow-2xl";
 
     const body = document.createElement("div");
     body.setAttribute("data-remote-body", "true");
@@ -415,7 +420,6 @@ const AppointmentPage = () => {
       const data = await getAllBranches();
       let allBranchList = Array.isArray(data) ? data : [];
       
-      // For staff, filter the branch list to only show their assigned branches
       if (role !== "Admin") {
         const assignedBranchIds = branches || [];
         allBranchList = allBranchList.filter(b => 
@@ -424,8 +428,18 @@ const AppointmentPage = () => {
       }
       
       setAllBranches(allBranchList);
-      if (allBranchList.length > 0 && !selectedBranchId) {
-        setSelectedBranchId(allBranchList[0]._id);
+      
+      // Only update if the current state is empty or invalid
+      const isCurrentValid = allBranchList.some(b => b._id === selectedBranchId);
+      
+      if (!isCurrentValid) {
+        const savedBranchId = localStorage.getItem('selectedBranchId');
+        if (savedBranchId && allBranchList.some(b => b._id === savedBranchId)) {
+          setSelectedBranchId(savedBranchId);
+        } else if (allBranchList.length > 0) {
+          setSelectedBranchId(allBranchList[0]._id);
+          localStorage.setItem('selectedBranchId', allBranchList[0]._id);
+        }
       }
     } catch (e) {
       console.error(e);
@@ -844,6 +858,59 @@ const AppointmentPage = () => {
             const remoteBody = ensureRemoteTile(user.uid);
             if (remoteBody) {
               user.videoTrack.play(remoteBody, { fit: "cover" });
+
+              // Dynamic orientation/device detection (mobile portrait vs laptop landscape)
+              const updateLayoutByOrientation = () => {
+                try {
+                  const tile = remoteVideoGridRef.current?.querySelector(
+                    `[data-remote-uid="${String(user.uid)}"]`
+                  );
+                  if (!tile) return;
+
+                  // Find the nested HTML video element (most reliable for real-time resolution)
+                  const videoEl = tile.querySelector("video");
+                  let width = 0;
+                  let height = 0;
+
+                  if (videoEl && videoEl.videoWidth && videoEl.videoHeight) {
+                    width = videoEl.videoWidth;
+                    height = videoEl.videoHeight;
+                  } else {
+                    // Fallback to track settings if video element hasn't loaded dimensions yet
+                    const mediaStreamTrack = user.videoTrack.getMediaStreamTrack();
+                    const settings = mediaStreamTrack?.getSettings();
+                    width = settings?.width || 0;
+                    height = settings?.height || 0;
+                  }
+
+                  if (width > 0 && height > 0) {
+                    const isPortrait = height > width;
+                    if (isPortrait) {
+                      // Styled as a vertical phone screen (e.g. mobile user)
+                      tile.className =
+                        "relative h-full max-h-[80vh] max-w-[340px] mx-auto aspect-[9/16] overflow-hidden rounded-[2.5rem] bg-slate-900 border-[6px] border-slate-800 shadow-2xl flex items-center justify-center";
+                      user.videoTrack.play(remoteBody, { fit: "contain" });
+                    } else {
+                      // Styled as standard laptop screen (landscape user)
+                      tile.className =
+                        "relative h-full w-full aspect-video overflow-hidden rounded-2xl sm:rounded-[2rem] bg-slate-900 border border-white/5 shadow-2xl";
+                      user.videoTrack.play(remoteBody, { fit: "cover" });
+                    }
+                  }
+                } catch (err) {
+                  console.error("Orientation detection failed:", err);
+                }
+              };
+
+              // Poll for 5 seconds (every 200ms) to detect dimensions once video starts playing
+              let checks = 0;
+              const checkInterval = setInterval(() => {
+                updateLayoutByOrientation();
+                checks++;
+                if (checks >= 25) {
+                  clearInterval(checkInterval);
+                }
+              }, 200);
             } else {
               console.warn('[AGORA] ⚠️ No remoteBody for uid:', user.uid);
             }
@@ -1612,7 +1679,10 @@ const AppointmentPage = () => {
                 <Dropdown
                   options={allBranches.map((b) => ({ label: b.name, value: b._id }))}
                   value={selectedBranchId}
-                  onChange={setSelectedBranchId}
+                  onChange={(value) => {
+                    setSelectedBranchId(value);
+                    localStorage.setItem('selectedBranchId', value);
+                  }}
                   placeholder="Select Branch"
                 />
               </div>
@@ -1886,12 +1956,12 @@ const AppointmentPage = () => {
           </div>
         )}
         {isCallModalOpen && activeCallAppointment && (
-          <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/20 backdrop-blur-sm">
+          <div className="fixed inset-0 z-50 flex bg-slate-950/20 backdrop-blur-sm">
             <motion.div
               initial={{ opacity: 0, x: 200 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 200 }}
-              className={`relative flex h-full flex-col lg:flex-row overflow-hidden bg-white shadow-[-20px_0_60px_rgba(0,0,0,0.1)] transition-all duration-500 ${(showUserProfile || showConsultationForm) ? 'w-full' : 'w-full lg:w-[70vw]'}`}
+              className="relative w-full h-full flex flex-col overflow-hidden bg-white shadow-[-20px_0_60px_rgba(0,0,0,0.1)] transition-all duration-500"
             >
               {/* Left Pane: Full Patient Dashboard (Matches Main Profile Page) */}
               <AnimatePresence>
@@ -2224,7 +2294,7 @@ const AppointmentPage = () => {
               {/* Right Pane: Video Consultation (User's Style, Full Height) */}
               <div className="flex flex-1 flex-col relative overflow-hidden bg-slate-950 lg:bg-white">
                 {/* Header (Restored Date/Time + User's gradient style) */}
-                <div className="lg:relative absolute top-0 left-0 right-0 z-20 flex flex-col gap-3 sm:gap-6 border-b border-slate-100 bg-white/80 lg:bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.16),_transparent_28%),linear-gradient(135deg,_#ffffff,_#eff6ff)] backdrop-blur-md lg:backdrop-blur-none px-4 sm:px-10 py-4 sm:py-8 shrink-0 transition-all">
+                <div className="lg:relative z-20 flex flex-col gap-3 sm:gap-6 border-b border-slate-100 bg-white/80 lg:bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.16),_transparent_28%),linear-gradient(135deg,_#ffffff,_#eff6ff)] backdrop-blur-md lg:backdrop-blur-none px-4 py-3 sm:px-6 sm:py-4 transition-all">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                     <div>
                       <div className="flex flex-col sm:flex-row sm:items-center gap-x-2 gap-y-1 mb-1 sm:mb-2">
@@ -2240,7 +2310,7 @@ const AppointmentPage = () => {
                         {activeCallAppointment.userId?.name} {activeCallAppointment.userId?.surname}
                       </h3>
                     </div>
-                    <div className="flex flex-row items-center gap-2 sm:gap-4">
+                    <div className="flex flex-row items-center gap-2 sm:gap-4 flex-wrap">
                       <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-100 bg-emerald-50 px-2.5 sm:px-5 py-1.5 sm:py-2 text-[9px] sm:text-xs font-black text-emerald-700 whitespace-nowrap">
                         <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                         Live
@@ -2331,7 +2401,7 @@ const AppointmentPage = () => {
                 </div>
 
                 {/* Video Workspace */}
-                <div className="lg:relative absolute inset-0 z-0 bg-slate-950 flex-1 overflow-hidden group">
+                <div className="z-0 bg-slate-950 flex-1 overflow-hidden group relative">
                   <div
                     ref={remoteVideoGridRef}
                     className={`h-full w-full grid gap-1.5 p-1.5 transition-all duration-500 ${remoteParticipantCount <= 1 ? "grid-cols-1" :
@@ -2356,15 +2426,15 @@ const AppointmentPage = () => {
                   )}
 
                   {/* PiP Local Feed */}
-                  <div className="absolute top-[100px] right-2 sm:top-10 sm:right-10 z-30 w-28 sm:w-56 lg:w-80 aspect-video rounded-xl sm:rounded-[2.5rem] border-2 border-white/10 bg-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.6)] overflow-hidden group/pip hover:scale-[1.03] transition-transform duration-300">
+                  <div className="absolute top-[100px] right-2 sm:top-10 sm:right-10 z-30 w-36 sm:w-64 lg:w-96 aspect-[4/3] rounded-xl sm:rounded-[2.5rem] border-2 border-white/10 bg-slate-800 shadow-[0_20px_50px_rgba(0,0,0,0.6)] overflow-hidden group/pip hover:scale-[1.03] transition-transform duration-300">
                     <div ref={localVideoRef} className="h-full w-full" />
                   </div>
                 </div>
 
                 {/* Action Footer (User's style) */}
-                <div className="lg:relative absolute bottom-0 left-0 right-0 z-20 border-t border-slate-100 bg-white/80 lg:bg-white backdrop-blur-md lg:backdrop-blur-none px-4 sm:px-10 py-4 sm:py-8 shrink-0 transition-all">
-                  <div className="flex flex-col lg:flex-row items-center gap-4 sm:gap-8 justify-between">
-                    <div className="flex flex-col gap-2 w-full lg:max-w-xl">
+                <div className="lg:relative z-20 border-t border-slate-100 bg-white/80 lg:bg-white backdrop-blur-md lg:backdrop-blur-none px-4 sm:px-10 py-4 sm:py-8 transition-all">
+                  <div className="flex flex-col lg:flex-row items-center gap-4 sm:gap-8 justify-between flex-wrap">
+                    <div className="flex flex-col gap-2 w-full">
                       <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 px-1">Prescription Suggestion</label>
                       <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
                         {/* Plan Picker */}

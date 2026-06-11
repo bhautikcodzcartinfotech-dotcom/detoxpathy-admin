@@ -12,7 +12,6 @@ import {
   listVideos,
   deleteQuestion,
   createQuestionByVideoId,
-  createQuestionDaily,
   updateQuestion,
 } from "@/Api/AllApi";
 import toast from "react-hot-toast";
@@ -25,7 +24,7 @@ const QuestionPage = () => {
   const [questions, setQuestions] = useState([]);
   const [videos, setVideos] = useState([]);
   const [editing, setEditing] = useState(null);
-  const [questionType, setQuestionType] = useState("video"); // "video" or "daily"
+  const questionType = "video";
   const [selectedVideoId, setSelectedVideoId] = useState("");
   const [selectedLanguage, setSelectedLanguage] = useState("english");
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -49,23 +48,16 @@ const QuestionPage = () => {
 
       const params = {
         page: 1,
-        limit: 100, // Get all questions
+        limit: 100,
       };
 
-      if (questionType === "video") {
-        if (!selectedVideoId) {
-          setQuestions([]);
-          return;
-        }
-        params.type = 1; // video questions
-        params.videoId = selectedVideoId;
-        // Only add language filter for video questions
-        params.language = selectedLanguage;
-      } else {
-        params.type = 2; // daily questions
-        // For daily questions, don't filter by language by default
-        // params.language = selectedLanguage; // Commented out
+      if (!selectedVideoId) {
+        setQuestions([]);
+        return;
       }
+      params.type = 1;
+      params.videoId = selectedVideoId;
+      params.language = selectedLanguage;
 
       const data = await getAllQuestions(params);
       setQuestions(Array.isArray(data?.questions) ? data.questions : []);
@@ -101,19 +93,13 @@ const QuestionPage = () => {
         await updateQuestion(editing._id, formData);
         toast.success("Question updated successfully");
       } else {
-        if (questionType === "video") {
-          // Check if videoId is in formData or selectedVideoId
-          const videoId = formData.videoId || selectedVideoId;
-
-          if (!videoId) {
-            toast.error("Please select a video first");
-            return;
-          }
-          formData.videoId = videoId;
-          await createQuestionByVideoId(formData);
-        } else {
-          await createQuestionDaily(formData);
+        const videoId = formData.videoId || selectedVideoId;
+        if (!videoId) {
+          toast.error("Please select a video first");
+          return;
         }
+        formData.videoId = videoId;
+        await createQuestionByVideoId(formData);
         toast.success("Question created successfully");
       }
       setIsOpen(false);
@@ -193,77 +179,7 @@ const QuestionPage = () => {
           <Button onClick={() => setIsOpen(true)}>Create Question</Button>
         </div>
 
-        {/* Question Type Selection */}
-        <div className="mb-6">
-          <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-2xl p-6 border border-yellow-200 shadow-sm">
-            <h3 className="text-xl font-bold text-gray-800 mb-6 flex items-center gap-3">
-              <div className="w-8 h-8 bg-yellow-400 rounded-full flex items-center justify-center">
-                <svg
-                  className="w-5 h-5 text-white"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-              </div>
-              Question Type
-            </h3>
-            <div className="flex gap-4">
-              <button
-                onClick={() => setQuestionType("video")}
-                className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${
-                  questionType === "video"
-                    ? "bg-gradient-to-r from-yellow-400 to-amber-400 text-white shadow-lg transform scale-105"
-                    : "bg-white text-gray-600 hover:bg-yellow-100 hover:text-yellow-700 border border-yellow-200"
-                }`}
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                  />
-                </svg>
-                Video Questions
-              </button>
-              <button
-                onClick={() => setQuestionType("daily")}
-                className={`px-6 py-3 rounded-xl font-semibold transition-all duration-300 flex items-center gap-2 ${
-                  questionType === "daily"
-                    ? "bg-gradient-to-r from-yellow-400 to-amber-400 text-white shadow-lg transform scale-105"
-                    : "bg-white text-gray-600 hover:bg-yellow-100 hover:text-yellow-700 border border-yellow-200"
-                }`}
-              >
-                <svg
-                  className="w-5 h-5"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                Daily Questions
-              </button>
-            </div>
-          </div>
-        </div>
+
 
         {/* Video Selection (only for video questions) */}
         {questionType === "video" && (

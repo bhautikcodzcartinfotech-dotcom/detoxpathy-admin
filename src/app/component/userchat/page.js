@@ -1055,6 +1055,10 @@ export default function ChatPage() {
                     <div
                       key={user.id}
                       onClick={() => {
+                        if (isUploading) {
+                          // Prevent chat switching during upload without a toast message
+                          return;
+                        }
                         // Only update if different user to prevent unnecessary re-renders
                         if (selectedUser?.id === user.id) return;
 
@@ -1242,8 +1246,9 @@ export default function ChatPage() {
                                   : "justify-start"
                                 }`}
                             >
+                        <div className="group relative max-w-[75%]">
                         <div
-                          className={`group relative max-w-[75%] transition-all duration-300 ${
+                          className={`transition-all duration-300 ${
                             msg.deletedByDoctor
                               ? "bg-gray-50 border border-gray-200 text-gray-400 shadow-sm"
                               : msg.senderId === selectedUser?.customerCareId
@@ -1251,59 +1256,11 @@ export default function ChatPage() {
                                 : "bg-white/80 backdrop-blur-sm text-gray-800 shadow-lg"
                           } overflow-hidden rounded-3xl`}
                         >
-                          {/* Message Action Menu (Inside bubble at top right) — hidden for image (image has its own) */}
-                          {msg.type !== "image" && (
-                          <div className="absolute top-2.5 right-2.5 z-20">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setActiveMessageMenuId(
-                                  activeMessageMenuId === msg.id ? null : msg.id
-                                );
-                              }}
-                              className={`message-menu-btn p-1 rounded-full transition-all duration-200 shadow-sm border border-black/5 ${
-                                msg.senderId === selectedUser?.customerCareId
-                                  ? "bg-black/10 hover:bg-black/20 text-black/70 hover:text-black"
-                                  : "bg-white hover:bg-gray-50 text-gray-500 hover:text-gray-800"
-                              }`}
-                            >
-                              <BsThreeDotsVertical size={13} />
-                            </button>
-                            
-                            {activeMessageMenuId === msg.id && (
-                              <div
-                                className="absolute mt-1 w-32 bg-white rounded-xl shadow-2xl border border-gray-150 z-50 overflow-hidden text-left right-0 top-full"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                {msg.deletedByDoctor ? (
-                                  <button
-                                    onClick={() => {
-                                      handleRestoreMessage(msg.docId || msg.id, msg);
-                                      setActiveMessageMenuId(null);
-                                    }}
-                                    className="w-full text-left px-4 py-3 text-sm text-emerald-600 hover:bg-emerald-50 transition-colors font-medium flex items-center gap-1.5"
-                                  >
-                                    <span>✅</span> Restore
-                                  </button>
-                                ) : (
-                                  <button
-                                    onClick={() => {
-                                      handleDeleteMessage(msg.docId || msg.id, msg);
-                                      setActiveMessageMenuId(null);
-                                    }}
-                                    className="w-full text-left px-4 py-3 text-sm text-rose-600 hover:bg-rose-50 transition-colors font-medium flex items-center gap-1.5"
-                                  >
-                                    <span>🗑️</span> Delete
-                                  </button>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                          )}
+
 
                           {/* Deleted Message Banner */}
                           {msg.deletedByDoctor && (
-                            <div className="px-4 pt-3 pb-1 pr-10 text-[11px] font-semibold text-gray-500 flex items-center gap-1.5 bg-gray-200/50 rounded-t-3xl border-b border-gray-200/30">
+                            <div className="px-4 pt-3 pb-1 text-[11px] font-semibold text-gray-500 flex items-center gap-1.5 bg-gray-200/50 rounded-t-3xl border-b border-gray-200/30">
                               <span>🚫</span>
                               <span>Message deleted for user</span>
                             </div>
@@ -1532,11 +1489,52 @@ export default function ChatPage() {
                           </div>
                           )}
                         </div>
+                          {/* Three-dot menu — outside overflow-hidden bubble */}
+                          {msg.type !== "image" && (
+                            <div className="absolute top-2 right-2 z-20">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveMessageMenuId(activeMessageMenuId === msg.id ? null : msg.id);
+                                }}
+                                className={`message-menu-btn p-1 rounded-full transition-all duration-200 shadow-sm border border-black/5 ${
+                                  msg.senderId === selectedUser?.customerCareId
+                                    ? "bg-black/10 hover:bg-black/20 text-black/70 hover:text-black"
+                                    : "bg-white hover:bg-gray-50 text-gray-500 hover:text-gray-800"
+                                }`}
+                              >
+                                <BsThreeDotsVertical size={13} />
+                              </button>
+                              {activeMessageMenuId === msg.id && (
+                                <div
+                                  className="absolute mt-1 w-32 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 overflow-hidden text-left right-0 top-full"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  {msg.deletedByDoctor ? (
+                                    <button
+                                      onClick={() => { handleRestoreMessage(msg.docId || msg.id, msg); setActiveMessageMenuId(null); }}
+                                      className="w-full text-left px-4 py-3 text-sm text-emerald-600 hover:bg-emerald-50 transition-colors font-medium flex items-center gap-1.5"
+                                    >
+                                      <span>✅</span> Restore
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => { handleDeleteMessage(msg.docId || msg.id, msg); setActiveMessageMenuId(null); }}
+                                      className="w-full text-left px-4 py-3 text-sm text-rose-600 hover:bg-rose-50 transition-colors font-medium flex items-center gap-1.5"
+                                    >
+                                      <span>🗑️</span> Delete
+                                    </button>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          )}
                       </div>
-                          </div>
-                        );
-                      });
-                    })()}
+                            </div>
+                           </div>
+                         );
+                       });
+                     })()}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-gray-400">
@@ -1669,6 +1667,7 @@ export default function ChatPage() {
                   {/* Voice Recording Button */}
                   <button
                     onClick={startVoiceRecording}
+                    disabled={isUploading}
                     className="p-4 rounded-2xl bg-white/80 hover:bg-red-50 text-gray-600 hover:text-red-600 shadow-lg hover:shadow-xl transition-all duration-300"
                   >
                     <IoMdMic size={24} />
@@ -1677,6 +1676,7 @@ export default function ChatPage() {
                   {/* File Upload Button */}
                   <button
                     onClick={() => setShowFileOptions(!showFileOptions)}
+                    disabled={isUploading}
                     className="p-4 rounded-2xl bg-white/80 hover:bg-yellow-50 text-gray-600 hover:text-yellow-600 transition-all duration-300 shadow-lg hover:shadow-xl"
                   >
                     <IoMdAttach size={24} />
@@ -1691,6 +1691,7 @@ export default function ChatPage() {
                       value={newMessage}
                       onChange={handleInputChange}
                       onKeyDown={(e) => e.key === "Enter" && sendMessage()}
+                      disabled={isUploading}
                       className="w-full p-4 pr-12 rounded-2xl bg-white/80 backdrop-blur-sm border border-yellow-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent text-sm shadow-lg transition-all duration-300 placeholder-gray-500"
                     />
 
