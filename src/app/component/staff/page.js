@@ -28,7 +28,12 @@ const StaffPage = () => {
   const [staffList, setStaffList] = useState([]);
   const [editing, setEditing] = useState(null);
   const [branches, setBranches] = useState([]);
-  const [selectedBranchId, setSelectedBranchId] = useState("");
+  const [selectedBranchId, setSelectedBranchId] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('selectedStaffBranchId') || "";
+    }
+    return "";
+  });
 
   const fetchBranches = async () => {
     try {
@@ -69,6 +74,7 @@ const StaffPage = () => {
 
   useEffect(() => {
     if (selectedBranchId) {
+      localStorage.setItem('selectedStaffBranchId', selectedBranchId);
       fetchList(selectedBranchId);
     }
   }, [selectedBranchId]);

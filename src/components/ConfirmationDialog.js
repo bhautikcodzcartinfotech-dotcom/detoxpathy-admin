@@ -81,8 +81,8 @@ const ConfirmationDialog = ({
   const styles = getTypeStyles();
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md bg-white/20 animate-fade-in">
-      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all duration-300 scale-100 border border-white/20">
+    <div className="fixed inset-0 z-50 flex items-center justify-center backdrop-blur-md bg-white/20 animate-in fade-in duration-150">
+      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl max-w-md w-full mx-4 transform transition-all duration-150 scale-100 border border-white/20">
         <div className="p-8">
           {/* Icon */}
           <div

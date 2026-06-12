@@ -425,7 +425,7 @@ const DashboardPage = () => {
 
       {/* Top Stats Grid for SUBADMIN: single responsive grid */}
       {role === "subadmin" && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {allSubAdminStats.map((stat, i) => (
             <div 
               key={i} 
@@ -606,13 +606,6 @@ const DashboardPage = () => {
                     className="w-full h-14"
                   >
                       <PlusCircle className="w-4 h-4" /> Add Doctor
-                   </Button>
-                   <Button 
-                    onClick={() => router.push('/component/users')}
-                    variant="secondary"
-                    className="w-full h-14"
-                  >
-                      <UserPlus className="w-4 h-4 text-teal-600" /> Add User
                    </Button>
                    <Button 
                     onClick={() => router.push('/component/video')}

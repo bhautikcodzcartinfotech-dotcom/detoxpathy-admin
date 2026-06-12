@@ -2,7 +2,7 @@ import axios from "axios";
 
 // export const API_BASE = "http://192.168.1.14:3002/api/v1";
 // export const API_BASE = "http://69.62.73.194:4009/api/v1";
- export const API_BASE = "https://admin.detoxpathy.com/api/v1";
+export const API_BASE = "https://admin.detoxpathy.com/api/v1";
 // export const API_BASE = "https://backend.fatendfit.com/api/v1";
 // Host base used to resolve file URLs coming from multer (e.g., uploads/..)
 export const API_HOST = API_BASE.replace(/\/?api\/?v1\/?$/, "").replace(
@@ -1533,6 +1533,8 @@ export const getAllOrders = async (params = {}) => {
   if (params.status) queryParams.append("status", params.status);
   if (params.type) queryParams.append("type", params.type);
   if (params.userId) queryParams.append("userId", params.userId);
+  if (params.branchId) queryParams.append("branchId", params.branchId);
+  if (params.month) queryParams.append("month", params.month);
 
   const res = await axios.get(`${API_BASE}/admin/order/userOrders?${queryParams.toString()}`, {
     headers: getAuthHeaders(),
@@ -2099,6 +2101,13 @@ export const createAccount = async (payload) => {
     headers: getAuthHeaders(),
   });
   return res.data.data;
+};
+
+export const deleteAccount = async (id) => {
+  const res = await axios.delete(`${API_BASE}/admin/accounting/delete-account/${id}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
 };
 
 /* -------------------- COMPLAINT APIs -------------------- */

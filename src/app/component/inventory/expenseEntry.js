@@ -2,9 +2,11 @@
 import React, { useState, useEffect } from "react";
 import { FiPlus, FiTrash2, FiSave, FiFilter, FiCalendar, FiBriefcase, FiDollarSign } from "react-icons/fi";
 import axios from "axios";
-import { API_BASE, getAuthHeaders, getAllBranches, createExpense, getAllExpenses, deleteExpense, createAccount, getSetting } from "@/Api/AllApi";
+import { API_BASE, getAuthHeaders, getAllBranches, createExpense, getAllExpenses, deleteExpense, createAccount, getSetting, deleteAccount } from "@/Api/AllApi";
 import { toast } from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import Dropdown from "@/utils/dropdown";
+import ConfirmationDialog from "@/components/ConfirmationDialog";
 
 const ExpenseEntry = () => {
   const { role, branches: allowedBranchIds } = useAuth();
@@ -18,6 +20,11 @@ const ExpenseEntry = () => {
   // Custom Delete Confirm State
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [expenseToDelete, setExpenseToDelete] = useState(null);
+  
+  // Account Delete Confirm State
+  const [accountDeleteConfirmOpen, setAccountDeleteConfirmOpen] = useState(false);
+  const [accountToDelete, setAccountToDelete] = useState(null);
+  const [accountDeleteType, setAccountDeleteType] = useState("Account");
 
   // Form State
   const [form, setForm] = useState({
@@ -46,14 +53,12 @@ const ExpenseEntry = () => {
     try {
       setLoading(true);
       
-      // Fetch Expenses with filters applied
       const params = {};
       if (filters.branchId) params.branchId = filters.branchId;
       if (filters.expenseAccountId) params.expenseAccountId = filters.expenseAccountId;
       if (filters.startDate) params.startDate = filters.startDate;
       if (filters.endDate) params.endDate = filters.endDate;
 
-      // 1. Fetch Expenses (Core Resource)
       try {
         const expData = await getAllExpenses(params);
         setExpenses(expData || []);
@@ -62,7 +67,6 @@ const ExpenseEntry = () => {
         toast.error("Failed to load expenses list");
       }
 
-      // 2. Fetch Branches (Side Resource)
       try {
         const branchData = await getAllBranches();
         const loadedBranches = branchData || [];
@@ -79,7 +83,6 @@ const ExpenseEntry = () => {
         console.error("Failed to load branches list:", err);
       }
 
-      // 3. Fetch Settings Currency (Side Resource)
       try {
         const settingsRes = await getSetting();
         let settingsData;
@@ -97,7 +100,6 @@ const ExpenseEntry = () => {
         console.error("Failed to load application currency settings:", err);
       }
 
-      // 4. Fetch Accounts directly from trial-balance (Core Resource)
       try {
         const accRes = await axios.get(`${API_BASE}/admin/accounting/trial-balance`, { headers: getAuthHeaders() });
         setAccounts(accRes.data.data || []);
@@ -117,7 +119,6 @@ const ExpenseEntry = () => {
     fetchData();
   }, [filters.branchId, filters.expenseAccountId, filters.startDate, filters.endDate]);
 
-  // Accounts filtering
   const expenseAccounts = accounts.filter(acc => acc.type === "Expense");
   const assetAccounts = accounts.filter(
     (acc) =>
@@ -139,7 +140,6 @@ const ExpenseEntry = () => {
       toast.success("Expense successfully saved and ledger posted!");
       
       // Reset form
-      const firstAllowed = branches.find(b => allowedBranchIds.includes(String(b._id)));
       setForm({
         expenseAccountId: "",
         paidFromAccountId: "",
@@ -180,12 +180,10 @@ const ExpenseEntry = () => {
       setModalOpen(false);
       setNewAcc({ name: "", type: "Expense" });
       
-      // Refetch accounts
       const accRes = await axios.get(`${API_BASE}/admin/accounting/trial-balance`, { headers: getAuthHeaders() });
       const updatedAccounts = accRes.data.data || [];
       setAccounts(updatedAccounts);
 
-      // Automatically select the newly created account
       const newlyCreated = updatedAccounts.find(a => a.name.toLowerCase() === newAcc.name.toLowerCase() && a.type === newAcc.type);
       if (newlyCreated) {
         if (newAcc.type === "Expense") {
@@ -199,13 +197,37 @@ const ExpenseEntry = () => {
     }
   };
 
-  // Calculate stats for top dashboard cards
+  const handleDeleteAccount = (id, type = "Account") => {
+    setAccountToDelete(id);
+    setAccountDeleteType(type);
+    setAccountDeleteConfirmOpen(true);
+  };
+
+  const confirmDeleteAccount = async () => {
+    if (!accountToDelete) return;
+    try {
+      await deleteAccount(accountToDelete);
+      toast.success("Account deleted successfully!");
+      
+      const accRes = await axios.get(`${API_BASE}/admin/accounting/trial-balance`, { headers: getAuthHeaders() });
+      setAccounts(accRes.data.data || []);
+      
+      if (form.expenseAccountId === accountToDelete) setForm(f => ({ ...f, expenseAccountId: "" }));
+      if (form.paidFromAccountId === accountToDelete) setForm(f => ({ ...f, paidFromAccountId: "" }));
+      
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete account");
+    } finally {
+      setAccountDeleteConfirmOpen(false);
+      setAccountToDelete(null);
+    }
+  };
+
   const totalAmount = expenses.reduce((sum, exp) => sum + (exp.amount || 0), 0);
   const totalCount = expenses.length;
 
   return (
     <div className="space-y-8 p-1">
-      {/* Dashboard Top Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="p-6 bg-gradient-to-br from-[#134D41] to-[#1a6657] rounded-2xl shadow-lg text-white flex items-center justify-between">
           <div>
@@ -239,7 +261,6 @@ const ExpenseEntry = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Form Column */}
         <div className="p-6 bg-white rounded-2xl shadow-sm border border-gray-100 lg:col-span-1 h-fit">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-xl font-bold text-gray-800">Add New Expense</h2>
@@ -254,28 +275,24 @@ const ExpenseEntry = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block mb-1 font-semibold text-sm text-gray-600">Expense Category *</label>
-              <select
+              <Dropdown
+                options={expenseAccounts.map(a => ({ label: a.name, value: a._id }))}
                 value={form.expenseAccountId}
-                onChange={e => setForm(f => ({ ...f, expenseAccountId: e.target.value }))}
-                className="w-full border border-gray-200 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 outline-none bg-white text-sm"
-                required
-              >
-                <option value="">Select Expense Category</option>
-                {expenseAccounts.map(a => <option key={a._id} value={a._id}>{a.name}</option>)}
-              </select>
+                onChange={val => setForm(f => ({ ...f, expenseAccountId: val }))}
+                onDelete={(id) => handleDeleteAccount(id, "Category")}
+                placeholder="Select Expense Category"
+              />
             </div>
 
             <div>
               <label className="block mb-1 font-semibold text-sm text-gray-600">Paid From Account *</label>
-              <select
+              <Dropdown
+                options={assetAccounts.map(a => ({ label: a.name, value: a._id }))}
                 value={form.paidFromAccountId}
-                onChange={e => setForm(f => ({ ...f, paidFromAccountId: e.target.value }))}
-                className="w-full border border-gray-200 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 outline-none bg-white text-sm"
-                required
-              >
-                <option value="">Select Account (Cash/Bank)</option>
-                {assetAccounts.map(a => <option key={a._id} value={a._id}>{a.name}</option>)}
-              </select>
+                onChange={val => setForm(f => ({ ...f, paidFromAccountId: val }))}
+                onDelete={(id) => handleDeleteAccount(id, "Account")}
+                placeholder="Select Account (Cash/Bank)"
+              />
             </div>
 
             <div>
@@ -352,7 +369,6 @@ const ExpenseEntry = () => {
           </form>
         </div>
 
-        {/* List Column */}
         <div className="p-6 bg-white rounded-2xl shadow-sm border border-gray-100 lg:col-span-2 space-y-6">
           <div className="flex flex-wrap justify-between items-center gap-4">
             <h2 className="text-xl font-bold text-gray-800">Recent Expense Entries</h2>
@@ -362,7 +378,6 @@ const ExpenseEntry = () => {
             </div>
           </div>
 
-          {/* Filters Panel */}
           <div className="p-4 bg-gray-50 rounded-xl grid grid-cols-1 sm:grid-cols-4 gap-3 text-sm">
             <div>
               <label className="block mb-1 text-[11px] font-bold text-gray-500 uppercase">Branch</label>
@@ -411,7 +426,6 @@ const ExpenseEntry = () => {
             </div>
           </div>
 
-          {/* Table */}
           <div className="overflow-x-auto border rounded-2xl">
             <table className="w-full text-left text-sm">
               <thead className="bg-[#134D41]/5 text-[#134D41]">
@@ -478,7 +492,6 @@ const ExpenseEntry = () => {
         </div>
       </div>
 
-      {/* Inline Account Creation Modal */}
       {modalOpen && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity duration-300">
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-gray-100 transform scale-100 transition-all duration-300 animate-in fade-in zoom-in-95">
@@ -531,46 +544,39 @@ const ExpenseEntry = () => {
         </div>
       )}
 
-      {/* Custom Delete Confirmation Modal */}
-      {deleteConfirmOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity duration-300">
-          <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-gray-100 transform scale-100 transition-all duration-300 animate-in fade-in zoom-in-95">
-            <div className="w-12 h-12 rounded-2xl bg-red-50 text-red-500 flex items-center justify-center mb-4">
-              <FiTrash2 size={24} />
-            </div>
-            <h3 className="text-lg font-black text-gray-800 mb-2">Delete Expense Entry?</h3>
-            <p className="text-xs text-gray-500 mb-6 leading-relaxed">
-              Are you sure you want to delete this expense record? This action will permanently reverse all associated general ledger transactions.
-            </p>
+      <ConfirmationDialog
+        isOpen={accountDeleteConfirmOpen}
+        onClose={() => {
+          setAccountDeleteConfirmOpen(false);
+          setAccountToDelete(null);
+        }}
+        onConfirm={confirmDeleteAccount}
+        title={`Delete ${accountDeleteType}?`}
+        message={`Are you sure you want to delete this ${accountDeleteType.toLowerCase()}? This action cannot be undone.`}
+        confirmText="Confirm Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
 
-            <div className="flex justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setDeleteConfirmOpen(false);
-                  setExpenseToDelete(null);
-                }}
-                className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 rounded-xl text-gray-600 text-xs font-bold transition"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={async () => {
-                  if (expenseToDelete) {
-                    await handleDelete(expenseToDelete);
-                  }
-                  setDeleteConfirmOpen(false);
-                  setExpenseToDelete(null);
-                }}
-                className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition shadow-md shadow-red-600/10"
-              >
-                Confirm Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ConfirmationDialog
+        isOpen={deleteConfirmOpen}
+        onClose={() => {
+          setDeleteConfirmOpen(false);
+          setExpenseToDelete(null);
+        }}
+        onConfirm={async () => {
+          if (expenseToDelete) {
+            await handleDelete(expenseToDelete);
+          }
+          setDeleteConfirmOpen(false);
+          setExpenseToDelete(null);
+        }}
+        title="Delete Expense Entry?"
+        message="Are you sure you want to delete this expense record? This action will permanently reverse all associated general ledger transactions."
+        confirmText="Confirm Delete"
+        cancelText="Cancel"
+        type="danger"
+      />
     </div>
   );
 };

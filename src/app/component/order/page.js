@@ -50,7 +50,9 @@ const OrderPage = () => {
     limit: 10,
     search: "",
     type: "",
-    status: ""
+    status: "",
+    branchId: "",
+    month: ""
   });
 
   const [pagination, setPagination] = useState({
@@ -193,6 +195,183 @@ const OrderPage = () => {
       setSelectedIds([]);
     } else {
       setSelectedIds(orders.map(o => o._id));
+    }
+  };
+
+  const handleDownloadMonthlyReport = async () => {
+    if (!filter.month) {
+      return toast.error("Please select a month first");
+    }
+    
+    try {
+      setLoading(true);
+      // Fetch up to 2000 orders for the selected month to ensure we get them all
+      const data = await getAllOrders({ ...filter, start: 1, limit: 2000 });
+      const monthlyOrders = data.orders || [];
+      
+      if (monthlyOrders.length === 0) {
+        toast.error("No orders found for the selected filters");
+        setLoading(false);
+        return;
+      }
+      
+      const printWindow = window.open("", "_blank");
+      if (!printWindow) {
+        toast.error("Popup blocker prevented opening print window");
+        setLoading(false);
+        return;
+      }
+
+      const STATUS_LABELS = {
+        1: "Pending",
+        2: "Packed",
+        3: "Processing",
+        4: "In Transit",
+        5: "Delivered",
+        6: "Cancelled",
+      };
+
+      let rowsHtml = "";
+      let totalSum = 0;
+
+      monthlyOrders.forEach((order) => {
+        const statusLabel = STATUS_LABELS[order.orderStatus] || "Pending";
+        const statusClass = {
+          1: "badge-pending",
+          2: "badge-packed",
+          3: "badge-processing",
+          4: "badge-transit",
+          5: "badge-delivered",
+          6: "badge-cancelled",
+        }[order.orderStatus] || "badge-pending";
+
+        const orderDate = new Date(order.createdAt).toLocaleDateString("en-GB");
+        const orderId = `ORD-${order._id.slice(-6).toUpperCase()}`;
+
+        const customerName = (order.shippingAddress?.name || `${order.user?.name || ""} ${order.user?.surname || ""}`).trim().toUpperCase();
+        const mobile = order.shippingAddress?.mobile || order.user?.mobileNumber || "N/A";
+        const addressParts = [
+          order.shippingAddress?.addressLine1,
+          order.shippingAddress?.addressLine2,
+          order.shippingAddress?.city,
+          order.shippingAddress?.state ? `${order.shippingAddress.state} ${order.shippingAddress.postalCode || ""}` : order.shippingAddress?.postalCode,
+          order.shippingAddress?.country || "India"
+        ].filter(p => p && p.trim().length > 0);
+        const billTo = `${customerName} | Mob: ${mobile}<br/><span class="text-muted">${addressParts.join(", ")}</span>`;
+
+        let itemsText = [];
+        if (order.plans && order.plans.length > 0) {
+          order.plans.forEach(p => itemsText.push(`${p.quantity || 1}x ${p.name || 'Membership Plan'}`));
+        } else if (order.plan) {
+          itemsText.push(`1x ${order.plan.name || 'Membership Plan'}`);
+        }
+        if (order.products && order.products.length > 0) {
+          order.products.forEach(p => itemsText.push(`${p.quantity}x ${p.name || 'Product'}`));
+        }
+        const itemsString = itemsText.join("<br/>");
+        const amountVal = order.totalAmount || 0;
+        totalSum += amountVal;
+
+        rowsHtml += `
+          <tr>
+            <td><strong>${orderId}</strong><br/><span class="text-muted">${orderDate}</span></td>
+            <td>${billTo}</td>
+            <td>${itemsString}</td>
+            <td class="text-center"><span class="badge ${statusClass}">${statusLabel}</span></td>
+            <td class="text-right"><strong>₹${amountVal.toLocaleString("en-IN")}</strong></td>
+          </tr>
+        `;
+      });
+
+      const [year, monthNum] = filter.month.split('-');
+      const monthNames = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+      const displayMonth = `${monthNames[parseInt(monthNum) - 1]} ${year}`;
+
+      const htmlContent = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <title>Monthly Order Report</title>
+          <meta charset="utf-8">
+          <style>
+            body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; color: #1e293b; font-size: 12px; line-height: 1.5; margin: 0; padding: 40px; background-color: #ffffff; }
+            .container { max-width: 1000px; margin: 0 auto; }
+            .header { margin-bottom: 25px; }
+            .header h1 { color: #0d9488; font-size: 26px; margin: 0 0 5px 0; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; }
+            .header .subtitle { font-size: 9px; font-weight: 700; text-transform: uppercase; color: #1e293b; margin-bottom: 20px; letter-spacing: 1px; }
+            .header h2 { font-size: 16px; font-weight: 800; margin: 0 0 8px 0; color: #1e293b; letter-spacing: 0.5px; text-transform: uppercase; }
+            .header .metadata { font-size: 11px; color: #64748b; }
+            hr { border: 0; border-top: 1px solid #cbd5e1; margin: 15px 0; }
+            table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+            th { background-color: #f8fafc; color: #1e293b; font-weight: 700; text-align: left; padding: 10px 12px; font-size: 10px; border-top: 1px solid #cbd5e1; border-bottom: 1px solid #cbd5e1; text-transform: uppercase; }
+            td { padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 11.5px; vertical-align: top; }
+            .text-center { text-align: center; }
+            .text-right { text-align: right; }
+            .text-muted { color: #64748b; font-size: 10.5px; display: inline-block; margin-top: 2px; }
+            .badge { display: inline-block; padding: 3px 8px; font-size: 9px; font-weight: 700; border-radius: 4px; text-transform: uppercase; }
+            .badge-pending { background-color: #f1f5f9; color: #475569; }
+            .badge-packed { background-color: #dbeafe; color: #1e40af; }
+            .badge-processing { background-color: #fef9c3; color: #854d0e; }
+            .badge-transit { background-color: #ffedd5; color: #9a3412; }
+            .badge-delivered { background-color: #dcfce7; color: #166534; }
+            .badge-cancelled { background-color: #fee2e2; color: #991b1b; }
+            .summary-row { font-weight: 700; background-color: #f8fafc; }
+            .summary-row td { border-top: 2px solid #cbd5e1; border-bottom: 2px solid #cbd5e1; font-size: 12px; vertical-align: middle; }
+            .footer { text-align: center; font-size: 10px; color: #64748b; margin-top: 40px; }
+            @media print { body { padding: 20px; } }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>DETOXPATHY</h1>
+              <div class="subtitle">HEALTH & WELLNESS SOLUTIONS</div>
+              <h2>MONTHLY ORDER REPORT: ${displayMonth}</h2>
+              <div class="metadata">
+                <strong>Total Orders:</strong> ${monthlyOrders.length} | <strong>Generated On:</strong> ${new Date().toLocaleDateString("en-GB")}
+              </div>
+            </div>
+            <hr />
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 120px;">ORDER ID</th>
+                  <th>CUSTOMER & SHIPPING</th>
+                  <th>ITEMS</th>
+                  <th class="text-center" style="width: 100px;">STATUS</th>
+                  <th class="text-right" style="width: 120px;">TOTAL</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${rowsHtml}
+                <tr class="summary-row">
+                  <td colspan="3">TOTAL REVENUE SUMMARY</td>
+                  <td class="text-center">${monthlyOrders.length} Orders</td>
+                  <td class="text-right">₹${totalSum.toLocaleString("en-IN")}</td>
+                </tr>
+              </tbody>
+            </table>
+            <hr />
+            <div class="footer">
+              Thank you | www.detoxpathy.com | Computer generated monthly report. No signature required.
+            </div>
+          </div>
+          <script>
+            window.onload = function() {
+              window.print();
+              setTimeout(function() { window.close(); }, 500);
+            };
+          </script>
+        </body>
+        </html>
+      `;
+
+      printWindow.document.write(htmlContent);
+      printWindow.document.close();
+    } catch (err) {
+      toast.error("Failed to generate monthly report");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -541,20 +720,20 @@ const OrderPage = () => {
 
         {/* Filters & Bulk Actions */}
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-lg shadow-gray-200/50 space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-end">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
             {/* Search Bar */}
-            <div className="md:col-span-6 space-y-2">
+            <div className="md:col-span-3 space-y-2">
               <label className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase ml-1">Search Orders</label>
               <div className="relative group">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <svg className="w-4 h-4 text-gray-400 group-focus-within:text-[#134D41] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </div>
                 <input
                   type="text"
-                  placeholder="Search by ORD-ID, user name, mobile, or product..."
-                  className="w-full h-12 pl-11 pr-4 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] bg-gray-50/50 transition-all placeholder:text-gray-400 text-sm font-medium"
+                  placeholder="Search ORD-ID, Name..."
+                  className="w-full h-11 pl-9 pr-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] bg-gray-50/50 transition-all placeholder:text-gray-400 text-sm font-medium"
                   value={filter.search}
                   onChange={(e) => handleFilterChange("search", e.target.value)}
                 />
@@ -562,7 +741,7 @@ const OrderPage = () => {
             </div>
 
             {/* Type Filter */}
-            <div className="md:col-span-3">
+            <div className="md:col-span-2">
               <Dropdown
                 label="Order Type"
                 options={[
@@ -576,9 +755,9 @@ const OrderPage = () => {
             </div>
 
             {/* Status Filter */}
-            <div className="md:col-span-3">
+            <div className="md:col-span-2">
               <Dropdown
-                label="Order Status"
+                label="Status"
                 options={[
                   { label: "All Status", value: "" },
                   { label: "Pending", value: "1" },
@@ -591,6 +770,46 @@ const OrderPage = () => {
                 value={filter.status}
                 onChange={(val) => handleFilterChange("status", val)}
               />
+            </div>
+            
+            {/* Branch Filter */}
+            {role !== 'subadmin' ? (
+              <div className="md:col-span-2">
+                <Dropdown
+                  label="Branch"
+                  options={[
+                    { label: "All Branches", value: "" },
+                    ...branches.map(b => ({ label: b.name, value: b._id }))
+                  ]}
+                  value={filter.branchId}
+                  onChange={(val) => handleFilterChange("branchId", val)}
+                />
+              </div>
+            ) : (
+              <div className="md:col-span-2"></div>
+            )}
+
+            {/* Month Filter */}
+            <div className="md:col-span-2 space-y-2">
+              <label className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase ml-1">Month</label>
+              <input
+                type="month"
+                className="w-full h-11 px-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] bg-gray-50/50 transition-all text-sm font-medium"
+                value={filter.month}
+                onChange={(e) => handleFilterChange("month", e.target.value)}
+              />
+            </div>
+
+            {/* Download Monthly PDF Button */}
+            <div className="md:col-span-1 flex items-end">
+              <Button
+                onClick={handleDownloadMonthlyReport}
+                disabled={!filter.month || loading}
+                variant="primary"
+                className="h-11 w-full text-xs"
+              >
+                Invoice
+              </Button>
             </div>
           </div>
 

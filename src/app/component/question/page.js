@@ -215,13 +215,13 @@ const QuestionPage = () => {
                   />
                 </div>
                 <div>
-                  <Dropdown
+                  {/* <Dropdown
                     label="Display Language"
                     labelClassName="text-xl text-slate-800 mb-2"
                     options={languageOptions}
                     value={selectedLanguage}
                     onChange={setSelectedLanguage}
-                  />
+                  /> */}
                 </div>
               </div>
             </div>

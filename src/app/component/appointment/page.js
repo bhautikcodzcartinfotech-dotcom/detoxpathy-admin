@@ -150,6 +150,10 @@ const AppointmentPage = () => {
   const [showConsultationForm, setShowConsultationForm] = useState(false);
   const [transferRequests, setTransferRequests] = useState([]);
   const [transferActionLoadingId, setTransferActionLoadingId] = useState(null);
+  const [activeOfflineAppointment, setActiveOfflineAppointment] = useState(null);
+  const [offlineLoadingId, setOfflineLoadingId] = useState(null);
+  const [offlineUserOverview, setOfflineUserOverview] = useState(null);
+  const [offlineVideoAnswers, setOfflineVideoAnswers] = useState([]);
 
   // Recording state
   const [currentRecording, setCurrentRecording] = useState(null);
@@ -1042,6 +1046,9 @@ const AppointmentPage = () => {
       }
 
       toast.success("Video call connected");
+      if (typeof window !== "undefined") {
+        window.history.pushState({ modal: "online" }, "");
+      }
     } catch (error) {
       console.error('[AGORA]  FULL CALL ERROR:', error);
       setCallError(error?.response?.data?.message || error.message);
@@ -1084,6 +1091,9 @@ const AppointmentPage = () => {
       setCallError("");
       toast.success("Video call ended");
       fetchAppointments(selectedBranchId, filterDate, filterStatus, filterType);
+      if (typeof window !== "undefined" && window.history.state?.modal === "online") {
+        window.history.back();
+      }
     } catch (error) {
       console.error(error);
       toast.error(
@@ -1380,6 +1390,36 @@ const AppointmentPage = () => {
     }
   };
 
+  const handleStartOfflineAppointment = async (appointment) => {
+    try {
+      setOfflineLoadingId(appointment._id);
+      const [overview, videoAns] = await Promise.all([
+        getUserOverview(appointment.userId?._id),
+        getUserVideoAnswers(appointment.userId?._id).catch(() => [])
+      ]);
+      setOfflineUserOverview(overview);
+      setOfflineVideoAnswers(videoAns || []);
+      setSelectedProgressDay(overview?.user?.planCurrentDay || 1);
+      setActiveOfflineAppointment(appointment);
+      if (typeof window !== "undefined") {
+        window.history.pushState({ modal: "offline" }, "");
+      }
+    } catch (err) {
+      toast.error("Failed to load patient profile");
+      console.error(err);
+    } finally {
+      setOfflineLoadingId(null);
+    }
+  };
+
+  const closeOfflineModal = () => {
+    setActiveOfflineAppointment(null);
+    setOfflineUserOverview(null);
+    if (typeof window !== "undefined" && window.history.state?.modal === "offline") {
+      window.history.back();
+    }
+  };
+
   useEffect(() => {
     if (selectedBranchId) {
       fetchAppointments(selectedBranchId, filterDate, filterStatus, filterType, weekRange, viewMode);
@@ -1393,6 +1433,23 @@ const AppointmentPage = () => {
       cleanupAgoraSession();
     };
   }, []);
+
+  useEffect(() => {
+    const handlePopState = (event) => {
+      if (activeOfflineAppointment) {
+        setActiveOfflineAppointment(null);
+        setOfflineUserOverview(null);
+      }
+      if (isCallModalOpen && activeCallAppointment) {
+        handleCutCall(activeCallAppointment);
+      }
+    };
+
+    window.addEventListener("popstate", handlePopState);
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [activeOfflineAppointment, isCallModalOpen, activeCallAppointment]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -1833,6 +1890,22 @@ const AppointmentPage = () => {
                         </td>
                         <td className="px-6 py-6">
                           <div className="flex items-center justify-center gap-2">
+                            {/* Offline: Start Appointment button */}
+                            {!isOnline && timeState.isLiveWindow && (
+                              <button
+                                onClick={() => handleStartOfflineAppointment(item)}
+                                disabled={offlineLoadingId === item._id}
+                                className="h-9 px-4 bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs font-black shadow-lg shadow-violet-100 transition-all disabled:opacity-50 flex items-center gap-2"
+                              >
+                                {offlineLoadingId === item._id ? (
+                                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <MdCalendarToday size={14} />
+                                )}
+                                Start
+                              </button>
+                            )}
+                            {/* Online: Join button */}
                             {isOnline && timeState.isLiveWindow && item.call?.status !== "ended" && (
                               <button
                                 onClick={() => handleReceiveCall(item)}
@@ -1924,6 +1997,22 @@ const AppointmentPage = () => {
                     </div>
 
                     <div className="grid grid-cols-2 gap-2">
+                      {/* Offline: Start Appointment button */}
+                      {!isOnline && timeState.isLiveWindow && (
+                        <button
+                          onClick={() => handleStartOfflineAppointment(item)}
+                          disabled={offlineLoadingId === item._id}
+                          className="h-12 bg-violet-600 text-white rounded-xl text-xs font-black shadow-lg shadow-violet-100 flex items-center justify-center gap-2 col-span-2 mb-1"
+                        >
+                          {offlineLoadingId === item._id ? (
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <MdCalendarToday size={18} />
+                          )}
+                          Start Appointment
+                        </button>
+                      )}
+                      {/* Online: Join button */}
                       {isOnline && timeState.isLiveWindow && item.call?.status !== "ended" && (
                         <button
                           onClick={() => handleReceiveCall(item)}
@@ -1955,6 +2044,336 @@ const AppointmentPage = () => {
             <p className="text-gray-500 max-w-sm mx-auto font-medium">There are no scheduled consultations matching your current filters.</p>
           </div>
         )}
+
+        {/* Offline Appointment Modal: Profile + Consultation Form */}
+        {activeOfflineAppointment && (
+          <div className="fixed inset-0 z-50 flex bg-slate-950/30 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 30 }}
+              className="relative w-full h-full flex overflow-hidden bg-white shadow-2xl"
+            >
+              {/* Left Pane: Patient Profile - identical to online call */}
+              <div className="hidden lg:flex flex-col w-[45%] border-r border-slate-100 bg-white lg:bg-slate-50/30 overflow-hidden h-full">
+                {offlineUserOverview ? (
+                  <div className="flex-1 overflow-y-auto custom-scrollbar p-4 sm:p-8 space-y-6">
+                    {/* Header */}
+                    <div className="flex items-center justify-between sticky top-0 bg-white/95 backdrop-blur-md z-20 py-4 px-2 -mx-2 border-b border-slate-100 rounded-t-3xl">
+                      <div className="flex flex-col">
+                        <h4 className="text-2xl font-black text-slate-900 tracking-tight">User Profile</h4>
+                      </div>
+                      <span className="px-3 py-1.5 bg-violet-100 text-violet-700 rounded-full text-[10px] font-black uppercase tracking-wide">In-Person</span>
+                    </div>
+
+                    {/* Section 1: Top Profile Header Card */}
+                    <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+                      <div className="flex items-center justify-between mb-6">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+                          <div className="w-16 h-16 rounded-full overflow-hidden bg-teal-500 text-white flex items-center justify-center font-bold text-2xl shrink-0 border-4 border-white shadow-lg">
+                            {offlineUserOverview?.user?.image ? (
+                              <img src={`${API_HOST}/${offlineUserOverview.user.image}`} className="w-full h-full object-cover" alt="profile" />
+                            ) : (offlineUserOverview?.user?.name?.[0] || "U")}
+                          </div>
+                          <div className="flex flex-col">
+                            <h5 className="text-xl font-black text-slate-900 leading-none mb-1">
+                              {offlineUserOverview?.user?.name} {offlineUserOverview?.user?.surname}
+                            </h5>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                              USR-{offlineUserOverview?.user?._id?.slice(-6).toUpperCase()} • {offlineUserOverview?.user?.mobileNumber || "No Mobile"} • {offlineUserOverview?.user?.email || "No Email"}
+                            </p>
+                          </div>
+                        </div>
+                        {offlineUserOverview?.user?.planHoldDate && (
+                          <div className="bg-amber-50 border border-amber-100 px-3 py-1 rounded-full">
+                            <span className="text-[10px] font-black text-amber-600 uppercase">Hold — Day {offlineUserOverview?.user?.planCurrentDay || 1}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-6 gap-x-4 border-t border-slate-50 pt-6">
+                        <div>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Branch</p>
+                          <p className="text-xs font-bold text-slate-700">{offlineUserOverview?.user?.branch?.name || "Global"}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Plan Configuration</p>
+                          <p className="text-xs font-bold text-slate-700">{offlineUserOverview?.user?.plan?.name || "No Active Plan"} ({currency}{offlineUserOverview?.user?.plan?.price || 0})</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Gender & DOB</p>
+                          <p className="text-xs font-bold text-slate-700">{offlineUserOverview?.user?.gender || "-"} • {offlineUserOverview?.user?.dob || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Location</p>
+                          <p className="text-xs font-bold text-slate-700 truncate" title={`${offlineUserOverview?.user?.city}, ${offlineUserOverview?.user?.state}, ${offlineUserOverview?.user?.country}`}>
+                            {offlineUserOverview?.user?.city || "-"}, {offlineUserOverview?.user?.state || "-"}, {offlineUserOverview?.user?.country || "India"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Physical Stats</p>
+                          <p className="text-xs font-bold text-slate-700">{offlineUserOverview?.user?.height || "-"} cm • {offlineUserOverview?.user?.weight || "-"} kg</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Language & Referrer</p>
+                          <p className="text-xs font-bold text-slate-700">{offlineUserOverview?.user?.language || "en"} • {offlineUserOverview?.user?.appReferer || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Engagements</p>
+                          <p className="text-xs font-bold text-slate-700">Trial: {offlineUserOverview?.user?.bookTrial ? "Yes" : "No"} | Meet Dr: {offlineUserOverview?.user?.meetDoctor} | Order: {offlineUserOverview?.user?.order}</p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Medical Condition</p>
+                          <p className="text-xs font-bold text-slate-700 truncate" title={Array.isArray(offlineUserOverview?.user?.medicalDescription) ? offlineUserOverview.user.medicalDescription.join(", ") : offlineUserOverview?.user?.medicalDescription}>
+                            {Array.isArray(offlineUserOverview?.user?.medicalDescription) ? offlineUserOverview.user.medicalDescription.join(", ") : offlineUserOverview?.user?.medicalDescription || "-"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Body Measurements</p>
+                          <div className="text-[9px] font-bold text-slate-500 leading-tight">
+                            Waist: {offlineUserOverview?.user?.waist || 0} • Hip: {offlineUserOverview?.user?.hip || 0} • Chest: {offlineUserOverview?.user?.chest || 0} • Thigh: {offlineUserOverview?.user?.thigh || 0} • Biceps: {offlineUserOverview?.user?.biceps || 0}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Section 2: Program Progress */}
+                    <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+                      <h6 className="text-[10px] font-black uppercase tracking-widest text-teal-600 mb-4 items-center flex gap-2"><Target size={14} /> Program Progress</h6>
+                      <div className="flex flex-wrap gap-2 mb-6">
+                        {[...Array(offlineUserOverview?.user?.plan?.days || 15)].map((_, i) => {
+                          const dayNum = i + 1;
+                          const videoDayData = offlineUserOverview?.progress?.find((p) => p.day === dayNum);
+                          const reportData = offlineUserOverview?.dailyReports?.find((r) => r.day === dayNum);
+                          const checklistData = offlineUserOverview?.dailyChecklist?.find((c) => c.day === dayNum);
+                          const hasData = videoDayData || reportData || checklistData;
+                          return (
+                            <button
+                              key={i}
+                              onClick={() => setSelectedProgressDay(dayNum)}
+                              className={`w-10 h-10 rounded-xl flex flex-col items-center justify-center transition-all hover:scale-110 active:scale-95 ${dayNum < (offlineUserOverview?.user?.planCurrentDay || 1) ? 'bg-teal-900 text-white shadow-md' :
+                                dayNum === (offlineUserOverview?.user?.planCurrentDay || 1) ? 'bg-teal-500 text-white ring-4 ring-teal-100 shadow-lg' :
+                                  selectedProgressDay === dayNum ? 'bg-white border-2 border-teal-500 text-teal-600' :
+                                    'bg-slate-50 text-slate-400 hover:bg-slate-100'
+                              } ${hasData ? 'ring-1 ring-teal-200' : ''}`}
+                            >
+                              <span className="text-[9px] font-black opacity-60 leading-none mb-0.5">DAY</span>
+                              <span className="text-[13px] font-black leading-none">{dayNum}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      {selectedProgressDay && (
+                        <div className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100">
+                          <div className="flex items-center justify-between mb-4">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Details for Day {selectedProgressDay}</p>
+                          </div>
+
+                          {(() => {
+                            const checklist = offlineUserOverview.dailyChecklist?.find(c => c.day === selectedProgressDay);
+                            if (!checklist) return null;
+                            return (
+                              <div className="mb-8 space-y-4">
+                                <div className="flex items-center gap-3">
+                                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] whitespace-nowrap">Daily Vitals</span>
+                                  <div className="h-px flex-1 bg-gradient-to-r from-slate-200 to-transparent" />
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                  {[
+                                    { label: "Water", val: checklist.waterIntake, unit: "Liters", icon: "💧", color: "text-blue-500", bg: "bg-blue-50" },
+                                    { label: "Exercise", val: checklist.exerciseMinutes, unit: "Min", icon: "🏃", color: "text-orange-500", bg: "bg-orange-50" },
+                                    { label: "Green Juice", val: checklist.greenJuice, unit: "Times", icon: "🥤", color: "text-emerald-500", bg: "bg-emerald-50" },
+                                    { label: "Pranayama", val: checklist.pranayamaMinutes, unit: "Min", icon: "🧘", color: "text-indigo-500", bg: "bg-indigo-50" },
+                                    { label: "Sleep", val: checklist.sleepHours, unit: "Hrs", icon: "🌙", color: "text-purple-500", bg: "bg-purple-50" },
+                                    { label: "Weight", val: checklist.todayWeight, unit: "Kg", icon: "⚖️", color: "text-slate-600", bg: "bg-slate-100" },
+                                  ].map((it, idx) => (
+                                    <div key={idx} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm">
+                                      <div className="flex items-center gap-2 mb-1.5">
+                                        <div className={`w-5 h-5 rounded-lg ${it.bg} flex items-center justify-center text-[10px]`}>{it.icon}</div>
+                                        <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{it.label}</span>
+                                      </div>
+                                      <div className="flex items-baseline gap-1">
+                                        <span className={`text-sm font-black ${it.color}`}>{it.val}</span>
+                                        <span className="text-[8px] font-bold text-slate-300 uppercase">{it.unit}</span>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                                {checklist.dietMistake && (
+                                  <div className="bg-rose-50/50 p-4 rounded-2xl border border-rose-100/50">
+                                    <div className="flex items-center gap-2 mb-2">
+                                      <div className="w-5 h-5 bg-rose-100 rounded-lg flex items-center justify-center text-[10px]">⚠️</div>
+                                      <span className="text-[10px] font-black text-rose-500 uppercase tracking-wider">Diet Mistake</span>
+                                    </div>
+                                    <p className="text-[12px] font-black text-slate-700 leading-relaxed italic">"{checklist.dietMistake}"</p>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
+
+                          {offlineUserOverview.dailyReports?.find(r => r.day === selectedProgressDay) ? (
+                            <div className="space-y-3">
+                              <div className="flex items-center gap-2 mb-2">
+                                <div className="h-px flex-1 bg-slate-200" />
+                                <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Report Questions</span>
+                                <div className="h-px flex-1 bg-slate-200" />
+                              </div>
+                              {offlineUserOverview.dailyReports.find(r => r.day === selectedProgressDay).answers.map((ans, idx) => (
+                                <div key={idx} className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                                  <p className="text-[10px] font-bold text-slate-400 mb-1">{ans.question}</p>
+                                  <p className="text-xs font-black text-slate-800">A: {ans.givenAnswer}</p>
+                                </div>
+                              ))}
+                            </div>
+                          ) : !offlineUserOverview.dailyChecklist?.find(c => c.day === selectedProgressDay) && (
+                            <p className="text-[10px] font-bold text-slate-400 italic">No report or checklist submitted for this day.</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Section 3: Plan History */}
+                    <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm overflow-hidden flex flex-col">
+                      <div className="flex items-center justify-between mb-4">
+                        <h6 className="text-[10px] font-black uppercase tracking-widest text-teal-600 items-center flex gap-2"><History size={14} /> Plan History</h6>
+                        <span className="text-[9px] font-bold text-slate-300 italic">Recent First</span>
+                      </div>
+                      <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                        {offlineUserOverview.planHistory?.length > 0 ? (
+                          offlineUserOverview.planHistory.map((history, i) => (
+                            <div key={history._id} className={`p-4 rounded-2xl border transition-all ${i === 0 ? 'bg-teal-50/50 border-teal-100' : 'bg-slate-50 border-slate-100'}`}>
+                              <div className="flex justify-between items-start mb-1">
+                                <p className="text-xs font-black text-slate-800">{history.plan?.name || "Subscription"} ({currency}{history.plan?.price || 0})</p>
+                                <p className="text-[8px] font-bold text-slate-400">{new Date(history.createdAt).toLocaleString()}</p>
+                              </div>
+                              <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{history.plan?.days || history.plan?.planDays || "-"} Days</p>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="py-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">No Plan History Found</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Section 4: Video Answers */}
+                    <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+                      <h6 className="text-[10px] font-black uppercase tracking-widest text-teal-600 mb-6 flex items-center gap-2"><ClipboardList size={14} /> Video Quiz Responses</h6>
+                      <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                        {offlineVideoAnswers && offlineVideoAnswers.length > 0 ? (
+                          offlineVideoAnswers.map((va) => (
+                            <div key={va._id} className="bg-slate-50/50 rounded-2xl p-6 border border-slate-100 transition-all hover:bg-white hover:shadow-md">
+                              <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+                                <p className="text-[11px] font-black text-slate-700 uppercase tracking-wide">
+                                  {va.videoId?.title?.english || "Task Assessment"}
+                                </p>
+                                <span className="text-[8px] font-bold text-slate-400 uppercase bg-white px-2 py-1 rounded-md border border-slate-100 tracking-tighter shadow-sm">
+                                  {new Date(va.createdAt).toLocaleDateString()}
+                                </span>
+                              </div>
+                              <div className="space-y-4">
+                                {va.answers?.map((ans, i) => (
+                                  <div key={i} className="pl-4 border-l-2 border-teal-100 relative">
+                                    <div className="absolute top-1 -left-[3px] w-1.5 h-1.5 bg-teal-500 rounded-full" />
+                                    <p className="text-[10px] font-bold text-slate-400 leading-tight mb-1">Q: {ans.questionId?.questionText?.english || ans.questionId}</p>
+                                    <p className="text-[13px] font-black text-teal-900">A: {ans.answer}</p>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="py-12 text-center bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+                            <ClipboardList className="w-8 h-8 text-slate-200 mx-auto mb-3" />
+                            <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest italic">No Video Responses available</p>
+                            <p className="text-[9px] text-slate-300 mt-1">Patient hasn't completed any video quizzes yet.</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Section 5: User Feedback */}
+                    <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+                      <h6 className="text-[10px] font-black uppercase tracking-widest text-teal-600 mb-5 flex items-center gap-2"><MessageSquare size={14} /> User Portfolio Feedback</h6>
+                      {offlineUserOverview.feedback ? (
+                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                          {[
+                            { label: "Consultant", val: offlineUserOverview.feedback.doctorCostultant, color: "teal" },
+                            { label: "App Experience", val: offlineUserOverview.feedback.appExperience, color: "blue" },
+                            { label: "Product Info", val: offlineUserOverview.feedback.product, color: "purple" },
+                            { label: "Support Depth", val: offlineUserOverview.feedback.support, color: "emerald" },
+                          ].map((f, i) => (
+                            <div key={i} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col items-center text-center">
+                              <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2 leading-none">{f.label}</span>
+                              <p className="text-lg font-black text-slate-800 mb-1">{f.val || 0}<span className="text-[10px] text-slate-300">/5</span></p>
+                              <div className="flex gap-0.5">
+                                {[...Array(5)].map((_, star) => (
+                                  <div key={star} className={`w-1.5 h-1.5 rounded-full ${star < (f.val || 0) ? 'bg-amber-400 shadow-[0_0_4px_rgba(251,191,36,0.3)]' : 'bg-slate-200'}`} />
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="p-8 text-center bg-slate-50 rounded-[2rem] border border-dashed border-slate-200">
+                          <p className="text-[11px] font-bold text-slate-400 italic">No historical feedback provided by this account.</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="h-20" />
+                  </div>
+                ) : (
+                  <div className="flex-1 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-teal-500" />
+                  </div>
+                )}
+              </div>
+
+              {/* Right Pane: Consultation Form */}
+              <div className="flex flex-1 flex-col overflow-hidden">
+                {/* Header */}
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-white shrink-0">
+                  <div>
+                    <p className="text-[9px] font-black text-violet-500 uppercase tracking-widest mb-0.5">In-Person • {activeOfflineAppointment.date} • {activeOfflineAppointment.startTime}</p>
+                    <h3 className="text-2xl font-black text-slate-900 tracking-tight">
+                      {activeOfflineAppointment.userId?.name} {activeOfflineAppointment.userId?.surname}
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="inline-flex items-center gap-1.5 rounded-full border border-violet-200 bg-violet-50 px-4 py-2 text-xs font-black text-violet-700">
+                      <div className="w-2 h-2 rounded-full bg-violet-500 animate-pulse" />
+                      Offline Session
+                    </span>
+                    <button
+                      onClick={closeOfflineModal}
+                      className="h-10 px-5 rounded-xl bg-red-50 border border-red-100 text-red-600 text-xs font-black hover:bg-red-100 transition-all flex items-center gap-2"
+                    >
+                      <MdCallEnd size={16} /> End Session
+                    </button>
+                  </div>
+                </div>
+
+                {/* Consultation Form */}
+                <div className="flex-1 overflow-hidden">
+                  <ConsultationForm
+                    appointment={activeOfflineAppointment}
+                    onClose={closeOfflineModal}
+                    onSaveSuccess={() => {
+                      closeOfflineModal();
+                      fetchAppointments(selectedBranchId, filterDate, filterStatus, filterType);
+                      toast.success("Consultation saved successfully!");
+                    }}
+                  />
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
         {isCallModalOpen && activeCallAppointment && (
           <div className="fixed inset-0 z-50 flex bg-slate-950/20 backdrop-blur-sm">
             <motion.div

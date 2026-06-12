@@ -7,6 +7,7 @@ const Dropdown = ({
   options,
   value,
   onChange,
+  onDelete, // New prop for deletion
   disabled = false,
   showCheckbox = false,
   showSearch = false,
@@ -124,11 +125,6 @@ const Dropdown = ({
                 return (
                   <li
                     key={idx}
-                    onClick={() => {
-                      if (isOptionDisabled) return;
-                      onChange(opt.value);
-                      setOpen(false);
-                    }}
                     className={`px-4 py-3 transition-all flex items-center justify-between border-l-4 min-w-0 ${
                       isOptionDisabled
                         ? "opacity-30 cursor-not-allowed bg-gray-50 border-transparent"
@@ -137,7 +133,14 @@ const Dropdown = ({
                         : "hover:bg-gray-50 border-transparent hover:border-gray-200 cursor-pointer text-gray-600"
                     }`}
                   >
-                    <span className="flex items-center gap-3 min-w-0">
+                    <span
+                        className="flex items-center gap-3 min-w-0 flex-grow"
+                        onClick={() => {
+                          if (isOptionDisabled) return;
+                          onChange(opt.value);
+                          setOpen(false);
+                        }}
+                    >
                       {showCheckbox && (
                         <ThemedCheckbox
                           checked={isSelected}
@@ -150,7 +153,23 @@ const Dropdown = ({
                         {opt.label}
                       </span>
                     </span>
-                    {!showCheckbox && isSelected && (
+                    
+                    {/* Delete Icon */}
+                    {onDelete && (
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setOpen(false);
+                                onDelete(opt.value);
+                            }}
+                            className="text-gray-400 hover:text-red-600 ml-2 p-1 hover:bg-red-50 rounded-full"
+                        >
+                            <FiX size={16} />
+                        </button>
+                    )}
+
+                    {!showCheckbox && !onDelete && isSelected && (
                       <div className="bg-amber-500 text-white p-1 rounded-full shadow-sm animate-in zoom-in duration-300">
                         <svg
                           className="w-3 h-3"
@@ -182,5 +201,5 @@ const Dropdown = ({
     </div>
   );
 };
-
+import { FiTrash2, FiX } from "react-icons/fi";
 export default Dropdown;

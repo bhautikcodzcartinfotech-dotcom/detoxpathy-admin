@@ -36,7 +36,12 @@ export default function EmergencyAlertsPage() {
   const { role, branches } = useAuth();
   const [alerts, setAlerts] = useState([]);
   const [allBranches, setAllBranches] = useState([]);
-  const [selectedBranchId, setSelectedBranchId] = useState("all");
+  const [selectedBranchId, setSelectedBranchId] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('selectedEmergencyBranchId') || "all";
+    }
+    return "all";
+  });
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDate, setFilterDate] = useState(""); 
@@ -48,6 +53,11 @@ export default function EmergencyAlertsPage() {
 
   // Fetch alerts when selected branch or date filter changes
   useEffect(() => {
+    if (selectedBranchId !== "all") {
+      localStorage.setItem('selectedEmergencyBranchId', selectedBranchId);
+    } else {
+      localStorage.removeItem('selectedEmergencyBranchId');
+    }
     fetchAlertsList();
   }, [selectedBranchId, filterDate]);
 
