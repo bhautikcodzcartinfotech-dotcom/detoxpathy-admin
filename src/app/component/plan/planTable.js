@@ -77,6 +77,9 @@ const PlanTable = ({ plans, onEdit, onDelete, currency = "₹" }) => {
                 Weight (g)
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                Products
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Description
               </th>
               <th className="px-6 py-3 text-center text-xs font-semibold text-gray-700 uppercase tracking-wider">
@@ -120,6 +123,26 @@ const PlanTable = ({ plans, onEdit, onDelete, currency = "₹" }) => {
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-gray-700 font-medium">
                   {p.weight ?? 0}g
+                </td>
+                <td className="px-6 py-4 text-gray-700">
+                  {p.products && p.products.length > 0 ? (
+                    <div className="flex flex-col gap-1 text-xs">
+                      {p.products.map((item, idx) => {
+                        const product = item.productId;
+                        if (!product) return null;
+                        const prodName = typeof product === 'object' ? product.name : 'Unknown';
+                        return (
+                          <div key={idx} className="flex items-center text-gray-700 font-medium whitespace-nowrap">
+                            <span className="text-[#134D41] mr-1.5 font-black text-sm select-none">•</span>
+                            <span>{prodName}</span>
+                            <span className="text-gray-400 font-bold ml-1">({item.quantity || 1})</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <span className="text-xs text-gray-400 italic">None</span>
+                  )}
                 </td>
                 <td className="px-6 py-4 text-gray-700">
                   <p className="text-sm">{p.description}</p>

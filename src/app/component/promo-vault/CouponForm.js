@@ -106,10 +106,6 @@ const CouponForm = ({
         {errors.discountValue && <p className="text-amber-600 text-sm mt-1">{errors.discountValue}</p>}
       </div>
 
-      <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700 font-medium">
-        Original price is fixed at <span className="font-black">₹99</span>. Discount applies as percentage on this price.
-      </div>
-
       <div className="flex justify-end gap-3 mt-6">
         <Button variant="secondary" onClick={onCancel} type="button">Cancel</Button>
         <TimeButton loading={loading}>{submitLabel}</TimeButton>

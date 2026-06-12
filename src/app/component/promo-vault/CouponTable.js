@@ -20,7 +20,22 @@ const CouponTable = ({ items, loading, onEdit, onDelete }) => {
     return `${String(d.getDate()).padStart(2, "0")}/${String(d.getMonth() + 1).padStart(2, "0")}/${d.getFullYear()}`;
   };
 
-  const isExpired = (dateStr) => dateStr && new Date(dateStr) < new Date();
+  const isExpired = (dateStr) => {
+    if (!dateStr) return false;
+    let expiryDate;
+    const dateParts = dateStr.split('-');
+    if (dateParts.length === 3) {
+      const year = parseInt(dateParts[0], 10);
+      const month = parseInt(dateParts[1], 10) - 1;
+      const day = parseInt(dateParts[2], 10);
+      expiryDate = new Date(year, month, day + 1, 0, 0, 0, 0);
+    } else {
+      expiryDate = new Date(dateStr);
+      expiryDate.setDate(expiryDate.getDate() + 1);
+      expiryDate.setHours(0, 0, 0, 0);
+    }
+    return expiryDate < new Date();
+  };
 
   if (loading) return <div className="flex justify-center items-center py-20"><Loader /></div>;
 

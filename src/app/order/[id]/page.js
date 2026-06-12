@@ -910,6 +910,23 @@ const OrderDetailsPage = () => {
             </div>
           </div>
 
+          {/* Order Instruction Section */}
+          {order.instruction && order.instruction.trim() && (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 border-b border-gray-50 flex items-center justify-between">
+                <h2 className="font-bold text-gray-800 flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-teal-600" />
+                  Delivery Instructions
+                </h2>
+              </div>
+              <div className="p-6">
+                <p className="text-sm text-gray-750 leading-relaxed whitespace-pre-line font-medium">
+                  {order.instruction}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Live Courier Tracking Section */}
           {order.trackingId && (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">

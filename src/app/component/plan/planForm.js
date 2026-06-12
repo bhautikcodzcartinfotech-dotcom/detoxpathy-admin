@@ -1,8 +1,9 @@
 "use client";
 import { useEffect, useState } from "react";
 import TimeButton from "@/utils/timebutton";
-import { getSetting, API_HOST } from "@/Api/AllApi";
+import { getSetting, API_HOST, getAllProducts } from "@/Api/AllApi";
 import { validateForm } from "@/utils/validation";
+import Dropdown from "@/utils/dropdown";
 
 const PlanForm = ({
   initialData,
@@ -13,6 +14,7 @@ const PlanForm = ({
   title = "Plan",
 }) => {
   const [currency, setCurrency] = useState("₹");
+  const [allProducts, setAllProducts] = useState([]);
   const [form, setForm] = useState({
     name: "",
     description: "",
@@ -23,6 +25,7 @@ const PlanForm = ({
     notificationDays: [],
     planCode: "",
     image: null,
+    products: [],
   });
   const [errors, setErrors] = useState({});
   const [imagePreview, setImagePreview] = useState("");
@@ -46,11 +49,29 @@ const PlanForm = ({
         console.error("Failed to fetch settings:", error);
       }
     };
+    const fetchProducts = async () => {
+      try {
+        const data = await getAllProducts({ limit: 1000 });
+        setAllProducts(Array.isArray(data?.products) ? data.products : []);
+      } catch (error) {
+        console.error("Failed to fetch products:", error);
+      }
+    };
     fetchCurrency();
+    fetchProducts();
   }, []);
 
   useEffect(() => {
     if (initialData) {
+      const initialProducts = initialData.products
+        ? initialData.products.map((p) => {
+            const pId = p.productId && typeof p.productId === "object" ? p.productId._id : p.productId;
+            return {
+              productId: pId,
+              quantity: p.quantity || 1,
+            };
+          }).filter((p) => p.productId)
+        : [];
       setForm({
         name: initialData.name || "",
         description: initialData.description || "",
@@ -61,6 +82,7 @@ const PlanForm = ({
         notificationDays: initialData.notificationDays || [],
         planCode: initialData.planCode || "",
         image: null,
+        products: initialProducts,
       });
       if (initialData.image) {
         setImagePreview(`${API_HOST}/${initialData.image}`);
@@ -78,6 +100,7 @@ const PlanForm = ({
         notificationDays: [],
         planCode: "",
         image: null,
+        products: [],
       });
       setImagePreview("");
     }
@@ -150,6 +173,7 @@ const PlanForm = ({
         form.bulkDiscount === "" ? 0 : Number(form.bulkDiscount),
       weight: Number(form.weight) || 0,
       notificationDays: form.notificationDays,
+      products: form.products,
     });
   };
 
@@ -349,6 +373,132 @@ const PlanForm = ({
             <p className="text-red-500 text-sm mt-1">{errors.weight}</p>
           )}
         </div>
+      </div>
+
+      {/* Select Products */}
+      <div className="space-y-3">
+        <Dropdown
+          label="Select Products (Included in this Plan)"
+          placeholder="-- Choose Product to Add --"
+          showSearch={true}
+          options={allProducts
+            .filter((p) => !form.products?.some((sp) => sp.productId === p._id))
+            .map((p) => ({
+              value: p._id,
+              label: p.name,
+            }))}
+          value=""
+          onChange={(val) => {
+            if (val) {
+              setForm((f) => ({
+                ...f,
+                products: [...(f.products || []), { productId: val, quantity: 1 }],
+              }));
+            }
+          }}
+        />
+
+        {/* Selected Products List */}
+        {form.products && form.products.length > 0 && (
+          <div className="flex flex-col gap-2 mt-2 max-h-64 overflow-y-auto p-1 custom-scrollbar w-full">
+            {form.products.map((selectedProd) => {
+              const product = allProducts.find((p) => p._id === selectedProd.productId);
+              if (!product) return null;
+              
+              const productImg = product.images && product.images.length > 0 ? product.images[0] : null;
+              const productImgUrl = productImg 
+                ? (productImg.startsWith("http") ? productImg : `${API_HOST}${productImg}`)
+                : null;
+
+              return (
+                <div
+                  key={selectedProd.productId}
+                  className="flex items-center justify-between p-3 border border-yellow-200 bg-yellow-50/30 rounded-xl hover:bg-yellow-50/50 transition-all duration-200 gap-4 w-full"
+                >
+                  {/* Product Info (Thumbnail & Title) */}
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    {productImgUrl ? (
+                      <img
+                        src={productImgUrl}
+                        alt={product.name}
+                        className="w-11 h-11 object-cover rounded-lg border border-yellow-200/60 shadow-xs flex-shrink-0"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-11 h-11 rounded-lg bg-gray-100 flex items-center justify-center text-[9px] text-gray-400 font-bold border flex-shrink-0">
+                        NO IMG
+                      </div>
+                    )}
+                    <div className="flex flex-col min-w-0 flex-1">
+                      <span className="text-sm font-semibold text-gray-800 break-words">
+                        {product.name}
+                      </span>
+                      <span className="text-[11px] text-gray-400 font-semibold">
+                        Qty: {selectedProd.quantity || 1}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Quantity Controls & Delete Button */}
+                  <div className="flex items-center gap-3 flex-shrink-0">
+                    <div className="flex items-center border border-yellow-300 rounded-lg bg-white overflow-hidden shadow-xs h-8">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForm((f) => ({
+                            ...f,
+                            products: (f.products || []).map((p) =>
+                              p.productId === selectedProd.productId
+                                ? { ...p, quantity: Math.max(1, (p.quantity || 1) - 1) }
+                                : p
+                            ),
+                          }));
+                        }}
+                        className="w-8 bg-yellow-50 hover:bg-yellow-100 active:bg-yellow-200 transition font-black text-sm text-yellow-700 h-full flex items-center justify-center select-none"
+                      >
+                        -
+                      </button>
+                      <span className="px-2 text-xs font-bold min-w-[24px] text-center text-yellow-900">
+                        {selectedProd.quantity || 1}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForm((f) => ({
+                            ...f,
+                            products: (f.products || []).map((p) =>
+                              p.productId === selectedProd.productId
+                                ? { ...p, quantity: (p.quantity || 1) + 1 }
+                                : p
+                            ),
+                          }));
+                        }}
+                        className="w-8 bg-yellow-50 hover:bg-yellow-100 active:bg-yellow-200 transition font-black text-sm text-yellow-700 h-full flex items-center justify-center select-none"
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setForm((f) => ({
+                          ...f,
+                          products: (f.products || []).filter((p) => p.productId !== selectedProd.productId),
+                        }));
+                      }}
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full w-8 h-8 flex items-center justify-center text-lg font-black transition border border-transparent hover:border-red-100"
+                    >
+                      &times;
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Plan Image Upload */}
