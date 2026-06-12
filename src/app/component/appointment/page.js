@@ -12,6 +12,7 @@ import {
   deleteAppointment,
   joinAppointmentCall,
   endAppointmentCall,
+  endOfflineAppointmentSession,
   generateSlots,
   rescheduleAppointment,
   getAllPlans,
@@ -423,19 +424,19 @@ const AppointmentPage = () => {
     try {
       const data = await getAllBranches();
       let allBranchList = Array.isArray(data) ? data : [];
-      
+
       if (role !== "Admin") {
         const assignedBranchIds = branches || [];
-        allBranchList = allBranchList.filter(b => 
+        allBranchList = allBranchList.filter(b =>
           assignedBranchIds.includes(String(b._id))
         );
       }
-      
+
       setAllBranches(allBranchList);
-      
+
       // Only update if the current state is empty or invalid
       const isCurrentValid = allBranchList.some(b => b._id === selectedBranchId);
-      
+
       if (!isCurrentValid) {
         const savedBranchId = localStorage.getItem('selectedBranchId');
         if (savedBranchId && allBranchList.some(b => b._id === savedBranchId)) {
@@ -458,7 +459,7 @@ const AppointmentPage = () => {
       console.error(e);
     }
   };
-  
+
   const fetchAllProducts = async () => {
     try {
       const data = await getAllProducts({ limit: 100 });
@@ -1111,15 +1112,15 @@ const AppointmentPage = () => {
       setRecordingLoading(true);
       const recording = await startRecording(activeCallAppointment._id);
       setCurrentRecording(recording);
-      
+
       // Start MediaRecorder
       const tracks = [];
-      
+
       // Add remote video track if available
       if (remoteUserRef.current?.videoTrack) {
         tracks.push(remoteUserRef.current.videoTrack.getMediaStreamTrack());
       }
-      
+
       // Add audio tracks (remote + local)
       if (remoteUserRef.current?.audioTrack) {
         tracks.push(remoteUserRef.current.audioTrack.getMediaStreamTrack());
@@ -1127,29 +1128,29 @@ const AppointmentPage = () => {
       if (agoraSessionRef.current.localAudioTrack) {
         tracks.push(agoraSessionRef.current.localAudioTrack.getMediaStreamTrack());
       }
-      
+
       if (tracks.length === 0) {
         toast.error("No video/audio tracks available to record");
         return;
       }
-      
+
       const mediaStream = new MediaStream(tracks);
       const mediaRecorder = new MediaRecorder(mediaStream);
       mediaRecorderRef.current = mediaRecorder;
       recordingChunksRef.current = [];
-      
+
       mediaRecorder.ondataavailable = (e) => {
         if (e.data.size > 0) {
           recordingChunksRef.current.push(e.data);
         }
       };
-      
+
       mediaRecorder.onstop = async () => {
         const blob = new Blob(recordingChunksRef.current, { type: 'video/webm' });
         const videoFile = new File([blob], `recording-${Date.now()}.webm`, { type: 'video/webm' });
         recordedVideoRef.current = videoFile;
       };
-      
+
       mediaRecorder.start();
       toast.success("Recording started");
     } catch (error) {
@@ -1166,12 +1167,12 @@ const AppointmentPage = () => {
       setRecordingLoading(true);
       const recording = await pauseRecording(currentRecording._id);
       setCurrentRecording(recording);
-      
+
       // Pause MediaRecorder
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
         mediaRecorderRef.current.pause();
       }
-      
+
       toast.success("Recording paused");
     } catch (error) {
       console.error(error);
@@ -1187,12 +1188,12 @@ const AppointmentPage = () => {
       setRecordingLoading(true);
       const recording = await resumeRecording(currentRecording._id);
       setCurrentRecording(recording);
-      
+
       // Resume MediaRecorder
       if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
         mediaRecorderRef.current.resume();
       }
-      
+
       toast.success("Recording resumed");
     } catch (error) {
       console.error(error);
@@ -1208,11 +1209,11 @@ const AppointmentPage = () => {
       setRecordingLoading(true);
       const recording = await stopRecording(currentRecording._id);
       setCurrentRecording(recording);
-      
+
       // Stop MediaRecorder and upload
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
         mediaRecorderRef.current.stop();
-        
+
         // Wait for onstop to create the blob/file
         setTimeout(async () => {
           if (recordedVideoRef.current) {
@@ -1227,7 +1228,7 @@ const AppointmentPage = () => {
           }
         }, 500);
       }
-      
+
       toast.success("Recording stopped");
     } catch (error) {
       console.error(error);
@@ -1407,6 +1408,22 @@ const AppointmentPage = () => {
     } catch (err) {
       toast.error("Failed to load patient profile");
       console.error(err);
+    } finally {
+      setOfflineLoadingId(null);
+    }
+  };
+
+  const handleEndOfflineSession = async (appointment) => {
+    if (!appointment?._id) return;
+    try {
+      setOfflineLoadingId(appointment._id);
+      await endOfflineAppointmentSession(appointment._id);
+      toast.success("Session ended successfully");
+      closeOfflineModal();
+      fetchAppointments(selectedBranchId, filterDate, filterStatus, filterType);
+    } catch (error) {
+      console.error(error);
+      toast.error(error?.response?.data?.message || "Failed to end session");
     } finally {
       setOfflineLoadingId(null);
     }
@@ -1916,7 +1933,7 @@ const AppointmentPage = () => {
                               </button>
                             )}
                             {(role === "Admin" || permissions?.includes("reschedule appointment")) && (
-                            <button className="h-9 px-4 bg-teal-50 text-teal-700 hover:bg-teal-100 rounded-xl text-xs font-bold transition-all" onClick={() => handleOpenRescheduleModal(item)}>Reschedule</button>
+                              <button className="h-9 px-4 bg-teal-50 text-teal-700 hover:bg-teal-100 rounded-xl text-xs font-bold transition-all" onClick={() => handleOpenRescheduleModal(item)}>Reschedule</button>
                             )}
                             <button className="h-9 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-bold shadow-sm transition-all" onClick={() => router.push(`/component/users/${item.userId?._id}/profile`)}>View</button>
                             {statusLabel === 'upcoming' && (role === "Admin" || permissions?.includes("cancel appointment")) && (
@@ -2023,7 +2040,7 @@ const AppointmentPage = () => {
                         </button>
                       )}
                       {(role === "Admin" || permissions?.includes("reschedule appointment")) && (
-                      <button className="h-11 bg-teal-50 text-teal-700 rounded-xl text-[11px] font-black uppercase" onClick={() => handleOpenRescheduleModal(item)}>Reschedule</button>
+                        <button className="h-11 bg-teal-50 text-teal-700 rounded-xl text-[11px] font-black uppercase" onClick={() => handleOpenRescheduleModal(item)}>Reschedule</button>
                       )}
                       <button className="h-11 bg-slate-100 text-slate-700 rounded-xl text-[11px] font-black uppercase" onClick={() => router.push(`/component/users/${item.userId?._id}/profile`)}>View Profile</button>
                       {statusLabel === 'upcoming' && (role === "Admin" || permissions?.includes("cancel appointment")) && (
@@ -2155,7 +2172,7 @@ const AppointmentPage = () => {
                                 dayNum === (offlineUserOverview?.user?.planCurrentDay || 1) ? 'bg-teal-500 text-white ring-4 ring-teal-100 shadow-lg' :
                                   selectedProgressDay === dayNum ? 'bg-white border-2 border-teal-500 text-teal-600' :
                                     'bg-slate-50 text-slate-400 hover:bg-slate-100'
-                              } ${hasData ? 'ring-1 ring-teal-200' : ''}`}
+                                } ${hasData ? 'ring-1 ring-teal-200' : ''}`}
                             >
                               <span className="text-[9px] font-black opacity-60 leading-none mb-0.5">DAY</span>
                               <span className="text-[13px] font-black leading-none">{dayNum}</span>
@@ -2349,10 +2366,16 @@ const AppointmentPage = () => {
                       Offline Session
                     </span>
                     <button
-                      onClick={closeOfflineModal}
-                      className="h-10 px-5 rounded-xl bg-red-50 border border-red-100 text-red-600 text-xs font-black hover:bg-red-100 transition-all flex items-center gap-2"
+                      onClick={() => handleEndOfflineSession(activeOfflineAppointment)}
+                      disabled={offlineLoadingId === activeOfflineAppointment._id}
+                      className="h-10 px-5 rounded-xl bg-red-50 border border-red-100 text-red-600 text-xs font-black hover:bg-red-100 transition-all flex items-center gap-2 disabled:opacity-50"
                     >
-                      <MdCallEnd size={16} /> End Session
+                      {offlineLoadingId === activeOfflineAppointment._id ? (
+                        <div className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+                      ) : (
+                        <MdCallEnd size={16} />
+                      )}
+                      End Session
                     </button>
                   </div>
                 </div>
@@ -2734,7 +2757,7 @@ const AppointmentPage = () => {
                         <div className="w-1 h-1 sm:w-1.5 sm:h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                         Live
                       </span>
-                      
+
                       {/* Recording Controls */}
                       {!currentRecording || currentRecording.status === 'stopped' ? (
                         <button
@@ -2944,9 +2967,9 @@ const AppointmentPage = () => {
                                     const isSelected = selectedProductIds.includes(product._id);
                                     return (
                                       <div
-                                        key={product._id} 
+                                        key={product._id}
                                         onClick={() => {
-                                          setSelectedProductIds(prev => 
+                                          setSelectedProductIds(prev =>
                                             isSelected ? prev.filter(id => id !== product._id) : [...prev, product._id]
                                           );
                                         }}

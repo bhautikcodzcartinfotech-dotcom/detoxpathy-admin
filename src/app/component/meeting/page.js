@@ -1,4 +1,4 @@
-    "use client";
+"use client";
 
 import React, { useEffect, useState } from "react";
 import RoleGuard from "@/components/RoleGuard";
@@ -38,7 +38,7 @@ export default function MeetingPage() {
     const [loading, setLoading] = useState(true);
     const [btnLoading, setBtnLoading] = useState(false);
     const [drawerOpen, setDrawerOpen] = useState(false);
-    
+
     // Form state
     const [topic, setTopic] = useState("");
     const [scheduledAt, setScheduledAt] = useState("");
@@ -162,7 +162,7 @@ export default function MeetingPage() {
             const response = await createMeeting(payload);
             toast.success("Meeting scheduled successfully. It is set to record automatically.");
             setMeetings([response, ...meetings]);
-            
+
             // Reset form
             handleCloseDrawer();
         } catch (err) {
@@ -274,7 +274,7 @@ export default function MeetingPage() {
                         </p>
                     </div>
                     {isSuperAdmin && (
-                        <Button 
+                        <Button
                             onClick={() => setDrawerOpen(true)}
                             className="flex items-center gap-2 bg-[#134D41] hover:bg-[#0D362E] transition-all duration-300 text-white rounded-xl py-3 px-6 shadow-md hover:shadow-lg font-semibold"
                         >
@@ -348,7 +348,7 @@ export default function MeetingPage() {
                                                             <div className="flex items-center gap-1.5 mt-0.5">
                                                                 <span className="text-xs text-gray-400">ID: {meeting._id.substring(meeting._id.length - 8).toUpperCase()}</span>
                                                                 <span className="text-gray-300">•</span>
-                                                                <span 
+                                                                <span
                                                                     className="text-xs font-semibold text-[#134D41] cursor-help"
                                                                     title={
                                                                         !meeting.allDoctors && meeting.allowedDoctors?.length > 0
@@ -376,11 +376,10 @@ export default function MeetingPage() {
 
                                                 {/* Platform */}
                                                 <td className="px-6 py-4">
-                                                    <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full border ${
-                                                        isZoom 
-                                                            ? "bg-blue-50 text-blue-700 border-blue-100" 
+                                                    <span className={`inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full border ${isZoom
+                                                            ? "bg-blue-50 text-blue-700 border-blue-100"
                                                             : "bg-emerald-50 text-emerald-700 border-emerald-100"
-                                                    }`}>
+                                                        }`}>
                                                         <span className={`w-1.5 h-1.5 rounded-full ${isZoom ? 'bg-blue-600' : 'bg-emerald-600'}`} />
                                                         {isZoom ? "Zoom Meeting" : "Jitsi Meet"}
                                                     </span>
@@ -389,13 +388,13 @@ export default function MeetingPage() {
                                                 {/* Created By */}
                                                 <td className="px-6 py-4">
                                                     <div className="flex items-center gap-2">
-                                                        <img 
-                                                            src={getDoctorImageUrl(meeting.createdBy?.image)} 
-                                                            alt={meeting.createdBy?.username || "Admin"} 
-                                                            className="w-6 h-6 rounded-full object-cover border border-gray-200" 
-                                                            onError={(e) => { 
-                                                                e.target.onerror = null; 
-                                                                e.target.src = DEFAULT_AVATAR; 
+                                                        <img
+                                                            src={getDoctorImageUrl(meeting.createdBy?.image)}
+                                                            alt={meeting.createdBy?.username || "Admin"}
+                                                            className="w-6 h-6 rounded-full object-cover border border-gray-200"
+                                                            onError={(e) => {
+                                                                e.target.onerror = null;
+                                                                e.target.src = DEFAULT_AVATAR;
                                                             }}
                                                         />
                                                         <div className="text-xs">
@@ -409,9 +408,9 @@ export default function MeetingPage() {
                                                 <td className="px-6 py-4">
                                                     {meeting.recordingUrl ? (
                                                         <div className="flex items-center gap-2">
-                                                            <a 
-                                                                href={getRecordingUrl(meeting.recordingUrl)} 
-                                                                target="_blank" 
+                                                            <a
+                                                                href={getRecordingUrl(meeting.recordingUrl)}
+                                                                target="_blank"
                                                                 rel="noopener noreferrer"
                                                                 className="inline-flex items-center gap-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 px-3 py-1.5 rounded-xl text-xs font-bold hover:bg-indigo-100 transition-all duration-300 shadow-sm"
                                                             >
@@ -469,15 +468,14 @@ export default function MeetingPage() {
                                                 {/* Actions */}
                                                 <td className="px-6 py-4 text-right">
                                                     <div className="inline-flex items-center gap-2">
-                                                        <a 
-                                                            href={isSuperAdmin ? meeting.startUrl : meeting.joinUrl} 
-                                                            target="_blank" 
+                                                        <a
+                                                            href={isSuperAdmin ? meeting.startUrl : meeting.joinUrl}
+                                                            target="_blank"
                                                             rel="noopener noreferrer"
-                                                            className={`flex items-center gap-1.5 text-white text-xs font-bold py-2 px-4 rounded-xl shadow-sm hover:shadow transition-all duration-300 ${
-                                                                isSuperAdmin 
-                                                                    ? "bg-[#134D41] hover:bg-[#0D362E]" 
+                                                            className={`flex items-center gap-1.5 text-white text-xs font-bold py-2 px-4 rounded-xl shadow-sm hover:shadow transition-all duration-300 ${isSuperAdmin
+                                                                    ? "bg-[#134D41] hover:bg-[#0D362E]"
                                                                     : "bg-indigo-600 hover:bg-indigo-700"
-                                                            }`}
+                                                                }`}
                                                         >
                                                             <MdLink size={16} />
                                                             {isSuperAdmin ? "Start Meeting" : "Join Meeting"}
@@ -511,7 +509,7 @@ export default function MeetingPage() {
                                 <h2 className="text-2xl font-bold text-gray-900">Schedule Consultation</h2>
                                 <p className="text-xs text-gray-400 mt-1">Host a video session for selected doctors.</p>
                             </div>
-                            <button 
+                            <button
                                 onClick={handleCloseDrawer}
                                 className="p-2 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-all duration-200"
                             >
@@ -555,9 +553,8 @@ export default function MeetingPage() {
                                 >
                                     <span className="truncate">{getDoctorDropdownLabel()}</span>
                                     <svg
-                                        className={`w-4 h-4 flex-shrink-0 text-gray-400 transition-transform duration-300 ${
-                                            doctorDropdownOpen ? "rotate-180" : "rotate-0"
-                                        }`}
+                                        className={`w-4 h-4 flex-shrink-0 text-gray-400 transition-transform duration-300 ${doctorDropdownOpen ? "rotate-180" : "rotate-0"
+                                            }`}
                                         fill="none"
                                         stroke="currentColor"
                                         viewBox="0 0 24 24"
@@ -576,14 +573,13 @@ export default function MeetingPage() {
                                         <ul className="py-1">
                                             <li
                                                 onClick={toggleAllDoctors}
-                                                className={`px-4 py-2.5 transition-all flex items-center gap-3 cursor-pointer hover:bg-gray-50 text-sm ${
-                                                    allDoctorsSelected ? "font-bold text-[#134D41] bg-emerald-50/50" : "text-gray-600"
-                                                }`}
+                                                className={`px-4 py-2.5 transition-all flex items-center gap-3 cursor-pointer hover:bg-gray-50 text-sm ${allDoctorsSelected ? "font-bold text-[#134D41] bg-emerald-50/50" : "text-gray-600"
+                                                    }`}
                                             >
                                                 <input
                                                     type="checkbox"
                                                     checked={allDoctorsSelected}
-                                                    onChange={() => {}}
+                                                    onChange={() => { }}
                                                     className="rounded text-[#134D41] focus:ring-[#134D41] cursor-pointer"
                                                 />
                                                 <span className="select-none">All Doctors</span>
@@ -595,14 +591,13 @@ export default function MeetingPage() {
                                                     <li
                                                         key={doc._id}
                                                         onClick={() => toggleDoctor(doc._id)}
-                                                        className={`px-4 py-2.5 transition-all flex items-center gap-3 cursor-pointer hover:bg-gray-50 text-sm ${
-                                                            isChecked ? "font-bold text-[#134D41] bg-emerald-50/50" : "text-gray-600"
-                                                        }`}
+                                                        className={`px-4 py-2.5 transition-all flex items-center gap-3 cursor-pointer hover:bg-gray-50 text-sm ${isChecked ? "font-bold text-[#134D41] bg-emerald-50/50" : "text-gray-600"
+                                                            }`}
                                                     >
                                                         <input
                                                             type="checkbox"
                                                             checked={isChecked}
-                                                            onChange={() => {}}
+                                                            onChange={() => { }}
                                                             className="rounded text-[#134D41] focus:ring-[#134D41] cursor-pointer"
                                                         />
                                                         <span className="select-none">{doc.username} ({doc.email})</span>
@@ -652,7 +647,7 @@ export default function MeetingPage() {
                                     <h3 className="text-xl font-bold text-gray-900">Add Meeting Recording</h3>
                                     <p className="text-xs text-gray-400 mt-0.5">Attach a cloud link or upload a local MP4 file.</p>
                                 </div>
-                                <button 
+                                <button
                                     onClick={() => { setRecordingModalOpen(false); setSelectedMeeting(null); }}
                                     className="p-1.5 rounded-xl text-gray-400 hover:text-gray-600 hover:bg-gray-50 transition-all duration-200"
                                 >
@@ -665,22 +660,20 @@ export default function MeetingPage() {
                                 <button
                                     type="button"
                                     onClick={() => setUploadType("url")}
-                                    className={`flex-1 py-2 text-center rounded-xl text-xs font-semibold transition-all duration-200 ${
-                                        uploadType === "url"
+                                    className={`flex-1 py-2 text-center rounded-xl text-xs font-semibold transition-all duration-200 ${uploadType === "url"
                                             ? "bg-[#134D41] text-white shadow-xs"
                                             : "text-gray-500 hover:text-gray-700"
-                                    }`}
+                                        }`}
                                 >
                                     Paste Recording URL Link
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => setUploadType("file")}
-                                    className={`flex-1 py-2 text-center rounded-xl text-xs font-semibold transition-all duration-200 ${
-                                        uploadType === "file"
+                                    className={`flex-1 py-2 text-center rounded-xl text-xs font-semibold transition-all duration-200 ${uploadType === "file"
                                             ? "bg-[#134D41] text-white shadow-xs"
                                             : "text-gray-500 hover:text-gray-700"
-                                    }`}
+                                        }`}
                                 >
                                     Upload Video File (MP4)
                                 </button>
@@ -692,7 +685,7 @@ export default function MeetingPage() {
                                     <MdVideocam size={20} className="text-[#134D41] shrink-0 mt-0.5" />
                                     <div>
                                         <span className="text-xs font-bold text-gray-700 block">Topic: {selectedMeeting.topic}</span>
-                                        <span className="text-xs text-gray-400">Created: {new Date(selectedMeeting.createdAt).toLocaleDateString()} at {new Date(selectedMeeting.createdAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+                                        <span className="text-xs text-gray-400">Created: {new Date(selectedMeeting.createdAt).toLocaleDateString()} at {new Date(selectedMeeting.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                     </div>
                                 </div>
 

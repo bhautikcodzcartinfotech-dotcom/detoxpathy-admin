@@ -1344,6 +1344,17 @@ export const endAppointmentCall = async (appointmentId) => {
   return res.data.data;
 };
 
+export const endOfflineAppointmentSession = async (appointmentId) => {
+  const res = await axios.post(
+    `${API_BASE}/admin/appointment/offline/end/${appointmentId}`,
+    {},
+    {
+      headers: getAuthHeaders(),
+    }
+  );
+  return res.data.data;
+};
+
 /* -------------------- RECORDING APIs -------------------- */
 export const startRecording = async (appointmentId) => {
   const res = await axios.post(

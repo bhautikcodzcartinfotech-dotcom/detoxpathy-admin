@@ -123,7 +123,7 @@ const SubAdminList = ({ subAdmins, appointments = [], onEdit, onDelete, onUpdate
   const handleLoginAsSubAdmin = async (subAdmin) => {
     try {
       setLoginLoading(subAdmin._id);
-      
+
       const email = subAdmin.email;
       const password = subAdmin.originalPassword || subAdmin.password;
 
@@ -277,7 +277,7 @@ const SubAdminList = ({ subAdmins, appointments = [], onEdit, onDelete, onUpdate
                           <td className="px-6 py-4 whitespace-nowrap text-gray-700 text-sm">
                             {Array.isArray(sd.branch) && sd.branch.length ? sd.branch.map((b) => b.name).join(", ") : "-"}
                           </td>
-                           <td className="px-6 py-4 whitespace-nowrap text-gray-700 font-medium">
+                          <td className="px-6 py-4 whitespace-nowrap text-gray-700 font-medium">
                             <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-600 text-[10px] font-black uppercase tracking-wider border border-amber-100">SUB DOCTOR</span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-gray-700 text-sm font-medium">{sd.commission ?? 0}%</td>

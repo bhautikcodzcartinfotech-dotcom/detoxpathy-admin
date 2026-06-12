@@ -3,7 +3,7 @@ import { useState } from "react";
 import { ActionButton } from "@/utils/actionbutton";
 import NotFoundCard from "@/components/NotFoundCard";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
-import { API_HOST } from "@/Api/AllApi";
+import { API_HOST, API_BASE } from "@/Api/AllApi";
 
 const PlanTable = ({ plans, onEdit, onDelete, currency = "₹" }) => {
   const [deleteDialog, setDeleteDialog] = useState({
@@ -96,7 +96,7 @@ const PlanTable = ({ plans, onEdit, onDelete, currency = "₹" }) => {
                 <td className="px-6 py-4 whitespace-nowrap">
                   {p.image ? (
                     <img
-                      src={`${API_HOST}/${p.image}`}
+                      src={`${API_BASE}/${p.image}`}
                       alt={p.name}
                       className="w-12 h-12 object-cover rounded-xl border border-yellow-200 shadow-sm"
                     />

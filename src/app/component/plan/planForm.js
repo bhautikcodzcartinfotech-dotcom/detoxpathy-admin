@@ -1,7 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import TimeButton from "@/utils/timebutton";
-import { getSetting, API_HOST, getAllProducts } from "@/Api/AllApi";
+import { getSetting, API_HOST, API_BASE, getAllProducts } from "@/Api/AllApi";
 import { validateForm } from "@/utils/validation";
 import Dropdown from "@/utils/dropdown";
 
@@ -65,12 +65,12 @@ const PlanForm = ({
     if (initialData) {
       const initialProducts = initialData.products
         ? initialData.products.map((p) => {
-            const pId = p.productId && typeof p.productId === "object" ? p.productId._id : p.productId;
-            return {
-              productId: pId,
-              quantity: p.quantity || 1,
-            };
-          }).filter((p) => p.productId)
+          const pId = p.productId && typeof p.productId === "object" ? p.productId._id : p.productId;
+          return {
+            productId: pId,
+            quantity: p.quantity || 1,
+          };
+        }).filter((p) => p.productId)
         : [];
       setForm({
         name: initialData.name || "",
@@ -85,7 +85,7 @@ const PlanForm = ({
         products: initialProducts,
       });
       if (initialData.image) {
-        setImagePreview(`${API_HOST}/${initialData.image}`);
+        setImagePreview(`${API_BASE}/${initialData.image}`);
       } else {
         setImagePreview("");
       }
@@ -114,7 +114,7 @@ const PlanForm = ({
       setImagePreview(URL.createObjectURL(file));
     } else {
       if (initialData && initialData.image) {
-        setImagePreview(`${API_HOST}/${initialData.image}`);
+        setImagePreview(`${API_BASE}/${initialData.image}`);
       } else {
         setImagePreview("");
       }
@@ -404,10 +404,10 @@ const PlanForm = ({
             {form.products.map((selectedProd) => {
               const product = allProducts.find((p) => p._id === selectedProd.productId);
               if (!product) return null;
-              
+
               const productImg = product.images && product.images.length > 0 ? product.images[0] : null;
-              const productImgUrl = productImg 
-                ? (productImg.startsWith("http") ? productImg : `${API_HOST}${productImg}`)
+              const productImgUrl = productImg
+                ? (productImg.startsWith("http") ? productImg : `${API_BASE}${productImg}`)
                 : null;
 
               return (
@@ -440,7 +440,7 @@ const PlanForm = ({
                       </span>
                     </div>
                   </div>
-                  
+
                   {/* Quantity Controls & Delete Button */}
                   <div className="flex items-center gap-3 flex-shrink-0">
                     <div className="flex items-center border border-yellow-300 rounded-lg bg-white overflow-hidden shadow-xs h-8">

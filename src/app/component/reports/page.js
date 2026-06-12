@@ -99,7 +99,8 @@ const screenFields = [
   { key: "contactUsScreen", label: "Contact Us" },
   { key: "aboutUsScreen", label: "About Us" },
   { key: "termsConditionsScreen", label: "Terms & Conditions" },
-  { key: "privacyPolicyScreen", label: "Privacy Policy" }
+  { key: "privacyPolicyScreen", label: "Privacy Policy" },
+  { key: "refundPolicyScreen", label: "Refund Policy" }
 ];
 
 const formatPercent = (value, total) => {

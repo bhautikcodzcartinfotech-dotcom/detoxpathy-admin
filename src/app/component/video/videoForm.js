@@ -348,8 +348,8 @@ const VideoForm = ({
         rules: [required("Plan")],
       },
       requiredCorrectAnswer: {
-        value: isAgoraSession ? "0" : form.requiredCorrectAnswer,
-        rules: isUpdate ? [numberRule("Required Correct Answer")] : [required("Required Correct Answer"), numberRule("Required Correct Answer")],
+        value: (isAgoraSession || typeNum === 6) ? (form.requiredCorrectAnswer || "0") : form.requiredCorrectAnswer,
+        rules: (isUpdate || typeNum === 6) ? [numberRule("Required Correct Answer")] : [required("Required Correct Answer"), numberRule("Required Correct Answer")],
       },
     });
 
@@ -386,8 +386,8 @@ const VideoForm = ({
     { label: "Session Categories", value: 2 },
     { label: "Categoywise Testimonial", value: 4 },
     { label: "Resume Plan", value: 5 },
-    { label: "Trial Video", value: 6 },
-    { label: "Body Detoxification", value: 7 },
+    { label: "Detox Session", value: 6 },
+    { label: "Free Video", value: 7 },
     { label: "Instruction", value: 8 },
     { label: "Hold Video", value: 9 },
   ];
@@ -733,7 +733,7 @@ const VideoForm = ({
           )}
 
           <div>
-            <label className="block mb-1 font-semibold text-gray-700">Required Correct Answer Count</label>
+            <label className="block mb-1 font-semibold text-gray-700">Correct Answer Count</label>
             <input
               type="text"
               value={form.requiredCorrectAnswer}

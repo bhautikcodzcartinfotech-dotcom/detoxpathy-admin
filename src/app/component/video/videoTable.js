@@ -124,8 +124,8 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                           3: "Testimonial",
                           4: "Categorywise Testimonial",
                           5: "Resume Plan",
-                          6: "Trial Video",
-                          7: "Body Detoxification",
+                          6: "Detox Session",
+                          7: "Free Video",
                           8: "Instruction",
                           9: "Hold Video",
                           10: "Agora Session",
@@ -217,8 +217,8 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
             {/* Multi-Language Content - Horizontal Layout */}
             <div
               className={`overflow-hidden transition-all duration-300 ease-in-out ${expandedCards[video._id]
-                  ? "max-h-[2000px] opacity-100"
-                  : "max-h-0 opacity-0"
+                ? "max-h-[2000px] opacity-100"
+                : "max-h-0 opacity-0"
                 }`}
             >
               <div className="p-6 space-y-6">

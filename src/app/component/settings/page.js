@@ -1129,6 +1129,20 @@ const SettingsPage = () => {
                 />
               </div>
 
+              {/* Refund Policy */}
+              <div>
+                <RichTextEditor
+                  label="Refund Policy"
+                  value={formData.refundPolicy || ""}
+                  onChange={(value) =>
+                    handleInputChange("refundPolicy", value)
+                  }
+                  placeholder="<h3>Refund Policy</h3><p>Your content here...</p>"
+                  rows={6}
+                  showPreviewButton={false}
+                />
+              </div>
+
               {/* Appointment Description */}
               <MultiLangTextarea
                 label="Appointment Description"
