@@ -47,16 +47,25 @@ const StaffPage = () => {
       
       setBranches(availableBranches);
       
-      if (availableBranches.length > 0 && !selectedBranchId) {
-        setSelectedBranchId(availableBranches[0]._id);
+      if (availableBranches.length > 0) {
+        const isValid = availableBranches.some(b => b._id === selectedBranchId);
+        if (!selectedBranchId || !isValid) {
+          setSelectedBranchId(availableBranches[0]._id);
+        }
+      } else {
+        setListLoading(false);
       }
     } catch (err) {
       console.error("Failed to load branches", err);
+      setListLoading(false);
     }
   };
 
   const fetchList = async (branchId) => {
-    if (!branchId) return;
+    if (!branchId) {
+      setListLoading(false);
+      return;
+    }
     try {
       setListLoading(true);
       const data = await getStaff(branchId);
@@ -76,6 +85,8 @@ const StaffPage = () => {
     if (selectedBranchId) {
       localStorage.setItem('selectedStaffBranchId', selectedBranchId);
       fetchList(selectedBranchId);
+    } else {
+      setListLoading(false);
     }
   }, [selectedBranchId]);
 
