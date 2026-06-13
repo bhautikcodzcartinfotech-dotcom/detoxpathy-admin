@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata = {
-  title: "DetoxPathy Admin Panel",
+  title: "DetoxPathy",
   description:
     "Body Detoxification Admin Panel - Manage your fitness and wellness platform",
   icons: {

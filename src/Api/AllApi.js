@@ -10,6 +10,19 @@ export const API_HOST = API_BASE.replace(/\/?api\/?v1\/?$/, "").replace(
   ""
 );
 
+// Resolve any stored path/filename to a fully qualified URL for images
+export const resolveImageUrl = (imagePath) => {
+  if (!imagePath) return "";
+  if (imagePath.startsWith("http://") || imagePath.startsWith("https://") || imagePath.startsWith("data:")) {
+    return imagePath;
+  }
+  let cleanPath = imagePath.replace(/^\//, "");
+  if (!cleanPath.startsWith("uploads/")) {
+    cleanPath = `uploads/${cleanPath}`;
+  }
+  return `${API_BASE}/${cleanPath}`;
+};
+
 // Get auth headers from localStorage token
 export const getAuthHeaders = () => {
   const token = localStorage.getItem("token");

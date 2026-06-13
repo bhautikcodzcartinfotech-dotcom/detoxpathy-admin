@@ -4,7 +4,7 @@ import Loader from "@/utils/loader";
 import NotFoundCard from "@/components/NotFoundCard";
 import { ActionButton } from "@/utils/actionbutton";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
-import { API_BASE } from "@/Api/AllApi";
+import { API_BASE, resolveImageUrl } from "@/Api/AllApi";
 
 const ProductTable = ({ items, loading, onEdit, onDelete, currency = "₹" }) => {
   const [deleteDialog, setDeleteDialog] = useState({
@@ -154,7 +154,7 @@ const ProductTable = ({ items, loading, onEdit, onDelete, currency = "₹" }) =>
                     {product.images && product.images.length > 0 ? (
                       <div className="flex items-center">
                         <img
-                          src={`${API_BASE}${product.images[0]}`}
+                          src={resolveImageUrl(product.images[0])}
                           alt={product.name}
                           className="w-10 h-10 object-cover rounded-lg mr-2"
                           onError={(e) => {

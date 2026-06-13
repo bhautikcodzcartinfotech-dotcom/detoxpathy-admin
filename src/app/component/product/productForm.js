@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from "react";
 import TimeButton from "@/utils/timebutton";
 import { validateForm } from "@/utils/validation";
-import { API_BASE, getSetting } from "@/Api/AllApi";
+import { API_BASE, getSetting, resolveImageUrl } from "@/Api/AllApi";
 
 const ProductForm = ({
   onSubmit,
@@ -383,11 +383,11 @@ const ProductForm = ({
             <p className="text-sm font-semibold text-gray-700 mb-2">Existing Images:</p>
             <div className="flex flex-wrap gap-2">
               {existingImages
-                .filter(image => image && image.trim() !== '' && image.startsWith('/') && !imagesToRemove.includes(image))
+                .filter(image => image && image.trim() !== '' && !imagesToRemove.includes(image))
                 .map((image, index) => (
                   <div key={index} className="relative">
                     <img
-                      src={`${API_BASE}${image}`}
+                      src={resolveImageUrl(image)}
                       alt={`Existing ${index + 1}`}
                       className="w-20 h-20 object-cover rounded border"
                       onError={(e) => {
