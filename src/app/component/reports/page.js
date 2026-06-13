@@ -287,7 +287,7 @@ const ReportsPage = () => {
         ]);
         const orders = orderData?.orders || [];
         const stocks = stockList || [];
-        
+
         const productMap = {};
 
         // Pre-populate productMap with all plans from allPlans state so we show all plan data
@@ -304,7 +304,7 @@ const ReportsPage = () => {
             };
           }
         });
-        
+
         // Populate and aggregate from Stock list
         stocks.forEach(s => {
           const itemObj = s.productId || s.planId;
@@ -312,7 +312,7 @@ const ReportsPage = () => {
             const itemId = itemObj._id || itemObj;
             const availableStock = s.available || 0;
             const soldStock = s.sold || 0;
-            
+
             if (!productMap[itemId]) {
               productMap[itemId] = {
                 _id: itemId,
@@ -328,7 +328,7 @@ const ReportsPage = () => {
             productMap[itemId].sold += soldStock;
           }
         });
-        
+
         // Populate/Update from Orders
         orders.forEach(o => {
           if (selectedBranchId) {
@@ -338,7 +338,7 @@ const ReportsPage = () => {
               return;
             }
           }
-          
+
           if (startDate || endDate) {
             const orderDate = new Date(o.createdAt);
             if (startDate && orderDate < new Date(startDate)) return;
@@ -392,7 +392,7 @@ const ReportsPage = () => {
             });
           }
         });
-        
+
         // Convert to array and format with unified metrics
         const formattedList = Object.values(productMap).map(item => {
           const availableQty = item.available || 0;
@@ -522,15 +522,15 @@ const ReportsPage = () => {
 
     return data.filter(item => {
       if (viewType === "videoReports") {
-        const matchesSearch = !searchTerm || 
-          (item.userName?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-           item.userSurname?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-           (item.videoTitle?.english && item.videoTitle.english.toLowerCase().includes(searchTerm.toLowerCase())) ||
-           (item.videoTitle?.hindi && item.videoTitle.hindi.toLowerCase().includes(searchTerm.toLowerCase())) ||
-           (item.videoTitle?.gujarati && item.videoTitle.gujarati.toLowerCase().includes(searchTerm.toLowerCase())));
+        const matchesSearch = !searchTerm ||
+          (item.userName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.userSurname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (item.videoTitle?.english && item.videoTitle.english.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (item.videoTitle?.hindi && item.videoTitle.hindi.toLowerCase().includes(searchTerm.toLowerCase())) ||
+            (item.videoTitle?.gujarati && item.videoTitle.gujarati.toLowerCase().includes(searchTerm.toLowerCase())));
         return matchesSearch;
       }
-      
+
       if (viewType === "highest_selling_products") {
         const matchesSearch = !searchTerm || item.name.toLowerCase().includes(searchTerm.toLowerCase());
         const matchesType = itemTypeFilter === "all" || item.type === itemTypeFilter;
@@ -538,14 +538,14 @@ const ReportsPage = () => {
       }
 
       if (reportType === 'videoReports') {
-        const matchesSearch = !searchTerm || 
-          (item.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-           item.surname?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-           item.mobileNumber?.includes(searchTerm) || 
-           item.email?.toLowerCase().includes(searchTerm.toLowerCase()));
+        const matchesSearch = !searchTerm ||
+          (item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.surname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            item.mobileNumber?.includes(searchTerm) ||
+            item.email?.toLowerCase().includes(searchTerm.toLowerCase()));
         return matchesSearch;
       }
-      
+
       let user = null;
       if (checklistReportEnabled || reportType === 'appointments' || reportType === 'orders') {
         const uId = typeof item.userId === 'object' ? item.userId?._id : item.userId;
@@ -705,15 +705,15 @@ const ReportsPage = () => {
       data.sort((a, b) => {
         const usageA = screenUsages.find(su => String(su.userId?._id || su.userId) === String(a._id));
         const usageB = screenUsages.find(su => String(su.userId?._id || su.userId) === String(b._id));
-        
+
         const countA = usageA ? Object.entries(usageA)
           .filter(([key, val]) => key.endsWith("Screen") && typeof val === "number")
           .reduce((sum, [_, val]) => sum + val, 0) : 0;
-          
+
         const countB = usageB ? Object.entries(usageB)
           .filter(([key, val]) => key.endsWith("Screen") && typeof val === "number")
           .reduce((sum, [_, val]) => sum + val, 0) : 0;
-          
+
         return countB - countA;
       });
     }
@@ -886,8 +886,8 @@ const ReportsPage = () => {
       }
     });
 
-    const conversionPercentage = uniqueUserIdsFromAppointments.size > 0 
-      ? ((usersWithPlan / uniqueUserIdsFromAppointments.size) * 100).toFixed(1) 
+    const conversionPercentage = uniqueUserIdsFromAppointments.size > 0
+      ? ((usersWithPlan / uniqueUserIdsFromAppointments.size) * 100).toFixed(1)
       : 0;
 
     return {
@@ -912,45 +912,45 @@ const ReportsPage = () => {
     if (filteredData.length === 0) return <div className="text-center p-10 text-gray-500 font-medium">No records found matching your filters.</div>;
 
     if (viewType === "videoReports") {
-        return (
-          <div className="overflow-x-auto">
-            <table className="w-full text-[11px] text-left">
-              <thead className="text-[11px] text-gray-400 uppercase bg-gray-50/50 font-bold tracking-wider">
-                <tr>
-                  <th className="px-6 py-4">Rank</th>
-                  <th className="px-6 py-4">User</th>
-                  <th className="px-6 py-4">Video</th>
-                  <th className="px-6 py-4">Watched Seconds</th>
-                  <th className="px-6 py-4">Total Seconds</th>
-                  <th className="px-6 py-4">Watch Percentage</th>
-                  <th className="px-6 py-4">Completed</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {paginatedData.map((item, index) => {
-                  const globalIndex = (currentPage - 1) * itemsPerPage + index + 1;
-                  return (
-                    <tr key={`${item.userId}-${item.videoId}-${index}`} className="bg-white hover:bg-gray-50/80 transition-colors">
-                      <td className="px-6 py-4 text-center font-bold text-gray-400">#{globalIndex}</td>
-                      <td className="px-6 py-4 font-semibold text-gray-900">{item.userName} {item.userSurname}</td>
-                      <td className="px-6 py-4 text-gray-600">{item.videoTitle?.english || item.videoTitle || "Unknown Video"}</td>
-                      <td className="px-6 py-4 text-center font-bold text-indigo-600">{item.watchedSeconds}s</td>
-                      <td className="px-6 py-4 text-center font-bold text-gray-600">{item.totalSeconds}s</td>
-                      <td className="px-6 py-4 text-center font-bold text-indigo-600">
-                        {(typeof item.watchPercentage === 'number' ? item.watchPercentage : 0).toFixed(1)}%
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <span className={`inline-flex px-3 py-1 rounded-full text-xs text-black font-black uppercase ${item.isCompleted ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
-                          {item.isCompleted ? "Yes" : "No"}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        );
+      return (
+        <div className="overflow-x-auto">
+          <table className="w-full text-[11px] text-left">
+            <thead className="text-[11px] text-gray-400 uppercase bg-gray-50/50 font-bold tracking-wider">
+              <tr>
+                <th className="px-6 py-4">Rank</th>
+                <th className="px-6 py-4">User</th>
+                <th className="px-6 py-4">Video</th>
+                <th className="px-6 py-4">Watched Seconds</th>
+                <th className="px-6 py-4">Total Seconds</th>
+                <th className="px-6 py-4">Watch Percentage</th>
+                <th className="px-6 py-4">Completed</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {paginatedData.map((item, index) => {
+                const globalIndex = (currentPage - 1) * itemsPerPage + index + 1;
+                return (
+                  <tr key={`${item.userId}-${item.videoId}-${index}`} className="bg-white hover:bg-gray-50/80 transition-colors">
+                    <td className="px-6 py-4 text-center font-bold text-gray-400">#{globalIndex}</td>
+                    <td className="px-6 py-4 font-semibold text-gray-900">{item.userName} {item.userSurname}</td>
+                    <td className="px-6 py-4 text-gray-600">{item.videoTitle?.english || item.videoTitle || "Unknown Video"}</td>
+                    <td className="px-6 py-4 text-center font-bold text-indigo-600">{item.watchedSeconds}s</td>
+                    <td className="px-6 py-4 text-center font-bold text-gray-600">{item.totalSeconds}s</td>
+                    <td className="px-6 py-4 text-center font-bold text-indigo-600">
+                      {(typeof item.watchPercentage === 'number' ? item.watchPercentage : 0).toFixed(1)}%
+                    </td>
+                    <td className="px-6 py-4 text-center">
+                      <span className={`inline-flex px-3 py-1 rounded-full text-xs text-black font-black uppercase ${item.isCompleted ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-600"}`}>
+                        {item.isCompleted ? "Yes" : "No"}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      );
     } else if (viewType === "highest_selling_products") {
       return (
         <div className="overflow-x-auto">
@@ -1054,7 +1054,7 @@ const ReportsPage = () => {
                 <th className="px-4 py-4 text-center whitespace-nowrap">Weight</th>
                 <th className="px-6 py-4 whitespace-nowrap">Mistakes</th>
               </tr>
-            </thead> 
+            </thead>
             <tbody className="divide-y divide-gray-50">
               {paginatedData.map((item) => (
                 <tr key={item._id} className="bg-white hover:bg-gray-50/80 transition-colors text-xs text-black">
@@ -1119,8 +1119,8 @@ const ReportsPage = () => {
                   const assignedDoctors = allDoctors.filter(d =>
                     (Array.isArray(d.fullBranches) ? d.fullBranches : []).some(b => String(b._id) === userBranchId)
                   ).map(d => d.username).join(", ") || "No Doctor Assigned";
-                  const referrerUser = item.usedReferralCode 
-                    ? allUsersList.find(u => u.referralCode === item.usedReferralCode) 
+                  const referrerUser = item.usedReferralCode
+                    ? allUsersList.find(u => u.referralCode === item.usedReferralCode)
                     : null;
                   // Calculate how many referrals this user has sent
                   const referralsSentCount = allUsersList.filter(u => u.usedReferralCode === item.referralCode).length;
@@ -1132,10 +1132,10 @@ const ReportsPage = () => {
                       <td className="px-6 py-4 text-gray-500">{item.city || 'N/A'}, {item.state || 'N/A'}</td>
                       <td className="px-6 py-4 text-gray-500">{item.dob || 'N/A'}</td>
                       <td className="px-6 py-4 text-violet-600 font-medium">
-                        {referrerUser 
-                          ? `${referrerUser.name} ${referrerUser.surname || ""}`.trim() 
-                          : item.usedReferralCode 
-                            ? "Referral Code Used" 
+                        {referrerUser
+                          ? `${referrerUser.name} ${referrerUser.surname || ""}`.trim()
+                          : item.usedReferralCode
+                            ? "Referral Code Used"
                             : "N/A"
                         }
                       </td>
@@ -1450,8 +1450,8 @@ const ReportsPage = () => {
         titleText = productReportSubView === "highest_sold"
           ? "Highest Selling Products (By Qty)"
           : productReportSubView === "highest_revenue"
-          ? "Highest Revenue Products"
-          : "Products Stock Inventory";
+            ? "Highest Revenue Products"
+            : "Products Stock Inventory";
 
         if (productReportSubView === "highest_sold") {
           columns = [{ width: 220 }, { width: 120 }, { width: 120 }, { width: 130 }];
@@ -1640,13 +1640,13 @@ const ReportsPage = () => {
               const assignedDoctors = allDoctors.filter(d =>
                 (Array.isArray(d.fullBranches) ? d.fullBranches : []).some(b => String(b._id) === userBranchId)
               ).map(d => d.username).join(", ") || "No Doctor Assigned";
-              const referrerUser = item.usedReferralCode 
-                ? allUsersList.find(u => u.referralCode === item.usedReferralCode) 
+              const referrerUser = item.usedReferralCode
+                ? allUsersList.find(u => u.referralCode === item.usedReferralCode)
                 : null;
-              const referrerName = referrerUser 
-                ? `${referrerUser.name} ${referrerUser.surname || ""}`.trim() 
-                : item.usedReferralCode 
-                  ? "Referral Code Used" 
+              const referrerName = referrerUser
+                ? `${referrerUser.name} ${referrerUser.surname || ""}`.trim()
+                : item.usedReferralCode
+                  ? "Referral Code Used"
                   : "N/A";
               const referralsSentCount = allUsersList.filter(u => u.usedReferralCode === item.referralCode).length;
 
@@ -2242,18 +2242,18 @@ const ReportsPage = () => {
                   </div>
                 </div>
                 {reportType === "appointments" && (
-                    <div className="flex flex-col gap-1">
-                      <label className="text-[11px] font-black text-amber-600 uppercase tracking-widest px-1">Reschedule Appointments</label>
-                      <Dropdown
-                        options={[
-                          { label: "All", value: "" },
-                          { label: "Reschedule", value: "rescheduled" }
-                        ]}
-                        value={rescheduleFilter}
-                        onChange={setRescheduleFilter}
-                      />
-                    </div>
-                  )}
+                  <div className="flex flex-col gap-1">
+                    <label className="text-[11px] font-black text-amber-600 uppercase tracking-widest px-1">Reschedule Appointments</label>
+                    <Dropdown
+                      options={[
+                        { label: "All", value: "" },
+                        { label: "Reschedule", value: "rescheduled" }
+                      ]}
+                      value={rescheduleFilter}
+                      onChange={setRescheduleFilter}
+                    />
+                  </div>
+                )}
 
                 {/* Row 4: Search, Timeline & Checklist Report */}
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-end">
@@ -2420,184 +2420,184 @@ const ReportsPage = () => {
           <>
             <div className={`grid grid-cols-1 md:grid-cols-3 ${reportType === "appointments" ? "lg:grid-cols-4" : ""} gap-6`}>
               <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
-            <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500"></div>
-            <div className="flex flex-col gap-1">
-              <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Total Results</span>
-              <div className="flex items-end gap-2 mt-2">
-                <span className="text-4xl font-black text-gray-900 leading-none">{filteredData.length}</span>
-                <div className="flex flex-col ml-2">
-                  <span className="text-xs text-black font-bold text-gray-400 uppercase tracking-tighter leading-tight">Records Found</span>
-                  <span className="text-xs text-black font-bold text-indigo-500 uppercase tracking-tighter leading-tight">
-                    {formatPercent(filteredData.length, reportTotalCount)}% of {reportTotalLabel}
-                  </span>
-                </div>
-              </div>
-              <div className="mt-4 flex items-center gap-2">
-                <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
-                  <div className="h-full bg-indigo-500 w-full opacity-20"></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
-            <div className="absolute top-0 left-0 w-full h-1 bg-green-500"></div>
-            <div className="flex flex-col gap-1">
-              <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Active Status</span>
-              <div className="flex items-end gap-2 mt-2">
-                <span className="text-4xl font-black text-green-600 leading-none">{activeCount}</span>
-                <div className="flex flex-col ml-2">
-                  <span className="text-xs text-black font-bold text-gray-400 uppercase tracking-tighter leading-tight">
-                    {filteredData.length > 0 ? ((activeCount / filteredData.length) * 100).toFixed(1) : 0}% of Filter
-                  </span>
-                  <span className="text-xs text-black font-bold text-green-500 uppercase tracking-tighter leading-tight">
-                    {formatPercent(activeCount, reportTotalCount)}% of All
-                  </span>
-                </div>
-              </div>
-              <div className="mt-4 flex items-center gap-2">
-                <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
-                  <div className="h-full bg-green-500 transition-all placeholder:text-black duration-500" style={{
-                    width: `${filteredData.length > 0 ? (activeCount / filteredData.length) * 100 : 0}%`
-                  }}></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
-            <div className="absolute top-0 left-0 w-full h-1 bg-red-500"></div>
-            <div className="flex flex-col gap-1">
-              <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Inactive Status</span>
-              <div className="flex items-end gap-2 mt-2">
-                <span className="text-4xl font-black text-red-600 leading-none">{inactiveCount}</span>
-                <div className="flex flex-col ml-2">
-                  <span className="text-xs text-black font-bold text-gray-400 uppercase tracking-tighter leading-tight">
-                    {filteredData.length > 0 ? ((inactiveCount / filteredData.length) * 100).toFixed(1) : 0}% of Filter
-                  </span>
-                  <span className="text-xs text-black font-bold text-red-500 uppercase tracking-tighter leading-tight">
-                    {formatPercent(inactiveCount, reportTotalCount)}% of All
-                  </span>
-                </div>
-              </div>
-              <div className="mt-4 flex items-center gap-2">
-                <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
-                  <div className="h-full bg-red-500 transition-all placeholder:text-black duration-500" style={{
-                    width: `${filteredData.length > 0 ? (inactiveCount / filteredData.length) * 100 : 0}%`
-                  }}></div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {reportType === "appointments" && (
-            <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
-              <div className="absolute top-0 left-0 w-full h-1 bg-teal-500"></div>
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Plan Conversion</span>
-                <div className="flex items-end gap-2 mt-2">
-                  <span className="text-4xl font-black text-teal-600 leading-none">{appointmentConversionStats.usersWithPlan}</span>
-                  <div className="flex flex-col ml-2">
-                    <span className="text-xs text-black font-bold text-gray-400 uppercase tracking-tighter leading-tight">
-                      {appointmentConversionStats.conversionPercentage}% Conversion
-                    </span>
-                    <span className="text-xs text-black font-bold text-teal-500 uppercase tracking-tighter leading-tight">
-                      of {appointmentConversionStats.totalUniqueUsers} Users
-                    </span>
+                <div className="absolute top-0 left-0 w-full h-1 bg-indigo-500"></div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Total Results</span>
+                  <div className="flex items-end gap-2 mt-2">
+                    <span className="text-4xl font-black text-gray-900 leading-none">{filteredData.length}</span>
+                    <div className="flex flex-col ml-2">
+                      <span className="text-xs text-black font-bold text-gray-400 uppercase tracking-tighter leading-tight">Records Found</span>
+                      <span className="text-xs text-black font-bold text-indigo-500 uppercase tracking-tighter leading-tight">
+                        {formatPercent(filteredData.length, reportTotalCount)}% of {reportTotalLabel}
+                      </span>
+                    </div>
                   </div>
-                </div>
-                <div className="mt-4 flex items-center gap-2">
-                  <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
-                    <div className="h-full bg-teal-500 transition-all placeholder:text-black duration-500" style={{
-                      width: `${appointmentConversionStats.conversionPercentage}%`
-                    }}></div>
+                  <div className="mt-4 flex items-center gap-2">
+                    <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
+                      <div className="h-full bg-indigo-500 w-full opacity-20"></div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
 
-        {/* New Analytics Boxes - Row 2 */}
-        {reportType === "users" && !checklistReportEnabled && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
-            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all placeholder:text-black hover:shadow-md">
-              <div className="absolute top-0 left-0 w-full h-1 bg-blue-400"></div>
-              <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Avg Weight & Height</span>
-              <div className="mt-3 flex flex-col gap-1">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-black font-bold text-gray-600">Weight</span>
-                  <span className="text-lg font-black text-gray-900">{advancedStats.avgWeight} kg</span>
-                </div>
-                <div className="flex justify-between items-center text-xs text-black text-gray-400 font-bold uppercase">
-                  <span>High: {advancedStats.highestWeight}</span>
-                  <span>Low: {advancedStats.lowestWeight}</span>
-                </div>
-                <div className="h-0.5 bg-gray-50 mt-1"></div>
-                <div className="flex justify-between items-center mt-1">
-                  <span className="text-xs text-black font-bold text-gray-600">Height</span>
-                  <span className="text-lg font-black text-gray-900">{advancedStats.avgHeight} cm</span>
+              <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
+                <div className="absolute top-0 left-0 w-full h-1 bg-green-500"></div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Active Status</span>
+                  <div className="flex items-end gap-2 mt-2">
+                    <span className="text-4xl font-black text-green-600 leading-none">{activeCount}</span>
+                    <div className="flex flex-col ml-2">
+                      <span className="text-xs text-black font-bold text-gray-400 uppercase tracking-tighter leading-tight">
+                        {filteredData.length > 0 ? ((activeCount / filteredData.length) * 100).toFixed(1) : 0}% of Filter
+                      </span>
+                      <span className="text-xs text-black font-bold text-green-500 uppercase tracking-tighter leading-tight">
+                        {formatPercent(activeCount, reportTotalCount)}% of All
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center gap-2">
+                    <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
+                      <div className="h-full bg-green-500 transition-all placeholder:text-black duration-500" style={{
+                        width: `${filteredData.length > 0 ? (activeCount / filteredData.length) * 100 : 0}%`
+                      }}></div>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all placeholder:text-black hover:shadow-md">
-              <div className="absolute top-0 left-0 w-full h-1 bg-purple-400"></div>
-              <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Ideal Weight & Geography</span>
-              <div className="mt-3 flex flex-col gap-2">
-                <div>
-                  <span className="text-xs text-black text-gray-400 font-bold uppercase block">Avg Ideal Weight</span>
-                  <span className="text-xl font-black text-purple-600">{advancedStats.avgIdealWeight} kg</span>
-                </div>
-                <div>
-                  <span className="text-xs text-black text-gray-400 font-bold uppercase block">Top Booking State</span>
-                  <span className="text-[11px] font-black text-gray-800 truncate">{advancedStats.topState}</span>
+              <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
+                <div className="absolute top-0 left-0 w-full h-1 bg-red-500"></div>
+                <div className="flex flex-col gap-1">
+                  <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Inactive Status</span>
+                  <div className="flex items-end gap-2 mt-2">
+                    <span className="text-4xl font-black text-red-600 leading-none">{inactiveCount}</span>
+                    <div className="flex flex-col ml-2">
+                      <span className="text-xs text-black font-bold text-gray-400 uppercase tracking-tighter leading-tight">
+                        {filteredData.length > 0 ? ((inactiveCount / filteredData.length) * 100).toFixed(1) : 0}% of Filter
+                      </span>
+                      <span className="text-xs text-black font-bold text-red-500 uppercase tracking-tighter leading-tight">
+                        {formatPercent(inactiveCount, reportTotalCount)}% of All
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex items-center gap-2">
+                    <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
+                      <div className="h-full bg-red-500 transition-all placeholder:text-black duration-500" style={{
+                        width: `${filteredData.length > 0 ? (inactiveCount / filteredData.length) * 100 : 0}%`
+                      }}></div>
+                    </div>
+                  </div>
                 </div>
               </div>
+
+              {reportType === "appointments" && (
+                <div className="bg-white p-8 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden group transition-all placeholder:text-black hover:shadow-md">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-teal-500"></div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-black font-black text-gray-400 uppercase tracking-widest">Plan Conversion</span>
+                    <div className="flex items-end gap-2 mt-2">
+                      <span className="text-4xl font-black text-teal-600 leading-none">{appointmentConversionStats.usersWithPlan}</span>
+                      <div className="flex flex-col ml-2">
+                        <span className="text-xs text-black font-bold text-gray-400 uppercase tracking-tighter leading-tight">
+                          {appointmentConversionStats.conversionPercentage}% Conversion
+                        </span>
+                        <span className="text-xs text-black font-bold text-teal-500 uppercase tracking-tighter leading-tight">
+                          of {appointmentConversionStats.totalUniqueUsers} Users
+                        </span>
+                      </div>
+                    </div>
+                    <div className="mt-4 flex items-center gap-2">
+                      <div className="w-full h-1 bg-gray-50 rounded-full overflow-hidden">
+                        <div className="h-full bg-teal-500 transition-all placeholder:text-black duration-500" style={{
+                          width: `${appointmentConversionStats.conversionPercentage}%`
+                        }}></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all placeholder:text-black hover:shadow-md">
-              <div className="absolute top-0 left-0 w-full h-1 bg-amber-400"></div>
-              <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Referral Performance</span>
-              <div className="mt-3 flex flex-col gap-2">
-                <div>
-                  <span className="text-xs text-black text-gray-400 font-bold uppercase block text-amber-600">Highest Source</span>
-                  <span className="text-[11px] font-black text-gray-800 truncate">{advancedStats.refPerformance.highest}</span>
+            {/* New Analytics Boxes - Row 2 */}
+            {reportType === "users" && !checklistReportEnabled && (
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mt-6">
+                <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all placeholder:text-black hover:shadow-md">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-blue-400"></div>
+                  <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Avg Weight & Height</span>
+                  <div className="mt-3 flex flex-col gap-1">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-black font-bold text-gray-600">Weight</span>
+                      <span className="text-lg font-black text-gray-900">{advancedStats.avgWeight} kg</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs text-black text-gray-400 font-bold uppercase">
+                      <span>High: {advancedStats.highestWeight}</span>
+                      <span>Low: {advancedStats.lowestWeight}</span>
+                    </div>
+                    <div className="h-0.5 bg-gray-50 mt-1"></div>
+                    <div className="flex justify-between items-center mt-1">
+                      <span className="text-xs text-black font-bold text-gray-600">Height</span>
+                      <span className="text-lg font-black text-gray-900">{advancedStats.avgHeight} cm</span>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <span className="text-xs text-black text-gray-400 font-bold uppercase block text-gray-400">Lowest Source</span>
-                  <span className="text-[11px] font-black text-gray-600 truncate">{advancedStats.refPerformance.lowest}</span>
-                </div>
-              </div>
-            </div>
 
-            <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all placeholder:text-black hover:shadow-md">
-              <div className="absolute top-0 left-0 w-full h-1 bg-rose-400"></div>
-              <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Engagement Overview</span>
-              <div className="mt-3 flex flex-col gap-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-black text-gray-400 font-bold uppercase">Video Viewers</span>
-                  <span className="text-lg font-black text-rose-500">
-                    {filteredData.filter(item => {
-                      const u = checklistReportEnabled || reportType === 'appointments' || reportType === 'orders' ? item.userId : (reportType === 'reschedule' ? item.user : item);
-                      return u?.seeVideo;
-                    }).length}
-                  </span>
+                <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all placeholder:text-black hover:shadow-md">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-purple-400"></div>
+                  <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Ideal Weight & Geography</span>
+                  <div className="mt-3 flex flex-col gap-2">
+                    <div>
+                      <span className="text-xs text-black text-gray-400 font-bold uppercase block">Avg Ideal Weight</span>
+                      <span className="text-xl font-black text-purple-600">{advancedStats.avgIdealWeight} kg</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-black text-gray-400 font-bold uppercase block">Top Booking State</span>
+                      <span className="text-[11px] font-black text-gray-800 truncate">{advancedStats.topState}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-xs text-black text-gray-400 font-bold uppercase">Answered Qs</span>
-                  <span className="text-lg font-black text-rose-500">
-                    {filteredData.filter(item => {
-                      const u = checklistReportEnabled || reportType === 'appointments' || reportType === 'orders' ? item.userId : (reportType === 'reschedule' ? item.user : item);
-                      return u?.giveAnswer;
-                    }).length}
-                  </span>
+
+                <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all placeholder:text-black hover:shadow-md">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-amber-400"></div>
+                  <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Referral Performance</span>
+                  <div className="mt-3 flex flex-col gap-2">
+                    <div>
+                      <span className="text-xs text-black text-gray-400 font-bold uppercase block text-amber-600">Highest Source</span>
+                      <span className="text-[11px] font-black text-gray-800 truncate">{advancedStats.refPerformance.highest}</span>
+                    </div>
+                    <div>
+                      <span className="text-xs text-black text-gray-400 font-bold uppercase block text-gray-400">Lowest Source</span>
+                      <span className="text-[11px] font-black text-gray-600 truncate">{advancedStats.refPerformance.lowest}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm relative overflow-hidden transition-all placeholder:text-black hover:shadow-md">
+                  <div className="absolute top-0 left-0 w-full h-1 bg-rose-400"></div>
+                  <span className="text-[11px] font-black text-gray-400 uppercase tracking-widest">Engagement Overview</span>
+                  <div className="mt-3 flex flex-col gap-2">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-black text-gray-400 font-bold uppercase">Video Viewers</span>
+                      <span className="text-lg font-black text-rose-500">
+                        {filteredData.filter(item => {
+                          const u = checklistReportEnabled || reportType === 'appointments' || reportType === 'orders' ? item.userId : (reportType === 'reschedule' ? item.user : item);
+                          return u?.seeVideo;
+                        }).length}
+                      </span>
+                    </div>
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs text-black text-gray-400 font-bold uppercase">Answered Qs</span>
+                      <span className="text-lg font-black text-rose-500">
+                        {filteredData.filter(item => {
+                          const u = checklistReportEnabled || reportType === 'appointments' || reportType === 'orders' ? item.userId : (reportType === 'reschedule' ? item.user : item);
+                          return u?.giveAnswer;
+                        }).length}
+                      </span>
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
-        )}
-        </>
+            )}
+          </>
         )}
         <div className="bg-white rounded-[2rem] border border-gray-100 shadow-sm overflow-hidden min-h-[400px]">
           <div className="p-8 border-b border-gray-50 flex items-center justify-between bg-gradient-to-r from-gray-50/50 to-transparent">
@@ -2623,8 +2623,8 @@ const ReportsPage = () => {
               {viewType === "videoReports"
                 ? "Video Reports"
                 : viewType === "highest_selling_products"
-                ? (itemTypeFilter === "Plan" ? "Plan" : "Product")
-                : (checklistReportEnabled ? "Daily Checklist" : reportOptions.find(o => o.value === reportType)?.label)} Data
+                  ? (itemTypeFilter === "Plan" ? "Plan" : "Product")
+                  : (checklistReportEnabled ? "Daily Checklist" : reportOptions.find(o => o.value === reportType)?.label)} Data
             </h2>
             <div className="flex items-center gap-4">
               {viewType === "videoReports" && selectedVideoId && (
@@ -2717,10 +2717,10 @@ const ReportsPage = () => {
                 {usedReferralFilter && (
                   <span className="px-3 py-1 bg-violet-50 text-violet-600 rounded-full text-xs text-black font-bold border border-violet-100/50 flex items-center gap-1.5 whitespace-nowrap">
                     <span className="opacity-50">Referral:</span> {
-                      usedReferralFilter === 'has_used' 
-                        ? 'Used Referral (Referred Users)' 
-                        : usedReferralFilter === 'sent_referrals' 
-                          ? 'Sent Referrals (Referrers)' 
+                      usedReferralFilter === 'has_used'
+                        ? 'Used Referral (Referred Users)'
+                        : usedReferralFilter === 'sent_referrals'
+                          ? 'Sent Referrals (Referrers)'
                           : 'No Referral'
                     }
                   </span>
@@ -2730,7 +2730,7 @@ const ReportsPage = () => {
                     <span className="opacity-50">Video:</span> {selectedVideoWatchStatus}
                   </span>
                 )}
-                 {selectedAppointmentStatus && (
+                {selectedAppointmentStatus && (
                   <span className="px-3 py-1 bg-violet-50 text-violet-600 rounded-full text-xs text-black font-bold border border-violet-100/50 flex items-center gap-1.5 whitespace-nowrap">
                     <span className="opacity-50">Appoint. Status:</span> {selectedAppointmentStatus}
                   </span>

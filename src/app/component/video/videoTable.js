@@ -62,18 +62,21 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
   }
 
   // Helper function to get text in specific language
-  const getTextInLanguage = (multiLangObj, language = "english") => {
+  const getTextInLanguage = (multiLangObj, language = "english", noFallback = false) => {
     if (!multiLangObj) {
       return "";
     }
 
     // If it's already a string (old format), return it
     if (typeof multiLangObj === "string") {
-      return multiLangObj;
+      return language === "english" ? multiLangObj : "";
     }
 
     // If it's an object (new multi-language format), get the specific language
     if (typeof multiLangObj === "object") {
+      if (noFallback) {
+        return multiLangObj[language] || "";
+      }
       return multiLangObj[language] || multiLangObj.english || "";
     }
 
@@ -84,11 +87,24 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
     <div className="space-y-6">
       {/* Video Cards - Each video shows all 3 languages */}
       {items.length > 0 ? (
-        items.map((video) => (
-          <div
-            key={video._id}
-            className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300"
-          >
+        items.map((video) => {
+          const showEnglish = video.videoType === 3 ||
+            !!getTextInLanguage(video.videoMultiLang || video.video, "english", true) ||
+            !!getTextInLanguage(video.thumbnailMultiLang || video.thumbnail, "english", true);
+
+          const showGujarati = video.videoType === 3 ||
+            !!getTextInLanguage(video.videoMultiLang || video.video, "gujarati", true) ||
+            !!getTextInLanguage(video.thumbnailMultiLang || video.thumbnail, "gujarati", true);
+
+          const showHindi = video.videoType === 3 ||
+            !!getTextInLanguage(video.videoMultiLang || video.video, "hindi", true) ||
+            !!getTextInLanguage(video.thumbnailMultiLang || video.thumbnail, "hindi", true);
+
+          return (
+            <div
+              key={video._id}
+              className="bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden hover:shadow-xl transition-all duration-300"
+            >
             {/* Video Header */}
             <div className="bg-gradient-to-r from-yellow-400 to-amber-300 px-6 py-4">
               <div className="flex items-center justify-between">
@@ -223,348 +239,373 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
             >
               <div className="p-6 space-y-6">
                 {/* English Row */}
-                <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-xl p-4 border border-yellow-200">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center">
-                      <span className="text-xs font-bold text-white">E</span>
+                {showEnglish && (
+                  <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-xl p-4 border border-yellow-200">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-6 h-6 bg-yellow-400 rounded-full flex items-center justify-center">
+                        <span className="text-xs font-bold text-white">E</span>
+                      </div>
+                      <h4 className="text-sm font-semibold text-gray-700">
+                        English
+                      </h4>
                     </div>
-                    <h4 className="text-sm font-semibold text-gray-700">
-                      English
-                    </h4>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    {/* Thumbnail */}
-                    <div>
-                      <p className="text-xs font-medium text-gray-600 mb-2">
-                        Thumbnail
-                      </p>
-                      {getTextInLanguage(
-                        video.thumbnailMultiLang || video.thumbnail,
-                        "english"
-                      ) ? (
-                        <img
-                          src={toAbsolute(
-                            getTextInLanguage(
-                              video.thumbnailMultiLang || video.thumbnail,
-                              "english"
-                            )
-                          )}
-                          alt="English thumbnail"
-                          className="w-full h-40 object-cover rounded-xl border border-yellow-200"
-                        />
-                      ) : (
-                        <div className="w-full h-40 bg-gray-200 rounded-xl flex items-center justify-center border border-yellow-200">
-                          <span className="text-gray-400 text-xs">
-                            No Thumbnail
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Video / Agora Session */}
-                    <div>
-                      <p className="text-xs font-medium text-gray-600 mb-2">
-                        {video.videoType === 3 ? "Agora Session" : "Video"}
-                      </p>
-                      {video.videoType === 3 ? (
-                        <div className="flex flex-col justify-center items-center bg-gray-50 p-3 h-auto min-h-40 rounded-xl border border-dashed border-gray-200 text-center gap-2">
-                          <div className="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center mb-1">
-                            <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                            </svg>
-                          </div>
-                          <span className="text-[11px] font-bold text-gray-700 font-sans">Agora Session</span>
-                          <span className="text-[9px] text-gray-500 font-sans">Channel: {video.agoraChannelName || "N/A"}</span>
-                          <span className="text-[8px] text-gray-400 font-sans break-all max-w-[150px] truncate" title={video.agoraToken}>Token: {video.agoraToken ? `${video.agoraToken.substring(0, 15)}...` : "N/A"}</span>
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider font-sans bg-emerald-50 text-emerald-600 border border-emerald-100">
-                            Active
-                          </span>
-                        </div>
-                      ) : (
-                        getTextInLanguage(
-                          video.videoMultiLang || video.video,
-                          "english"
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      {/* Thumbnail */}
+                      <div>
+                        <p className="text-xs font-medium text-gray-600 mb-2">
+                          Thumbnail
+                        </p>
+                        {getTextInLanguage(
+                          video.thumbnailMultiLang || video.thumbnail,
+                          "english",
+                          true
                         ) ? (
-                          <video
+                          <img
                             src={toAbsolute(
                               getTextInLanguage(
-                                video.videoMultiLang || video.video,
-                                "english"
+                                video.thumbnailMultiLang || video.thumbnail,
+                                "english",
+                                true
                               )
                             )}
-                            controls
-                            controlsList={role === "subadmin" ? "nodownload" : undefined}
-                            onContextMenu={role === "subadmin" ? (e) => e.preventDefault() : undefined}
-                            className="w-full h-40 rounded-xl border border-yellow-200 object-cover"
+                            alt="English thumbnail"
+                            className="w-full h-40 object-cover rounded-xl border border-yellow-200"
                           />
                         ) : (
-                          <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center border border-yellow-200">
+                          <div className="w-full h-40 bg-gray-200 rounded-xl flex items-center justify-center border border-yellow-200">
                             <span className="text-gray-400 text-xs">
-                              No Video
+                              No Thumbnail
                             </span>
                           </div>
-                        )
-                      )}
-                    </div>
-
-                    {/* Title */}
-                    <div>
-                      <p className="text-xs font-medium text-gray-600 mb-2">
-                        Title
-                      </p>
-                      <p className="text-sm font-semibold text-gray-800 bg-white h-40 text-center p-2 rounded-md border border-yellow-200">
-                        {getTextInLanguage(
-                          video.titleMultiLang || video.title,
-                          "english"
                         )}
-                      </p>
-                    </div>
+                      </div>
 
-                    {/* Description */}
-                    <div>
-                      <p className="text-xs font-medium text-gray-600 mb-2">
-                        Description
-                      </p>
-                      <p className="text-sm text-gray-700 bg-white p-2 h-40 text-center rounded-md border border-amber-200 overflow-y-auto">
-                        {getTextInLanguage(
-                          video.descriptionMultiLang || video.description,
-                          "english"
+                      {/* Video / Agora Session */}
+                      <div>
+                        <p className="text-xs font-medium text-gray-600 mb-2">
+                          {video.videoType === 3 ? "Agora Session" : "Video"}
+                        </p>
+                        {video.videoType === 3 ? (
+                          <div className="flex flex-col justify-center items-center bg-gray-50 p-3 h-auto min-h-40 rounded-xl border border-dashed border-gray-200 text-center gap-2">
+                            <div className="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center mb-1">
+                              <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                              </svg>
+                            </div>
+                            <span className="text-[11px] font-bold text-gray-700 font-sans">Agora Session</span>
+                            <span className="text-[9px] text-gray-500 font-sans">Channel: {video.agoraChannelName || "N/A"}</span>
+                            <span className="text-[8px] text-gray-400 font-sans break-all max-w-[150px] truncate" title={video.agoraToken}>Token: {video.agoraToken ? `${video.agoraToken.substring(0, 15)}...` : "N/A"}</span>
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider font-sans bg-emerald-50 text-emerald-600 border border-emerald-100">
+                              Active
+                            </span>
+                          </div>
+                        ) : (
+                          getTextInLanguage(
+                            video.videoMultiLang || video.video,
+                            "english",
+                            true
+                          ) ? (
+                            <video
+                              src={toAbsolute(
+                                getTextInLanguage(
+                                  video.videoMultiLang || video.video,
+                                  "english",
+                                  true
+                                )
+                              )}
+                              controls
+                              controlsList={role === "subadmin" ? "nodownload" : undefined}
+                              onContextMenu={role === "subadmin" ? (e) => e.preventDefault() : undefined}
+                              className="w-full h-40 rounded-xl border border-yellow-200 object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center border border-yellow-200">
+                              <span className="text-gray-400 text-xs">
+                                No Video
+                              </span>
+                            </div>
+                          )
                         )}
-                      </p>
+                      </div>
+
+                      {/* Title */}
+                      <div>
+                        <p className="text-xs font-medium text-gray-600 mb-2">
+                          Title
+                        </p>
+                        <p className="text-sm font-semibold text-gray-800 bg-white h-40 text-center p-2 rounded-md border border-yellow-200">
+                          {getTextInLanguage(
+                            video.titleMultiLang || video.title,
+                            "english",
+                            true
+                          )}
+                        </p>
+                      </div>
+
+                      {/* Description */}
+                      <div>
+                        <p className="text-xs font-medium text-gray-600 mb-2">
+                          Description
+                        </p>
+                        <p className="text-sm text-gray-700 bg-white p-2 h-40 text-center rounded-md border border-amber-200 overflow-y-auto">
+                          {getTextInLanguage(
+                            video.descriptionMultiLang || video.description,
+                            "english",
+                            true
+                          )}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {/* Gujarati Row */}
-                <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl p-4 border border-amber-200">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center">
-                      <span className="text-xs font-bold text-white">G</span>
+                {showGujarati && (
+                  <div className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-xl p-4 border border-amber-200">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-6 h-6 bg-amber-500 rounded-full flex items-center justify-center">
+                        <span className="text-xs font-bold text-white">G</span>
+                      </div>
+                      <h4 className="text-sm font-semibold text-gray-700">
+                        Gujarati
+                      </h4>
                     </div>
-                    <h4 className="text-sm font-semibold text-gray-700">
-                      Gujarati
-                    </h4>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    {/* Thumbnail */}
-                    <div>
-                      <p className="text-xs font-medium text-gray-600 mb-2">
-                        Thumbnail
-                      </p>
-                      {getTextInLanguage(
-                        video.thumbnailMultiLang || video.thumbnail,
-                        "gujarati"
-                      ) ? (
-                        <img
-                          src={toAbsolute(
-                            getTextInLanguage(
-                              video.thumbnailMultiLang || video.thumbnail,
-                              "gujarati"
-                            )
-                          )}
-                          alt="Gujarati thumbnail"
-                          className="w-full h-40 object-cover rounded-xl border border-amber-200"
-                        />
-                      ) : (
-                        <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center border border-amber-200">
-                          <span className="text-gray-400 text-xs">
-                            No Image
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Video / Agora Session */}
-                    <div>
-                      <p className="text-xs font-medium text-gray-600 mb-2">
-                        {video.videoType === 3 ? "Agora Session" : "Video"}
-                      </p>
-                      {video.videoType === 3 ? (
-                        <div className="flex flex-col justify-center items-center bg-gray-50 p-3 h-auto min-h-40 rounded-xl border border-dashed border-gray-200 text-center gap-2">
-                          <div className="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center mb-1">
-                            <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                            </svg>
-                          </div>
-                          <span className="text-[11px] font-bold text-gray-700 font-sans">Agora Session</span>
-                          <span className="text-[9px] text-gray-500 font-sans">Channel: {video.agoraChannelName || "N/A"}</span>
-                          <span className="text-[8px] text-gray-400 font-sans break-all max-w-[150px] truncate" title={video.agoraToken}>Token: {video.agoraToken ? `${video.agoraToken.substring(0, 15)}...` : "N/A"}</span>
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider font-sans bg-emerald-50 text-emerald-600 border border-emerald-100">
-                            Active
-                          </span>
-                        </div>
-                      ) : (
-                        getTextInLanguage(
-                          video.videoMultiLang || video.video,
-                          "gujarati"
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      {/* Thumbnail */}
+                      <div>
+                        <p className="text-xs font-medium text-gray-600 mb-2">
+                          Thumbnail
+                        </p>
+                        {getTextInLanguage(
+                          video.thumbnailMultiLang || video.thumbnail,
+                          "gujarati",
+                          true
                         ) ? (
-                          <video
+                          <img
                             src={toAbsolute(
                               getTextInLanguage(
-                                video.videoMultiLang || video.video,
-                                "gujarati"
+                                video.thumbnailMultiLang || video.thumbnail,
+                                "gujarati",
+                                true
                               )
                             )}
-                            controls
-                            controlsList={role === "subadmin" ? "nodownload" : undefined}
-                            onContextMenu={role === "subadmin" ? (e) => e.preventDefault() : undefined}
-                            className="w-full h-40 rounded-xl border border-amber-200 object-cover"
+                            alt="Gujarati thumbnail"
+                            className="w-full h-40 object-cover rounded-xl border border-amber-200"
                           />
                         ) : (
                           <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center border border-amber-200">
                             <span className="text-gray-400 text-xs">
-                              No Video
+                              No Image
                             </span>
                           </div>
-                        )
-                      )}
-                    </div>
-
-                    {/* Title */}
-                    <div>
-                      <p className="text-xs font-medium text-gray-600 mb-2">
-                        Title
-                      </p>
-                      <p className="text-sm font-semibold  h-40 text-center text-gray-800 bg-white p-2 rounded-md border border-amber-200">
-                        {getTextInLanguage(
-                          video.titleMultiLang || video.title,
-                          "gujarati"
                         )}
-                      </p>
-                    </div>
+                      </div>
 
-                    {/* Description */}
-                    <div>
-                      <p className="text-xs font-medium text-gray-600 mb-2">
-                        Description
-                      </p>
-                      <p className="text-sm text-gray-700 bg-white p-2  h-40 text-center rounded-md border border-amber-200 overflow-y-auto">
-                        {getTextInLanguage(
-                          video.descriptionMultiLang || video.description,
-                          "gujarati"
+                      {/* Video / Agora Session */}
+                      <div>
+                        <p className="text-xs font-medium text-gray-600 mb-2">
+                          {video.videoType === 3 ? "Agora Session" : "Video"}
+                        </p>
+                        {video.videoType === 3 ? (
+                          <div className="flex flex-col justify-center items-center bg-gray-50 p-3 h-auto min-h-40 rounded-xl border border-dashed border-gray-200 text-center gap-2">
+                            <div className="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center mb-1">
+                              <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                              </svg>
+                            </div>
+                            <span className="text-[11px] font-bold text-gray-700 font-sans">Agora Session</span>
+                            <span className="text-[9px] text-gray-500 font-sans">Channel: {video.agoraChannelName || "N/A"}</span>
+                            <span className="text-[8px] text-gray-400 font-sans break-all max-w-[150px] truncate" title={video.agoraToken}>Token: {video.agoraToken ? `${video.agoraToken.substring(0, 15)}...` : "N/A"}</span>
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider font-sans bg-emerald-50 text-emerald-600 border border-emerald-100">
+                              Active
+                            </span>
+                          </div>
+                        ) : (
+                          getTextInLanguage(
+                            video.videoMultiLang || video.video,
+                            "gujarati",
+                            true
+                          ) ? (
+                            <video
+                              src={toAbsolute(
+                                getTextInLanguage(
+                                  video.videoMultiLang || video.video,
+                                  "gujarati",
+                                  true
+                                )
+                              )}
+                              controls
+                              controlsList={role === "subadmin" ? "nodownload" : undefined}
+                              onContextMenu={role === "subadmin" ? (e) => e.preventDefault() : undefined}
+                              className="w-full h-40 rounded-xl border border-amber-200 object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center border border-amber-200">
+                              <span className="text-gray-400 text-xs">
+                                No Video
+                              </span>
+                            </div>
+                          )
                         )}
-                      </p>
+                      </div>
+
+                      {/* Title */}
+                      <div>
+                        <p className="text-xs font-medium text-gray-600 mb-2">
+                          Title
+                        </p>
+                        <p className="text-sm font-semibold  h-40 text-center text-gray-800 bg-white p-2 rounded-md border border-amber-200">
+                          {getTextInLanguage(
+                            video.titleMultiLang || video.title,
+                            "gujarati",
+                            true
+                          )}
+                        </p>
+                      </div>
+
+                      {/* Description */}
+                      <div>
+                        <p className="text-xs font-medium text-gray-600 mb-2">
+                          Description
+                        </p>
+                        <p className="text-sm text-gray-700 bg-white p-2  h-40 text-center rounded-md border border-amber-200 overflow-y-auto">
+                          {getTextInLanguage(
+                            video.descriptionMultiLang || video.description,
+                            "gujarati",
+                            true
+                          )}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
 
                 {/* Hindi Row */}
-                <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-xl p-4 border border-yellow-200">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="w-6 h-6 bg-yellow-600 rounded-full flex items-center justify-center">
-                      <span className="text-xs font-bold text-white">H</span>
+                {showHindi && (
+                  <div className="bg-gradient-to-r from-yellow-50 to-amber-50 rounded-xl p-4 border border-yellow-200">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-6 h-6 bg-yellow-600 rounded-full flex items-center justify-center">
+                        <span className="text-xs font-bold text-white">H</span>
+                      </div>
+                      <h4 className="text-sm font-semibold text-gray-700">
+                        Hindi
+                      </h4>
                     </div>
-                    <h4 className="text-sm font-semibold text-gray-700">
-                      Hindi
-                    </h4>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                    {/* Thumbnail */}
-                    <div>
-                      <p className="text-xs font-medium text-gray-600 mb-2">
-                        Thumbnail
-                      </p>
-                      {getTextInLanguage(
-                        video.thumbnailMultiLang || video.thumbnail,
-                        "hindi"
-                      ) ? (
-                        <img
-                          src={toAbsolute(
-                            getTextInLanguage(
-                              video.thumbnailMultiLang || video.thumbnail,
-                              "hindi"
-                            )
-                          )}
-                          alt="Hindi thumbnail"
-                          className="w-full h-40 object-cover rounded-xl border border-yellow-200"
-                        />
-                      ) : (
-                        <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center border border-yellow-200">
-                          <span className="text-gray-400 text-xs">
-                            No Image
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Video / Agora Session */}
-                    <div>
-                      <p className="text-xs font-medium text-gray-600 mb-2">
-                        {video.videoType === 3 ? "Agora Session" : "Video"}
-                      </p>
-                      {video.videoType === 3 ? (
-                        <div className="flex flex-col justify-center items-center bg-gray-50 p-3 h-auto min-h-40 rounded-xl border border-dashed border-gray-200 text-center gap-2">
-                          <div className="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center mb-1">
-                            <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                            </svg>
-                          </div>
-                          <span className="text-[11px] font-bold text-gray-700 font-sans">Agora Session</span>
-                          <span className="text-[9px] text-gray-500 font-sans">Channel: {video.agoraChannelName || "N/A"}</span>
-                          <span className="text-[8px] text-gray-400 font-sans break-all max-w-[150px] truncate" title={video.agoraToken}>Token: {video.agoraToken ? `${video.agoraToken.substring(0, 15)}...` : "N/A"}</span>
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider font-sans bg-emerald-50 text-emerald-600 border border-emerald-100">
-                            Active
-                          </span>
-                        </div>
-                      ) : (
-                        getTextInLanguage(
-                          video.videoMultiLang || video.video,
-                          "hindi"
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      {/* Thumbnail */}
+                      <div>
+                        <p className="text-xs font-medium text-gray-600 mb-2">
+                          Thumbnail
+                        </p>
+                        {getTextInLanguage(
+                          video.thumbnailMultiLang || video.thumbnail,
+                          "hindi",
+                          true
                         ) ? (
-                          <video
+                          <img
                             src={toAbsolute(
                               getTextInLanguage(
-                                video.videoMultiLang || video.video,
-                                "hindi"
+                                video.thumbnailMultiLang || video.thumbnail,
+                                "hindi",
+                                true
                               )
                             )}
-                            controls
-                            controlsList={role === "subadmin" ? "nodownload" : undefined}
-                            onContextMenu={role === "subadmin" ? (e) => e.preventDefault() : undefined}
-                            className="w-full h-40 rounded-xl border border-yellow-200 object-cover"
+                            alt="Hindi thumbnail"
+                            className="w-full h-40 object-cover rounded-xl border border-yellow-200"
                           />
                         ) : (
                           <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center border border-yellow-200">
                             <span className="text-gray-400 text-xs">
-                              No Video
+                              No Image
                             </span>
                           </div>
-                        )
-                      )}
-                    </div>
-
-                    {/* Title */}
-                    <div>
-                      <p className="text-xs font-medium text-gray-600 mb-2">
-                        Title
-                      </p>
-                      <p className="text-sm font-semibold text-gray-800 bg-white  h-40 text-center p-2 rounded-md border border-yellow-200">
-                        {getTextInLanguage(
-                          video.titleMultiLang || video.title,
-                          "hindi"
                         )}
-                      </p>
-                    </div>
+                      </div>
 
-                    {/* Description */}
-                    <div>
-                      <p className="text-xs font-medium text-gray-600 mb-2">
-                        Description
-                      </p>
-                      <p className="text-sm text-gray-700 bg-white p-2 rounded-md border  h-40 text-center border-yellow-200 h-20 overflow-y-auto">
-                        {getTextInLanguage(
-                          video.descriptionMultiLang || video.description,
-                          "hindi"
+                      {/* Video / Agora Session */}
+                      <div>
+                        <p className="text-xs font-medium text-gray-600 mb-2">
+                          {video.videoType === 3 ? "Agora Session" : "Video"}
+                        </p>
+                        {video.videoType === 3 ? (
+                          <div className="flex flex-col justify-center items-center bg-gray-50 p-3 h-auto min-h-40 rounded-xl border border-dashed border-gray-200 text-center gap-2">
+                            <div className="w-10 h-10 bg-emerald-50 rounded-full flex items-center justify-center mb-1">
+                              <svg className="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                              </svg>
+                            </div>
+                            <span className="text-[11px] font-bold text-gray-700 font-sans">Agora Session</span>
+                            <span className="text-[9px] text-gray-500 font-sans">Channel: {video.agoraChannelName || "N/A"}</span>
+                            <span className="text-[8px] text-gray-400 font-sans break-all max-w-[150px] truncate" title={video.agoraToken}>Token: {video.agoraToken ? `${video.agoraToken.substring(0, 15)}...` : "N/A"}</span>
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider font-sans bg-emerald-50 text-emerald-600 border border-emerald-100">
+                              Active
+                            </span>
+                          </div>
+                        ) : (
+                          getTextInLanguage(
+                            video.videoMultiLang || video.video,
+                            "hindi",
+                            true
+                          ) ? (
+                            <video
+                              src={toAbsolute(
+                                getTextInLanguage(
+                                  video.videoMultiLang || video.video,
+                                  "hindi",
+                                  true
+                                )
+                              )}
+                              controls
+                              controlsList={role === "subadmin" ? "nodownload" : undefined}
+                              onContextMenu={role === "subadmin" ? (e) => e.preventDefault() : undefined}
+                              className="w-full h-40 rounded-xl border border-yellow-200 object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center border border-yellow-200">
+                              <span className="text-gray-400 text-xs">
+                                No Video
+                              </span>
+                            </div>
+                          )
                         )}
-                      </p>
+                      </div>
+
+                      {/* Title */}
+                      <div>
+                        <p className="text-xs font-medium text-gray-600 mb-2">
+                          Title
+                        </p>
+                        <p className="text-sm font-semibold text-gray-800 bg-white  h-40 text-center p-2 rounded-md border border-yellow-200">
+                          {getTextInLanguage(
+                            video.titleMultiLang || video.title,
+                            "hindi",
+                            true
+                          )}
+                        </p>
+                      </div>
+
+                      {/* Description */}
+                      <div>
+                        <p className="text-xs font-medium text-gray-600 mb-2">
+                          Description
+                        </p>
+                        <p className="text-sm text-gray-700 bg-white p-2 rounded-md border  h-40 text-center border-yellow-200 h-20 overflow-y-auto">
+                          {getTextInLanguage(
+                            video.descriptionMultiLang || video.description,
+                            "hindi",
+                            true
+                          )}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
-        ))
-      ) : (
+        );
+      })
+    ) : (
         <div className="bg-white rounded-2xl shadow-md border border-gray-200 p-8 text-center">
           <NotFoundCard
             title="No Videos"
