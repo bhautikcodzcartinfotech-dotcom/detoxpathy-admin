@@ -274,17 +274,18 @@ const BranchForm = ({
             Pincode *
           </label>
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             value={form.pincode}
             onChange={(e) => {
-              const value = e.target.value;
+              const value = e.target.value.replace(/\D/g, "");
               if (value.length <= 6) {
                 setForm((f) => ({ ...f, pincode: value }));
               }
             }}
             className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
             placeholder="400001"
-            maxLength={6}
           />
           {errors.pincode && (
             <p className="text-red-500 text-sm mt-1">{errors.pincode}</p>
@@ -298,16 +299,17 @@ const BranchForm = ({
             Latitude
           </label>
           <input
-            type="number"
-            step="any"
+            type="text"
+            inputMode="decimal"
             value={form.latitude}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, latitude: e.target.value }))
-            }
+            onChange={(e) => {
+              const value = e.target.value;
+              if (/^-?\d*\.?\d*$/.test(value)) {
+                setForm((f) => ({ ...f, latitude: value }));
+              }
+            }}
             className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
             placeholder="19.0760"
-            min="-90"
-            max="90"
           />
           {errors.latitude && (
             <p className="text-red-500 text-sm mt-1">{errors.latitude}</p>
@@ -318,16 +320,17 @@ const BranchForm = ({
             Longitude
           </label>
           <input
-            type="number"
-            step="any"
+            type="text"
+            inputMode="decimal"
             value={form.longitude}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, longitude: e.target.value }))
-            }
+            onChange={(e) => {
+              const value = e.target.value;
+              if (/^-?\d*\.?\d*$/.test(value)) {
+                setForm((f) => ({ ...f, longitude: value }));
+              }
+            }}
             className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
             placeholder="72.8777"
-            min="-180"
-            max="180"
           />
           {errors.longitude && (
             <p className="text-red-500 text-sm mt-1">{errors.longitude}</p>
@@ -379,24 +382,6 @@ const BranchForm = ({
       </div>
 
       <div className="flex flex-wrap items-center gap-6">
-        <div className="flex items-center gap-3">
-          <label className="block mb-1 font-semibold text-gray-700">
-            isFranchise
-          </label>
-          <input
-            type="checkbox"
-            checked={form.isFranchise}
-            onChange={(e) => {
-              const checked = e.target.checked;
-              setForm((f) => ({
-                ...f,
-                isFranchise: checked,
-              }));
-            }}
-            className="w-5 h-5 text-yellow-500 rounded border-gray-300 focus:ring-yellow-500 focus:ring-2"
-          />
-        </div>
-
         <div className="flex items-center gap-3">
           <label className="block mb-1 font-semibold text-gray-700">
             isMainBranch

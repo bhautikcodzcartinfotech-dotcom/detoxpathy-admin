@@ -125,10 +125,15 @@ const StockForm = ({ role, initialValues, products, plans, branches, onSubmit, o
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Available Quantity</label>
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               name="available"
               value={formData.available}
-              onChange={handleChange}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, "");
+                setFormData((prev) => ({ ...prev, available: value }));
+              }}
               placeholder="Enter quantity"
               className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-[#134D41]/20 focus:border-[#134D41] outline-none transition-all"
             />
@@ -137,10 +142,15 @@ const StockForm = ({ role, initialValues, products, plans, branches, onSubmit, o
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Breakage Quantity</label>
             <input
-              type="number"
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               name="breakage"
               value={formData.breakage}
-              onChange={handleChange}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, "");
+                setFormData((prev) => ({ ...prev, breakage: value }));
+              }}
               placeholder="Enter breakage quantity"
               className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-[#134D41]/20 focus:border-[#134D41] outline-none transition-all"
             />

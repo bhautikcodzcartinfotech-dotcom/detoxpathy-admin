@@ -551,12 +551,16 @@ const SettingsPage = () => {
                 App Version ( Android )
               </h3>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={formData.version || ""}
-                onChange={(e) => handleInputChange("version", e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                    handleInputChange("version", value);
+                  }
+                }}
                 className="w-full px-4 py-3 rounded-xl border border-amber-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
-                min="1"
-                step="0.1"
                 placeholder="1.0"
               />
             </div>
@@ -567,12 +571,16 @@ const SettingsPage = () => {
                 App Version (IOS)
               </h3>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={formData.iosVersion || ""}
-                onChange={(e) => handleInputChange("iosVersion", e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                    handleInputChange("iosVersion", value);
+                  }
+                }}
                 className="w-full px-4 py-3 rounded-xl border border-amber-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
-                min="1"
-                step="0.1"
                 placeholder="1.0"
               />
             </div>
@@ -583,12 +591,16 @@ const SettingsPage = () => {
                 Video Price ({formData.currency || "₹"})
               </h3>
               <input
-                type="number"
+                type="text"
+                inputMode="decimal"
                 value={formData.videoPrice ?? ""}
-                onChange={(e) => handleInputChange("videoPrice", e.target.value === "" ? "" : e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                    handleInputChange("videoPrice", value);
+                  }
+                }}
                 className="w-full px-4 py-3 rounded-xl border border-yellow-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
-                min="0"
-                step="0.01"
                 placeholder="0"
               />
             </div>
@@ -623,24 +635,32 @@ const SettingsPage = () => {
                   <div className="space-y-2">
                     <label className="block text-xs font-semibold text-gray-500 uppercase">Charge per 500g</label>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       value={formData.shippingCharges ?? ""}
-                      onChange={(e) => handleInputChange("shippingCharges", e.target.value === "" ? "" : Number(e.target.value))}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                          handleInputChange("shippingCharges", value === "" ? "" : Number(value));
+                        }
+                      }}
                       className="w-full px-4 py-3 rounded-xl border border-yellow-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
-                      min="0"
-                      step="0.01"
                       placeholder="0"
                     />
                   </div>
                   <div className="space-y-2">
                     <label className="block text-xs font-semibold text-gray-500 uppercase">Minimum Order Value for Shipping</label>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       value={formData.minShippingChargesOther ?? ""}
-                      onChange={(e) => handleInputChange("minShippingChargesOther", e.target.value === "" ? "" : Number(e.target.value))}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                          handleInputChange("minShippingChargesOther", value === "" ? "" : Number(value));
+                        }
+                      }}
                       className="w-full px-4 py-3 rounded-xl border border-yellow-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
-                      min="0"
-                      step="0.01"
                       placeholder="0"
                     />
                   </div>
@@ -652,24 +672,32 @@ const SettingsPage = () => {
                   <div className="space-y-2">
                     <label className="block text-xs font-semibold text-gray-500 uppercase">Charge per 500g</label>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       value={formData.shippingChargesGujaratMaharashtra ?? ""}
-                      onChange={(e) => handleInputChange("shippingChargesGujaratMaharashtra", e.target.value === "" ? "" : Number(e.target.value))}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                          handleInputChange("shippingChargesGujaratMaharashtra", value === "" ? "" : Number(value));
+                        }
+                      }}
                       className="w-full px-4 py-3 rounded-xl border border-yellow-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
-                      min="0"
-                      step="0.01"
                       placeholder="0"
                     />
                   </div>
                   <div className="space-y-2">
                     <label className="block text-xs font-semibold text-gray-500 uppercase">Minimum Order Value for Shipping</label>
                     <input
-                      type="number"
+                      type="text"
+                      inputMode="decimal"
                       value={formData.minShippingChargesGujaratMaharashtra ?? ""}
-                      onChange={(e) => handleInputChange("minShippingChargesGujaratMaharashtra", e.target.value === "" ? "" : Number(e.target.value))}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                          handleInputChange("minShippingChargesGujaratMaharashtra", value === "" ? "" : Number(value));
+                        }
+                      }}
                       className="w-full px-4 py-3 rounded-xl border border-yellow-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
-                      min="0"
-                      step="0.01"
                       placeholder="0"
                     />
                   </div>
@@ -775,11 +803,15 @@ const SettingsPage = () => {
                   Booking Slot Duration (Days)
                 </label>
                 <input
-                  type="number"
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
                   value={formData.bookingSlotDays ?? ""}
-                  onChange={(e) => handleInputChange("bookingSlotDays", e.target.value === "" ? "" : Number(e.target.value))}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, "");
+                    handleInputChange("bookingSlotDays", value === "" ? "" : Number(value));
+                  }}
                   className="w-full px-4 py-3 rounded-xl border border-yellow-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
-                  min="0"
                   placeholder="0"
                 />
                 <p className="text-xs text-gray-500">

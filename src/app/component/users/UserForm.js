@@ -277,11 +277,14 @@ const UserForm = ({
         <div>
           <label className="block mb-1 font-semibold text-gray-700">Current Plan Day</label>
           <input
-            type="number"
-            min="1"
-            max={plans.find(p => p._id === form.planId)?.days || 90}
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             value={form.planCurrentDay}
-            onChange={(e) => setForm(f => ({ ...f, planCurrentDay: parseInt(e.target.value) || 1 }))}
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, "");
+              setForm((f) => ({ ...f, planCurrentDay: parseInt(value) || 1 }));
+            }}
             className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
             placeholder="Enter current day"
           />
@@ -327,9 +330,15 @@ const UserForm = ({
           <div>
             <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Height (cm)</label>
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={form.height}
-              onChange={(e) => setForm(f => ({ ...f, height: e.target.value }))}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                  setForm((f) => ({ ...f, height: value }));
+                }
+              }}
               className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm"
               placeholder="e.g. 170"
             />
@@ -337,9 +346,15 @@ const UserForm = ({
           <div>
             <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Current Weight (kg)</label>
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={form.weight}
-              onChange={(e) => setForm(f => ({ ...f, weight: e.target.value }))}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                  setForm((f) => ({ ...f, weight: value }));
+                }
+              }}
               className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm"
               placeholder="e.g. 70"
             />
@@ -347,9 +362,15 @@ const UserForm = ({
           <div>
             <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Ideal Weight (kg)</label>
             <input
-              type="number"
+              type="text"
+              inputMode="decimal"
               value={form.idealWeight}
-              onChange={(e) => setForm(f => ({ ...f, idealWeight: e.target.value }))}
+              onChange={(e) => {
+                const value = e.target.value;
+                if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                  setForm((f) => ({ ...f, idealWeight: value }));
+                }
+              }}
               className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-sm"
               placeholder="e.g. 65"
             />

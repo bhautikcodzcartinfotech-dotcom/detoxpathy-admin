@@ -21,6 +21,8 @@ import {
   FiCheck,
   FiCheckCircle,
   FiAlertCircle,
+  FiTrash2,
+  FiRotateCcw,
 } from "react-icons/fi";
 import {
   IoMdSend,
@@ -1372,22 +1374,24 @@ export default function ChatPage() {
                                     </button>
                                     {activeMessageMenuId === msg.id && (
                                       <div
-                                        className="absolute mt-1 w-32 bg-white rounded-xl shadow-2xl border border-gray-150 z-50 overflow-hidden text-left right-0 top-full"
+                                        className={`absolute mt-1 w-32 bg-white rounded-xl shadow-2xl border border-gray-150 z-50 overflow-hidden text-left top-full ${
+                                          msg.senderId === selectedUser?.customerCareId ? "right-0" : "left-0"
+                                        }`}
                                         onClick={(e) => e.stopPropagation()}
                                       >
                                         {msg.deletedByDoctor ? (
                                           <button
                                             onClick={() => { handleRestoreMessage(msg.docId || msg.id, msg); setActiveMessageMenuId(null); }}
-                                            className="w-full text-left px-4 py-3 text-sm text-emerald-600 hover:bg-emerald-50 transition-colors font-medium flex items-center gap-1.5"
+                                            className="w-full text-left px-4 py-3 text-sm text-emerald-600 hover:bg-emerald-50 transition-colors font-semibold flex items-center gap-2"
                                           >
-                                            <span>✅</span> Restore
+                                            <FiRotateCcw size={14} className="shrink-0" /> Restore
                                           </button>
                                         ) : (
                                           <button
                                             onClick={() => { handleDeleteMessage(msg.docId || msg.id, msg); setActiveMessageMenuId(null); }}
-                                            className="w-full text-left px-4 py-3 text-sm text-rose-600 hover:bg-rose-50 transition-colors font-medium flex items-center gap-1.5"
+                                            className="w-full text-left px-4 py-3 text-sm text-rose-600 hover:bg-rose-50 transition-colors font-semibold flex items-center gap-2"
                                           >
-                                            <span>🗑️</span> Delete
+                                            <FiTrash2 size={14} className="shrink-0" /> Delete
                                           </button>
                                         )}
                                       </div>
@@ -1507,22 +1511,24 @@ export default function ChatPage() {
                               </button>
                               {activeMessageMenuId === msg.id && (
                                 <div
-                                  className="absolute mt-1 w-32 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 overflow-hidden text-left right-0 top-full"
+                                  className={`absolute mt-1 w-32 bg-white rounded-xl shadow-2xl border border-gray-100 z-50 overflow-hidden text-left top-full ${
+                                    msg.senderId === selectedUser?.customerCareId ? "right-0" : "left-0"
+                                  }`}
                                   onClick={(e) => e.stopPropagation()}
                                 >
                                   {msg.deletedByDoctor ? (
                                     <button
                                       onClick={() => { handleRestoreMessage(msg.docId || msg.id, msg); setActiveMessageMenuId(null); }}
-                                      className="w-full text-left px-4 py-3 text-sm text-emerald-600 hover:bg-emerald-50 transition-colors font-medium flex items-center gap-1.5"
+                                      className="w-full text-left px-4 py-3 text-sm text-emerald-600 hover:bg-emerald-50 transition-colors font-semibold flex items-center gap-2"
                                     >
-                                      <span>✅</span> Restore
+                                      <FiRotateCcw size={14} className="shrink-0" /> Restore
                                     </button>
                                   ) : (
                                     <button
                                       onClick={() => { handleDeleteMessage(msg.docId || msg.id, msg); setActiveMessageMenuId(null); }}
-                                      className="w-full text-left px-4 py-3 text-sm text-rose-600 hover:bg-rose-50 transition-colors font-medium flex items-center gap-1.5"
+                                      className="w-full text-left px-4 py-3 text-sm text-rose-600 hover:bg-rose-50 transition-colors font-semibold flex items-center gap-2"
                                     >
-                                      <span>🗑️</span> Delete
+                                      <FiTrash2 size={14} className="shrink-0" /> Delete
                                     </button>
                                   )}
                                 </div>

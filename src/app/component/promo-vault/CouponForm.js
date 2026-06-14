@@ -82,10 +82,14 @@ const CouponForm = ({
       <div>
         <label className="block mb-1 font-semibold text-gray-700">Usage Limit</label>
         <input
-          type="number"
-          min="1"
+          type="text"
+          inputMode="numeric"
+          pattern="[0-9]*"
           value={form.limit}
-          onChange={(e) => setForm((f) => ({ ...f, limit: e.target.value }))}
+          onChange={(e) => {
+            const value = e.target.value.replace(/\D/g, "");
+            setForm((f) => ({ ...f, limit: value }));
+          }}
           className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
           placeholder="How many times can this be used?"
         />
@@ -95,11 +99,15 @@ const CouponForm = ({
       <div>
         <label className="block mb-1 font-semibold text-gray-700">Discount (%)</label>
         <input
-          type="number"
-          min="1"
-          max="100"
+          type="text"
+          inputMode="decimal"
           value={form.discountValue}
-          onChange={(e) => setForm((f) => ({ ...f, discountValue: e.target.value }))}
+          onChange={(e) => {
+            const value = e.target.value;
+            if (value === "" || /^\d*\.?\d*$/.test(value)) {
+              setForm((f) => ({ ...f, discountValue: value }));
+            }
+          }}
           className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
           placeholder="e.g. 30 for 30% off"
         />

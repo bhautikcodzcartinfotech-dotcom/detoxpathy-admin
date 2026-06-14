@@ -102,10 +102,10 @@ const BranchTimeForm = ({
   const handleAddRow = () => {
     const usedDays = new Set(availability.map(a => String(a.day)));
     const unusedDay = daysSelection.find(d => !usedDays.has(d.value));
-    
+
     if (!unusedDay) {
-        toast.error("All days are already configured");
-        return;
+      toast.error("All days are already configured");
+      return;
     }
 
     setAvailability([
@@ -114,9 +114,9 @@ const BranchTimeForm = ({
     ]);
 
     setTimeout(() => {
-        if (scrollRef.current) {
-            scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
-        }
+      if (scrollRef.current) {
+        scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+      }
     }, 100);
   };
 
@@ -139,14 +139,14 @@ const BranchTimeForm = ({
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
+
     const days = availability.map(item => String(item.day));
     const uniqueDays = new Set(days);
     if (days.length !== uniqueDays.size) {
       toast.error("Multiple time slots for the same day are not allowed");
       return;
     }
-    
+
     clearDraft();
     onSubmit({ availability });
   };
@@ -161,93 +161,97 @@ const BranchTimeForm = ({
       <div ref={scrollRef} className="space-y-4 max-h-[60vh] overflow-y-auto pr-2 custom-scrollbar">
         {availability.map((item, index) => (
           <div key={index} className="p-4 bg-gray-50 rounded-2xl border border-gray-100 relative group transition-all hover:shadow-md">
-             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                 <div className="sm:col-span-2">
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Day</label>
-                    <select
-                      value={item.day}
-                      onChange={(e) => handleChange(index, "day", e.target.value)}
-                      className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition"
-                    >
-                      {daysSelection.map((d) => (
-                        <option key={d.value} value={d.value}>{d.label}</option>
-                      ))}
-                    </select>
-                 </div>
-                 <div className="sm:col-span-2 grid grid-cols-2 gap-4">
-                     <div>
-                         <label className="block text-xs font-bold text-gray-500 uppercase mb-1 whitespace-nowrap">Start Time</label>
-                         <input
-                             type="text"
-                             value={item.startTime}
-                             onChange={(e) => handleChange(index, "startTime", e.target.value)}
-                             className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition"
-                             placeholder="09:00 AM"
-                         />
-                     </div>
-                     <div>
-                         <label className="block text-xs font-bold text-gray-500 uppercase mb-1 whitespace-nowrap">End Time</label>
-                         <input
-                             type="text"
-                             value={item.endTime}
-                             onChange={(e) => handleChange(index, "endTime", e.target.value)}
-                             className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition"
-                             placeholder="05:00 PM"
-                         />
-                     </div>
-                 </div>
-                 <div className="sm:col-span-2 grid grid-cols-2 gap-4">
-                     <div>
-                         <label className="block text-xs font-bold text-gray-500 uppercase mb-1 whitespace-nowrap">Break Start Time</label>
-                         <input
-                             type="text"
-                             value={item.breakStartTime || ""}
-                             onChange={(e) => handleChange(index, "breakStartTime", e.target.value)}
-                             className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition"
-                             placeholder="01:00 PM"
-                         />
-                     </div>
-                     <div>
-                         <label className="block text-xs font-bold text-gray-500 uppercase mb-1 whitespace-nowrap">Break End Time</label>
-                         <input
-                             type="text"
-                             value={item.breakEndTime || ""}
-                             onChange={(e) => handleChange(index, "breakEndTime", e.target.value)}
-                             className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition"
-                             placeholder="02:00 PM"
-                         />
-                     </div>
-                 </div>
-                 <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Slot Duration (Min)</label>
-                    <input
-                      type="number"
-                      value={item.slotDuration}
-                      onChange={(e) => handleChange(index, "slotDuration", e.target.value)}
-                      className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition"
-                    />
-                 </div>
-                 <div>
-                    <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Buffer Time (Min)</label>
-                    <input
-                      type="number"
-                      value={item.bufferTime}
-                      onChange={(e) => handleChange(index, "bufferTime", e.target.value)}
-                      className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition"
-                    />
-                 </div>
-             </div>
-             {availability.length > 0 && (
-               <button
-                 type="button"
-                 onClick={() => handleRemoveRow(index)}
-                 className="absolute top-2 right-2 bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200 transition opacity-0 group-hover:opacity-100"
-               >
-                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                 </svg>
-               </button>
-             )}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Day</label>
+                <select
+                  value={item.day}
+                  onChange={(e) => handleChange(index, "day", e.target.value)}
+                  className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition"
+                >
+                  {daysSelection.map((d) => (
+                    <option key={d.value} value={d.value}>{d.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="sm:col-span-2 grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1 whitespace-nowrap">Start Time</label>
+                  <input
+                    type="text"
+                    value={item.startTime}
+                    onChange={(e) => handleChange(index, "startTime", e.target.value)}
+                    className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition"
+                    placeholder="09:00 AM"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1 whitespace-nowrap">End Time</label>
+                  <input
+                    type="text"
+                    value={item.endTime}
+                    onChange={(e) => handleChange(index, "endTime", e.target.value)}
+                    className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition"
+                    placeholder="05:00 PM"
+                  />
+                </div>
+              </div>
+              <div className="sm:col-span-2 grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1 whitespace-nowrap">Break Start Time</label>
+                  <input
+                    type="text"
+                    value={item.breakStartTime || ""}
+                    onChange={(e) => handleChange(index, "breakStartTime", e.target.value)}
+                    className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition"
+                    placeholder="01:00 PM"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-500 uppercase mb-1 whitespace-nowrap">Break End Time</label>
+                  <input
+                    type="text"
+                    value={item.breakEndTime || ""}
+                    onChange={(e) => handleChange(index, "breakEndTime", e.target.value)}
+                    className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition"
+                    placeholder="02:00 PM"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Slot Duration (Min)</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={item.slotDuration}
+                  onChange={(e) => handleChange(index, "slotDuration", e.target.value.replace(/\D/g, ""))}
+                  className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Buffer Time (Min)</label>
+                <input
+                  type="text"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  value={item.bufferTime}
+                  onChange={(e) => handleChange(index, "bufferTime", e.target.value.replace(/\D/g, ""))}
+                  className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition"
+                />
+              </div>
+            </div>
+            {availability.length > 0 && (
+              <button
+                type="button"
+                onClick={() => handleRemoveRow(index)}
+                className="absolute top-2 right-2 bg-red-100 text-red-600 rounded-full p-1 hover:bg-red-200 transition opacity-0 group-hover:opacity-100"
+              >
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
           </div>
         ))}
       </div>
@@ -258,7 +262,7 @@ const BranchTimeForm = ({
         className="w-full py-3 border-2 border-dashed border-gray-300 rounded-2xl text-gray-500 font-medium hover:border-yellow-400 hover:text-yellow-600 transition flex items-center justify-center gap-2"
       >
         <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
         </svg>
         Add Another Slot
       </button>

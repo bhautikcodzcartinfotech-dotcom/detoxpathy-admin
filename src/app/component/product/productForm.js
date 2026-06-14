@@ -226,15 +226,17 @@ const ProductForm = ({
             Base Price ({currency})
           </label>
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             value={form.basePrice}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, basePrice: e.target.value }))
-            }
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                setForm((f) => ({ ...f, basePrice: value }));
+              }
+            }}
             className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
             placeholder="500"
-            min="0"
-            step="0.01"
           />
           {errors.basePrice && (
             <p className="text-red-500 text-sm mt-1">{errors.basePrice}</p>
@@ -246,15 +248,17 @@ const ProductForm = ({
             Discounted Price ({currency})
           </label>
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             value={form.discountedPrice}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, discountedPrice: e.target.value }))
-            }
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                setForm((f) => ({ ...f, discountedPrice: value }));
+              }
+            }}
             className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
             placeholder="400"
-            min="0"
-            step="0.01"
           />
           {errors.discountedPrice && (
             <p className="text-red-500 text-sm mt-1">{errors.discountedPrice}</p>
@@ -286,11 +290,15 @@ const ProductForm = ({
             GST %
           </label>
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             value={form.gstPercentage}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, gstPercentage: e.target.value }))
-            }
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                setForm((f) => ({ ...f, gstPercentage: value }));
+              }
+            }}
             className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
             placeholder="18"
           />
@@ -324,14 +332,17 @@ const ProductForm = ({
             Weight (grams)
           </label>
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             value={form.weight}
-            onChange={(e) =>
-              setForm((f) => ({ ...f, weight: e.target.value }))
-            }
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                setForm((f) => ({ ...f, weight: value }));
+              }
+            }}
             className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
             placeholder="e.g. 500"
-            min="0"
           />
           {errors.weight && (
             <p className="text-red-500 text-sm mt-1">{errors.weight}</p>
@@ -344,15 +355,17 @@ const ProductForm = ({
           Bulk Discount (%)
         </label>
         <input
-          type="number"
+          type="text"
+          inputMode="decimal"
           value={form.bulkDiscount}
-          onChange={(e) =>
-            setForm((f) => ({ ...f, bulkDiscount: e.target.value }))
-          }
+          onChange={(e) => {
+            const value = e.target.value;
+            if (value === "" || /^\d*\.?\d*$/.test(value)) {
+              setForm((f) => ({ ...f, bulkDiscount: value }));
+            }
+          }}
           className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
           placeholder="10"
-          min="0"
-          step="0.01"
         />
         {errors.bulkDiscount && (
           <p className="text-red-500 text-sm mt-1">{errors.bulkDiscount}</p>

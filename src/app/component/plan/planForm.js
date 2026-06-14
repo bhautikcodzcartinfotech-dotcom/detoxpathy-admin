@@ -237,17 +237,18 @@ const PlanForm = ({
             Days *
           </label>
           <input
-            type="number"
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             value={form.days}
             onChange={(e) => {
-              const value = e.target.value;
-              if (value === "" || (!isNaN(value) && Number(value) > 0)) {
+              const value = e.target.value.replace(/\D/g, "");
+              if (value === "" || Number(value) > 0) {
                 setForm((f) => ({ ...f, days: value }));
               }
             }}
             className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
             placeholder="e.g. 30"
-            min="1"
           />
           {errors.days && (
             <p className="text-red-500 text-sm mt-1">{errors.days}</p>
@@ -309,17 +310,17 @@ const PlanForm = ({
             Price ({currency}) *
           </label>
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             value={form.price}
             onChange={(e) => {
               const value = e.target.value;
-              if (value === "" || (!isNaN(value) && Number(value) >= 0)) {
+              if (value === "" || /^\d*\.?\d*$/.test(value)) {
                 setForm((f) => ({ ...f, price: value }));
               }
             }}
             className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
             placeholder="e.g. 999"
-            min="0"
           />
           {errors.price && (
             <p className="text-red-500 text-sm mt-1">{errors.price}</p>
@@ -333,19 +334,17 @@ const PlanForm = ({
             Bulk Discount (%) (optional)
           </label>
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             value={form.bulkDiscount}
             onChange={(e) => {
               const value = e.target.value;
-
-              setForm((f) => ({
-                ...f,
-                bulkDiscount: value === "" ? "" : Number(value),
-              }));
+              if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                setForm((f) => ({ ...f, bulkDiscount: value }));
+              }
             }}
             className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
             placeholder="e.g. 10"
-            min="0"
           />
           {errors.bulkDiscount && (
             <p className="text-red-500 text-sm mt-1">{errors.bulkDiscount}</p>
@@ -357,17 +356,17 @@ const PlanForm = ({
             Weight (grams) *
           </label>
           <input
-            type="number"
+            type="text"
+            inputMode="decimal"
             value={form.weight}
             onChange={(e) => {
               const value = e.target.value;
-              if (value === "" || (!isNaN(value) && Number(value) >= 0)) {
+              if (value === "" || /^\d*\.?\d*$/.test(value)) {
                 setForm((f) => ({ ...f, weight: value }));
               }
             }}
             className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
             placeholder="e.g. 1500"
-            min="0"
           />
           {errors.weight && (
             <p className="text-red-500 text-sm mt-1">{errors.weight}</p>

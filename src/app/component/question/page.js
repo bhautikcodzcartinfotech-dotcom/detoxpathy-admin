@@ -34,7 +34,18 @@ const QuestionPage = () => {
   const fetchVideos = async () => {
     try {
       const data = await listVideos();
-      setVideos(Array.isArray(data) ? data : []);
+      if (Array.isArray(data)) {
+        const filtered = data.filter(
+          (video) =>
+            !video.agoraChannelName &&
+            !video.agoraAppId &&
+            video.videoType !== 3 &&
+            video.type !== 10
+        );
+        setVideos(filtered);
+      } else {
+        setVideos([]);
+      }
     } catch (e) {
       console.error("Failed to fetch videos:", e);
     }

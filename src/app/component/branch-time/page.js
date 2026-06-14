@@ -84,36 +84,46 @@ const BranchTimePage = () => {
   const fetchAllBranches = async () => {
     try {
       const data = await getAllBranches();
-      setAllBranches(data);
+      // Filter out the main branch — branch time cannot be created for it
+      let nonMainBranches = data.filter(b => !b.isMainBranch);
+
+      if (role !== "Admin") {
+        const assignedBranchIds = branches || [];
+        nonMainBranches = nonMainBranches.filter(b =>
+          assignedBranchIds.includes(String(b._id))
+        );
+      }
+
+      setAllBranches(nonMainBranches);
 
       const urlBranch = searchParams.get("branch");
       const urlDrawer = searchParams.get("drawer");
 
-      if (urlBranch) {
-        const branchExists = data.find(b => b._id === urlBranch);
-        if (branchExists) {
-          setSelectedBranchId(urlBranch);
-        } else if (data.length > 0) {
-          if (role === "subadmin" && branches.length > 0) {
-            setSelectedBranchId(branches[0]);
-          } else {
-            const mainBranch = data.find(b => b.isMainBranch);
-            const defaultBranch = mainBranch || data[0];
-            if (defaultBranch) {
-              setSelectedBranchId(defaultBranch._id);
-            }
-          }
-        }
-      } else if (data.length > 0 && !selectedBranchId) {
-        if (role === "subadmin" && branches.length > 0) {
-          setSelectedBranchId(branches[0]);
+      let activeBranchId = selectedBranchId;
+
+      // Validate the currently selected branch ID
+      const isCurrentValid = nonMainBranches.some(b => b._id === activeBranchId);
+
+      if (!isCurrentValid) {
+        if (urlBranch && nonMainBranches.some(b => b._id === urlBranch)) {
+          activeBranchId = urlBranch;
+        } else if (role === "subadmin" && branches.length > 0) {
+          const defaultBranch = nonMainBranches.find(b => branches.includes(b._id));
+          activeBranchId = defaultBranch ? defaultBranch._id : (nonMainBranches[0]?._id || "");
+        } else if (nonMainBranches.length > 0) {
+          activeBranchId = nonMainBranches[0]._id;
         } else {
-          const mainBranch = data.find(b => b.isMainBranch);
-          const defaultBranch = mainBranch || data[0];
-          if (defaultBranch) {
-            setSelectedBranchId(defaultBranch._id);
-          }
+          activeBranchId = "";
         }
+      } else {
+        if (urlBranch && urlBranch !== activeBranchId && nonMainBranches.some(b => b._id === urlBranch)) {
+          activeBranchId = urlBranch;
+        }
+      }
+
+      setSelectedBranchId(activeBranchId);
+      if (activeBranchId) {
+        localStorage.setItem('selectedBranchId', activeBranchId);
       }
 
       if (urlDrawer === "true") {
@@ -156,10 +166,7 @@ const BranchTimePage = () => {
 
   useEffect(() => {
     fetchAllBranches();
-    if (role === "Admin") {
-      fetchRequests();
-    }
-  }, []);
+  }, [role, branches]);
 
   useEffect(() => {
     if (selectedBranchId) {
@@ -289,7 +296,7 @@ const BranchTimePage = () => {
               </div>
             )}
             {role === "Admin" && requests.length === 0 && (
-               <p className="text-sm text-gray-400 mt-1 font-medium">All schedules are up to date</p>
+              <p className="text-sm text-gray-400 mt-1 font-medium">All schedules are up to date</p>
             )}
           </div>
 

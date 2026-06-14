@@ -50,7 +50,23 @@ export const AuthProvider = ({ children }) => {
 
         // Check if we are impersonating
         const mainToken = localStorage.getItem("mainAdminToken");
-        setIsImpersonating(!!mainToken);
+
+        // If the current user IS the Super Admin, any leftover
+        // impersonation keys are stale — clear them.
+        const parsedUserForRole = localStorage.getItem("user");
+        let currentRole = null;
+        try {
+          const u = parsedUserForRole ? JSON.parse(parsedUserForRole) : null;
+          currentRole = u?.adminType ? String(u.adminType).toLowerCase().replace(/\s+/g, "") : null;
+        } catch { /* ignore */ }
+
+        if (currentRole === "admin" && mainToken) {
+          localStorage.removeItem("mainAdminToken");
+          localStorage.removeItem("mainAdminUser");
+          setIsImpersonating(false);
+        } else {
+          setIsImpersonating(!!mainToken);
+        }
       } catch (error) {
         console.error("Auth init failed:", error);
         localStorage.removeItem("token");
@@ -72,6 +88,12 @@ export const AuthProvider = ({ children }) => {
 
       localStorage.setItem("token", authToken);
       localStorage.setItem("user", JSON.stringify(admin));
+
+      // Clear any leftover impersonation state on fresh login
+      localStorage.removeItem("mainAdminToken");
+      localStorage.removeItem("mainAdminUser");
+      setIsImpersonating(false);
+
       setToken(authToken);
       setUser(admin);
 

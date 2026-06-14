@@ -1023,7 +1023,7 @@ const AppointmentPage = () => {
       // Fetch existing suggestion
       try {
         const resp = await getSuggestedProgram(appointment.userId?._id);
-        const suggestion = resp?.suggestion || resp;
+        const suggestion = resp?.suggestion;
         setActiveSuggestion(suggestion);
         if (suggestion) {
           if (suggestion.plans) {
@@ -2403,7 +2403,7 @@ const AppointmentPage = () => {
               initial={{ opacity: 0, x: 200 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 200 }}
-              className="relative w-full h-full flex flex-col overflow-hidden bg-white shadow-[-20px_0_60px_rgba(0,0,0,0.1)] transition-all duration-500"
+              className="relative w-full h-full flex flex-col lg:flex-row overflow-hidden bg-white shadow-[-20px_0_60px_rgba(0,0,0,0.1)] transition-all duration-500"
             >
               {/* Left Pane: Full Patient Dashboard (Matches Main Profile Page) */}
               <AnimatePresence>

@@ -562,7 +562,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
         )}
 
         {/* Section: Exit Impersonation */}
-        {isImpersonating && (
+        {isImpersonating && role !== "Admin" && (
           <div className="mt-auto pt-5 border-t border-red-200">
             <button
               onClick={exitImpersonation}

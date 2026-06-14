@@ -324,7 +324,7 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess }) => {
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Mobile No</label>
-                            <input name="mobileNo" value={formData.mobileNo} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm" />
+                            <input name="mobileNo" value={formData.mobileNo} readOnly className="w-full p-4 rounded-xl bg-slate-100 border border-slate-200 text-sm text-slate-600 cursor-not-allowed" />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Gender</label>

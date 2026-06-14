@@ -113,6 +113,12 @@ const OrderPage = () => {
     fetchCompanyOrderData();
   }, []);
 
+  useEffect(() => {
+    if (role && role !== "Admin") {
+      setFilter((prev) => ({ ...prev, type: "2" }));
+    }
+  }, [role]);
+
   const handleCompanyOrderSubmit = async (orderData) => {
     try {
       setLoading(true);
@@ -744,11 +750,17 @@ const OrderPage = () => {
             <div className="md:col-span-2">
               <Dropdown
                 label="Order Type"
-                options={[
-                  { label: "All Types", value: "" },
-                  { label: "Online", value: "1" },
-                  { label: "Branch", value: "2" },
-                ]}
+                options={
+                  role === "Admin"
+                    ? [
+                        { label: "All Types", value: "" },
+                        { label: "Online", value: "1" },
+                        { label: "Branch", value: "2" },
+                      ]
+                    : [
+                        { label: "Branch", value: "2" },
+                      ]
+                }
                 value={filter.type}
                 onChange={(val) => handleFilterChange("type", val)}
               />
