@@ -24,18 +24,39 @@ const VideoPage = () => {
   const [error, setError] = useState("");
   const [videos, setVideos] = useState([]);
   const [filteredVideos, setFilteredVideos] = useState([]);
+  const [pagination, setPagination] = useState({
+    start: 1,
+    limit: 10,
+    total: 0,
+    totalPages: 1,
+  });
+
   const [editing, setEditing] = useState(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [videoToDelete, setVideoToDelete] = useState(null);
   const [typeFilter, setTypeFilter] = useState('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [searchLoading, setSearchLoading] = useState(false);
-  const fetchList = async (params = {}) => {
+  const fetchList = async (pageStart = pagination.start) => {
     try {
       setListLoading(true);
+      const params = {
+        start: pageStart,
+        limit: pagination.limit
+      };
+      if (typeFilter !== 'all') params.type = typeFilter;
+      if (searchTerm) params.search = searchTerm;
+
       const data = await listVideos(params);
       const videoData = Array.isArray(data) ? data : [];
       setVideos(videoData);
+      const total = data.total || videoData.length || 0;
+      setPagination((prev) => ({
+        ...prev,
+        start: pageStart,
+        total,
+        totalPages: Math.ceil(total / prev.limit),
+      }));
     } catch (e) {
       setError(e?.response?.data?.message || "Failed to load videos");
       toast.error(e?.response?.data?.message || "Failed to load videos");
@@ -44,15 +65,8 @@ const VideoPage = () => {
     }
   };
 
-  const fetchWithFilters = () => {
-    const params = {};
-    if (typeFilter !== 'all') params.type = typeFilter;
-    if (searchTerm) params.search = searchTerm;
-    fetchList(params);
-  };
-
   useEffect(() => {
-    fetchWithFilters();
+    fetchList(1);
   }, [typeFilter, searchTerm]);
 
 
@@ -160,8 +174,9 @@ const VideoPage = () => {
         />
 
         {!listLoading && (
-          <div className="mb-4 text-sm text-gray-600">
-            Showing {videos.length} videos
+          <div className="mb-4 text-sm text-gray-600 font-medium">
+            Showing {pagination.total > 0 ? (pagination.start - 1) * pagination.limit + 1 : 0} to{" "}
+            {Math.min(pagination.start * pagination.limit, pagination.total)} of {pagination.total} videos
           </div>
         )}
 
@@ -171,6 +186,28 @@ const VideoPage = () => {
           onEdit={handleEdit}
           onDelete={handleDelete}
         />
+
+        {pagination.totalPages > 1 && (
+          <div className="mt-8 flex justify-center items-center gap-4">
+            <Button
+              variant="secondary"
+              disabled={pagination.start === 1 || listLoading}
+              onClick={() => fetchList(pagination.start - 1)}
+            >
+              Previous
+            </Button>
+            <span className="text-sm font-bold text-gray-700">
+              Page {pagination.start} of {pagination.totalPages}
+            </span>
+            <Button
+              variant="secondary"
+              disabled={pagination.start === pagination.totalPages || listLoading}
+              onClick={() => fetchList(pagination.start + 1)}
+            >
+              Next
+            </Button>
+          </div>
+        )}
 
         <Drawer isOpen={isOpen} onClose={() => !loading && setIsOpen(false)}>
           <div className="mb-6 text-center">

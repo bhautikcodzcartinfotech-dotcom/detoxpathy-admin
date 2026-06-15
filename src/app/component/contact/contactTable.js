@@ -81,10 +81,10 @@ const ContactTable = ({ items, loading, onEdit, onDelete }) => {
                 <tr key={item._id} className="hover:bg-yellow-50 bg-white">
                   <td className="px-6 py-4">
                     <img
-                      src={item.image ? (item.image.startsWith('http') ? item.image : `${API_BASE}${item.image.startsWith('/') ? item.image : '/' + item.image}`) : "/image/detoxpathy.png"}
+                      src={item.image ? (item.image.startsWith('http') ? item.image : `${API_BASE}${item.image.startsWith('/') ? item.image : '/' + item.image}`) : "/image/placeholder.avif"}
                       alt={item.name}
                       className="w-12 h-12 object-cover rounded-lg border border-gray-200"
-                      onError={(e) => (e.target.src = "/image/detoxpathy.png")}
+                      onError={(e) => (e.target.src = "/image/placeholder.avif")}
                     />
                   </td>
                   <td className="px-6 py-4 font-semibold text-gray-800">

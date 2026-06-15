@@ -197,11 +197,14 @@ const SubAdminList = ({ subAdmins, appointments = [], onEdit, onDelete, onUpdate
                   <React.Fragment key={sa._id}>
                     <tr className="hover:bg-yellow-50 transition-all duration-200">
                       <td className="px-6 py-4 whitespace-nowrap">
-                        {sa.image ? (
-                          <img src={`${API_BASE}/${sa.image}`} alt="avatar" className="w-10 h-10 rounded-full object-cover border" />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-gray-200" />
-                        )}
+                        <img
+                          src={sa.image ? `${API_BASE}/${sa.image}` : "/image/placeholder.avif"}
+                          alt="avatar"
+                          className="w-10 h-10 rounded-full object-cover border"
+                          onError={(e) => {
+                            e.target.src = "/image/placeholder.avif";
+                          }}
+                        />
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-800 uppercase text-xs">
                         {sa.username}
@@ -261,11 +264,14 @@ const SubAdminList = ({ subAdmins, appointments = [], onEdit, onDelete, onUpdate
                       matchedSubDoctors.map((sd) => (
                         <tr key={sd._id} className="bg-gray-50/50 hover:bg-yellow-50 transition-all duration-200 border-l-4 border-yellow-400">
                           <td className="px-6 py-4 whitespace-nowrap">
-                            {sd.image ? (
-                              <img src={`${API_BASE}/${sd.image}`} alt="avatar" className="w-10 h-10 rounded-full object-cover border" />
-                            ) : (
-                              <div className="w-10 h-10 rounded-full bg-gray-200" />
-                            )}
+                            <img
+                              src={sd.image ? `${API_BASE}/${sd.image}` : "/image/placeholder.avif"}
+                              alt="avatar"
+                              className="w-10 h-10 rounded-full object-cover border"
+                              onError={(e) => {
+                                e.target.src = "/image/placeholder.avif";
+                              }}
+                            />
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap font-semibold text-gray-800 uppercase text-xs">
                             {sd.username}

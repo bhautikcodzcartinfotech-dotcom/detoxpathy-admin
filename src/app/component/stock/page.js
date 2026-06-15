@@ -113,9 +113,14 @@ const StockManagementPage = () => {
       setProducts(Array.isArray(productData?.products) ? productData.products : []);
       setPlans(Array.isArray(planData) ? planData : []);
       setUsers(Array.isArray(userData?.users) ? userData.users : (Array.isArray(userData) ? userData : []));
-      
-      if (allBranchList.length > 0 && !selectedBranchId) {
-        setSelectedBranchId(allBranchList[0]._id);
+
+      // Default selectedBranchId to the main branch
+      if (!selectedBranchId) {
+        const mainBranch = allBranchList.find(b => b.isMainBranch);
+        const fallback = allBranchList[0];
+        if (mainBranch || fallback) {
+          setSelectedBranchId((mainBranch || fallback)._id);
+        }
       }
     } catch (error) {
       console.error("Error fetching stock data:", error);
@@ -222,8 +227,15 @@ const StockManagementPage = () => {
           {/* Company Master Stock */}
           {role === "Admin" && (
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-gray-800">Company Master Stock</h3>
+            <div className="flex items-center justify-between mb-6">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-800">Company Master Stock</h3>
+                  {branches.find(b => b.isMainBranch) && (
+                    <p className="text-xs text-amber-600 font-semibold mt-0.5">
+                      📍 {branches.find(b => b.isMainBranch)?.name} (Main Branch)
+                    </p>
+                  )}
+                </div>
                 <div className="flex items-center gap-4">
                   {(role === "Admin" || (role === "subadmin" && permissions?.includes("manage inventory"))) && (
                     <>
@@ -252,7 +264,19 @@ const StockManagementPage = () => {
           {/* Branch Stock Levels */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-              <h3 className="text-xl font-bold text-gray-800">Branch Stock Levels</h3>
+              <div>
+                <h3 className="text-xl font-bold text-gray-800">Branch Stock Levels</h3>
+                {selectedBranchId && branches.find(b => b._id === selectedBranchId) && (
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    📍 {branches.find(b => b._id === selectedBranchId)?.name}
+                    {branches.find(b => b._id === selectedBranchId)?.isMainBranch && (
+                      <span className="ml-1 text-amber-600 font-semibold">(Main Branch)</span>
+                    )}
+                    &nbsp;·&nbsp;
+                    <span className="text-gray-400">{filteredBranchStocks.length} item(s)</span>
+                  </p>
+                )}
+              </div>
               <div className="flex flex-wrap items-center gap-4">
                 {role !== "Admin" && (role === "subadmin" && permissions?.includes("manage inventory")) && (
                   <>
@@ -268,16 +292,21 @@ const StockManagementPage = () => {
                     </button>
                   </>
                 )}
-                {role === "Admin" && (
-                  <div className="w-64">
-                    <Dropdown
-                      options={[{ label: "Select Branch", value: "" }, ...branches.map((b) => ({ label: b.name, value: b._id }))]}
-                      value={selectedBranchId}
-                      onChange={setSelectedBranchId}
-                      placeholder="Select Branch"
-                    />
-                  </div>
-                )}
+                {/* Branch selector — shows ALL branches so user can filter by any branch */}
+                <div className="w-56">
+                  <Dropdown
+                    options={[
+                      ...branches.map((b) => ({
+                        label: b.isMainBranch ? `${b.name} (Main)` : b.name,
+                        value: b._id
+                      }))
+                    ]}
+                    value={selectedBranchId}
+                    onChange={setSelectedBranchId}
+                    placeholder="Select Branch"
+                    showSearch={branches.length > 5}
+                  />
+                </div>
               </div>
             </div>
             <BranchStockTable
@@ -336,7 +365,7 @@ const StockManagementPage = () => {
               initialValues={editingStock}
               products={products}
               plans={plans}
-              branches={branches}
+              branches={branches.filter((b) => b.isMainBranch)}
               onSubmit={handleFormSubmit}
               onCancel={() => setIsDrawerOpen(false)}
               loading={loading}

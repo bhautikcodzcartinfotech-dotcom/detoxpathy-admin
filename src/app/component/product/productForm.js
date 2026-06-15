@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import TimeButton from "@/utils/timebutton";
 import { validateForm } from "@/utils/validation";
 import { API_BASE, getSetting, resolveImageUrl } from "@/Api/AllApi";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ProductForm = ({
   onSubmit,
@@ -11,6 +12,7 @@ const ProductForm = ({
   initialValues = null,
   submitLabel = "Create",
 }) => {
+  const { role } = useAuth();
   const [currency, setCurrency] = useState("₹");
   const [form, setForm] = useState({
     name: "",
@@ -22,6 +24,7 @@ const ProductForm = ({
     gstPercentage: "",
     unit: "",
     weight: "",
+    isForKit: false,
     images: null, // FileList for new uploads
   });
   const [existingImages, setExistingImages] = useState([]); // For displaying existing images when editing
@@ -62,6 +65,7 @@ const ProductForm = ({
         gstPercentage: initialValues.gstPercentage ?? "",
         unit: initialValues.unit || "",
         weight: initialValues.weight ?? 0,
+        isForKit: initialValues.isForKit ?? false,
         images: null,
       });
       setExistingImages(Array.isArray(initialValues.images) ? initialValues.images : []);
@@ -78,6 +82,7 @@ const ProductForm = ({
         gstPercentage: "",
         unit: "",
         weight: "",
+        isForKit: false,
         images: null,
       });
       setExistingImages([]);
@@ -162,6 +167,7 @@ const ProductForm = ({
     formData.append('gstPercentage', form.gstPercentage);
     formData.append('unit', form.unit);
     formData.append('weight', form.weight);
+    formData.append('isForKit', form.isForKit);
 
     // Add images to remove
     if (imagesToRemove.length > 0) {
@@ -372,6 +378,21 @@ const ProductForm = ({
         )}
       </div>
 
+      {role === "Admin" && (
+        <div className="flex items-center gap-3 py-2">
+          <input
+            type="checkbox"
+            id="isForKit"
+            checked={form.isForKit}
+            onChange={(e) => setForm(f => ({ ...f, isForKit: e.target.checked }))}
+            className="w-5 h-5 border-2 border-yellow-400 rounded bg-white checked:bg-yellow-500 checked:border-yellow-500 focus:ring-yellow-400 transition-all cursor-pointer"
+          />
+          <label htmlFor="isForKit" className="font-semibold text-gray-700 cursor-pointer select-none">
+            Is For Kit
+          </label>
+        </div>
+      )}
+
       <div>
         <label className="block mb-1 font-semibold text-gray-700">
           Product Images
@@ -404,8 +425,7 @@ const ProductForm = ({
                       alt={`Existing ${index + 1}`}
                       className="w-20 h-20 object-cover rounded border"
                       onError={(e) => {
-                        e.target.style.display = 'none';
-                        e.target.src = ''; // Clear src to prevent further requests
+                        e.target.src = "/image/placeholder.avif";
                       }}
                     />
                     <button

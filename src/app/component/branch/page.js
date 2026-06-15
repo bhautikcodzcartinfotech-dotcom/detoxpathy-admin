@@ -59,6 +59,7 @@ const BranchPage = () => {
         branch.name?.toLowerCase().includes(searchTerm) ||
         branch.city?.toLowerCase().includes(searchTerm) ||
         branch.state?.toLowerCase().includes(searchTerm) ||
+        branch.country?.toLowerCase().includes(searchTerm) ||
         branch.email?.toLowerCase().includes(searchTerm) ||
         branch.pincode?.toString().includes(searchTerm)
       );

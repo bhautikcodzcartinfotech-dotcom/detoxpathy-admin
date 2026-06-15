@@ -89,6 +89,9 @@ const BranchTable = ({ items, loading, onEdit, onDelete }) => {
                 State
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                Country
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Pincode
               </th>
               <th className="px-6 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
@@ -158,8 +161,11 @@ const BranchTable = ({ items, loading, onEdit, onDelete }) => {
                 <td className="px-6 py-4 whitespace-nowrap text-gray-700">
                   {b.city}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-700">
+                <td className="px-6 py-4 whitespace-nowrap text-gray-700 capitalize">
                   {b.state}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-gray-700 capitalize">
+                  {b.country || "India"}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-gray-700">
                   {b.pincode}
@@ -230,7 +236,11 @@ const BranchTable = ({ items, loading, onEdit, onDelete }) => {
               </div>
               <div>
                 <div className="text-gray-500">State</div>
-                <div className="text-gray-800 font-medium">{b.state}</div>
+                <div className="text-gray-800 font-medium capitalize">{b.state}</div>
+              </div>
+              <div>
+                <div className="text-gray-500">Country</div>
+                <div className="text-gray-800 font-medium capitalize">{b.country || "India"}</div>
               </div>
               <div>
                 <div className="text-gray-500">Pincode</div>

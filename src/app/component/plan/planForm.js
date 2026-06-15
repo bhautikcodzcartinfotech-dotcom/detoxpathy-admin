@@ -422,7 +422,7 @@ const PlanForm = ({
                         alt={product.name}
                         className="w-11 h-11 object-cover rounded-lg border border-yellow-200/60 shadow-xs flex-shrink-0"
                         onError={(e) => {
-                          e.target.style.display = 'none';
+                          e.target.src = "/image/placeholder.avif";
                         }}
                       />
                     ) : (

@@ -1,7 +1,12 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
+import { getExpiryBatches } from "@/utils/stockDisplay";
+import ExpiryToggleButton from "./ExpiryToggleButton";
+import ExpiryBatchesPanel from "./ExpiryBatchesPanel";
 
 const MasterStockTable = ({ stocks, loading, onEdit }) => {
+  const [expandedId, setExpandedId] = useState(null);
+
   if (loading && stocks.length === 0) {
     return (
       <div className="flex justify-center py-10">
@@ -14,6 +19,11 @@ const MasterStockTable = ({ stocks, loading, onEdit }) => {
     return <div className="text-center py-10 text-gray-400">No stock records found</div>;
   }
 
+  const toggleExpiry = (e, stockId) => {
+    e.stopPropagation();
+    setExpandedId(prev => (prev === stockId ? null : stockId));
+  };
+
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-left">
@@ -23,7 +33,7 @@ const MasterStockTable = ({ stocks, loading, onEdit }) => {
             <th className="px-4 py-3 font-black text-center">Total</th>
             <th className="px-4 py-3 font-black text-center">Sold</th>
             <th className="px-4 py-3 font-black text-center">Available</th>
-            <th className="px-4 py-3 font-black text-center">Expiry</th>
+            <th className="px-4 py-3 font-black text-center">Expiry Details</th>
             <th className="px-4 py-3 font-black text-center">Breakage</th>
           </tr>
         </thead>
@@ -32,44 +42,55 @@ const MasterStockTable = ({ stocks, loading, onEdit }) => {
             const name = stock.productId?.name || stock.planId?.name || "Unknown Item";
             const available = stock.available || 0;
             const isOutOfStock = available === 0;
-            const isExpired = stock.expiry && new Date(stock.expiry) < new Date();
+            const batches = getExpiryBatches(stock);
+            const isExpanded = expandedId === stock._id;
 
             return (
-              <tr 
-                key={stock._id} 
-                className="group hover:bg-gray-50/50 transition-colors cursor-pointer"
-                onClick={() => onEdit(stock)}
-              >
-                <td className="py-4">
-                  <div className="flex items-center gap-3">
-                    <span className="font-semibold text-gray-700">{name}</span>
-                    {isOutOfStock && (
-                      <span className="bg-red-50 text-red-500 text-[10px] px-2 py-0.5 rounded-full font-bold">
-                        Out of Stock
-                      </span>
-                    )}
-                  </div>
-                </td>
-                <td className="py-4 text-center font-bold text-gray-700">
-                  {((stock.available || 0) + (stock.sold || 0)).toLocaleString()}
-                </td>
-                <td className="py-4 text-center font-bold text-gray-700">
-                  {(stock.sold || 0).toLocaleString()}
-                </td>
-                <td className="py-4 text-center border-l border-transparent group-hover:border-gray-100">
-                  <span className={`font-black ${isOutOfStock ? "text-red-500" : "text-green-600"}`}>
-                    {available.toLocaleString()}
-                  </span>
-                </td>
-                <td className={`py-4 text-center font-bold ${isExpired ? "text-red-600" : "text-gray-700"}`}>
-                  {stock.expiry 
-                    ? new Date(stock.expiry).toLocaleDateString('en-GB') 
-                    : "-"}
-                </td>
-                <td className="py-4 text-center font-bold text-gray-700">
-                  {(stock.breakage || 0).toLocaleString()}
-                </td>
-              </tr>
+              <React.Fragment key={stock._id}>
+                <tr
+                  className="group hover:bg-gray-50/50 transition-colors cursor-pointer"
+                  onClick={() => onEdit(stock)}
+                >
+                  <td className="py-4">
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-gray-700">{name}</span>
+                      {isOutOfStock && (
+                        <span className="bg-red-50 text-red-500 text-[10px] px-2 py-0.5 rounded-full font-bold">
+                          Out of Stock
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                  <td className="py-4 text-center font-bold text-gray-700">
+                    {((stock.available || 0) + (stock.sold || 0)).toLocaleString()}
+                  </td>
+                  <td className="py-4 text-center font-bold text-gray-700">
+                    {(stock.sold || 0).toLocaleString()}
+                  </td>
+                  <td className="py-4 text-center border-l border-transparent group-hover:border-gray-100">
+                    <span className={`font-black ${isOutOfStock ? "text-red-500" : "text-green-600"}`}>
+                      {available.toLocaleString()}
+                    </span>
+                  </td>
+                  <td className="py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                    <ExpiryToggleButton
+                      expanded={isExpanded}
+                      count={batches.length}
+                      onClick={(e) => toggleExpiry(e, stock._id)}
+                    />
+                  </td>
+                  <td className="py-4 text-center font-bold text-gray-700">
+                    {(stock.breakage || 0).toLocaleString()}
+                  </td>
+                </tr>
+                {isExpanded && batches.length > 0 && (
+                  <tr className="bg-gradient-to-r from-amber-50/80 to-yellow-50/40">
+                    <td colSpan={6} className="px-5 py-4">
+                      <ExpiryBatchesPanel title={`${name} — Expiry Breakdown`} batches={batches} />
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
             );
           })}
         </tbody>

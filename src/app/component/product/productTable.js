@@ -5,8 +5,10 @@ import NotFoundCard from "@/components/NotFoundCard";
 import { ActionButton } from "@/utils/actionbutton";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import { API_BASE, resolveImageUrl } from "@/Api/AllApi";
+import { useAuth } from "@/contexts/AuthContext";
 
 const ProductTable = ({ items, loading, onEdit, onDelete, currency = "₹" }) => {
+  const { role } = useAuth();
   const [deleteDialog, setDeleteDialog] = useState({
     isOpen: false,
     itemId: null,
@@ -102,6 +104,11 @@ const ProductTable = ({ items, loading, onEdit, onDelete, currency = "₹" }) =>
               <th className="px-3 py-2.5 lg:px-4 lg:py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Weight (g)
               </th>
+              {role === "Admin" && (
+                <th className="px-3 py-2.5 lg:px-4 lg:py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                  For Kit
+                </th>
+              )}
               <th className="px-3 py-2.5 lg:px-4 lg:py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 Images
               </th>
@@ -149,6 +156,19 @@ const ProductTable = ({ items, loading, onEdit, onDelete, currency = "₹" }) =>
                     {product.weight ?? 0}g
                   </div>
                 </td>
+                {role === "Admin" && (
+                  <td className="px-3 py-3 lg:px-4 whitespace-nowrap text-xs lg:text-sm">
+                    {product.isForKit ? (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-green-100 text-green-700 border border-green-200">
+                        Yes
+                      </span>
+                    ) : (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-gray-100 text-gray-500 border border-gray-200">
+                        No
+                      </span>
+                    )}
+                  </td>
+                )}
                 <td className="px-3 py-3 lg:px-4 whitespace-nowrap text-xs lg:text-sm">
                   <div className="flex items-center">
                     {product.images && product.images.length > 0 ? (
@@ -158,7 +178,7 @@ const ProductTable = ({ items, loading, onEdit, onDelete, currency = "₹" }) =>
                           alt={product.name}
                           className="w-10 h-10 object-cover rounded-lg mr-2"
                           onError={(e) => {
-                            e.target.style.display = 'none'; // hide broken image
+                            e.target.src = "/image/placeholder.avif";
                           }}
                         />
                         {product.images.length > 1 && (

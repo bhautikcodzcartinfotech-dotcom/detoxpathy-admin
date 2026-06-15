@@ -3,16 +3,23 @@ import React, { useEffect, useMemo, useState } from "react";
 import TimeButton from "@/utils/timebutton";
 import { validateForm, validateEmail } from "@/utils/validation";
 import Dropdown from "@/utils/dropdown";
-import { State, City } from "country-state-city";
+import { Country, State, City } from "country-state-city";
 
-const INDIAN_STATES = State.getStatesOfCountry("IN");
+const ALL_COUNTRIES = Country.getAllCountries();
 
-const findIndianState = (stateName) => {
-  const normalized = (stateName || "").trim().toLowerCase();
+const findCountry = (countryName) => {
+  const normalized = (countryName || "").trim().toLowerCase();
   if (!normalized) return null;
+  return ALL_COUNTRIES.find((c) => c.name.toLowerCase() === normalized);
+};
+
+const findState = (countryIsoCode, stateName) => {
+  const normalized = (stateName || "").trim().toLowerCase();
+  if (!normalized || !countryIsoCode) return null;
+  const states = State.getStatesOfCountry(countryIsoCode);
   return (
-    INDIAN_STATES.find((s) => s.name.toLowerCase() === normalized) ||
-    INDIAN_STATES.find((s) => s.name.toLowerCase().includes(normalized))
+    states.find((s) => s.name.toLowerCase() === normalized) ||
+    states.find((s) => s.name.toLowerCase().includes(normalized))
   );
 };
 
@@ -31,6 +38,7 @@ const BranchForm = ({
     address: "",
     city: "",
     state: "",
+    country: "India",
     pincode: "",
     email: "",
     latitude: "",
@@ -45,11 +53,29 @@ const BranchForm = ({
 
   useEffect(() => {
     if (initialValues) {
+      const matchedC = findCountry(initialValues.country);
+      const exactCountry = matchedC ? matchedC.name : (initialValues.country ?? "India");
+
+      const matchedS = matchedC ? findState(matchedC.isoCode, initialValues.state) : null;
+      const exactState = matchedS ? matchedS.name : (initialValues.state ?? "");
+
+      let exactCity = initialValues.city ?? "";
+      if (matchedC && matchedS && exactCity) {
+        const cities = City.getCitiesOfState(matchedC.isoCode, matchedS.isoCode);
+        const matchedCityObj = cities.find(
+          (c) => c.name.toLowerCase() === exactCity.toLowerCase()
+        );
+        if (matchedCityObj) {
+          exactCity = matchedCityObj.name;
+        }
+      }
+
       setForm({
         name: initialValues.name ?? "",
         address: initialValues.address ?? "",
-        city: initialValues.city ?? "",
-        state: initialValues.state ?? "",
+        city: exactCity,
+        state: exactState,
+        country: exactCountry,
         pincode: initialValues.pincode ?? "",
         email: initialValues.email ?? "",
         latitude: String(initialValues.latitude ?? "").trim(),
@@ -67,6 +93,7 @@ const BranchForm = ({
         address: "",
         city: "",
         state: "",
+        country: "India",
         pincode: "",
         email: "",
         latitude: "",
@@ -125,6 +152,7 @@ const BranchForm = ({
       email: { value: form.email, rules: [validateEmail] },
       city: { value: form.city, rules: [required("City")] },
       state: { value: form.state, rules: [required("State")] },
+      country: { value: form.country, rules: [required("Country")] },
       pincode: { value: form.pincode, rules: [pincodeRule] },
       mobilePrefix: {
         value: form.mobilePrefix,
@@ -153,18 +181,38 @@ const BranchForm = ({
     await onSubmit(form);
   };
 
-  const matchedState = useMemo(
-    () => findIndianState(form.state),
-    [form.state],
+  const countryOptions = useMemo(() => {
+    return ALL_COUNTRIES.map((c) => ({
+      label: c.name,
+      value: c.name,
+    }));
+  }, []);
+
+  const matchedCountry = useMemo(
+    () => findCountry(form.country),
+    [form.country]
   );
 
+  const stateOptions = useMemo(() => {
+    if (!matchedCountry) return [];
+    return State.getStatesOfCountry(matchedCountry.isoCode).map((s) => ({
+      label: s.name,
+      value: s.name,
+    }));
+  }, [matchedCountry]);
+
+  const matchedState = useMemo(() => {
+    if (!matchedCountry) return null;
+    return findState(matchedCountry.isoCode, form.state);
+  }, [matchedCountry, form.state]);
+
   const cityOptions = useMemo(() => {
-    if (!matchedState) return [];
-    return City.getCitiesOfState("IN", matchedState.isoCode).map((city) => ({
+    if (!matchedCountry || !matchedState) return [];
+    return City.getCitiesOfState(matchedCountry.isoCode, matchedState.isoCode).map((city) => ({
       label: city.name,
       value: city.name,
     }));
-  }, [matchedState]);
+  }, [matchedCountry, matchedState]);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
@@ -222,7 +270,56 @@ const BranchForm = ({
         />
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <Dropdown
+            label="Country *"
+            options={countryOptions}
+            value={form.country}
+            onChange={(val) =>
+              setForm((f) => ({
+                ...f,
+                country: val,
+                state: "",
+                city: "",
+              }))
+            }
+            showSearch
+            placeholder="Search and select country"
+            labelClassName="font-semibold text-gray-700"
+            menuMaxHeight="min(70vh, 480px)"
+            menuMinWidth="min(100vw - 3rem, 20rem)"
+          />
+          {errors.country && (
+            <p className="text-red-500 text-sm mt-1">{errors.country}</p>
+          )}
+        </div>
+        <div>
+          <Dropdown
+            label="State *"
+            options={stateOptions}
+            value={form.state}
+            onChange={(val) =>
+              setForm((f) => ({
+                ...f,
+                state: val,
+                city: "",
+              }))
+            }
+            disabled={!matchedCountry}
+            showSearch
+            placeholder={
+              matchedCountry ? "Search and select state" : "Select country first"
+            }
+            labelClassName="font-semibold text-gray-700"
+            menuMaxHeight="min(70vh, 480px)"
+            menuMinWidth="min(100vw - 3rem, 20rem)"
+            align="right"
+          />
+          {errors.state && (
+            <p className="text-red-500 text-sm mt-1">{errors.state}</p>
+          )}
+        </div>
         <div>
           <Dropdown
             label="City *"
@@ -232,7 +329,7 @@ const BranchForm = ({
             disabled={!matchedState}
             showSearch
             placeholder={
-              matchedState ? "Search and select city" : "Enter state first"
+              matchedState ? "Search and select city" : "Select state first"
             }
             labelClassName="font-semibold text-gray-700"
             menuMaxHeight="min(70vh, 480px)"
@@ -240,33 +337,6 @@ const BranchForm = ({
           />
           {errors.city && (
             <p className="text-red-500 text-sm mt-1">{errors.city}</p>
-          )}
-        </div>
-        <div>
-          <label className="block mb-1 font-semibold text-gray-700">
-            State *
-          </label>
-          <input
-            type="text"
-            value={form.state}
-            onChange={(e) =>
-              setForm((f) => ({
-                ...f,
-                state: e.target.value,
-                city: "",
-              }))
-            }
-            className={fieldInputClass}
-            placeholder="e.g. Gujarat"
-            autoComplete="off"
-          />
-          {errors.state && (
-            <p className="text-red-500 text-sm mt-1">{errors.state}</p>
-          )}
-          {form.state.trim() && !matchedState && (
-            <p className="text-amber-600 text-xs mt-1">
-              Type a valid Indian state name (e.g. Gujarat) to load cities.
-            </p>
           )}
         </div>
         <div>

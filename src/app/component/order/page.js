@@ -205,6 +205,9 @@ const OrderPage = () => {
   };
 
   const handleDownloadMonthlyReport = async () => {
+    if (role !== "Admin") {
+      return toast.error("You do not have permission to download monthly reports");
+    }
     if (!filter.month) {
       return toast.error("Please select a month first");
     }
@@ -802,27 +805,31 @@ const OrderPage = () => {
             )}
 
             {/* Month Filter */}
-            <div className="md:col-span-2 space-y-2">
-              <label className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase ml-1">Month</label>
-              <input
-                type="month"
-                className="w-full h-11 px-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] bg-gray-50/50 transition-all text-sm font-medium"
-                value={filter.month}
-                onChange={(e) => handleFilterChange("month", e.target.value)}
-              />
-            </div>
+            {role === "Admin" && (
+              <div className="md:col-span-2 space-y-2">
+                <label className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase ml-1">Month</label>
+                <input
+                  type="month"
+                  className="w-full h-11 px-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] bg-gray-50/50 transition-all text-sm font-medium"
+                  value={filter.month}
+                  onChange={(e) => handleFilterChange("month", e.target.value)}
+                />
+              </div>
+            )}
 
             {/* Download Monthly PDF Button */}
-            <div className="md:col-span-1 flex items-end">
-              <Button
-                onClick={handleDownloadMonthlyReport}
-                disabled={!filter.month || loading}
-                variant="primary"
-                className="h-11 w-full text-xs"
-              >
-                Invoice
-              </Button>
-            </div>
+            {role === "Admin" && (
+              <div className="md:col-span-1 flex items-end">
+                <Button
+                  onClick={handleDownloadMonthlyReport}
+                  disabled={!filter.month || loading}
+                  variant="primary"
+                  className="h-11 w-full text-xs"
+                >
+                  Invoice
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Bulk Action Bar */}

@@ -133,6 +133,26 @@ export default function MainLayout({ children }) {
     };
   }, []);
 
+  // Global image loading error fallback
+  useEffect(() => {
+    const handleGlobalImageError = (event) => {
+      if (event.target && event.target.tagName === "IMG") {
+        const img = event.target;
+        const placeholder = "/image/placeholder.avif";
+        if (img.src && !img.src.includes(placeholder)) {
+          img.src = placeholder;
+          // Ensure image is visible in case it was hidden by inline styles/handlers
+          img.style.display = "";
+        }
+      }
+    };
+
+    window.addEventListener("error", handleGlobalImageError, true);
+    return () => {
+      window.removeEventListener("error", handleGlobalImageError, true);
+    };
+  }, []);
+
   useEffect(() => {
     if (isAuthenticated() && !loading) {
       getSetting()

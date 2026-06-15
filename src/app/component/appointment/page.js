@@ -2977,7 +2977,7 @@ const AppointmentPage = () => {
                                       >
                                         <div className="flex items-center gap-3">
                                           <div className="w-8 h-8 rounded-lg bg-white border border-slate-100 overflow-hidden shrink-0">
-                                            <img src={`${API_HOST}/${product.image}`} alt="" className="w-full h-full object-cover" onError={(e) => e.target.src = "https://via.placeholder.com/150"} />
+                                            <img src={`${API_HOST}/${product.image}`} alt="" className="w-full h-full object-cover" onError={(e) => e.target.src = "/image/placeholder.avif"} />
                                           </div>
                                           <span className="text-xs font-black">{product.name}</span>
                                         </div>

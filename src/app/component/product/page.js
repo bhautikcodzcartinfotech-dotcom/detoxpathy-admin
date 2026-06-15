@@ -25,6 +25,7 @@ const ProductPage = () => {
     start: 1,
     limit: 10,
     total: 0,
+    totalPages: 1,
   });
 
   const [currency, setCurrency] = useState("₹");
@@ -56,9 +57,11 @@ const ProductPage = () => {
         limit: pagination.limit,
       });
       setItems(Array.isArray(data?.products) ? data.products : []);
+      const total = data?.total || 0;
       setPagination((prev) => ({
         ...prev,
-        total: data?.total || 0,
+        total,
+        totalPages: Math.ceil(total / prev.limit),
       }));
     } catch (e) {
       setError(e?.response?.data?.message || "Failed to load products");
@@ -144,6 +147,28 @@ const ProductPage = () => {
           onDelete={handleDelete}
           currency={currency}
         />
+
+        {pagination.totalPages > 1 && (
+          <div className="mt-8 flex justify-center items-center gap-4">
+            <Button
+              variant="secondary"
+              disabled={pagination.start === 1 || listLoading}
+              onClick={() => setPagination(prev => ({ ...prev, start: prev.start - 1 }))}
+            >
+              Previous
+            </Button>
+            <span className="text-sm font-bold text-gray-700">
+              Page {pagination.start} of {pagination.totalPages}
+            </span>
+            <Button
+              variant="secondary"
+              disabled={pagination.start === pagination.totalPages || listLoading}
+              onClick={() => setPagination(prev => ({ ...prev, start: prev.start + 1 }))}
+            >
+              Next
+            </Button>
+          </div>
+        )}
 
         <Drawer isOpen={isOpen} onClose={() => setIsOpen(false)}>
           <div className="mb-6 text-center">

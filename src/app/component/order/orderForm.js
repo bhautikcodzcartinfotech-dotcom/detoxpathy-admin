@@ -113,8 +113,9 @@ const OrderForm = ({ onCancel, onSuccess }) => {
     const offlinePay = paymentMethod === "Split" ? Number(offlineAmount) || 0 : 0;
 
     if (paymentMethod === "Split") {
-      if (Math.abs(onlinePay + offlinePay - totalAmount) > 0.02) {
-        return toast.error(`Online + Offline must equal total (${currency}${totalAmount.toLocaleString()})`);
+      const roundedTotal = Math.round(totalAmount);
+      if (Math.abs(onlinePay + offlinePay - roundedTotal) > 0.02) {
+        return toast.error(`Online + Offline must equal total (${currency}${roundedTotal.toLocaleString()})`);
       }
       if (onlinePay <= 0 && offlinePay <= 0) {
         return toast.error("Enter online and/or offline amounts for split payment");
@@ -212,9 +213,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
   };
 
   const getItemPrice = (item) => {
-    const base = Number(item.basePrice) || 0;
-    const gst = Number(item.gstPercentage) || 0;
-    return base + (base * gst / 100);
+    return Number(item.basePrice) || 0;
   };
 
   const totalWeight = selectedProducts.reduce((sum, p) => sum + ((Number(p.weight) || 0) * p.quantity), 0) + 
@@ -251,10 +250,9 @@ const OrderForm = ({ onCancel, onSuccess }) => {
           options={products.map(p => {
             const sellingPrice = p.discountedPrice > 0 ? p.discountedPrice : p.basePrice;
             const gst = Number(p.gstPercentage) || 0;
-            const priceWithGst = sellingPrice + (sellingPrice * gst / 100);
             return {
               value: p._id,
-              label: `${p.name} - ${currency}${priceWithGst.toLocaleString()} (Incl. ${gst}% GST)`
+              label: `${p.name} - ${currency}${Math.round(sellingPrice).toLocaleString()} (Incl. ${gst}% GST)`
             };
           })}
           value=""
@@ -268,7 +266,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
           options={plans.map(p => {
             return {
               value: p._id,
-              label: `${p.name} - ${currency}${p.price.toLocaleString()}`
+              label: `${p.name} - ${currency}${Math.round(p.price).toLocaleString()}`
             };
           })}
           value={""}
@@ -327,7 +325,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
           </div>
           {totalAmount > 0 && (
             <p className="sm:col-span-2 text-xs text-gray-600">
-              Order total: <span className="font-bold text-[#134D41]">{currency}{totalAmount.toLocaleString()}</span>
+              Order total: <span className="font-bold text-[#134D41]">{currency}{Math.round(totalAmount).toLocaleString()}</span>
               {onlineAmount !== "" && offlineAmount !== "" && (
                 <span className="ml-2">
                   (Online + Offline = {currency}{(Number(onlineAmount) + Number(offlineAmount)).toLocaleString()})
@@ -345,7 +343,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
             <div className="flex flex-col">
               <span className="font-bold text-yellow-800">PLAN: {p.name}</span>
               <span className="text-xs text-yellow-600 font-semibold">
-                {currency}{getItemPrice(p).toLocaleString()}
+                {currency}{Math.round(getItemPrice(p)).toLocaleString()}
               </span>
             </div>
             <button
@@ -362,7 +360,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
             <div className="flex flex-col">
               <span className="font-semibold text-gray-800">{p.name}</span>
               <span className="text-xs text-gray-500">
-                {currency}{getItemPrice(p).toLocaleString()} / unit {p.gstPercentage > 0 && `(Incl. ${p.gstPercentage}% GST)`}
+                {currency}{Math.round(getItemPrice(p)).toLocaleString()} / unit {p.gstPercentage > 0 && `(Incl. ${p.gstPercentage}% GST)`}
               </span>
             </div>
             <div className="flex items-center gap-3">
@@ -399,7 +397,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
         <div className="p-4 bg-yellow-50 rounded-2xl border border-yellow-200 space-y-2.5 shadow-sm">
           <div className="flex justify-between items-center text-sm font-semibold text-gray-600">
             <span>Items Subtotal:</span>
-            <span className="text-gray-800">{currency}{itemsSubtotal.toLocaleString()}</span>
+            <span className="text-gray-800">{currency}{Math.round(itemsSubtotal).toLocaleString()}</span>
           </div>
           <div className="flex justify-between items-center text-sm font-semibold text-gray-600">
             <span>Total Weight:</span>
@@ -408,7 +406,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
           <hr className="border-yellow-200 my-1" />
           <div className="flex justify-between items-center text-lg font-bold">
             <span className="text-gray-700">Total Estimation:</span>
-            <span className="text-yellow-700">{currency}{totalAmount.toLocaleString()}</span>
+            <span className="text-yellow-700">{currency}{Math.round(totalAmount).toLocaleString()}</span>
           </div>
         </div>
       )}

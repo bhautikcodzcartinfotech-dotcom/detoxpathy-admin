@@ -423,7 +423,7 @@ const QuestionTable = ({
                                   alt={stat.user.name}
                                   className="w-8 h-8 rounded-full object-cover border border-green-200"
                                   onError={(e) =>
-                                    (e.target.src = "https://cdn-icons-png.flaticon.com/512/149/149071.png")
+                                    (e.target.src = "/image/placeholder.avif")
                                   }
                                 />
                                 <div className="flex-1 min-w-0">
@@ -485,7 +485,7 @@ const QuestionTable = ({
                                   alt={stat.user.name}
                                   className="w-8 h-8 rounded-full object-cover border border-red-200"
                                   onError={(e) =>
-                                    (e.target.src = "https://cdn-icons-png.flaticon.com/512/149/149071.png")
+                                    (e.target.src = "/image/placeholder.avif")
                                   }
                                 />
                                 <div className="flex-1 min-w-0">

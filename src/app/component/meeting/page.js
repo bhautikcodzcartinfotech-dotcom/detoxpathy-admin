@@ -30,7 +30,7 @@ import {
     MdAttachFile
 } from "react-icons/md";
 
-const DEFAULT_AVATAR = `data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%23E2E8F0"/><circle cx="50" cy="35" r="20" fill="%2394A3B8"/><path d="M15 85 C 15 65, 85 65, 85 85" fill="%2394A3B8"/></svg>`;
+const DEFAULT_AVATAR = "/image/placeholder.avif";
 
 export default function MeetingPage() {
     const { role } = useAuth();

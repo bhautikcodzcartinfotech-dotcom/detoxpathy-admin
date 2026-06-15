@@ -2,23 +2,29 @@
 import React, { useState, useEffect } from "react";
 
 const StockForm = ({ role, initialValues, products, plans, branches, onSubmit, onCancel, loading }) => {
+  // branches prop already pre-filtered to isMainBranch:true only (from page.js)
+  const mainBranch = Array.isArray(branches) ? branches.find(b => b.isMainBranch) || branches[0] : null;
+
   const [formData, setFormData] = useState({
     productId: "",
     planId: "",
-    branchId: "null", // Default to Master
+    branchId: mainBranch?._id || "",
     available: 0,
     breakage: 0,
     expiry: "",
     isIncrement: true,
-    type: "product", // Helper for selection
+    type: "product",
   });
 
   useEffect(() => {
+    const mainB = Array.isArray(branches) ? branches.find(b => b.isMainBranch) || branches[0] : null;
+
     if (initialValues) {
       setFormData({
         productId: initialValues.productId?._id || "",
         planId: initialValues.planId?._id || "",
-        branchId: initialValues.branchId?._id || "null",
+        // When editing, keep the existing branchId (it should already be the main branch)
+        branchId: initialValues.branchId?._id || mainB?._id || "",
         available: initialValues.available || 0,
         breakage: initialValues.breakage || 0,
         expiry: initialValues.expiry ? new Date(initialValues.expiry).toISOString().split('T')[0] : "",
@@ -26,23 +32,22 @@ const StockForm = ({ role, initialValues, products, plans, branches, onSubmit, o
         type: initialValues.planId ? "plan" : "product",
       });
     } else {
-       setFormData(prev => ({
-         ...prev,
-         branchId: (role !== "Admin" && branches && branches.length > 0) ? branches[0]._id : "null",
-         available: 0,
-         breakage: 0,
-         expiry: "",
-         isIncrement: true
-       }));
+      setFormData(prev => ({
+        ...prev,
+        branchId: mainB?._id || "",
+        available: 0,
+        breakage: 0,
+        expiry: "",
+        isIncrement: true,
+      }));
     }
-  }, [initialValues, role, branches]);
+  }, [initialValues, branches]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: value,
-      // Clear other ID when type changes
       ...(name === "type" ? { productId: "", planId: "" } : {}),
     }));
   };
@@ -50,39 +55,27 @@ const StockForm = ({ role, initialValues, products, plans, branches, onSubmit, o
   const handleSubmit = (e) => {
     e.preventDefault();
     const payload = { ...formData };
-    if (payload.branchId === "null") payload.branchId = null;
+    // branchId is always the main branch _id — never null
     if (payload.type === "product") delete payload.planId;
     else delete payload.productId;
     delete payload.type;
-    
     onSubmit(payload);
   };
+
+  // Display name for the stock location
+  const locationLabel = mainBranch ? `${mainBranch.name} (Company Master Stock)` : "Company Master Stock";
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Stock Location</label>
-        {role === "Admin" ? (
-          <select
-            name="branchId"
-            value={formData.branchId}
-            onChange={handleChange}
-            disabled={!!initialValues}
-            className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-[#134D41]/20 focus:border-[#134D41] outline-none transition-all disabled:bg-gray-50"
-          >
-            <option value="null">Company Master Stock</option>
-            {Array.isArray(branches) && branches.map((b) => (
-              <option key={b._id} value={b._id}>{b.name}</option>
-            ))}
-          </select>
-        ) : (
-          <input
-            type="text"
-            readOnly
-            value={(Array.isArray(branches) && branches.find(b => b._id === formData.branchId)?.name) || "Your Branch"}
-            className="w-full border border-gray-300 rounded-lg p-2.5 bg-gray-50 text-gray-700 outline-none"
-          />
-        )}
+        {/* Stock can only be added to the Main Branch = Company Master Stock */}
+        <input
+          type="text"
+          readOnly
+          value={locationLabel}
+          className="w-full border border-gray-200 rounded-lg p-2.5 bg-amber-50 text-amber-800 font-semibold outline-none cursor-not-allowed"
+        />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
