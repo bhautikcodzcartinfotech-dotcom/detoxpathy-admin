@@ -211,19 +211,19 @@ const OrderPage = () => {
     if (!filter.month) {
       return toast.error("Please select a month first");
     }
-    
+
     try {
       setLoading(true);
       // Fetch up to 2000 orders for the selected month to ensure we get them all
       const data = await getAllOrders({ ...filter, start: 1, limit: 2000 });
       const monthlyOrders = data.orders || [];
-      
+
       if (monthlyOrders.length === 0) {
         toast.error("No orders found for the selected filters");
         setLoading(false);
         return;
       }
-      
+
       const printWindow = window.open("", "_blank");
       if (!printWindow) {
         toast.error("Popup blocker prevented opening print window");
@@ -756,13 +756,13 @@ const OrderPage = () => {
                 options={
                   role === "Admin"
                     ? [
-                        { label: "All Types", value: "" },
-                        { label: "Online", value: "1" },
-                        { label: "Branch", value: "2" },
-                      ]
+                      { label: "All Types", value: "" },
+                      { label: "Online", value: "1" },
+                      { label: "Branch", value: "2" },
+                    ]
                     : [
-                        { label: "Branch", value: "2" },
-                      ]
+                      { label: "Branch", value: "2" },
+                    ]
                 }
                 value={filter.type}
                 onChange={(val) => handleFilterChange("type", val)}
@@ -786,7 +786,7 @@ const OrderPage = () => {
                 onChange={(val) => handleFilterChange("status", val)}
               />
             </div>
-            
+
             {/* Branch Filter */}
             {role !== 'subadmin' ? (
               <div className="md:col-span-2">

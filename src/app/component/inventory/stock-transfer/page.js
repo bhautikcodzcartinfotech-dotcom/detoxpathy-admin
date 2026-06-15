@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
 import { FiPlus, FiDownload, FiSave, FiPrinter } from "react-icons/fi";
-import { getAllBranches, getAllProducts, createPurchase } from "@/Api/AllApi"; // I need to add createStockTransfer to AllApi
+import { getAllBranches, getAllProducts, getAllPlans, createPurchase } from "@/Api/AllApi"; // I need to add createStockTransfer to AllApi
 import { toast } from "react-hot-toast";
 import Dropdown from "@/utils/dropdown";
 import axios from "axios"; // For direct calls if API not yet in AllApi
@@ -10,24 +10,27 @@ import { API_BASE, getAuthHeaders } from "@/Api/AllApi";
 const StockTransferPage = () => {
   const [branches, setBranches] = useState([]);
   const [products, setProducts] = useState([]);
+  const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(false);
   const [transfers, setTransfers] = useState([]);
 
   const [form, setForm] = useState({
     fromBranchId: "",
     toBranchId: "",
-    items: [{ productId: "", quantity: 1, rate: 0, gstPercentage: 0 }]
+    items: [{ type: "product", productId: "", planId: "", quantity: 1, rate: 0, gstPercentage: 0 }]
   });
 
   useEffect(() => {
     const fetchData = async () => {
-      const [b, p, t] = await Promise.all([
+      const [b, p, pl, t] = await Promise.all([
         getAllBranches(),
         getAllProducts({ limit: 1000 }),
+        getAllPlans(),
         axios.get(`${API_BASE}/admin/stock-transfer/get-all`, { headers: getAuthHeaders() })
       ]);
       setBranches(b);
       setProducts(p.products || []);
+      setPlans(pl || []);
       setTransfers(t.data.data || []);
       
       const mainBranch = b.find(branch => branch.isMainBranch);
@@ -41,10 +44,19 @@ const StockTransferPage = () => {
   const handleItemChange = (index, field, value) => {
     const newItems = [...form.items];
     newItems[index][field] = value;
-    if (field === 'productId') {
+    if (field === 'type') {
+      newItems[index].productId = "";
+      newItems[index].planId = "";
+      newItems[index].rate = 0;
+      newItems[index].gstPercentage = 0;
+    } else if (field === 'productId') {
       const product = products.find(p => p._id === value);
       newItems[index].rate = product?.basePrice || 0;
       newItems[index].gstPercentage = product?.gstPercentage || 0;
+    } else if (field === 'planId') {
+      const plan = plans.find(pl => pl._id === value);
+      newItems[index].rate = plan?.price || 0;
+      newItems[index].gstPercentage = 0;
     }
     setForm({ ...form, items: newItems });
   };
@@ -114,9 +126,20 @@ const StockTransferPage = () => {
     if (t.items && t.items.length > 0) {
       t.items.forEach(item => {
         const prodId = item.productId?._id || item.productId;
-        const productObj = products.find(p => p._id === prodId) || {};
-        const productName = productObj.name || item.productId?.name || "Product";
-        const hsn = productObj.hsnCode || "-";
+        const planId = item.planId?._id || item.planId;
+        let itemName = "Unknown";
+        let hsn = "-";
+        
+        if (prodId) {
+          const productObj = products.find(p => p._id === prodId) || {};
+          itemName = productObj.name || item.productId?.name || "Product";
+          hsn = productObj.hsnCode || "-";
+        } else if (planId) {
+          const planObj = plans.find(p => p._id === planId) || {};
+          itemName = planObj.name || item.planId?.name || "Plan";
+          hsn = planObj.planCode || "-";
+        }
+
         const rate = `₹${Number(item.rate || 0).toLocaleString("en-IN")}`;
         const qty = item.quantity || "0";
         const gst = `${item.gstPercentage || 0}%`;
@@ -124,7 +147,7 @@ const StockTransferPage = () => {
         
         itemsHtml += `
           <tr>
-            <td>${productName}</td>
+            <td>${itemName}</td>
             <td class="text-center">${hsn}</td>
             <td class="text-right">${rate}</td>
             <td class="text-center">${qty}</td>
@@ -352,48 +375,70 @@ const StockTransferPage = () => {
           <div className="border rounded-xl overflow-hidden">
              <table className="w-full">
                 <thead className="bg-gradient-to-r from-yellow-400 to-amber-300">
-                  <tr className="text-[11px] uppercase tracking-widest text-gray-700">
-                    <th className="px-4 py-3 font-black">Product</th>
-                    <th className="px-4 py-3 font-black w-32">Quantity</th>
-                    <th className="px-4 py-3 font-black w-16"></th>
-                  </tr>
+                   <tr className="text-[11px] uppercase tracking-widest text-gray-700">
+                     <th className="px-4 py-3 font-black w-32">Type</th>
+                     <th className="px-4 py-3 font-black">Item</th>
+                     <th className="px-4 py-3 font-black w-32">Quantity</th>
+                     <th className="px-4 py-3 font-black w-16"></th>
+                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {form.items.map((item, index) => (
-                    <tr key={index}>
-                      <td className="p-2">
-                        <select
-                          value={item.productId}
-                          onChange={e => handleItemChange(index, 'productId', e.target.value)}
-                          className="w-full border-none focus:ring-0 text-sm"
-                        >
-                          <option value="">Select Product</option>
-                          {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
-                        </select>
-                      </td>
-                      <td className="p-2">
-                        <input
-                          type="number"
-                          value={item.quantity}
-                          onChange={e => handleItemChange(index, 'quantity', e.target.value)}
-                          className="w-full border-none focus:ring-0 text-sm"
-                        />
-                      </td>
-                      <td className="p-2 text-center">
-                        <button type="button" onClick={() => setForm({...form, items: form.items.filter((_, i) => i !== index)})} className="text-red-500 hover:text-red-700">×</button>
-                      </td>
-                    </tr>
-                  ))}
+                   {form.items.map((item, index) => (
+                     <tr key={index}>
+                       <td className="p-2">
+                         <select
+                           value={item.type || "product"}
+                           onChange={e => handleItemChange(index, 'type', e.target.value)}
+                           className="w-full border-none focus:ring-0 text-sm"
+                         >
+                           <option value="product">Product</option>
+                           <option value="plan">Plan</option>
+                         </select>
+                       </td>
+                       <td className="p-2">
+                         {item.type === "plan" ? (
+                           <select
+                             value={item.planId || ""}
+                             onChange={e => handleItemChange(index, 'planId', e.target.value)}
+                             className="w-full border-none focus:ring-0 text-sm"
+                           >
+                             <option value="">Select Plan</option>
+                             {plans.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+                           </select>
+                         ) : (
+                           <select
+                             value={item.productId || ""}
+                             onChange={e => handleItemChange(index, 'productId', e.target.value)}
+                             className="w-full border-none focus:ring-0 text-sm"
+                           >
+                             <option value="">Select Product</option>
+                             {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+                           </select>
+                         )}
+                       </td>
+                       <td className="p-2">
+                         <input
+                           type="number"
+                           value={item.quantity}
+                           onChange={e => handleItemChange(index, 'quantity', e.target.value)}
+                           className="w-full border-none focus:ring-0 text-sm"
+                         />
+                       </td>
+                       <td className="p-2 text-center">
+                         <button type="button" onClick={() => setForm({...form, items: form.items.filter((_, i) => i !== index)})} className="text-red-500 hover:text-red-700">×</button>
+                       </td>
+                     </tr>
+                   ))}
                 </tbody>
              </table>
              <button
                 type="button"
-                onClick={() => setForm({...form, items: [...form.items, { productId: "", quantity: 1, rate: 0, gstPercentage: 0 }]})}
+                onClick={() => setForm({...form, items: [...form.items, { type: "product", productId: "", planId: "", quantity: 1, rate: 0, gstPercentage: 0 }]})}
                 className="w-full p-3 text-sm text-blue-600 hover:bg-blue-50 font-semibold"
               >
                 + Add More Items
-              </button>
-          </div>
+            </button>
+        </div>
 
           <div className="flex justify-end pt-4">
             <button

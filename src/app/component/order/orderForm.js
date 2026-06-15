@@ -63,11 +63,11 @@ const OrderForm = ({ onCancel, onSuccess }) => {
     }
     const product = products.find(p => p._id === productId);
     const sellingPrice = product.discountedPrice > 0 ? product.discountedPrice : product.basePrice;
-    setSelectedProducts([...selectedProducts, { 
-      productId, 
-      quantity: 1, 
-      name: product.name, 
-      basePrice: sellingPrice, 
+    setSelectedProducts([...selectedProducts, {
+      productId,
+      quantity: 1,
+      name: product.name,
+      basePrice: sellingPrice,
       bulkDiscount: Number(product.bulkDiscount) || 0,
       gstPercentage: Number(product.gstPercentage) || 0,
       weight: Number(product.weight) || 0
@@ -90,10 +90,10 @@ const OrderForm = ({ onCancel, onSuccess }) => {
     if (!plan) return;
 
     // Replace the entire array with just the new plan to enforce single-selection
-    setSelectedPlans([{ 
-      planId, 
-      name: plan.name, 
-      basePrice: Number(plan.price), 
+    setSelectedPlans([{
+      planId,
+      name: plan.name,
+      basePrice: Number(plan.price),
       bulkDiscount: Number(plan.bulkDiscount) || 0,
       weight: Number(plan.weight) || 0
     }]);
@@ -216,11 +216,11 @@ const OrderForm = ({ onCancel, onSuccess }) => {
     return Number(item.basePrice) || 0;
   };
 
-  const totalWeight = selectedProducts.reduce((sum, p) => sum + ((Number(p.weight) || 0) * p.quantity), 0) + 
-                      selectedPlans.reduce((sum, p) => sum + (Number(p.weight) || 0), 0);
+  const totalWeight = selectedProducts.reduce((sum, p) => sum + ((Number(p.weight) || 0) * p.quantity), 0) +
+    selectedPlans.reduce((sum, p) => sum + (Number(p.weight) || 0), 0);
 
-  const itemsSubtotal = selectedProducts.reduce((sum, p) => sum + (getItemPrice(p) * p.quantity), 0) + 
-                       selectedPlans.reduce((sum, p) => sum + getItemPrice(p), 0);
+  const itemsSubtotal = selectedProducts.reduce((sum, p) => sum + (getItemPrice(p) * p.quantity), 0) +
+    selectedPlans.reduce((sum, p) => sum + getItemPrice(p), 0);
 
   const shippingCost = 0; // Admin created orders have no shipping charges
 
