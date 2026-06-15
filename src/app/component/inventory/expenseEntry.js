@@ -140,13 +140,21 @@ const ExpenseEntry = () => {
       toast.success("Expense successfully saved and ledger posted!");
       
       // Reset form
+      let defaultBranchId = "";
+      if (role === "subadmin") {
+        const firstAllowed = branches.find(b => allowedBranchIds.includes(String(b._id)));
+        if (firstAllowed) {
+          defaultBranchId = firstAllowed._id;
+        }
+      }
+
       setForm({
         expenseAccountId: "",
         paidFromAccountId: "",
         amount: "",
         description: "",
         referenceNo: "",
-        branchId: (role === "subadmin" && firstAllowed) ? firstAllowed._id : "",
+        branchId: defaultBranchId,
         expenseDate: new Date().toISOString().split('T')[0]
       });
       

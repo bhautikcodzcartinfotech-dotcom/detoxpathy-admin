@@ -701,7 +701,7 @@ const OrderPage = () => {
                 Company Order
               </Button>
             )}
-            {(role === "Admin" || permissions?.includes("create order")) && (
+            {role !== "Admin" && permissions?.includes("create order") && (
               <Button
                 onClick={() => setIsDrawerOpen(true)}
                 variant="primary"

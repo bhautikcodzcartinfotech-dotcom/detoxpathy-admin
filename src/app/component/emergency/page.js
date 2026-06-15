@@ -305,7 +305,7 @@ export default function EmergencyAlertsPage() {
                         <td className="px-6 py-4">
                           <div className="flex items-center gap-1.5 text-gray-700 font-semibold">
                             <Phone className="w-3.5 h-3.5 text-gray-400" />
-                            <span>{user.mobilePrefix ? `+${user.mobilePrefix} ` : ""}{user.mobileNumber || "—"}</span>
+                            <span>{user.mobilePrefix ? `${user.mobilePrefix} ` : ""}{user.mobileNumber || "—"}</span>
                           </div>
                         </td>
 
