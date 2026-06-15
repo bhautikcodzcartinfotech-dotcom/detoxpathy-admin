@@ -227,8 +227,8 @@ const Navbar = () => {
   const filteredNotifications = notifications.filter((n) => {
     if (role === "Admin") return true; // Super Admin sees all
     
-    // Doctor / Sub-admin check: show platform-wide notifications or branch-specific ones
-    if (!n.branchId) return true;
+    // Doctor / Sub-admin check: show only branch-specific ones
+    if (!n.branchId) return false;
     return branches && branches.includes(String(n.branchId));
   });
 
@@ -236,7 +236,7 @@ const Navbar = () => {
 
   const handleMarkAllRead = () => {
     const updated = notifications.map((n) => {
-      const isFiltered = role === "Admin" || !n.branchId || (branches && branches.includes(String(n.branchId)));
+      const isFiltered = role === "Admin" || (n.branchId && branches && branches.includes(String(n.branchId)));
       if (isFiltered) {
         return { ...n, read: true };
       }
@@ -247,7 +247,7 @@ const Navbar = () => {
 
   const handleClearAll = () => {
     const updated = notifications.filter((n) => {
-      const isFiltered = role === "Admin" || !n.branchId || (branches && branches.includes(String(n.branchId)));
+      const isFiltered = role === "Admin" || (n.branchId && branches && branches.includes(String(n.branchId)));
       return !isFiltered;
     });
     saveNotifications(updated);
