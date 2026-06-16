@@ -9,6 +9,10 @@ import { API_BASE } from "@/Api/AllApi";
 
 export const toAbsolute = (path = "") => {
   try {
+    if (Array.isArray(path)) {
+      return path.map(p => toAbsolute(p));
+    }
+    
     if (!path) return "";
 
     // If it's already a full URL, return as is
@@ -26,6 +30,37 @@ export const toAbsolute = (path = "") => {
     console.error("toAbsolute error:", error);
     return path;
   }
+};
+
+const getAllInLanguage = (multiLangObj, language = "english", noFallback = false) => {
+  if (!multiLangObj) {
+    return [];
+  }
+
+  if (Array.isArray(multiLangObj)) {
+    return multiLangObj.filter(v => v && v.trim() !== "");
+  }
+
+  if (typeof multiLangObj === "string") {
+    return language === "english" && multiLangObj.trim() !== "" ? [multiLangObj] : [];
+  }
+
+  if (typeof multiLangObj === "object") {
+    let value;
+    if (noFallback) {
+      value = multiLangObj[language];
+    } else {
+      value = multiLangObj[language] || multiLangObj.english;
+    }
+
+    if (Array.isArray(value)) {
+      return value.filter(v => v && v.trim() !== "");
+    }
+
+    return value && value.trim() !== "" ? [value] : [];
+  }
+
+  return [];
 };
 
 const VideoTable = ({ items, loading, onEdit, onDelete }) => {
@@ -255,29 +290,34 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                         <p className="text-xs font-medium text-gray-600 mb-2">
                           Thumbnail
                         </p>
-                        {getTextInLanguage(
-                          video.thumbnailMultiLang || video.thumbnail,
-                          "english",
-                          true
-                        ) ? (
-                          <img
-                            src={toAbsolute(
-                              getTextInLanguage(
-                                video.thumbnailMultiLang || video.thumbnail,
-                                "english",
-                                true
-                              )
-                            )}
-                            alt="English thumbnail"
-                            className="w-full h-40 object-cover rounded-xl border border-yellow-200"
-                          />
-                        ) : (
-                          <div className="w-full h-40 bg-gray-200 rounded-xl flex items-center justify-center border border-yellow-200">
-                            <span className="text-gray-400 text-xs">
-                              No Thumbnail
-                            </span>
-                          </div>
-                        )}
+                        {(() => {
+                          const thumbnails = getAllInLanguage(
+                            video.thumbnailMultiLang || video.thumbnail,
+                            "english",
+                            true
+                          );
+                          if (thumbnails.length > 0) {
+                            return (
+                              <div className="grid grid-cols-2 gap-2">
+                                {thumbnails.map((thumbnail, i) => (
+                                  <img
+                                    key={i}
+                                    src={toAbsolute(thumbnail)}
+                                    alt={`English thumbnail ${i + 1}`}
+                                    className="w-full h-40 object-cover rounded-xl border border-yellow-200"
+                                  />
+                                ))}
+                              </div>
+                            );
+                          }
+                          return (
+                            <div className="w-full h-40 bg-gray-200 rounded-xl flex items-center justify-center border border-yellow-200">
+                              <span className="text-gray-400 text-xs">
+                                No Thumbnail
+                              </span>
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       {/* Video / Agora Session */}
@@ -300,31 +340,36 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                             </span>
                           </div>
                         ) : (
-                          getTextInLanguage(
-                            video.videoMultiLang || video.video,
-                            "english",
-                            true
-                          ) ? (
-                            <video
-                              src={toAbsolute(
-                                getTextInLanguage(
-                                  video.videoMultiLang || video.video,
-                                  "english",
-                                  true
-                                )
-                              )}
-                              controls
-                              controlsList={role === "subadmin" ? "nodownload" : undefined}
-                              onContextMenu={role === "subadmin" ? (e) => e.preventDefault() : undefined}
-                              className="w-full h-40 rounded-xl border border-yellow-200 object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center border border-yellow-200">
-                              <span className="text-gray-400 text-xs">
-                                No Video
-                              </span>
-                            </div>
-                          )
+                          (() => {
+                            const videos = getAllInLanguage(
+                              video.videoMultiLang || video.video,
+                              "english",
+                              true
+                            );
+                            if (videos.length > 0) {
+                              return (
+                                <div className="grid grid-cols-1 gap-2">
+                                  {videos.map((videoUrl, i) => (
+                                    <video
+                                      key={i}
+                                      src={toAbsolute(videoUrl)}
+                                      controls
+                                      controlsList={role === "subadmin" ? "nodownload" : undefined}
+                                      onContextMenu={role === "subadmin" ? (e) => e.preventDefault() : undefined}
+                                      className="w-full h-40 rounded-xl border border-yellow-200 object-cover"
+                                    />
+                                  ))}
+                                </div>
+                              );
+                            }
+                            return (
+                              <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center border border-yellow-200">
+                                <span className="text-gray-400 text-xs">
+                                  No Video
+                                </span>
+                              </div>
+                            );
+                          })()
                         )}
                       </div>
 
@@ -376,29 +421,34 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                         <p className="text-xs font-medium text-gray-600 mb-2">
                           Thumbnail
                         </p>
-                        {getTextInLanguage(
-                          video.thumbnailMultiLang || video.thumbnail,
-                          "gujarati",
-                          true
-                        ) ? (
-                          <img
-                            src={toAbsolute(
-                              getTextInLanguage(
-                                video.thumbnailMultiLang || video.thumbnail,
-                                "gujarati",
-                                true
-                              )
-                            )}
-                            alt="Gujarati thumbnail"
-                            className="w-full h-40 object-cover rounded-xl border border-amber-200"
-                          />
-                        ) : (
-                          <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center border border-amber-200">
-                            <span className="text-gray-400 text-xs">
-                              No Image
-                            </span>
-                          </div>
-                        )}
+                        {(() => {
+                          const thumbnails = getAllInLanguage(
+                            video.thumbnailMultiLang || video.thumbnail,
+                            "gujarati",
+                            true
+                          );
+                          if (thumbnails.length > 0) {
+                            return (
+                              <div className="grid grid-cols-2 gap-2">
+                                {thumbnails.map((thumbnail, i) => (
+                                  <img
+                                    key={i}
+                                    src={toAbsolute(thumbnail)}
+                                    alt={`Gujarati thumbnail ${i + 1}`}
+                                    className="w-full h-40 object-cover rounded-xl border border-amber-200"
+                                  />
+                                ))}
+                              </div>
+                            );
+                          }
+                          return (
+                            <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center border border-amber-200">
+                              <span className="text-gray-400 text-xs">
+                                No Image
+                              </span>
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       {/* Video / Agora Session */}
@@ -421,31 +471,36 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                             </span>
                           </div>
                         ) : (
-                          getTextInLanguage(
-                            video.videoMultiLang || video.video,
-                            "gujarati",
-                            true
-                          ) ? (
-                            <video
-                              src={toAbsolute(
-                                getTextInLanguage(
-                                  video.videoMultiLang || video.video,
-                                  "gujarati",
-                                  true
-                                )
-                              )}
-                              controls
-                              controlsList={role === "subadmin" ? "nodownload" : undefined}
-                              onContextMenu={role === "subadmin" ? (e) => e.preventDefault() : undefined}
-                              className="w-full h-40 rounded-xl border border-amber-200 object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center border border-amber-200">
-                              <span className="text-gray-400 text-xs">
-                                No Video
-                              </span>
-                            </div>
-                          )
+                          (() => {
+                            const videos = getAllInLanguage(
+                              video.videoMultiLang || video.video,
+                              "gujarati",
+                              true
+                            );
+                            if (videos.length > 0) {
+                              return (
+                                <div className="grid grid-cols-1 gap-2">
+                                  {videos.map((videoUrl, i) => (
+                                    <video
+                                      key={i}
+                                      src={toAbsolute(videoUrl)}
+                                      controls
+                                      controlsList={role === "subadmin" ? "nodownload" : undefined}
+                                      onContextMenu={role === "subadmin" ? (e) => e.preventDefault() : undefined}
+                                      className="w-full h-40 rounded-xl border border-amber-200 object-cover"
+                                    />
+                                  ))}
+                                </div>
+                              );
+                            }
+                            return (
+                              <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center border border-amber-200">
+                                <span className="text-gray-400 text-xs">
+                                  No Video
+                                </span>
+                              </div>
+                            );
+                          })()
                         )}
                       </div>
 
@@ -497,29 +552,34 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                         <p className="text-xs font-medium text-gray-600 mb-2">
                           Thumbnail
                         </p>
-                        {getTextInLanguage(
-                          video.thumbnailMultiLang || video.thumbnail,
-                          "hindi",
-                          true
-                        ) ? (
-                          <img
-                            src={toAbsolute(
-                              getTextInLanguage(
-                                video.thumbnailMultiLang || video.thumbnail,
-                                "hindi",
-                                true
-                              )
-                            )}
-                            alt="Hindi thumbnail"
-                            className="w-full h-40 object-cover rounded-xl border border-yellow-200"
-                          />
-                        ) : (
-                          <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center border border-yellow-200">
-                            <span className="text-gray-400 text-xs">
-                              No Image
-                            </span>
-                          </div>
-                        )}
+                        {(() => {
+                          const thumbnails = getAllInLanguage(
+                            video.thumbnailMultiLang || video.thumbnail,
+                            "hindi",
+                            true
+                          );
+                          if (thumbnails.length > 0) {
+                            return (
+                              <div className="grid grid-cols-2 gap-2">
+                                {thumbnails.map((thumbnail, i) => (
+                                  <img
+                                    key={i}
+                                    src={toAbsolute(thumbnail)}
+                                    alt={`Hindi thumbnail ${i + 1}`}
+                                    className="w-full h-40 object-cover rounded-xl border border-yellow-200"
+                                  />
+                                ))}
+                              </div>
+                            );
+                          }
+                          return (
+                            <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center border border-yellow-200">
+                              <span className="text-gray-400 text-xs">
+                                No Image
+                              </span>
+                            </div>
+                          );
+                        })()}
                       </div>
 
                       {/* Video / Agora Session */}
@@ -542,31 +602,36 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                             </span>
                           </div>
                         ) : (
-                          getTextInLanguage(
-                            video.videoMultiLang || video.video,
-                            "hindi",
-                            true
-                          ) ? (
-                            <video
-                              src={toAbsolute(
-                                getTextInLanguage(
-                                  video.videoMultiLang || video.video,
-                                  "hindi",
-                                  true
-                                )
-                              )}
-                              controls
-                              controlsList={role === "subadmin" ? "nodownload" : undefined}
-                              onContextMenu={role === "subadmin" ? (e) => e.preventDefault() : undefined}
-                              className="w-full h-40 rounded-xl border border-yellow-200 object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center border border-yellow-200">
-                              <span className="text-gray-400 text-xs">
-                                No Video
-                              </span>
-                            </div>
-                          )
+                          (() => {
+                            const videos = getAllInLanguage(
+                              video.videoMultiLang || video.video,
+                              "hindi",
+                              true
+                            );
+                            if (videos.length > 0) {
+                              return (
+                                <div className="grid grid-cols-1 gap-2">
+                                  {videos.map((videoUrl, i) => (
+                                    <video
+                                      key={i}
+                                      src={toAbsolute(videoUrl)}
+                                      controls
+                                      controlsList={role === "subadmin" ? "nodownload" : undefined}
+                                      onContextMenu={role === "subadmin" ? (e) => e.preventDefault() : undefined}
+                                      className="w-full h-40 rounded-xl border border-yellow-200 object-cover"
+                                    />
+                                  ))}
+                                </div>
+                              );
+                            }
+                            return (
+                              <div className="w-full h-20 bg-gray-200 rounded flex items-center justify-center border border-yellow-200">
+                                <span className="text-gray-400 text-xs">
+                                  No Video
+                                </span>
+                              </div>
+                            );
+                          })()
                         )}
                       </div>
 
