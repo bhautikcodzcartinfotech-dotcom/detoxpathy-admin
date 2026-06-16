@@ -13,6 +13,7 @@ import {
   joinAppointmentCall,
   endAppointmentCall,
   endOfflineAppointmentSession,
+  startOfflineAppointmentSession,
   generateSlots,
   rescheduleAppointment,
   getAllPlans,
@@ -1394,6 +1395,10 @@ const AppointmentPage = () => {
   const handleStartOfflineAppointment = async (appointment) => {
     try {
       setOfflineLoadingId(appointment._id);
+
+      // Mark the offline session as started on the backend
+      await startOfflineAppointmentSession(appointment._id);
+
       const [overview, videoAns] = await Promise.all([
         getUserOverview(appointment.userId?._id),
         getUserVideoAnswers(appointment.userId?._id).catch(() => [])
@@ -1401,7 +1406,7 @@ const AppointmentPage = () => {
       setOfflineUserOverview(overview);
       setOfflineVideoAnswers(videoAns || []);
       setSelectedProgressDay(overview?.user?.planCurrentDay || 1);
-      setActiveOfflineAppointment(appointment);
+      setActiveOfflineAppointment({ ...appointment, offlineSession: { started: true } });
       if (typeof window !== "undefined") {
         window.history.pushState({ modal: "offline" }, "");
       }
@@ -1547,6 +1552,11 @@ const AppointmentPage = () => {
         if (!(appointment.call?.adminJoined && appointment.call?.userJoined)) {
           return 'missed';
         }
+      } else {
+        // Offline: if session was never started, it's missed
+        if (!appointment.offlineSession?.started) {
+          return 'missed';
+        }
       }
       return 'completed';
     }
@@ -1583,6 +1593,11 @@ const AppointmentPage = () => {
 
     if (isOnline) {
       if (!(appointment.call?.adminJoined && appointment.call?.userJoined)) {
+        return 'missed';
+      }
+    } else {
+      // Offline: if session was never started after end time, it's missed
+      if (!appointment.offlineSession?.started) {
         return 'missed';
       }
     }

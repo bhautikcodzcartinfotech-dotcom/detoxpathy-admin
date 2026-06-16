@@ -1363,6 +1363,17 @@ export const endAppointmentCall = async (appointmentId) => {
   return res.data.data;
 };
 
+export const startOfflineAppointmentSession = async (appointmentId) => {
+  const res = await axios.post(
+    `${API_BASE}/admin/appointment/offline/start/${appointmentId}`,
+    {},
+    {
+      headers: getAuthHeaders(),
+    }
+  );
+  return res.data.data;
+};
+
 export const endOfflineAppointmentSession = async (appointmentId) => {
   const res = await axios.post(
     `${API_BASE}/admin/appointment/offline/end/${appointmentId}`,
