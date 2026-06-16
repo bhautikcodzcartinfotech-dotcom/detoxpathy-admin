@@ -1531,7 +1531,7 @@ const AppointmentPage = () => {
     const currentMinutes = (now.getHours() * 60) + now.getMinutes();
     const isOnline = Number(appointment.type) === 1;
 
-    if (isOnline && appointment.call?.status === 'ended') {
+    if (isOnline && (appointment.call?.status === 'ended' || appointment.call?.status === 'missed')) {
       if (appointment.call.adminJoined && appointment.call.userJoined) {
         return 'completed';
       }
@@ -1549,6 +1549,21 @@ const AppointmentPage = () => {
         }
       }
       return 'completed';
+    }
+
+    // Today's appointments:
+    const startMatch = String(appointment.startTime).trim().match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/i);
+    if (startMatch) {
+      let startHours = Number(startMatch[1]);
+      const startMinutes = Number(startMatch[2]);
+      const startPeriod = startMatch[3].toUpperCase();
+      if (startPeriod === 'AM') startHours = (startHours === 12 ? 0 : startHours);
+      else startHours = (startHours === 12 ? 12 : startHours + 12);
+
+      const appointmentStartMinutes = (startHours * 60) + startMinutes;
+      if (isOnline && (appointment.call?.status === 'waiting' || !appointment.call?.status) && currentMinutes > appointmentStartMinutes + 10) {
+        return 'missed';
+      }
     }
 
     const timeMatch = String(appointment.endTime).trim().match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/i);
