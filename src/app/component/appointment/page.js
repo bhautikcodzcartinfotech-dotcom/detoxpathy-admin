@@ -436,11 +436,11 @@ const AppointmentPage = () => {
       setAllBranches(allBranchList);
 
       // Only update if the current state is empty or invalid
-      const isCurrentValid = allBranchList.some(b => b._id === selectedBranchId);
+      const isCurrentValid = selectedBranchId === "all" || allBranchList.some(b => b._id === selectedBranchId);
 
       if (!isCurrentValid) {
         const savedBranchId = localStorage.getItem('selectedBranchId');
-        if (savedBranchId && allBranchList.some(b => b._id === savedBranchId)) {
+        if (savedBranchId === "all" || (savedBranchId && allBranchList.some(b => b._id === savedBranchId))) {
           setSelectedBranchId(savedBranchId);
         } else if (allBranchList.length > 0) {
           setSelectedBranchId(allBranchList[0]._id);
@@ -1778,10 +1778,13 @@ const AppointmentPage = () => {
           </div>
 
           <div className="flex flex-wrap gap-2 sm:gap-4 w-full sm:w-auto">
-            {role === "Admin" && (
+            {allBranches.length > 0 && (
               <div className="flex-1 min-w-[160px] sm:flex-none">
                 <Dropdown
-                  options={allBranches.map((b) => ({ label: b.name, value: b._id }))}
+                  options={[
+                    { label: "All Branches", value: "all" },
+                    ...allBranches.map((b) => ({ label: b.name, value: b._id }))
+                  ]}
                   value={selectedBranchId}
                   onChange={(value) => {
                     setSelectedBranchId(value);
