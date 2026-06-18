@@ -244,7 +244,9 @@ const DashboardPage = () => {
                 value: stats.availableCash >= 1000 
                     ? `₹${((stats.availableCash || 0) / 1000).toFixed(1)}K` 
                     : `₹${(stats.availableCash || 0).toLocaleString('en-IN')}`, 
-                sub: `₹${(stats.availableCash || 0).toLocaleString('en-IN')}`,
+                sub: stats.cashBreakdown?.length > 0
+                    ? stats.cashBreakdown.map(a => `${a.name}: ₹${a.balance.toLocaleString('en-IN')}`).join(' · ')
+                    : `Bank & cash accounts · ₹${(stats.availableCash || 0).toLocaleString('en-IN')}`,
                 color: "border-blue-600 shadow-blue-900/5",
                 icon: Wallet
             },
@@ -325,7 +327,7 @@ const DashboardPage = () => {
               value: branch.balance >= 1000 
                   ? `₹${(branch.balance / 1000).toFixed(1)}K` 
                   : `₹${branch.balance.toLocaleString('en-IN')}`,
-              sub: `orders: ₹${branch.orders.toLocaleString()} | exp: ₹${branch.expenses.toLocaleString()}`,
+              sub: `offline: ₹${branch.orders.toLocaleString('en-IN')} − cash expenses: ₹${branch.expenses.toLocaleString('en-IN')}`,
               color: "border-blue-600 shadow-blue-900/5",
               icon: Wallet
             }));
