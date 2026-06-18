@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { getAllUsers, getAllProducts, getAllPlans, createOrder, getSetting, verifyCompanyOrderPaymentApi, deleteOrderApi } from "@/Api/AllApi";
+import { getAllUsers, getAllProducts, getAllPlans, createOrder, getSetting, verifyCompanyOrderPaymentApi, deleteOrderApi, getSuggestedProgram } from "@/Api/AllApi";
 import TimeButton from "@/utils/timebutton";
 import Dropdown from "@/utils/dropdown";
 import toast from "react-hot-toast";
@@ -18,6 +18,8 @@ const OrderForm = ({ onCancel, onSuccess }) => {
   const [paymentMethod, setPaymentMethod] = useState("Offline");
   const [onlineAmount, setOnlineAmount] = useState("");
   const [offlineAmount, setOfflineAmount] = useState("");
+  const [loadingSuggestion, setLoadingSuggestion] = useState(false);
+  const [hasSuggestedPlan, setHasSuggestedPlan] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -101,12 +103,74 @@ const OrderForm = ({ onCancel, onSuccess }) => {
 
   const handleRemovePlan = (planId) => {
     setSelectedPlans(selectedPlans.filter(p => p.planId !== planId));
+    setHasSuggestedPlan(false);
+  };
+
+  const applySuggestedProgram = (suggestion) => {
+    if (!suggestion) return;
+
+    if (suggestion.plans) {
+      const planId = suggestion.plans?._id || suggestion.plans;
+      const plan = plans.find(p => p._id === planId) || (typeof suggestion.plans === "object" ? suggestion.plans : null);
+      if (plan?._id) {
+        setSelectedPlans([{
+          planId: plan._id,
+          name: plan.name,
+          basePrice: Number(plan.price),
+          bulkDiscount: Number(plan.bulkDiscount) || 0,
+          weight: Number(plan.weight) || 0
+        }]);
+        setHasSuggestedPlan(true);
+      }
+    }
+
+    if (suggestion.products && Array.isArray(suggestion.products) && suggestion.products.length > 0) {
+      const suggestedProducts = suggestion.products
+        .map(sp => {
+          const productId = sp?._id || sp;
+          const product = products.find(p => p._id === productId) || (typeof sp === "object" ? sp : null);
+          if (!product?._id) return null;
+          const sellingPrice = product.discountedPrice > 0 ? product.discountedPrice : product.basePrice;
+          return {
+            productId: product._id,
+            quantity: 1,
+            name: product.name,
+            basePrice: sellingPrice,
+            bulkDiscount: Number(product.bulkDiscount) || 0,
+            gstPercentage: Number(product.gstPercentage) || 0,
+            weight: Number(product.weight) || 0
+          };
+        })
+        .filter(Boolean);
+      if (suggestedProducts.length > 0) {
+        setSelectedProducts(suggestedProducts);
+      }
+    }
+  };
+
+  const handleUserChange = async (userId) => {
+    setSelectedUser(userId);
+    setSelectedPlans([]);
+    setSelectedProducts([]);
+    setHasSuggestedPlan(false);
+
+    if (!userId) return;
+
+    try {
+      setLoadingSuggestion(true);
+      const response = await getSuggestedProgram(userId);
+      applySuggestedProgram(response?.suggestion);
+    } catch {
+      // No suggestion for this user — plan must be selected manually
+    } finally {
+      setLoadingSuggestion(false);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedUser) return toast.error("Please select a user");
-    if (selectedProducts.length === 0 && selectedPlans.length === 0) return toast.error("Please add at least one product or a plan");
+    if (selectedPlans.length === 0) return toast.error("Please select a plan");
 
 
     const onlinePay = paymentMethod === "Split" ? Number(onlineAmount) || 0 : 0;
@@ -128,7 +192,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
         userId: selectedUser,
         products: selectedProducts.map(({ productId, quantity }) => ({ productId, quantity })),
         plans: selectedPlans.map(p => p.planId),
-        type: paymentMethod === "Offline" ? 2 : 1,
+        type: 2, // Branch offline order
 
         paymentMethod:
           paymentMethod === "Online"
@@ -238,8 +302,18 @@ const OrderForm = ({ onCancel, onSuccess }) => {
           label: `${u.name} ${u.surname || ""} (${u.mobileNumber})`
         }))}
         value={selectedUser}
-        onChange={(val) => setSelectedUser(val)}
+        onChange={(val) => handleUserChange(val)}
       />
+
+      {loadingSuggestion && (
+        <p className="text-xs font-semibold text-[#134D41]">Loading suggested plan for user...</p>
+      )}
+
+      {hasSuggestedPlan && selectedPlans.length > 0 && !loadingSuggestion && (
+        <p className="text-xs font-semibold text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-lg px-3 py-2">
+          Suggested plan applied for this user. You can change it if needed.
+        </p>
+      )}
 
       {/* Selection Fields */}
       <div className="space-y-4">
@@ -260,7 +334,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
         />
 
         <Dropdown
-          label="Select Plan"
+          label="Select Plan *"
           placeholder="-- Choose Plan --"
           showSearch={true}
           options={plans.map(p => {
@@ -270,7 +344,10 @@ const OrderForm = ({ onCancel, onSuccess }) => {
             };
           })}
           value={""}
-          onChange={(val) => handleSelectPlan(val)}
+          onChange={(val) => {
+            handleSelectPlan(val);
+            setHasSuggestedPlan(false);
+          }}
         />
       </div>
 

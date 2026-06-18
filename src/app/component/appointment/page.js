@@ -2419,9 +2419,7 @@ const AppointmentPage = () => {
                     appointment={activeOfflineAppointment}
                     onClose={closeOfflineModal}
                     onSaveSuccess={() => {
-                      closeOfflineModal();
                       fetchAppointments(selectedBranchId, filterDate, filterStatus, filterType);
-                      toast.success("Consultation saved successfully!");
                     }}
                   />
                 </div>
