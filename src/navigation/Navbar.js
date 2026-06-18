@@ -390,7 +390,7 @@ const Navbar = () => {
 
     // Default fallback cleanly stripped of emoji prefixes
     const cleanMessage = message.replace(/^[🆕💬📅🚨🛒]\s*/, "");
-    return <p className="text-[12.5px] leading-relaxed text-gray-700">{cleanMessage}</p>;
+    return <p className="text-[12.5px] leading-relaxed text-gray-700 break-words">{cleanMessage}</p>;
   };
 
   const handleLogout = () => {
@@ -531,7 +531,7 @@ const Navbar = () => {
                         </div>
 
                         {/* Rich formatted message content */}
-                        <div className="flex-1 min-w-0 pr-4">
+                        <div className="flex-1 min-w-0 pr-4 break-words">
                           {renderNotificationMessage(item.message, item.type)}
                           <span className="text-[10px] text-gray-400 font-medium mt-2 block tracking-wide">
                             {formatTimeAgo(item.timestamp)}

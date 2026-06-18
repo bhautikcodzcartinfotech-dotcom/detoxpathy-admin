@@ -7,7 +7,7 @@ import TimeButton from "@/utils/timebutton";
 import { ActionButton } from "@/utils/actionbutton";
 import Loader from "@/utils/loader";
 import toast from "react-hot-toast";
-import { getNotificationTemplates, updateNotificationTemplate } from "@/Api/AllApi";
+import { getNotificationTemplates, updateNotificationTemplate, sendBulkNotificationApi } from "@/Api/AllApi";
 
 const DEFAULTS = [
   { _id: "1", icon: "💧", title: "Water Reminder 💧", message: "Stay hydrated! Remember to drink a glass of water now to stay healthy and refreshed.", trigger: "Every hour (Cron Job)" },
@@ -24,6 +24,13 @@ const NotificationCenterPage = () => {
   const [editing, setEditing] = useState(null);
   const [form, setForm] = useState({ title: "", message: "" });
   const [loading, setLoading] = useState(false);
+  const [customDrawerOpen, setCustomDrawerOpen] = useState(false);
+  const [customForm, setCustomForm] = useState({ 
+    recipients: { users: true, doctors: false, sub_doctors: false }, 
+    title: "", 
+    message: "" 
+  });
+  const [customLoading, setCustomLoading] = useState(false);
 
   const fetchTemplates = async () => {
     try {
@@ -73,11 +80,40 @@ const NotificationCenterPage = () => {
     }
   };
 
+  const handleSendCustom = async (e) => {
+    e.preventDefault();
+    const selectedTypes = Object.keys(customForm.recipients).filter(k => customForm.recipients[k]);
+    if (selectedTypes.length === 0) {
+      toast.error("Please select at least one recipient type");
+      return;
+    }
+    if (!customForm.title.trim() || !customForm.message.trim()) {
+      toast.error("Title and message are required");
+      return;
+    }
+    try {
+      setCustomLoading(true);
+      await sendBulkNotificationApi(selectedTypes, customForm.title.trim(), customForm.message.trim());
+      toast.success("Notification dispatch initiated successfully!");
+      setCustomDrawerOpen(false);
+      setCustomForm({ 
+        recipients: { users: true, doctors: false, sub_doctors: false }, 
+        title: "", 
+        message: "" 
+      });
+    } catch (err) {
+      toast.error(err?.response?.data?.message || "Failed to send notification");
+    } finally {
+      setCustomLoading(false);
+    }
+  };
+
   return (
     <RoleGuard allow={["Admin"]}>
       <div className="w-full h-full px-6 py-4">
         <div className="flex items-center justify-between mb-4 px-8">
           <Header size="3xl">Notification Center</Header>
+          <Button variant="primary" onClick={() => setCustomDrawerOpen(true)}>Send Custom Notification</Button>
         </div>
 
         <div className="px-8">
@@ -140,6 +176,103 @@ const NotificationCenterPage = () => {
             <div className="flex justify-end gap-3 mt-6">
               <Button variant="secondary" onClick={() => { setIsOpen(false); setEditing(null); }} type="button">Cancel</Button>
               <TimeButton loading={loading}>Save</TimeButton>
+            </div>
+          </form>
+        </Drawer>
+
+        <Drawer isOpen={customDrawerOpen} onClose={() => { setCustomDrawerOpen(false); }}>
+          <div className="mb-6 text-center">
+            <h2 className="text-3xl font-bold text-yellow-600">Send Custom Notification</h2>
+            <p className="text-gray-400 text-sm mt-1">Send a push notification to a group of recipients</p>
+          </div>
+          <form onSubmit={handleSendCustom} className="space-y-5">
+            <div>
+              <label className="block mb-2 font-semibold text-gray-700">Recipient Types</label>
+              <div className="space-y-3">
+                <label className={`flex items-center gap-3 p-3.5 border rounded-xl cursor-pointer transition ${
+                  customForm.recipients.users 
+                    ? "border-yellow-500 bg-yellow-50/30" 
+                    : "border-gray-200 hover:border-yellow-200 hover:bg-yellow-50/10"
+                }`}>
+                  <input
+                    type="checkbox"
+                    checked={customForm.recipients.users}
+                    onChange={(e) => setCustomForm((f) => ({
+                      ...f,
+                      recipients: { ...f.recipients, users: e.target.checked }
+                    }))}
+                    className="w-5 h-5 accent-yellow-500 rounded cursor-pointer"
+                  />
+                  <div>
+                    <span className="font-semibold text-gray-800">All Users</span>
+                    <p className="text-xs text-gray-500">Send push notification to all users' devices (FCM)</p>
+                  </div>
+                </label>
+                
+                <label className={`flex items-center gap-3 p-3.5 border rounded-xl cursor-pointer transition ${
+                  customForm.recipients.doctors 
+                    ? "border-yellow-500 bg-yellow-50/30" 
+                    : "border-gray-200 hover:border-yellow-200 hover:bg-yellow-50/10"
+                }`}>
+                  <input
+                    type="checkbox"
+                    checked={customForm.recipients.doctors}
+                    onChange={(e) => setCustomForm((f) => ({
+                      ...f,
+                      recipients: { ...f.recipients, doctors: e.target.checked }
+                    }))}
+                    className="w-5 h-5 accent-yellow-500 rounded cursor-pointer"
+                  />
+                  <div>
+                    <span className="font-semibold text-gray-800">All Doctors</span>
+                    <p className="text-xs text-gray-500">Send notification to sub-admins in their panels (Socket)</p>
+                  </div>
+                </label>
+                
+                <label className={`flex items-center gap-3 p-3.5 border rounded-xl cursor-pointer transition ${
+                  customForm.recipients.sub_doctors 
+                    ? "border-yellow-500 bg-yellow-50/30" 
+                    : "border-gray-200 hover:border-yellow-200 hover:bg-yellow-50/10"
+                }`}>
+                  <input
+                    type="checkbox"
+                    checked={customForm.recipients.sub_doctors}
+                    onChange={(e) => setCustomForm((f) => ({
+                      ...f,
+                      recipients: { ...f.recipients, sub_doctors: e.target.checked }
+                    }))}
+                    className="w-5 h-5 accent-yellow-500 rounded cursor-pointer"
+                  />
+                  <div>
+                    <span className="font-semibold text-gray-800">All Sub Doctors</span>
+                    <p className="text-xs text-gray-500">Send notification to sub-doctors in their panels (Socket)</p>
+                  </div>
+                </label>
+              </div>
+            </div>
+            <div>
+              <label className="block mb-1 font-semibold text-gray-700">Title</label>
+              <input
+                type="text"
+                value={customForm.title}
+                onChange={(e) => setCustomForm((f) => ({ ...f, title: e.target.value }))}
+                className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition"
+                placeholder="Notification title"
+              />
+            </div>
+            <div>
+              <label className="block mb-1 font-semibold text-gray-700">Message</label>
+              <textarea
+                value={customForm.message}
+                onChange={(e) => setCustomForm((f) => ({ ...f, message: e.target.value }))}
+                rows={4}
+                className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400 transition resize-none"
+                placeholder="Notification message"
+              />
+            </div>
+            <div className="flex justify-end gap-3 mt-6">
+              <Button variant="secondary" onClick={() => { setCustomDrawerOpen(false); }} type="button">Cancel</Button>
+              <TimeButton loading={customLoading}>Send</TimeButton>
             </div>
           </form>
         </Drawer>
