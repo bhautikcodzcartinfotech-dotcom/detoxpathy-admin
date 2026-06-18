@@ -305,6 +305,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
               step="0.01"
               value={onlineAmount}
               onChange={(e) => setOnlineAmount(e.target.value)}
+              onWheel={(e) => e.target.blur()}
               placeholder="e.g. 75"
               className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400"
             />
@@ -319,6 +320,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
               step="0.01"
               value={offlineAmount}
               onChange={(e) => setOfflineAmount(e.target.value)}
+              onWheel={(e) => e.target.blur()}
               placeholder="e.g. 25"
               className="w-full border border-yellow-400 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-yellow-400"
             />
