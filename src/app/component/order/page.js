@@ -678,6 +678,385 @@ const OrderPage = () => {
     setSelectedIds([]);
   };
 
+  const handleBulkPrintShippingLabels = () => {
+    if (selectedIds.length === 0) return toast.error("No orders selected");
+    if (role === 'subadmin' && !permissions?.includes('generate order invoice')) {
+      return toast.error("You do not have permission to download shipping labels");
+    }
+
+    const selectedOrders = orders.filter(o => selectedIds.includes(o._id));
+    if (selectedOrders.length === 0) {
+      toast.error("Selected orders data not found");
+      return;
+    }
+
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) {
+      toast.error("Popup blocker prevented opening print window");
+      return;
+    }
+
+    let labelsHtml = "";
+
+    selectedOrders.forEach((order) => {
+      const customerName = (order.shippingAddress?.name || `${order.user?.name || ""} ${order.user?.surname || ""}`).trim().toUpperCase();
+      const mobile = order.shippingAddress?.mobile || order.user?.mobileNumber || "N/A";
+      const addressLine1 = order.shippingAddress?.addressLine1 || "";
+      const addressLine2 = order.shippingAddress?.addressLine2 || "";
+      const city = order.shippingAddress?.city || "";
+      const state = order.shippingAddress?.state || "";
+      const postalCode = order.shippingAddress?.postalCode || "";
+      const country = order.shippingAddress?.country || "India";
+
+      const branchName = order.branch?.name || order.branchId?.name || "Detoxpathy Corporate Office";
+      const branchAddress = order.branch?.address || order.branchId?.address || "Surat, Gujarat, India";
+
+      const orderIdShort = `ORD-${order._id.slice(-6).toUpperCase()}`;
+      const orderDate = new Date(order.createdAt).toLocaleDateString("en-GB");
+
+      let itemsHtml = "";
+      let itemsCount = 0;
+      if (order.plans && order.plans.length > 0) {
+        order.plans.forEach(p => {
+          itemsHtml += `
+            <tr>
+              <td style="text-align: center; font-weight: 800;">${p.quantity || 1}</td>
+              <td>${p.name || 'Membership Plan'}</td>
+            </tr>
+          `;
+          itemsCount++;
+        });
+      } else if (order.plan) {
+        itemsHtml += `
+          <tr>
+            <td style="text-align: center; font-weight: 800;">1</td>
+            <td>${order.plan.name || 'Membership Plan'}</td>
+          </tr>
+        `;
+        itemsCount++;
+      }
+      if (order.products && order.products.length > 0) {
+        order.products.forEach(p => {
+          itemsHtml += `
+            <tr>
+              <td style="text-align: center; font-weight: 800;">${p.quantity}</td>
+              <td>${p.name || 'Product'}</td>
+            </tr>
+          `;
+          itemsCount++;
+        });
+      }
+
+      const labelClass = itemsCount > 4 ? "label-container compact-large" : (itemsCount > 2 ? "label-container compact" : "label-container");
+
+      const itemsSectionHtml = itemsHtml
+        ? `
+          <div class="items-section">
+            <div class="section-title">ITEMS / PLANS:</div>
+            <table class="items-table">
+              <thead>
+                <tr>
+                  <th style="width: 40px; text-align: center;">QTY</th>
+                  <th>ITEM DESCRIPTION</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsHtml}
+              </tbody>
+            </table>
+          </div>
+        `
+        : "";
+
+      labelsHtml += `
+        <div class="label-page">
+          <div class="${labelClass}">
+            <div class="header">
+              <h1 class="courier-title">${order.courier || "Shree Tirupati Courier"}</h1>
+            </div>
+            
+            <div class="barcode-section">
+              <div class="barcode-placeholder"></div>
+              <p class="awb-text">AWB: ${order.trackingId ? order.trackingId : '<span class="blank-line">&nbsp;</span>'}</p>
+            </div>
+            
+            <div class="address-section">
+              <div class="to-section">
+                <div class="section-title">SHIP TO (DELIVER TO):</div>
+                <div class="to-name">${customerName}</div>
+                <div style="font-weight: bold; margin-bottom: 2px;">Mob: ${mobile}</div>
+                <div>${addressLine1}</div>
+                ${addressLine2 ? `<div>${addressLine2}</div>` : ""}
+                <div style="font-weight: bold; font-size: 13px; margin-top: 2px;">
+                  ${city.toUpperCase()}, ${state.toUpperCase()} - ${postalCode}
+                </div>
+                <div>${country.toUpperCase()}</div>
+              </div>
+              
+              ${itemsSectionHtml}
+              
+              <div class="from-section">
+                <div class="section-title">SHIP FROM (SENDER):</div>
+                <div style="font-weight: bold;">${branchName}</div>
+                <div>${branchAddress}</div>
+              </div>
+            </div>
+            
+            <div class="footer">
+              <span>ID: ${orderIdShort}</span>
+              <span>DATE: ${orderDate}</span>
+            </div>
+          </div>
+        </div>
+      `;
+    });
+
+    const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Bulk Shipping Labels</title>
+        <meta charset="utf-8">
+        <style>
+          @page {
+            size: 4in 6in;
+            margin: 0;
+          }
+          body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #000;
+            background-color: #fff;
+          }
+          .label-page {
+            width: 4in;
+            height: 6in;
+            padding: 15px;
+            box-sizing: border-box;
+            page-break-after: always;
+            break-after: page;
+            display: flex;
+            flex-direction: column;
+          }
+          .label-page:last-child {
+            page-break-after: avoid;
+            break-after: avoid;
+          }
+          .label-container {
+            border: 2px solid #000;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 8px;
+            box-sizing: border-box;
+          }
+          .compact {
+            padding: 6px;
+          }
+          .compact .header {
+            margin-bottom: 4px;
+            padding-bottom: 4px;
+          }
+          .compact .barcode-placeholder {
+            width: 140px;
+            height: 45px;
+            margin: 0 auto 4px auto;
+          }
+          .compact .barcode-section {
+            margin-bottom: 4px;
+            padding: 4px 0;
+          }
+          .compact .to-section {
+            margin-bottom: 6px;
+          }
+          .compact .items-section {
+            margin-top: 4px;
+            margin-bottom: 4px;
+          }
+          .compact .from-section {
+            padding-top: 4px;
+          }
+          
+          .compact-large {
+            padding: 4px;
+          }
+          .compact-large .header {
+            margin-bottom: 2px;
+            padding-bottom: 2px;
+          }
+          .compact-large .courier-title {
+            font-size: 14px;
+          }
+          .compact-large .barcode-placeholder {
+            width: 120px;
+            height: 35px;
+            margin: 0 auto 2px auto;
+          }
+          .compact-large .barcode-section {
+            margin-bottom: 2px;
+            padding: 2px 0;
+          }
+          .compact-large .awb-text {
+            font-size: 12px;
+            margin-top: 2px;
+          }
+          .compact-large .blank-line {
+            width: 100px;
+            height: 12px;
+          }
+          .compact-large .to-section {
+            margin-bottom: 4px;
+            font-size: 11px;
+          }
+          .compact-large .to-name {
+            font-size: 12px;
+          }
+          .compact-large .items-section {
+            margin-top: 2px;
+            margin-bottom: 2px;
+          }
+          .compact-large .from-section {
+            padding-top: 2px;
+            font-size: 11px;
+          }
+          .compact-large .section-title {
+            font-size: 10px;
+          }
+          .header {
+            text-align: center;
+            border-bottom: 2px dashed #000;
+            padding-bottom: 6px;
+            margin-bottom: 8px;
+          }
+          .courier-title {
+            font-size: 16px;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0;
+          }
+          .barcode-section {
+            text-align: center;
+            padding: 8px 0;
+            border-bottom: 2px dashed #000;
+            margin-bottom: 8px;
+          }
+          .awb-text {
+            font-family: monospace;
+            font-size: 14px;
+            font-weight: bold;
+            margin-top: 4px;
+            margin-bottom: 0;
+          }
+          .barcode-placeholder {
+            width: 160px;
+            height: 55px;
+            border: 1.5px dashed #000;
+            margin: 0 auto 8px auto;
+            border-radius: 4px;
+          }
+          .blank-line {
+            display: inline-block;
+            width: 130px;
+            margin-left: 4px;
+            vertical-align: bottom;
+            height: 15px;
+          }
+          .address-section {
+            flex-grow: 1;
+            font-size: 12px;
+            line-height: 1.4;
+            display: flex;
+            flex-direction: column;
+          }
+          .section-title {
+            font-size: 10px;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: #000;
+            margin-bottom: 4px;
+            border-bottom: 1px solid #000;
+            padding-bottom: 2px;
+            letter-spacing: 0.5px;
+          }
+          .to-section {
+            margin-bottom: 10px;
+          }
+          .to-name {
+            font-size: 13px;
+            font-weight: 800;
+            margin-bottom: 1px;
+          }
+          .from-section {
+            border-top: 2px dashed #000;
+            padding-top: 8px;
+            margin-top: auto;
+          }
+          .items-section {
+            margin-top: 8px;
+            margin-bottom: 8px;
+          }
+          .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 4px;
+          }
+          .items-table th, .items-table td {
+            border: 1px solid #000;
+            padding: 4px 6px;
+            font-size: 11px;
+            text-align: left;
+          }
+          .items-table th {
+            background-color: #fff;
+            font-weight: 800;
+            text-transform: uppercase;
+          }
+          .items-table td {
+            font-weight: bold;
+          }
+          .compact .items-table th, .compact .items-table td {
+            padding: 3px 5px;
+            font-size: 10px;
+          }
+          .compact-large .items-table th, .compact-large .items-table td {
+            padding: 2px 4px;
+            font-size: 9px;
+          }
+          .footer {
+            border-top: 2px solid #000;
+            padding-top: 4px;
+            margin-top: 6px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            font-weight: bold;
+          }
+        </style>
+      </head>
+      <body>
+        ${labelsHtml}
+        
+        <script>
+          window.onload = function() {
+            setTimeout(function() {
+              window.print();
+              setTimeout(function() {
+                window.close();
+              }, 500);
+            }, 500);
+          };
+        </script>
+      </body>
+      </html>
+    `;
+
+    printWindow.document.write(htmlContent);
+    printWindow.document.close();
+    setSelectedIds([]);
+  };
+
   const handleCreateSuccess = () => {
     setIsDrawerOpen(false);
     fetchOrders();
@@ -867,14 +1246,24 @@ const OrderPage = () => {
                   </>
                 )}
                 {(role === 'Admin' || permissions?.includes('generate order invoice')) && (
-                  <Button
-                    onClick={handleBulkDownload}
-                    disabled={loading || selectedIds.length === 0}
-                    variant="primary"
-                    className="h-9 px-4 text-xs"
-                  >
-                    Download Selected
-                  </Button>
+                  <>
+                    <Button
+                      onClick={handleBulkDownload}
+                      disabled={loading || selectedIds.length === 0}
+                      variant="primary"
+                      className="h-9 px-4 text-xs"
+                    >
+                      Download Selected
+                    </Button>
+                    <Button
+                      onClick={handleBulkPrintShippingLabels}
+                      disabled={loading || selectedIds.length === 0}
+                      variant="primary"
+                      className="h-9 px-4 text-xs bg-teal-600 hover:bg-teal-700 active:bg-teal-800 focus:ring-teal-500"
+                    >
+                      Shipping Labels
+                    </Button>
+                  </>
                 )}
                 <Button
                   variant="secondary"
