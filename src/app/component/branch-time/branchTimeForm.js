@@ -22,7 +22,7 @@ const BranchTimeForm = ({
   ];
 
   const [availability, setAvailability] = useState([
-    { day: "1", startTime: "09:00 AM", endTime: "05:00 PM", breakStartTime: "", breakEndTime: "", slotDuration: 30, bufferTime: 10 },
+    { day: "1", startTime: "10:00 AM", endTime: "07:00 PM", breakStartTime: "01:15 PM", breakEndTime: "02:00 PM", slotDuration: 15, bufferTime: 5 },
   ]);
   const initializedBranches = useRef(new Set());
 
@@ -110,7 +110,7 @@ const BranchTimeForm = ({
 
     setAvailability([
       ...availability,
-      { day: unusedDay.value, startTime: "09:00 AM", endTime: "05:00 PM", breakStartTime: "", breakEndTime: "", slotDuration: 30, bufferTime: 10 },
+      { day: unusedDay.value, startTime: "10:00 AM", endTime: "07:00 PM", breakStartTime: "01:15 PM", breakEndTime: "02:00 PM", slotDuration: 15, bufferTime: 5 },
     ]);
 
     setTimeout(() => {
@@ -182,7 +182,7 @@ const BranchTimeForm = ({
                     value={item.startTime}
                     onChange={(e) => handleChange(index, "startTime", e.target.value)}
                     className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition"
-                    placeholder="09:00 AM"
+                    placeholder="10:00 AM"
                   />
                 </div>
                 <div>
@@ -192,7 +192,7 @@ const BranchTimeForm = ({
                     value={item.endTime}
                     onChange={(e) => handleChange(index, "endTime", e.target.value)}
                     className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition"
-                    placeholder="05:00 PM"
+                    placeholder="07:00 PM"
                   />
                 </div>
               </div>
@@ -204,7 +204,7 @@ const BranchTimeForm = ({
                     value={item.breakStartTime || ""}
                     onChange={(e) => handleChange(index, "breakStartTime", e.target.value)}
                     className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition"
-                    placeholder="01:00 PM"
+                    placeholder="01:15 PM"
                   />
                 </div>
                 <div>
