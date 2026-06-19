@@ -1941,7 +1941,7 @@ const AppointmentPage = () => {
                         <td className="px-6 py-6">
                           <div className="flex items-center justify-center gap-2">
                             {/* Offline: Start Appointment button */}
-                            {!isOnline && timeState.isLiveWindow && (
+                            {!isOnline && timeState.isLiveWindow && statusLabel !== 'cancelled' && (
                               <button
                                 onClick={() => handleStartOfflineAppointment(item)}
                                 disabled={offlineLoadingId === item._id}
@@ -1956,7 +1956,7 @@ const AppointmentPage = () => {
                               </button>
                             )}
                             {/* Online: Join button */}
-                            {isOnline && timeState.isLiveWindow && item.call?.status !== "ended" && (
+                            {isOnline && timeState.isLiveWindow && item.call?.status !== "ended" && statusLabel !== 'cancelled' && (
                               <button
                                 onClick={() => handleReceiveCall(item)}
                                 disabled={!canReceiveCall || callLoadingId === item._id}
@@ -2048,7 +2048,7 @@ const AppointmentPage = () => {
 
                     <div className="grid grid-cols-2 gap-2">
                       {/* Offline: Start Appointment button */}
-                      {!isOnline && timeState.isLiveWindow && (
+                      {!isOnline && timeState.isLiveWindow && statusLabel !== 'cancelled' && (
                         <button
                           onClick={() => handleStartOfflineAppointment(item)}
                           disabled={offlineLoadingId === item._id}
@@ -2063,7 +2063,7 @@ const AppointmentPage = () => {
                         </button>
                       )}
                       {/* Online: Join button */}
-                      {isOnline && timeState.isLiveWindow && item.call?.status !== "ended" && (
+                      {isOnline && timeState.isLiveWindow && item.call?.status !== "ended" && statusLabel !== 'cancelled' && (
                         <button
                           onClick={() => handleReceiveCall(item)}
                           disabled={!canReceiveCall || callLoadingId === item._id}
