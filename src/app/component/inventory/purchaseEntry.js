@@ -165,8 +165,8 @@ const PurchaseEntry = () => {
     const r = Number(rate) || 0;
     const gst = Number(gstPercentage) || 0;
     const lineTotal = qty * r;
-    const taxableAmount = gst > 0 ? lineTotal / (1 + gst / 100) : lineTotal;
-    const gstAmount = lineTotal - taxableAmount;
+    const gstAmount = lineTotal * (gst / 100);
+    const taxableAmount = lineTotal - gstAmount;
     return { lineTotal, taxableAmount, gstAmount };
   };
 
@@ -210,7 +210,9 @@ const PurchaseEntry = () => {
       subTotal += taxableAmount;
       totalGst += gstAmount;
     });
-    const grandTotal = subTotal + totalGst;
+    subTotal = Math.round(subTotal * 100) / 100;
+    totalGst = Math.round(totalGst * 100) / 100;
+    const grandTotal = Math.round((subTotal + totalGst) * 100) / 100;
     setForm(f => ({ ...f, items, subTotal, totalGst, grandTotal }));
   };
 
@@ -719,13 +721,34 @@ const PurchaseEntry = () => {
                         className="w-full border border-transparent focus:border-yellow-400 rounded-lg p-2 text-sm bg-transparent text-center outline-none transition"
                       />
                     </td>
-                    <td className="p-3 text-sm text-gray-700 text-right">
-                      <span className="bg-gray-100 px-2 py-1 rounded-md font-medium whitespace-nowrap">
-                        {currency}{Number(item.rate || 0).toFixed(2)}
-                      </span>
+                    <td className="p-3">
+                      <div className="flex items-center justify-end border border-transparent focus-within:border-yellow-400 rounded-lg p-1.5 transition">
+                        <span className="text-xs text-gray-400 mr-1 shrink-0">{currency}</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={item.rate}
+                          onChange={e => handleItemChange(index, 'rate', e.target.value)}
+                          placeholder="0.00"
+                          className="w-full text-sm bg-transparent text-right outline-none"
+                        />
+                      </div>
                     </td>
-                    <td className="p-3 text-sm text-gray-600 text-center">
-                      <span className="bg-gray-100 px-2 py-1 rounded-md font-medium">{item.gstPercentage}%</span>
+                    <td className="p-3">
+                      <div className="flex items-center justify-center border border-transparent focus-within:border-yellow-400 rounded-lg p-1.5 transition">
+                        <input
+                          type="number"
+                          step="1"
+                          min="0"
+                          max="100"
+                          value={item.gstPercentage}
+                          onChange={e => handleItemChange(index, 'gstPercentage', e.target.value)}
+                          placeholder="0"
+                          className="w-12 text-sm bg-transparent text-center outline-none"
+                        />
+                        <span className="text-xs text-gray-400 ml-0.5">%</span>
+                      </div>
                     </td>
                     <td className="p-3 text-sm font-bold text-right text-gray-800">
                       {currency}{item.totalAmount.toFixed(2)}
