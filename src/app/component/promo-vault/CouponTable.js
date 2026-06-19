@@ -55,6 +55,7 @@ const CouponTable = ({ items, loading, onEdit, onDelete }) => {
                   <th className="px-6 py-4 text-center">Expiry</th>
                   <th className="px-6 py-4 text-center">Used / Limit</th>
                   <th className="px-6 py-4 text-center">Status</th>
+                  <th className="px-6 py-4 text-center">Can Skip Video</th>
                   <th className="px-6 py-4 text-center">Users Used</th>
                   <th className="px-6 py-4 text-center">Actions</th>
                 </tr>
@@ -99,6 +100,15 @@ const CouponTable = ({ items, loading, onEdit, onDelete }) => {
                         )}
                       </td>
 
+                      {/* Can Skip Video */}
+                      <td className="px-6 py-4 text-center">
+                        {item.canSkipVideo ? (
+                          <span className="px-2 py-1 text-xs font-bold rounded-full bg-purple-100 text-purple-600">True</span>
+                        ) : (
+                          <span className="px-2 py-1 text-xs font-bold rounded-full bg-gray-100 text-gray-500">False</span>
+                        )}
+                      </td>
+
                       {/* Users Used */}
                       <td className="px-6 py-4 text-center">
                         {item.usedBy?.length > 0 ? (
@@ -126,27 +136,53 @@ const CouponTable = ({ items, loading, onEdit, onDelete }) => {
                     {/* Expanded users row */}
                     {expandedId === item._id && item.usedBy?.length > 0 && (
                       <tr>
-                        <td colSpan={7} className="px-8 py-0 bg-teal-50 border-t border-teal-100">
-                          <div className="py-4">
-                            <p className="text-[11px] font-black text-teal-700 uppercase tracking-widest mb-3">
-                              Users who used this coupon
-                            </p>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                              {item.usedBy.map((entry, idx) => (
-                                <div key={idx} className="flex items-center gap-3 bg-white border border-teal-100 rounded-xl px-4 py-2 shadow-sm">
-                                  <div className="w-8 h-8 rounded-full bg-[#134D41] text-white flex items-center justify-center font-bold text-xs shrink-0">
-                                    {entry.userId?.name?.[0]?.toUpperCase() || "U"}
-                                  </div>
-                                  <div className="min-w-0">
-                                    <p className="text-sm font-bold text-gray-800 truncate">
-                                      {entry.userId?.name || "Unknown User"}
-                                    </p>
-                                    <p className="text-xs text-gray-400 truncate">
-                                      {entry.userId?.mobileNumber || entry.userId?.email || "-"} • {formatDate(entry.usedAt)}
-                                    </p>
-                                  </div>
-                                </div>
-                              ))}
+                        <td colSpan={8} className="px-8 py-4 bg-teal-50/30 border-t border-b border-teal-100/50">
+                          <div className="bg-white border border-teal-100 rounded-2xl p-5 shadow-sm">
+                            <div className="flex items-center justify-between mb-4">
+                              <h4 className="text-xs font-black text-teal-800 uppercase tracking-wider">
+                                Coupon Usage History ({item.usedBy.length} usage{item.usedBy.length > 1 ? "s" : ""})
+                              </h4>
+                            </div>
+                            <div className="overflow-hidden rounded-xl border border-teal-50">
+                              <table className="min-w-full divide-y divide-teal-100">
+                                <thead className="bg-teal-50">
+                                  <tr className="text-[10px] font-black text-teal-700 uppercase tracking-widest">
+                                    <th scope="col" className="px-4 py-3 text-left w-16">Sr No.</th>
+                                    <th scope="col" className="px-6 py-3 text-left">User</th>
+                                    <th scope="col" className="px-6 py-3 text-left">Contact Info</th>
+                                    <th scope="col" className="px-6 py-3 text-center">Used Date</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-teal-50">
+                                  {item.usedBy.map((entry, idx) => (
+                                    <tr key={idx} className="hover:bg-teal-50/40 transition-colors">
+                                      {/* Sr No */}
+                                      <td className="px-4 py-3 text-sm text-gray-500 font-semibold">
+                                        {idx + 1}
+                                      </td>
+                                      {/* User */}
+                                      <td className="px-6 py-3">
+                                        <div className="flex items-center gap-3">
+                                          <div className="w-7 h-7 rounded-full bg-gradient-to-tr from-teal-600 to-teal-500 text-white flex items-center justify-center font-bold text-xs shadow-sm">
+                                            {entry.userId?.name?.[0]?.toUpperCase() || "U"}
+                                          </div>
+                                          <span className="text-sm font-bold text-gray-800">
+                                            {entry.userId?.name || "Unknown User"}
+                                          </span>
+                                        </div>
+                                      </td>
+                                      {/* Contact Info */}
+                                      <td className="px-6 py-3 text-sm text-gray-600 font-medium">
+                                        {entry.userId?.mobileNumber || entry.userId?.email || "-"}
+                                      </td>
+                                      {/* Used Date */}
+                                      <td className="px-6 py-3 text-center text-sm text-gray-500 font-semibold">
+                                        {formatDate(entry.usedAt)}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
                             </div>
                           </div>
                         </td>

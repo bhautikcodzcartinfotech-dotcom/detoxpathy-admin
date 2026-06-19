@@ -15,6 +15,7 @@ const CouponForm = ({
     expiry: "",
     limit: "",
     discountValue: "",
+    canSkipVideo: false,
   });
   const [errors, setErrors] = useState({});
 
@@ -25,9 +26,10 @@ const CouponForm = ({
         expiry: initialValues.expiry ? initialValues.expiry.slice(0, 10) : "",
         limit: initialValues.limit != null ? initialValues.limit : "",
         discountValue: initialValues.discountValue != null ? initialValues.discountValue : "",
+        canSkipVideo: !!initialValues.canSkipVideo,
       });
     } else {
-      setForm({ couponCode: "", expiry: "", limit: "", discountValue: "" });
+      setForm({ couponCode: "", expiry: "", limit: "", discountValue: "", canSkipVideo: false });
     }
     setErrors({});
   }, [initialValues]);
@@ -51,6 +53,7 @@ const CouponForm = ({
       expiry: form.expiry,
       limit: Number(form.limit),
       discountValue: Number(form.discountValue),
+      canSkipVideo: form.canSkipVideo,
     });
   };
 
@@ -112,6 +115,25 @@ const CouponForm = ({
           placeholder="e.g. 30 for 30% off"
         />
         {errors.discountValue && <p className="text-amber-600 text-sm mt-1">{errors.discountValue}</p>}
+      </div>
+
+      <div className="flex items-center justify-between p-4 bg-gray-50 border border-yellow-400/50 rounded-2xl">
+        <div className="flex flex-col">
+          <label htmlFor="canSkipVideo" className="font-bold text-gray-800 text-sm select-none cursor-pointer">
+            Can Skip Video
+          </label>
+          <span className="text-[11px] text-gray-400 font-medium">Allows skipping video view constraints</span>
+        </div>
+        <label className="relative inline-flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            id="canSkipVideo"
+            checked={form.canSkipVideo}
+            onChange={(e) => setForm((f) => ({ ...f, canSkipVideo: e.target.checked }))}
+            className="sr-only peer"
+          />
+          <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500"></div>
+        </label>
       </div>
 
       <div className="flex justify-end gap-3 mt-6">
