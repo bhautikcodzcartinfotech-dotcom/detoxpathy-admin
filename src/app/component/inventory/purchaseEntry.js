@@ -244,14 +244,14 @@ const PurchaseEntry = () => {
     if (invalidQtyItem) {
       return toast.error("Please enter available quantity for all products");
     }
-    if (!billFile) {
-      return toast.error("Please upload purchase bill before saving");
-    }
+
 
     try {
       setLoading(true);
       const formData = new FormData();
-      formData.append("bill", billFile);
+      if (billFile) {
+        formData.append("bill", billFile);
+      }
       formData.append("supplierId", form.supplierId);
       formData.append("gstin", form.gstin || "");
       formData.append("invoiceNo", form.invoiceNo);
@@ -771,7 +771,7 @@ const PurchaseEntry = () => {
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-6 pt-2">
             <div className="flex-1 max-w-lg border border-dashed border-gray-300 rounded-xl p-4 bg-gray-50">
               <label className="block mb-2 font-semibold text-sm text-gray-700">
-                Upload Bill <span className="text-red-500">*</span>
+                Upload Bill
               </label>
               <div className="flex flex-wrap items-center gap-3">
                 <label className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-gray-200 rounded-xl text-sm font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition shrink-0">
@@ -797,7 +797,7 @@ const PurchaseEntry = () => {
                     </button>
                   </div>
                 ) : (
-                  <span className="text-xs text-gray-400">PDF or image required to save entry</span>
+                  <span className="text-xs text-gray-400">PDF or image (Optional)</span>
                 )}
               </div>
             </div>
@@ -821,7 +821,7 @@ const PurchaseEntry = () => {
           <div className="flex justify-end gap-4 pt-4">
             <button
               type="submit"
-              disabled={loading || !billFile}
+              disabled={loading}
               className="bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-white px-10 py-3 rounded-xl font-black text-sm flex items-center gap-2 transition-all shadow-lg shadow-yellow-200/50 active:scale-95 disabled:opacity-50"
             >
               <FiSave size={20} /> {loading ? "Saving..." : "Save Purchase Entry"}
