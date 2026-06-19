@@ -1,11 +1,14 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { getAllUsers, getAllProducts, getAllPlans, createOrder, getSetting, verifyCompanyOrderPaymentApi, deleteOrderApi, getSuggestedProgram } from "@/Api/AllApi";
+import { getAllUsers, getAllProducts, getAllPlans, createOrder, getSetting, verifyCompanyOrderPaymentApi, deleteOrderApi, getSuggestedProgram, getAllBranches } from "@/Api/AllApi";
 import TimeButton from "@/utils/timebutton";
 import Dropdown from "@/utils/dropdown";
 import toast from "react-hot-toast";
+import { useAuth } from "@/contexts/AuthContext";
 
 const OrderForm = ({ onCancel, onSuccess }) => {
+  const { role, branches: subadminBranchIds } = useAuth();
+  const [subadminBranchCities, setSubadminBranchCities] = useState([]);
   const [loading, setLoading] = useState(false);
   const [users, setUsers] = useState([]);
   const [products, setProducts] = useState([]);
@@ -24,15 +27,25 @@ const OrderForm = ({ onCancel, onSuccess }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [usersData, productsData, plansData, settingsRes] = await Promise.all([
+        const [usersData, productsData, plansData, settingsRes, branchesData] = await Promise.all([
           getAllUsers(),
           getAllProducts({ start: 1, limit: 1000 }),
           getAllPlans(),
-          getSetting()
+          getSetting(),
+          getAllBranches()
         ]);
         setUsers(usersData || []);
         setProducts(productsData?.products || []);
         setPlans(plansData || []);
+
+        // Map subadmin branch IDs to their cities
+        if (subadminBranchIds && subadminBranchIds.length > 0 && branchesData) {
+          const cities = branchesData
+            .filter(b => subadminBranchIds.includes(b._id))
+            .map(b => (b.city || "").trim().toLowerCase())
+            .filter(Boolean);
+          setSubadminBranchCities(cities);
+        }
 
         let settingsData;
         if (settingsRes && settingsRes.data) {
@@ -55,7 +68,17 @@ const OrderForm = ({ onCancel, onSuccess }) => {
       }
     };
     fetchData();
-  }, []);
+  }, [subadminBranchIds]);
+
+  const filteredUsers = React.useMemo(() => {
+    if (role === "Admin" || !subadminBranchIds || subadminBranchIds.length === 0) {
+      return users;
+    }
+    return users.filter(u => {
+      const userCity = (u.city || "").trim().toLowerCase();
+      return subadminBranchCities.includes(userCity);
+    });
+  }, [users, role, subadminBranchIds, subadminBranchCities]);
 
   const handleAddProduct = (productId) => {
     if (!productId) return;
@@ -297,7 +320,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
         label="Select User"
         placeholder="-- Select User --"
         showSearch={true}
-        options={users.map(u => ({
+        options={filteredUsers.map(u => ({
           value: u._id,
           label: `${u.name} ${u.surname || ""} (${u.mobileNumber})`
         }))}
