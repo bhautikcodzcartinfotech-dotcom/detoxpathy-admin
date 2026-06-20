@@ -118,7 +118,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
               <div className="relative">
                 <Image
                   src="/image/detoxpathy.png"
-                  alt="fatEndfit Logo"
+                  alt="Detoxpathy Logo"
                   width={150}
                   height={50}
                   className="object-contain"
