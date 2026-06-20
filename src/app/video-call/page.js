@@ -351,12 +351,18 @@ function VideoCallClient() {
       if (!localVideoTrack) {
         try {
           localVideoTrack = await AgoraRTC.createCameraVideoTrack({
-            encoderConfig: "1080p_2", // Ultra high quality for call
+            encoderConfig: "720p_1", // Standard HD quality for faster startup
           });
           agoraSessionRef.current.localVideoTrack = localVideoTrack;
         } catch (videoErr) {
-          console.error("Camera track creation failed:", videoErr);
-          toast.error("Could not capture camera. Joining with audio-only.");
+          console.warn("Failed to create camera track with 720p config, trying default/auto resolution...", videoErr);
+          try {
+            localVideoTrack = await AgoraRTC.createCameraVideoTrack();
+            agoraSessionRef.current.localVideoTrack = localVideoTrack;
+          } catch (fallbackErr) {
+            console.error("Camera track creation failed entirely:", fallbackErr);
+            toast.error("Could not capture camera. Joining with audio-only.");
+          }
         }
       }
 

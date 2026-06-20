@@ -945,12 +945,29 @@ const AppointmentPage = () => {
         setRemoteParticipantCount(client.remoteUsers.length);
       });
 
-      const [localAudioTrack, localVideoTrack] = await Promise.all([
-        AgoraRTC.createMicrophoneAudioTrack(),
-        AgoraRTC.createCameraVideoTrack({
-          encoderConfig: "1080p_2", // Ultra High quality: 1920x1080, 30fps, 3150Kbps
-        }),
-      ]);
+      let localAudioTrack = null;
+      let localVideoTrack = null;
+
+      try {
+        localAudioTrack = await AgoraRTC.createMicrophoneAudioTrack();
+      } catch (audioErr) {
+        console.error("Microphone track creation failed:", audioErr);
+        toast.error("Could not capture microphone. You will join with video-only.");
+      }
+
+      try {
+        localVideoTrack = await AgoraRTC.createCameraVideoTrack({
+          encoderConfig: "720p_1", // Standard HD quality for faster startup
+        });
+      } catch (videoErr) {
+        console.warn("Failed to create camera track config, trying default/auto resolution...", videoErr);
+        try {
+          localVideoTrack = await AgoraRTC.createCameraVideoTrack();
+        } catch (fallbackErr) {
+          console.error("Camera track creation failed entirely:", fallbackErr);
+          toast.error("Could not capture camera. Joining with audio-only.");
+        }
+      }
 
       if (localVideoTrack) {
         await localVideoTrack.setOptimizationMode("detail");
@@ -978,11 +995,13 @@ const AppointmentPage = () => {
         }
       }
 
-      if (localVideoRef.current) {
-        localVideoTrack.play(localVideoRef.current, { fit: "cover" });
-      } else {
-        console.error('[AGORA] ❌ localVideoRef still missing after wait');
-        toast.error("Failed to render camera container - check console");
+      if (localVideoTrack) {
+        if (localVideoRef.current) {
+          localVideoTrack.play(localVideoRef.current, { fit: "cover" });
+        } else {
+          console.error('[AGORA] ❌ localVideoRef still missing after wait');
+          toast.error("Failed to render camera container - check console");
+        }
       }
 
       const session = await joinAppointmentCall(appointment._id);
@@ -1007,7 +1026,13 @@ const AppointmentPage = () => {
         session.uid || null
       );
 
-      await client.publish([localAudioTrack, localVideoTrack]);
+      const tracksToPublish = [];
+      if (localAudioTrack) tracksToPublish.push(localAudioTrack);
+      if (localVideoTrack) tracksToPublish.push(localVideoTrack);
+
+      if (tracksToPublish.length > 0) {
+        await client.publish(tracksToPublish);
+      }
 
       setCallSession(session);
       setCallConnected(true);
