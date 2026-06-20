@@ -409,15 +409,15 @@ const DashboardPage = () => {
           {topStats.map((stat, i) => (
             <div 
               key={i} 
-              className={`bg-white p-6 rounded-none border-t-4 ${stat.color} shadow-xl hover:scale-[1.02] transition-all relative overflow-hidden group ${stat.isClickable ? 'cursor-pointer' : ''}`}
+              className={`bg-white p-4 sm:p-6 rounded-none border-t-4 ${stat.color} shadow-xl hover:scale-[1.02] transition-all relative overflow-hidden group ${stat.isClickable ? 'cursor-pointer' : ''}`}
               onClick={stat.isClickable ? () => router.push('/component/order') : undefined}
             >
               <div className="relative z-10 flex flex-col justify-between h-full">
                 <div>
-                  <p className="text-[10px] font-black text-gray-400 mb-4 uppercase">{stat.title}</p>
-                  <h3 className="text-3xl font-black text-gray-900 mb-2">{typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}</h3>
+                  <p className="text-[9px] md:text-[10px] font-black text-gray-400 mb-4 uppercase truncate" title={stat.title}>{stat.title}</p>
+                  <h3 className="text-lg sm:text-xl lg:text-lg xl:text-xl 2xl:text-2xl font-black text-gray-900 mb-2 truncate">{typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}</h3>
                 </div>
-                <p className={`text-[10px] ${stat.subColor || 'text-gray-500'} font-bold`}>{stat.sub}</p>
+                <p className={`text-[9px] md:text-[10px] ${stat.subColor || 'text-gray-500'} font-bold`}>{stat.sub}</p>
               </div>
               {stat.icon && <stat.icon className="absolute top-6 right-6 w-12 h-12 text-gray-50 opacity-10 group-hover:opacity-20 transition-all group-hover:-rotate-12" />}
             </div>
@@ -431,15 +431,15 @@ const DashboardPage = () => {
           {allSubAdminStats.map((stat, i) => (
             <div 
               key={i} 
-              className={`bg-white p-6 rounded-none border-t-4 ${stat.color} shadow-xl hover:scale-[1.02] transition-all relative overflow-hidden group ${stat.isClickable ? 'cursor-pointer' : ''}`}
+              className={`bg-white p-4 sm:p-6 rounded-none border-t-4 ${stat.color} shadow-xl hover:scale-[1.02] transition-all relative overflow-hidden group ${stat.isClickable ? 'cursor-pointer' : ''}`}
               onClick={stat.isClickable ? () => router.push('/component/order') : undefined}
             >
               <div className="relative z-10 flex flex-col justify-between h-full">
                 <div>
-                  <p className="text-[10px] font-black text-gray-400 mb-4 uppercase">{stat.title}</p>
-                  <h3 className="text-3xl font-black text-gray-900 mb-2">{typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}</h3>
+                  <p className="text-[9px] md:text-[10px] font-black text-gray-400 mb-4 uppercase truncate" title={stat.title}>{stat.title}</p>
+                  <h3 className="text-lg sm:text-xl lg:text-lg xl:text-xl 2xl:text-2xl font-black text-gray-900 mb-2 truncate">{typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}</h3>
                 </div>
-                <p className={`text-[10px] ${stat.subColor || 'text-gray-500'} font-bold`}>{stat.sub}</p>
+                <p className={`text-[9px] md:text-[10px] ${stat.subColor || 'text-gray-500'} font-bold`}>{stat.sub}</p>
               </div>
               {stat.icon && <stat.icon className="absolute top-6 right-6 w-12 h-12 text-gray-50 opacity-10 group-hover:opacity-20 transition-all group-hover:-rotate-12" />}
             </div>
