@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { FiPlus, FiTrash2, FiSave, FiFilter, FiCalendar, FiBriefcase, FiDollarSign } from "react-icons/fi";
+import { FiPlus, FiTrash2, FiSave, FiFilter, FiCalendar, FiBriefcase } from "react-icons/fi";
+import { FaRupeeSign } from "react-icons/fa";
 import axios from "axios";
 import { API_BASE, getAuthHeaders, getAllBranches, createExpense, getAllExpenses, deleteExpense, createAccount, getSetting, deleteAccount } from "@/Api/AllApi";
 import { toast } from "react-hot-toast";
@@ -243,7 +244,7 @@ const ExpenseEntry = () => {
             <span className="text-3xl font-black">{currency}{totalAmount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
           </div>
           <div className="p-4 bg-white/10 rounded-xl">
-            <FiDollarSign size={24} />
+            <FaRupeeSign size={24} />
           </div>
         </div>
 
