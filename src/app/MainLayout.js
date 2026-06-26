@@ -274,9 +274,14 @@ export default function MainLayout({ children }) {
           // settingsRef.current always has the latest value (no stale closure).
           const currentSettings = settingsRef.current;
           if (data.type === 'order_create' && currentSettings?.audio) {
-            const audioUrl = currentSettings.audio.startsWith('http')
-              ? currentSettings.audio
-              : `${API_HOST}/${currentSettings.audio}`;
+            let audioPath = currentSettings.audio;
+            if (!audioPath.startsWith('http')) {
+              const cleanPath = audioPath.replace(/^\/+/, '').replace(/^uploads\//i, '');
+              audioPath = `uploads/${cleanPath}`;
+            }
+            const audioUrl = audioPath.startsWith('http')
+              ? audioPath
+              : `${API_HOST}/${audioPath}`;
 
             if (audioUnlocked.current) {
               // User has already interacted – play straight away.

@@ -98,10 +98,10 @@ const SettingsPage = () => {
     if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) {
       return rawPath;
     }
-    const normalizedPath = rawPath.replace(/\\/g, '/');
-    const filePath = normalizedPath.startsWith('uploads/')
-      ? normalizedPath.slice(8)
-      : normalizedPath;
+    let filePath = rawPath.replace(/\\/g, '/').replace(/^\/+/, '');
+    if (filePath.toLowerCase().startsWith('uploads/')) {
+      filePath = filePath.slice(8);
+    }
     const encodedPath = encodeURIComponent(filePath);
     return `${API_HOST}/api/v1/uploads/${encodedPath}`;
   };

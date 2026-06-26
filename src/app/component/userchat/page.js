@@ -293,7 +293,7 @@ export default function ChatPage() {
       if (candidate) input = candidate;
     }
 
-    let url = String(input).trim().replace(/\\/g, "/");
+    let url = String(input).trim().replace(/\\/g, "/").replace(/^\/+/, "");
 
     // If it's already a full URL, return as is
     if (/^https?:\/\//i.test(url)) return url;

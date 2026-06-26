@@ -17,7 +17,7 @@ const resolveAudioUrl = (input) => {
       null;
     if (candidate) input = candidate;
   }
-  let url = String(input).trim().replace(/\\/g, "/");
+  let url = String(input).trim().replace(/\\/g, "/").replace(/^\/+/, "");
   if (/^https?:\/\//i.test(url)) return url;
 
   if (/^\/?api\/v1\/uploads\//i.test(url)) {
