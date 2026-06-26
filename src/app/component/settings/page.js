@@ -190,7 +190,7 @@ const SettingsPage = () => {
 
       console.log("Updating settings with data:", updateData);
 
-      if (formData.bannerFile || formData.audioFile) {
+      if (formData.bannerFile || formData.audioFile || formData.appointmentSoundFile) {
         const data = new FormData();
         Object.keys(updateData).forEach(key => {
           if (typeof updateData[key] === 'object' && updateData[key] !== null) {
@@ -201,6 +201,7 @@ const SettingsPage = () => {
         });
         if (formData.bannerFile) data.append('banner', formData.bannerFile);
         if (formData.audioFile) data.append('audio', formData.audioFile);
+        if (formData.appointmentSoundFile) data.append('appointmentSound', formData.appointmentSoundFile);
         await updateSettingById(settings._id, data);
       } else {
         await updateSettingById(settings._id, updateData);
@@ -291,6 +292,22 @@ const SettingsPage = () => {
     };
     reader.readAsDataURL(file);
     toast.success("Order sound selected! Click 'Update Settings' to save.");
+  };
+
+  const handleAppointmentSoundUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFormData(prev => ({
+        ...prev,
+        appointmentSound: reader.result,
+        appointmentSoundFile: file
+      }));
+    };
+    reader.readAsDataURL(file);
+    toast.success("Appointment sound selected! Click 'Update Settings' to save.");
   };
 
 
@@ -1118,7 +1135,73 @@ const SettingsPage = () => {
             </div>
           </div>
 
+          {/* Appointment Reminder Sound */}
+          <div className="bg-white rounded-3xl shadow-xl border border-gray-100 p-8 transition-all hover:shadow-2xl">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-600 shadow-inner">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">Appointment Reminder Sound</h3>
+                <p className="text-sm text-gray-500">Upload audio to play 2 minutes before upcoming appointments (Super Admin & branch doctors)</p>
+              </div>
+            </div>
 
+            <div className="space-y-6">
+              {formData.appointmentSound ? (
+                <div className="p-6 rounded-2xl bg-emerald-50/50 border border-emerald-200/60 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-emerald-800 uppercase tracking-widest">Active Appointment Sound</span>
+                    <button
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, appointmentSound: "", appointmentSoundFile: null }))}
+                      className="text-xs text-red-500 hover:text-red-600 font-bold hover:underline"
+                    >
+                      Remove Sound
+                    </button>
+                  </div>
+                  <audio
+                    src={formData.appointmentSound.startsWith('data:') ? formData.appointmentSound : getVideoUrl(formData.appointmentSound)}
+                    controls
+                    className="w-full"
+                  />
+                </div>
+              ) : (
+                <div className="relative group w-full">
+                  <label htmlFor="appointment-sound-upload" className="flex flex-col items-center justify-center w-full min-h-[140px] cursor-pointer p-6 border-4 border-dashed border-gray-200 rounded-[2rem] bg-gray-50 hover:bg-emerald-50/30 hover:border-emerald-300 transition-all duration-300 shadow-inner">
+                    <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-md mb-3 text-gray-300 group-hover:text-emerald-400 transition-colors">
+                      <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                      </svg>
+                    </div>
+                    <p className="text-sm font-semibold text-gray-500 group-hover:text-emerald-600 transition-colors">Select an audio file</p>
+                    <p className="text-[10px] text-gray-400 mt-1">Accepts MP3, WAV or AAC (Max 5MB)</p>
+                  </label>
+                </div>
+              )}
+
+              <div className="flex justify-center">
+                <input
+                  type="file"
+                  accept="audio/*"
+                  onChange={handleAppointmentSoundUpload}
+                  className="hidden"
+                  id="appointment-sound-upload"
+                />
+                <label
+                  htmlFor="appointment-sound-upload"
+                  className="group px-8 py-4 bg-gradient-to-r from-gray-900 to-gray-800 text-white font-bold rounded-2xl hover:from-emerald-600 hover:to-emerald-500 transition-all duration-300 cursor-pointer flex items-center gap-3 shadow-xl hover:shadow-emerald-200 hover:-translate-y-0.5"
+                >
+                  <svg className="w-5 h-5 transition-transform group-hover:rotate-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                  </svg>
+                  {formData.appointmentSound ? "Replace Appointment Sound" : "Upload Appointment Sound"}
+                </label>
+              </div>
+            </div>
+          </div>
 
           {/* HTML Content */}
           <div className="bg-gradient-to-br from-white to-amber-50 rounded-2xl shadow-lg border border-amber-200 p-6">

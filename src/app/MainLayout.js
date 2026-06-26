@@ -13,7 +13,7 @@ import Loader from "@/utils/loader";
 import { trackPanelOpen, trackPanelClose, API_BASE, API_HOST, getSetting } from "@/Api/AllApi";
 import { io } from "socket.io-client";
 import toast from "react-hot-toast";
-import { FiUserPlus, FiMessageSquare, FiCalendar, FiBell, FiX, FiShoppingCart } from "react-icons/fi";
+import { FiUserPlus, FiMessageSquare, FiCalendar, FiBell, FiX, FiShoppingCart, FiClock } from "react-icons/fi";
 
 const renderNotificationMessage = (message, type) => {
   if (!message) return null;
@@ -74,11 +74,27 @@ const renderNotificationMessage = (message, type) => {
         );
       }
     }
+
+    if (type === "appointment_reminder") {
+      const match = message.match(/Upcoming appointment with\s+(.+?)\s+starts in 2 minutes \(at\s+(.+?)\)\.?/i);
+      if (match) {
+        const name = match[1].trim();
+        const time = match[2].trim();
+        return (
+          <div className="text-[12.5px] leading-relaxed text-gray-700">
+            Appointment with <span className="font-bold text-gray-900">{name}</span> starts in <span className="font-bold text-orange-600">2 minutes</span>
+            <span className="flex items-center gap-1 text-[10px] text-orange-600 font-bold tracking-wide uppercase mt-1.5 bg-orange-500/[0.06] w-fit px-2 py-0.5 rounded-full border border-orange-200/50">
+              {time}
+            </span>
+          </div>
+        );
+      }
+    }
   } catch (e) {
     console.error("Error parsing toast notification message", e);
   }
 
-  const cleanMessage = message.replace(/^[🆕💬📅🚨🛒]\s*/, "");
+  const cleanMessage = message.replace(/^[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]+\s*/u, "").replace(/^[^\w]+\s*/, "").trim();
   return <p className="text-[12.5px] leading-relaxed text-gray-700">{cleanMessage}</p>;
 };
 
@@ -97,6 +113,28 @@ export default function MainLayout({ children }) {
   // If a notification arrives before the user has interacted, we queue the
   // audio URL here and play it on their very next click / keydown.
   const pendingAudioUrl = useRef(null);
+  const playedAppointmentReminders = useRef(new Set());
+
+  const resolveSettingsAudioUrl = (audioPath) => {
+    if (!audioPath) return null;
+    if (audioPath.startsWith('http')) return audioPath;
+    const cleanPath = audioPath.replace(/^\/+/, '').replace(/^uploads\//i, '');
+    return `${API_HOST}/uploads/${cleanPath}`;
+  };
+
+  const playSettingsAudio = (audioPath) => {
+    const audioUrl = resolveSettingsAudioUrl(audioPath);
+    if (!audioUrl) return;
+
+    if (audioUnlocked.current) {
+      const audio = new Audio(audioUrl);
+      audio.volume = 1;
+      audio.play().catch(() => {});
+    } else {
+      pendingAudioUrl.current = audioUrl;
+      console.log("Audio queued – will play on next user interaction.");
+    }
+  };
 
   // Mirror settings into ref so socket handler always sees fresh value.
   useEffect(() => {
@@ -270,30 +308,17 @@ export default function MainLayout({ children }) {
         if (isEmergency) {
           setEmergencyModal({ isOpen: true, data });
         } else {
-          // Play custom sound alert for new orders if configured.
-          // settingsRef.current always has the latest value (no stale closure).
           const currentSettings = settingsRef.current;
-          if (data.type === 'order_create' && currentSettings?.audio) {
-            let audioPath = currentSettings.audio;
-            if (!audioPath.startsWith('http')) {
-              const cleanPath = audioPath.replace(/^\/+/, '').replace(/^uploads\//i, '');
-              audioPath = `uploads/${cleanPath}`;
-            }
-            const audioUrl = audioPath.startsWith('http')
-              ? audioPath
-              : `${API_HOST}/${audioPath}`;
 
-            if (audioUnlocked.current) {
-              // User has already interacted – play straight away.
-              const audio = new Audio(audioUrl);
-              audio.volume = 1;
-              audio.play().catch(() => {});
-            } else {
-              // User hasn't clicked yet. Queue the URL; the unlock listener
-              // above will play it on their very next interaction.
-              // (Only the most recent notification is kept – overwrites older.)
-              pendingAudioUrl.current = audioUrl;
-              console.log("Audio queued – will play on next user interaction.");
+          if (data.type === 'order_create' && currentSettings?.audio) {
+            playSettingsAudio(currentSettings.audio);
+          }
+
+          if (data.type === 'appointment_reminder' && currentSettings?.appointmentSound) {
+            const reminderKey = data.appointmentId ? String(data.appointmentId) : data.message;
+            if (!playedAppointmentReminders.current.has(reminderKey)) {
+              playedAppointmentReminders.current.add(reminderKey);
+              playSettingsAudio(currentSettings.appointmentSound);
             }
           }
 
@@ -313,6 +338,11 @@ export default function MainLayout({ children }) {
             iconBg = "bg-violet-50 text-violet-600 border border-violet-100";
             borderCol = "border-violet-100";
             redirectUrl = `/component/userchat`;
+          } else if (data.type === "appointment_reminder") {
+            icon = <FiClock className="w-5 h-5" />;
+            iconBg = "bg-orange-50 text-orange-600 border border-orange-100";
+            borderCol = "border-orange-100";
+            redirectUrl = `/component/appointment`;
           } else if (data.type === "appointment_create" || data.type === "appointment_reschedule") {
             icon = <FiCalendar className="w-5 h-5" />;
             iconBg = "bg-emerald-50 text-emerald-600 border border-emerald-100";
@@ -349,6 +379,8 @@ export default function MainLayout({ children }) {
                       ? "Support Message"
                       : data.type === "order_create"
                       ? "New Order Alert"
+                      : data.type === "appointment_reminder"
+                      ? "Appointment Starting Soon"
                       : "Appointment Alert"}
                   </div>
                   <div className="mt-1">

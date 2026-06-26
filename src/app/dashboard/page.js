@@ -221,6 +221,15 @@ const DashboardPage = () => {
             6: { label: "Cancelled", class: "bg-red-100 text-red-700" },
         };
 
+        // Compute Bank/PG cash vs Branch offline cash
+        const bankCash = stats.cashBreakdown
+            ? stats.cashBreakdown.filter(a => a.code !== 'BRANCH_OFFLINE').reduce((sum, a) => sum + (a.balance || 0), 0)
+            : stats.availableCash || 0;
+
+        const offlineCash = stats.cashBreakdown
+            ? stats.cashBreakdown.find(a => a.code === 'BRANCH_OFFLINE')?.balance || 0
+            : 0;
+
         // Original top stats for everyone
         let topStats = [
             { 
@@ -235,18 +244,40 @@ const DashboardPage = () => {
                 value: stats.revenue?.custom >= 100000 
                     ? `₹${((stats.revenue?.custom || 0) / 100000).toFixed(2)}L` 
                     : `₹${(stats.revenue?.custom || 0).toLocaleString('en-IN')}`, 
-                sub: `Online: ₹${(stats.revenue?.online || 0).toLocaleString('en-IN')} · Offline: ₹${(stats.revenue?.offline || 0).toLocaleString('en-IN')}`, 
+                sub: (
+                    <div className="flex flex-col gap-0.5 mt-0.5 text-[9px] md:text-[10px] text-gray-500 font-bold leading-normal">
+                        <div>
+                            <span>Online Orders: </span>
+                            <span className="text-gray-700">₹{(stats.revenue?.onlineOrders?.total || 0).toLocaleString('en-IN')} ({(stats.revenue?.onlineOrders?.count || 0)})</span>
+                        </div>
+                        <div>
+                            <span>Branch Orders: </span>
+                            <span className="text-gray-700">Online: ₹{(stats.revenue?.branchOrders?.onlineAmount || 0).toLocaleString('en-IN')} ({(stats.revenue?.branchOrders?.onlineCount || 0)}) · Offline: ₹{(stats.revenue?.branchOrders?.offlineAmount || 0).toLocaleString('en-IN')} ({(stats.revenue?.branchOrders?.offlineCount || 0)})</span>
+                        </div>
+                    </div>
+                ), 
                 color: "border-orange-500 shadow-orange-900/5",
                 icon: TrendingUp
             },
-          { 
+            { 
                 title: "AVAILABLE CASH", 
                 value: stats.availableCash >= 1000 
                     ? `₹${((stats.availableCash || 0) / 1000).toFixed(1)}K` 
                     : `₹${(stats.availableCash || 0).toLocaleString('en-IN')}`, 
-                sub: stats.cashBreakdown?.length > 0
-                    ? stats.cashBreakdown.map(a => `${a.name}: ₹${a.balance.toLocaleString('en-IN')}`).join(' · ')
-                    : `Bank & cash accounts · ₹${(stats.availableCash || 0).toLocaleString('en-IN')}`,
+                sub: stats.cashBreakdown?.length > 0 ? (
+                    <div className="flex flex-col gap-0.5 mt-0.5 text-[9px] md:text-[10px] text-gray-500 font-bold leading-normal">
+                        {stats.cashBreakdown.map((a, idx) => (
+                            <div key={idx}>
+                                <span>{a.name}: </span>
+                                <span className="text-gray-700">₹{a.balance.toLocaleString('en-IN')}</span>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-[9px] md:text-[10px] text-gray-500 font-bold leading-normal">
+                        Bank & cash accounts · ₹{(stats.availableCash || 0).toLocaleString('en-IN')}
+                    </div>
+                ),
                 color: "border-blue-600 shadow-blue-900/5",
                 icon: Wallet
             },
@@ -271,7 +302,7 @@ const DashboardPage = () => {
                     value: stats.currentMonthUsers || 0, 
                     sub: "new users this month", 
                     color: "border-teal-600 shadow-teal-900/5",
-                    icon: UserPlus
+                    icon: Users
                 },
                 { 
                     title: "THIS MONTH'S FOLLOW-UPS", 
@@ -317,7 +348,7 @@ const DashboardPage = () => {
           filteredTopStats = topStats.filter(stat => 
             !stat.title.includes("TOTAL USERS") && 
             !stat.title.includes("REVENUE") &&
-            !stat.title.includes("AVAILABLE CASH") // We will add branch-specific ones instead
+            !stat.title.includes("AVAILABLE CASH")
           );
 
           // Add Branch-wise Available Cash
@@ -417,7 +448,7 @@ const DashboardPage = () => {
                   <p className="text-[9px] md:text-[10px] font-black text-gray-400 mb-4 uppercase truncate" title={stat.title}>{stat.title}</p>
                   <h3 className="text-lg sm:text-xl lg:text-lg xl:text-xl 2xl:text-2xl font-black text-gray-900 mb-2 truncate">{typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}</h3>
                 </div>
-                <p className={`text-[9px] md:text-[10px] ${stat.subColor || 'text-gray-500'} font-bold`}>{stat.sub}</p>
+                <div className={`text-[9px] md:text-[10px] ${stat.subColor || 'text-gray-500'} font-bold`}>{stat.sub}</div>
               </div>
               {stat.icon && <stat.icon className="absolute top-6 right-6 w-12 h-12 text-gray-50 opacity-10 group-hover:opacity-20 transition-all group-hover:-rotate-12" />}
             </div>
@@ -439,7 +470,7 @@ const DashboardPage = () => {
                   <p className="text-[9px] md:text-[10px] font-black text-gray-400 mb-4 uppercase truncate" title={stat.title}>{stat.title}</p>
                   <h3 className="text-lg sm:text-xl lg:text-lg xl:text-xl 2xl:text-2xl font-black text-gray-900 mb-2 truncate">{typeof stat.value === 'number' ? stat.value.toLocaleString() : stat.value}</h3>
                 </div>
-                <p className={`text-[9px] md:text-[10px] ${stat.subColor || 'text-gray-500'} font-bold`}>{stat.sub}</p>
+                <div className={`text-[9px] md:text-[10px] ${stat.subColor || 'text-gray-500'} font-bold`}>{stat.sub}</div>
               </div>
               {stat.icon && <stat.icon className="absolute top-6 right-6 w-12 h-12 text-gray-50 opacity-10 group-hover:opacity-20 transition-all group-hover:-rotate-12" />}
             </div>
@@ -464,7 +495,10 @@ const DashboardPage = () => {
                   <div key={i} className="space-y-2">
                     <div className="flex justify-between items-center text-[13px]">
                       <span className="font-bold text-gray-800">{branch.name}</span>
-                      <span className="font-black text-gray-900">{branch.total.toLocaleString()}</span>
+                      <span className="font-black text-gray-900">₹{(branch.total || 0).toLocaleString('en-IN')}</span>
+                    </div>
+                    <div className="text-[10px] text-gray-400 font-bold leading-normal">
+                      Online: ₹{(branch.onlineAmount || 0).toLocaleString('en-IN')} ({(branch.onlineCount || 0)}) · Offline: ₹{(branch.offlineAmount || 0).toLocaleString('en-IN')} ({(branch.offlineCount || 0)})
                     </div>
                     <div className="h-2 w-full bg-gray-50 rounded-full overflow-hidden">
                       <div 
