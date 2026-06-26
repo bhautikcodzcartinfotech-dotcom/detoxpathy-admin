@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useRef } from "react";
+import React, { Suspense, useEffect, useState, useRef } from "react";
 import RoleGuard from "@/components/RoleGuard";
 import { Header, Button } from "@/utils/header";
 import Drawer from "@/utils/formanimation";
@@ -18,7 +18,9 @@ import BranchTimeForm from "./branchTimeForm";
 import Dropdown from "@/utils/dropdown";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
 
-const BranchTimePage = () => {
+const normalizeId = (id) => (id == null ? "" : String(id));
+
+const BranchTimePageContent = () => {
   const { role, branches, permissions } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -46,6 +48,7 @@ const BranchTimePage = () => {
   const [selectedRequestId, setSelectedRequestId] = useState("");
   const [actionLoading, setActionLoading] = useState(false);
   const [isRequestModalOpen, setIsRequestModalOpen] = useState(false);
+  const [branchesReady, setBranchesReady] = useState(false);
   const initialized = useRef(false);
 
   const updateUrlParams = (params) => {
@@ -82,15 +85,17 @@ const BranchTimePage = () => {
   };
 
   const fetchAllBranches = async () => {
+    setBranchesReady(false);
     try {
       const data = await getAllBranches();
+      const branchList = Array.isArray(data) ? data : [];
       // Filter out the main branch — branch time cannot be created for it
-      let nonMainBranches = data.filter(b => !b.isMainBranch);
+      let nonMainBranches = branchList.filter((b) => !b.isMainBranch);
 
       if (role !== "Admin") {
-        const assignedBranchIds = branches || [];
-        nonMainBranches = nonMainBranches.filter(b =>
-          assignedBranchIds.includes(String(b._id))
+        const assignedBranchIds = (branches || []).map(normalizeId);
+        nonMainBranches = nonMainBranches.filter((b) =>
+          assignedBranchIds.includes(normalizeId(b._id))
         );
       }
 
@@ -99,31 +104,42 @@ const BranchTimePage = () => {
       const urlBranch = searchParams.get("branch");
       const urlDrawer = searchParams.get("drawer");
 
-      let activeBranchId = selectedBranchId;
+      let activeBranchId = normalizeId(selectedBranchId);
 
       // Validate the currently selected branch ID
-      const isCurrentValid = nonMainBranches.some(b => b._id === activeBranchId);
+      const isCurrentValid = nonMainBranches.some(
+        (b) => normalizeId(b._id) === activeBranchId
+      );
 
       if (!isCurrentValid) {
-        if (urlBranch && nonMainBranches.some(b => b._id === urlBranch)) {
-          activeBranchId = urlBranch;
+        if (urlBranch && nonMainBranches.some((b) => normalizeId(b._id) === normalizeId(urlBranch))) {
+          activeBranchId = normalizeId(urlBranch);
         } else if (role === "subadmin" && branches.length > 0) {
-          const defaultBranch = nonMainBranches.find(b => branches.includes(b._id));
-          activeBranchId = defaultBranch ? defaultBranch._id : (nonMainBranches[0]?._id || "");
+          const assignedBranchIds = branches.map(normalizeId);
+          const defaultBranch = nonMainBranches.find((b) =>
+            assignedBranchIds.includes(normalizeId(b._id))
+          );
+          activeBranchId = defaultBranch
+            ? normalizeId(defaultBranch._id)
+            : normalizeId(nonMainBranches[0]?._id);
         } else if (nonMainBranches.length > 0) {
-          activeBranchId = nonMainBranches[0]._id;
+          activeBranchId = normalizeId(nonMainBranches[0]._id);
         } else {
           activeBranchId = "";
         }
-      } else {
-        if (urlBranch && urlBranch !== activeBranchId && nonMainBranches.some(b => b._id === urlBranch)) {
-          activeBranchId = urlBranch;
-        }
+      } else if (
+        urlBranch &&
+        normalizeId(urlBranch) !== activeBranchId &&
+        nonMainBranches.some((b) => normalizeId(b._id) === normalizeId(urlBranch))
+      ) {
+        activeBranchId = normalizeId(urlBranch);
       }
 
       setSelectedBranchId(activeBranchId);
       if (activeBranchId) {
-        localStorage.setItem('selectedBranchId', activeBranchId);
+        localStorage.setItem("selectedBranchId", activeBranchId);
+      } else {
+        localStorage.removeItem("selectedBranchId");
       }
 
       if (urlDrawer === "true") {
@@ -133,6 +149,9 @@ const BranchTimePage = () => {
       initialized.current = true;
     } catch (e) {
       console.error(e);
+      toast.error(e?.response?.data?.message || "Failed to load branches");
+    } finally {
+      setBranchesReady(true);
     }
   };
 
@@ -145,8 +164,8 @@ const BranchTimePage = () => {
     } catch (e) {
       console.error(e);
       setBranchTimeData(null);
-      // Only show error if it's not a 404 (not found)
-      if (e?.response?.status !== 404) {
+      // Only show error if it's not a 404/400 (not found or invalid branch)
+      if (e?.response?.status !== 404 && e?.response?.status !== 400) {
         toast.error(e?.response?.data?.message || "Failed to load branch time");
       }
     } finally {
@@ -158,9 +177,10 @@ const BranchTimePage = () => {
     if (role !== "Admin") return;
     try {
       const data = await listBranchTimeRequests(branchId || "");
-      setRequests(data);
+      setRequests(Array.isArray(data) ? data : []);
     } catch (e) {
       console.error("Failed to fetch requests", e);
+      setRequests([]);
     }
   };
 
@@ -169,6 +189,8 @@ const BranchTimePage = () => {
   }, [role, branches]);
 
   useEffect(() => {
+    if (!branchesReady) return;
+
     if (selectedBranchId) {
       fetchBranchTimeData(selectedBranchId);
       if (role === "Admin") {
@@ -177,9 +199,10 @@ const BranchTimePage = () => {
         setIsRequestModalOpen(false);
       }
     } else {
+      setBranchTimeData(null);
       setLoading(false);
     }
-  }, [selectedBranchId]);
+  }, [selectedBranchId, branchesReady, role]);
 
   useEffect(() => {
     if (!initialized.current) return;
@@ -326,8 +349,11 @@ const BranchTimePage = () => {
                 <div className="flex items-center gap-3 w-[220px]">
                   <div className="flex-1">
                     <Dropdown
-                      options={allBranches.map(b => ({ label: b.name, value: b._id }))}
-                      value={selectedBranchId}
+                      options={allBranches.map((b) => ({
+                        label: b.name,
+                        value: normalizeId(b._id),
+                      }))}
+                      value={normalizeId(selectedBranchId)}
                       onChange={(val) => setSelectedBranchId(val)}
                       placeholder="Select Branch"
                       className="border-none bg-transparent shadow-none"
@@ -544,5 +570,17 @@ const BranchTimePage = () => {
     </RoleGuard>
   );
 };
+
+const BranchTimePage = () => (
+  <Suspense
+    fallback={
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-yellow-500" />
+      </div>
+    }
+  >
+    <BranchTimePageContent />
+  </Suspense>
+);
 
 export default BranchTimePage;

@@ -235,7 +235,7 @@ const DashboardPage = () => {
                 value: stats.revenue?.custom >= 100000 
                     ? `₹${((stats.revenue?.custom || 0) / 100000).toFixed(2)}L` 
                     : `₹${(stats.revenue?.custom || 0).toLocaleString('en-IN')}`, 
-                sub: dateRange === "all" ? "total cumulative revenue" : `revenue for ${getRangeLabel(dateRange).toLowerCase()}`, 
+                sub: `Online: ₹${(stats.revenue?.online || 0).toLocaleString('en-IN')} · Offline: ₹${(stats.revenue?.offline || 0).toLocaleString('en-IN')}`, 
                 color: "border-orange-500 shadow-orange-900/5",
                 icon: TrendingUp
             },
@@ -447,41 +447,43 @@ const DashboardPage = () => {
         </div>
       )}
 
-      {/* Middle Section: Branch Performance & Recent Orders - Show for ALL roles */}
+      {/* Middle Section: Branch Performance & Recent Orders */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Branch Performance */}
-        <div className="lg:col-span-1 bg-white p-8 rounded-none shadow-xl shadow-teal-900/5 border border-gray-100 flex flex-col">
-          <div className="flex items-center justify-between mb-8">
-            <h2 className="text-sm font-black text-gray-900 uppercase tracking-widest px-2">Branch Performance ({getRangeLabel(dateRange)})</h2>
-            <button className="text-[10px] font-black text-teal-600 uppercase tracking-widest hover:underline">Full report</button>
-          </div>
-          
-          <div className="space-y-8 flex-1">
-            {(() => {
-              const maxBranchTotal = Math.max(...(stats.revenue?.byBranch?.map(b => b.total) || []), 1);
-              return stats.revenue?.byBranch?.slice(0, 5).map((branch, i) => (
-                <div key={i} className="space-y-2">
-                  <div className="flex justify-between items-center text-[13px]">
-                    <span className="font-bold text-gray-800">{branch.name}</span>
-                    <span className="font-black text-gray-900">{branch.total.toLocaleString()}</span>
+        {/* Branch Performance - Only show for Super Admin (role === "Admin") */}
+        {role === "Admin" && (
+          <div className="lg:col-span-1 bg-white p-8 rounded-none shadow-xl shadow-teal-900/5 border border-gray-100 flex flex-col">
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-sm font-black text-gray-900 uppercase tracking-widest px-2">Branch Performance ({getRangeLabel(dateRange)})</h2>
+              <button className="text-[10px] font-black text-teal-600 uppercase tracking-widest hover:underline">Full report</button>
+            </div>
+            
+            <div className="space-y-8 flex-1">
+              {(() => {
+                const maxBranchTotal = Math.max(...(stats.revenue?.byBranch?.map(b => b.total) || []), 1);
+                return stats.revenue?.byBranch?.slice(0, 5).map((branch, i) => (
+                  <div key={i} className="space-y-2">
+                    <div className="flex justify-between items-center text-[13px]">
+                      <span className="font-bold text-gray-800">{branch.name}</span>
+                      <span className="font-black text-gray-900">{branch.total.toLocaleString()}</span>
+                    </div>
+                    <div className="h-2 w-full bg-gray-50 rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-teal-900 rounded-full transition-all duration-1000" 
+                        style={{ width: `${(branch.total / maxBranchTotal) * 100}%` }}
+                      />
+                    </div>
                   </div>
-                  <div className="h-2 w-full bg-gray-50 rounded-full overflow-hidden">
-                    <div 
-                      className="h-full bg-teal-900 rounded-full transition-all duration-1000" 
-                      style={{ width: `${(branch.total / maxBranchTotal) * 100}%` }}
-                    />
-                  </div>
-                </div>
-              ));
-            })()}
-            {(!stats.revenue?.byBranch || stats.revenue.byBranch.length === 0) && (
-              <div className="flex items-center justify-center h-full text-gray-400 font-bold text-xs uppercase italic">No branch data data</div>
-            )}
+                ));
+              })()}
+              {(!stats.revenue?.byBranch || stats.revenue.byBranch.length === 0) && (
+                <div className="flex items-center justify-center h-full text-gray-400 font-bold text-xs uppercase italic">No branch data data</div>
+              )}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Recent Orders */}
-        <div className="lg:col-span-2 bg-white rounded-none shadow-xl shadow-teal-900/5 border border-gray-100 overflow-hidden">
+        <div className={`bg-white rounded-none shadow-xl shadow-teal-900/5 border border-gray-100 overflow-hidden ${role === "Admin" ? "lg:col-span-2" : "lg:col-span-3"}`}>
           <div className="p-8 flex items-center justify-between bg-gray-50/50 border-b border-gray-100">
             <h2 className="text-sm font-black text-gray-900 uppercase tracking-widest">Recent Orders</h2>
             <button 

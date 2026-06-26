@@ -1,9 +1,9 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { FiPlus, FiTrash2, FiSave, FiFilter, FiCalendar, FiBriefcase } from "react-icons/fi";
+import { FiPlus, FiTrash2, FiSave, FiFilter, FiCalendar, FiBriefcase, FiUpload, FiX, FiPaperclip, FiDownload } from "react-icons/fi";
 import { FaRupeeSign } from "react-icons/fa";
 import axios from "axios";
-import { API_BASE, getAuthHeaders, getAllBranches, createExpense, getAllExpenses, deleteExpense, createAccount, getSetting, deleteAccount } from "@/Api/AllApi";
+import { API_BASE, getAuthHeaders, getAllBranches, createExpense, getAllExpenses, deleteExpense, createAccount, getSetting, deleteAccount, resolveImageUrl } from "@/Api/AllApi";
 import { toast } from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import Dropdown from "@/utils/dropdown";
@@ -37,6 +37,48 @@ const ExpenseEntry = () => {
     branchId: "",
     expenseDate: new Date().toISOString().split('T')[0]
   });
+
+  const [receiptFile, setReceiptFile] = useState(null);
+  const [receiptFileName, setReceiptFileName] = useState("");
+
+  const handleReceiptChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setReceiptFile(file);
+      setReceiptFileName(file.name);
+    }
+  };
+
+  const clearReceipt = () => {
+    setReceiptFile(null);
+    setReceiptFileName("");
+  };
+
+  const handleDownloadReceipt = async (receiptUrl, originalFilename = "receipt") => {
+    try {
+      const fullUrl = resolveImageUrl(receiptUrl);
+      const extension = receiptUrl.split('.').pop() || 'jpg';
+      const cleanFilename = originalFilename.replace(/[^a-zA-Z0-9_-]/g, "_") + "." + extension;
+
+      toast.loading("Downloading receipt...", { id: "receipt-download" });
+
+      const response = await axios.get(fullUrl, { responseType: 'blob' });
+      
+      const blobUrl = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = cleanFilename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+
+      toast.success("Receipt downloaded successfully!", { id: "receipt-download" });
+    } catch (err) {
+      console.error("Failed to download receipt:", err);
+      toast.error("Failed to download receipt file", { id: "receipt-download" });
+    }
+  };
 
   // Modal State for custom Account Category Creation
   const [modalOpen, setModalOpen] = useState(false);
@@ -137,8 +179,22 @@ const ExpenseEntry = () => {
 
     try {
       setSaving(true);
-      await createExpense(form);
+      const formData = new FormData();
+      if (receiptFile) {
+        formData.append("receipt", receiptFile);
+      }
+      formData.append("expenseAccountId", form.expenseAccountId);
+      formData.append("paidFromAccountId", form.paidFromAccountId);
+      formData.append("amount", form.amount);
+      formData.append("description", form.description);
+      formData.append("referenceNo", form.referenceNo || "");
+      formData.append("branchId", form.branchId || "");
+      formData.append("expenseDate", form.expenseDate);
+
+      await createExpense(formData);
       toast.success("Expense successfully saved and ledger posted!");
+      
+      clearReceipt();
       
       // Reset form
       let defaultBranchId = "";
@@ -357,6 +413,37 @@ const ExpenseEntry = () => {
             </div>
 
             <div>
+              <label className="block mb-1 font-semibold text-sm text-gray-600">Upload Receipt (Optional)</label>
+              <div className="flex items-center gap-3 border border-dashed border-gray-300 rounded-xl p-3 bg-gray-50">
+                <label className="inline-flex items-center justify-center gap-2 px-3.5 py-2 bg-white border border-gray-200 rounded-lg text-xs font-semibold text-gray-700 cursor-pointer hover:bg-gray-100 transition shrink-0">
+                  <FiUpload size={14} />
+                  Choose File
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/*"
+                    onChange={handleReceiptChange}
+                    className="hidden"
+                  />
+                </label>
+                {receiptFileName ? (
+                  <div className="flex items-center gap-2 text-xs text-gray-600 min-w-0 flex-1">
+                    <span className="truncate">{receiptFileName}</span>
+                    <button
+                      type="button"
+                      onClick={clearReceipt}
+                      className="p-1 text-red-500 hover:bg-red-50 rounded-md shrink-0"
+                      title="Remove receipt"
+                    >
+                      <FiX size={14} />
+                    </button>
+                  </div>
+                ) : (
+                  <span className="text-[11px] text-gray-400">PDF or image (Optional)</span>
+                )}
+              </div>
+            </div>
+
+            <div>
               <label className="block mb-1 font-semibold text-sm text-gray-600">Description *</label>
               <textarea
                 value={form.description}
@@ -443,6 +530,7 @@ const ExpenseEntry = () => {
                   <th className="px-4 py-3.5">Category</th>
                   <th className="px-4 py-3.5">Paid From</th>
                   <th className="px-4 py-3.5">Ref No</th>
+                  <th className="px-4 py-3.5 text-center">Receipt</th>
                   <th className="px-4 py-3.5">Description</th>
                   <th className="px-4 py-3.5 text-right">Amount</th>
                   <th className="px-4 py-3.5 text-center w-12">Action</th>
@@ -451,7 +539,7 @@ const ExpenseEntry = () => {
               <tbody className="divide-y divide-gray-100">
                 {loading ? (
                   <tr>
-                    <td colSpan="7" className="p-8 text-center text-gray-400 italic">Loading expenses...</td>
+                    <td colSpan="8" className="p-8 text-center text-gray-400 italic">Loading expenses...</td>
                   </tr>
                 ) : expenses.map(exp => (
                   <tr key={exp._id} className="hover:bg-gray-50 transition-colors">
@@ -466,6 +554,31 @@ const ExpenseEntry = () => {
                     </td>
                     <td className="px-4 py-3 text-xs font-mono text-gray-500">
                       {exp.referenceNo || "-"}
+                    </td>
+                    <td className="px-4 py-3 text-center whitespace-nowrap">
+                      {exp.receiptUrl ? (
+                        <div className="flex items-center justify-center gap-1.5">
+                          <a
+                            href={resolveImageUrl(exp.receiptUrl)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex p-1 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition"
+                            title="View Receipt"
+                          >
+                            <FiPaperclip size={14} />
+                          </a>
+                          <button
+                            type="button"
+                            onClick={() => handleDownloadReceipt(exp.receiptUrl, `Receipt_${exp.referenceNo || exp._id}`)}
+                            className="inline-flex p-1 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg transition"
+                            title="Download Receipt"
+                          >
+                            <FiDownload size={14} />
+                          </button>
+                        </div>
+                      ) : (
+                        <span className="text-gray-400">-</span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-xs text-gray-600 max-w-[150px] truncate">
                       {exp.description}
@@ -490,7 +603,7 @@ const ExpenseEntry = () => {
                 ))}
                 {!loading && expenses.length === 0 && (
                   <tr>
-                    <td colSpan="7" className="p-12 text-center text-gray-400 italic text-sm">
+                    <td colSpan="8" className="p-12 text-center text-gray-400 italic text-sm">
                       No expense entries found. Enter a transaction on the left to start.
                     </td>
                   </tr>

@@ -455,6 +455,8 @@ const VideoForm = ({
     { label: "Free Video", value: 7 },
     { label: "Instruction", value: 8 },
     { label: "Hold Video", value: 9 },
+    { label: "book appointment video", value: 11 },
+    { label: "rating screen video", value: 12 },
   ];
 
   const videoTypeOptions = [

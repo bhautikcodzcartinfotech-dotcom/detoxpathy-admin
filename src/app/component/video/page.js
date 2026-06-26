@@ -89,7 +89,7 @@ const VideoPage = () => {
       const errorData = err?.response?.data;
       const errorStr = errorData?.error || errorData?.message || "Failed to save video";
       
-      if (errorStr.includes('already exists') && (errorStr.includes('type 6') || errorStr.includes('type 7') || errorStr.includes('type 8') || errorStr.includes('type 9'))) {
+      if (errorStr.includes('already exists') && (errorStr.includes('type 6') || errorStr.includes('type 7') || errorStr.includes('type 8') || errorStr.includes('type 9') || errorStr.includes('type 11') || errorStr.includes('type 12'))) {
         toast.error(errorStr);
       } else {
         setError(errorStr);
@@ -167,6 +167,8 @@ const VideoPage = () => {
             { label: "Instruction", value: "8" },
             { label: "Hold Video", value: "9" },
             { label: "Agora Session", value: "10" },
+            { label: "book appointment video", value: "11" },
+            { label: "rating screen video", value: "12" },
           ]}
           filterValue={typeFilter}
           filterLabel="Type"
