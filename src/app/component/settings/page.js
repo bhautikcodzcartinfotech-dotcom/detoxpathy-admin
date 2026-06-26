@@ -95,6 +95,9 @@ const SettingsPage = () => {
   // Utility function to transform raw video path to API URL
   const getVideoUrl = (rawPath) => {
     if (!rawPath) return '';
+    if (rawPath.startsWith('http://') || rawPath.startsWith('https://')) {
+      return rawPath;
+    }
     const normalizedPath = rawPath.replace(/\\/g, '/');
     const filePath = normalizedPath.startsWith('uploads/')
       ? normalizedPath.slice(8)
