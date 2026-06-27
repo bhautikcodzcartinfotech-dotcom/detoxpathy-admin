@@ -61,6 +61,20 @@ const UserList = ({ users, loading, onEdit, onDelete, onRestore, onBulkDelete, o
   const [historyUser, setHistoryUser] = useState(null);
   const [planHistory, setPlanHistory] = useState([]);
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 30;
+
+  // Reset page when users count changes (e.g. search/filter)
+  const [prevUsersLength, setPrevUsersLength] = useState(users.length);
+  if (users.length !== prevUsersLength) {
+    setCurrentPage(1);
+    setPrevUsersLength(users.length);
+  }
+
+  const paginatedUsers = users.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const totalPages = Math.ceil(users.length / itemsPerPage);
+
   const handleDeleteClick = (userId, userName) => {
     setDeleteDialog({
       isOpen: true,
@@ -98,10 +112,18 @@ const UserList = ({ users, loading, onEdit, onDelete, onRestore, onBulkDelete, o
   };
 
   const toggleAll = () => {
-    const selectable = users.filter((u) => !u.isDeleted);
+    const selectable = paginatedUsers.filter((u) => !u.isDeleted);
     setSelectedIds((prev) => {
-      if (prev.size === selectable.length) return new Set();
-      return new Set(selectable.map((u) => u._id));
+      const allCurrentSelected = selectable.length > 0 && selectable.every(u => prev.has(u._id));
+      const next = new Set(prev);
+      if (allCurrentSelected) {
+        // Deselect current page items
+        selectable.forEach(u => next.delete(u._id));
+      } else {
+        // Select current page items
+        selectable.forEach(u => next.add(u._id));
+      }
+      return next;
     });
   };
 
@@ -178,9 +200,8 @@ const UserList = ({ users, loading, onEdit, onDelete, onRestore, onBulkDelete, o
               <th className="px-2 py-3 lg:px-3 text-left">
                 <ThemedCheckbox
                   checked={
-                    selectedIds.size ===
-                    users.filter((u) => !u.isDeleted).length &&
-                    users.filter((u) => !u.isDeleted).length > 0
+                    paginatedUsers.filter((u) => !u.isDeleted).length > 0 &&
+                    paginatedUsers.filter((u) => !u.isDeleted).every((u) => selectedIds.has(u._id))
                   }
                   onChange={toggleAll}
                   ariaLabel="Select all"
@@ -211,7 +232,7 @@ const UserList = ({ users, loading, onEdit, onDelete, onRestore, onBulkDelete, o
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {users.map((u) => {
+            {paginatedUsers.map((u) => {
               const isDeleted = Boolean(u.isDeleted);
               // Determine plan status - only Active or Hold
               const getPlanStatus = () => {
@@ -318,6 +339,29 @@ const UserList = ({ users, loading, onEdit, onDelete, onRestore, onBulkDelete, o
           </tbody>
         </table>
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="mt-8 flex justify-center items-center gap-4">
+          <Button
+            variant="secondary"
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+          >
+            Previous
+          </Button>
+          <span className="text-sm font-bold text-gray-700">
+            Page {currentPage} of {totalPages}
+          </span>
+          <Button
+            variant="secondary"
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+          >
+            Next
+          </Button>
+        </div>
+      )}
 
       {/* Delete Confirmation Dialog */}
       <ConfirmationDialog

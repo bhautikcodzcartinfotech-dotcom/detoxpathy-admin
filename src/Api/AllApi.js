@@ -1582,6 +1582,7 @@ export const getAllOrders = async (params = {}) => {
   if (params.userId) queryParams.append("userId", params.userId);
   if (params.branchId) queryParams.append("branchId", params.branchId);
   if (params.month) queryParams.append("month", params.month);
+  if (params.ids) queryParams.append("ids", params.ids);
 
   const res = await axios.get(`${API_BASE}/admin/order/userOrders?${queryParams.toString()}`, {
     headers: getAuthHeaders(),

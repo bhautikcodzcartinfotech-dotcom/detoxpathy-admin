@@ -1150,12 +1150,14 @@ const OrderDetailsPage = () => {
                 Print Invoice
               </button>
             )}
-            <button
-              onClick={handlePrintShippingLabel}
-              className="w-full py-2.5 mt-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition"
-            >
-              Print Shipping Label
-            </button>
+            {order.type !== 2 && (
+              <button
+                onClick={handlePrintShippingLabel}
+                className="w-full py-2.5 mt-3 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition"
+              >
+                Print Shipping Label
+              </button>
+            )}
           </div>
         </div>
       </div>
