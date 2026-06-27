@@ -4,7 +4,7 @@ import TimeButton from "@/utils/timebutton";
 import toast from "react-hot-toast";
 import { validateForm } from "@/utils/validation";
 import Dropdown from "@/utils/dropdown";
-import { getAllCategoriesApi, getAllPlans, generateZoomMeetingApi, generateAgoraSessionApi } from "@/Api/AllApi";
+import { getAllCategoriesApi, getAllPlans, generateZoomMeetingApi, generateAgoraSessionApi, resolveImageUrl } from "@/Api/AllApi";
 import MultiLanguageInput from "@/components/MultiLanguageInput";
 
 const VideoForm = ({
@@ -67,34 +67,35 @@ const VideoForm = ({
   useEffect(() => {
     if (initialValues) {
       const active = [];
-      if (
-        initialValues.titleMultiLang?.english ||
-        initialValues.videoMultiLang?.english ||
-        initialValues.thumbnailMultiLang?.english ||
-        initialValues.descriptionMultiLang?.english ||
-        initialValues.title ||
-        initialValues.video ||
-        initialValues.thumbnail ||
-        initialValues.description
-      ) {
+      const hasEnglish = 
+        (initialValues.titleMultiLang?.english && initialValues.titleMultiLang.english.trim() !== "") ||
+        (initialValues.descriptionMultiLang?.english && initialValues.descriptionMultiLang.english.trim() !== "") ||
+        (initialValues.videoMultiLang?.english && initialValues.videoMultiLang.english.trim() !== "") ||
+        (!initialValues.titleMultiLang && (
+          (initialValues.title && initialValues.title.trim() !== "") ||
+          (initialValues.video && initialValues.video.trim() !== "")
+        ));
+
+      if (hasEnglish) {
         active.push("english");
       }
+
       if (
-        initialValues.titleMultiLang?.gujarati ||
-        initialValues.videoMultiLang?.gujarati ||
-        initialValues.thumbnailMultiLang?.gujarati ||
-        initialValues.descriptionMultiLang?.gujarati
+        (initialValues.titleMultiLang?.gujarati && initialValues.titleMultiLang.gujarati.trim() !== "") ||
+        (initialValues.descriptionMultiLang?.gujarati && initialValues.descriptionMultiLang.gujarati.trim() !== "") ||
+        (initialValues.videoMultiLang?.gujarati && initialValues.videoMultiLang.gujarati.trim() !== "")
       ) {
         active.push("gujarati");
       }
+
       if (
-        initialValues.titleMultiLang?.hindi ||
-        initialValues.videoMultiLang?.hindi ||
-        initialValues.thumbnailMultiLang?.hindi ||
-        initialValues.descriptionMultiLang?.hindi
+        (initialValues.titleMultiLang?.hindi && initialValues.titleMultiLang.hindi.trim() !== "") ||
+        (initialValues.descriptionMultiLang?.hindi && initialValues.descriptionMultiLang.hindi.trim() !== "") ||
+        (initialValues.videoMultiLang?.hindi && initialValues.videoMultiLang.hindi.trim() !== "")
       ) {
         active.push("hindi");
       }
+
       if (active.length === 0) {
         active.push("english");
       }
@@ -612,6 +613,11 @@ const VideoForm = ({
           type="file"
           accept="video/*"
           showCopyCheckbox={false}
+          existingUrls={{
+            english: resolveImageUrl(initialValues?.videoMultiLang?.english || initialValues?.video || ""),
+            gujarati: resolveImageUrl(initialValues?.videoMultiLang?.gujarati || ""),
+            hindi: resolveImageUrl(initialValues?.videoMultiLang?.hindi || ""),
+          }}
         />
       )}
 
@@ -770,6 +776,11 @@ const VideoForm = ({
           type="file"
           accept="image/*"
           showCopyCheckbox={false}
+          existingUrls={{
+            english: resolveImageUrl(initialValues?.thumbnailMultiLang?.english || initialValues?.thumbnail || ""),
+            gujarati: resolveImageUrl(initialValues?.thumbnailMultiLang?.gujarati || ""),
+            hindi: resolveImageUrl(initialValues?.thumbnailMultiLang?.hindi || ""),
+          }}
         />
       ) : (
         <MultiLanguageInput

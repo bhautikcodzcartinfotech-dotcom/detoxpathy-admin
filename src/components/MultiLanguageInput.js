@@ -17,6 +17,7 @@ const MultiLanguageInput = ({
   copyCheckboxLabel = "Copy English to all languages",
   accept = "",
   defaultCopyChecked = false,
+  existingUrls = {},
 }) => {
   const [copyToAllLanguages, setCopyToAllLanguages] =
     useState(defaultCopyChecked);
@@ -358,6 +359,21 @@ const MultiLanguageInput = ({
                       }
                       return String(fieldValue || "");
                     })()}
+                  </div>
+                )}
+                {!getFieldValue(field) && existingUrls && existingUrls[field] && (
+                  <div className="mt-2 text-sm p-2 rounded border text-teal-700 bg-teal-50 border-teal-200 flex items-center justify-between">
+                    <span className="truncate">
+                      Existing File: <span className="font-semibold text-gray-700">{existingUrls[field].split('/').pop()}</span>
+                    </span>
+                    <a
+                      href={existingUrls[field]}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs bg-teal-600 hover:bg-teal-700 text-white px-2.5 py-1 rounded-lg font-bold transition ml-2 shrink-0 shadow-sm"
+                    >
+                      View
+                    </a>
                   </div>
                 )}
               </div>
