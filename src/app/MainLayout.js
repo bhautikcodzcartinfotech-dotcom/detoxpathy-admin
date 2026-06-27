@@ -55,10 +55,10 @@ const renderNotificationMessage = (message, type) => {
 
     if (type === "appointment_create" || type === "appointment_reschedule") {
       const isResched = type === "appointment_reschedule";
-      const regex = isResched 
-        ? /📅 Appointment rescheduled by\s+(.+)\s+to\s+(.+)\s+at\s+(.+)/ 
+      const regex = isResched
+        ? /📅 Appointment rescheduled by\s+(.+)\s+to\s+(.+)\s+at\s+(.+)/
         : /📅 New appointment booked by\s+(.+)\s+for\s+(.+)\s+at\s+(.+)/;
-        
+
       const match = message.match(regex);
       if (match) {
         const name = match[1].trim();
@@ -119,7 +119,7 @@ export default function MainLayout({ children }) {
     if (!audioPath) return null;
     if (audioPath.startsWith('http')) return audioPath;
     const cleanPath = audioPath.replace(/^\/+/, '').replace(/^uploads\//i, '');
-    return `${API_HOST}/uploads/${cleanPath}`;
+    return `${API_BASE}/uploads/${cleanPath}`;
   };
 
   const playSettingsAudio = (audioPath) => {
@@ -129,7 +129,7 @@ export default function MainLayout({ children }) {
     if (audioUnlocked.current) {
       const audio = new Audio(audioUrl);
       audio.volume = 1;
-      audio.play().catch(() => {});
+      audio.play().catch(() => { });
     } else {
       pendingAudioUrl.current = audioUrl;
       console.log("Audio queued – will play on next user interaction.");
@@ -160,7 +160,7 @@ export default function MainLayout({ children }) {
         pendingAudioUrl.current = null;
         const audio = new Audio(url);
         audio.volume = 1;
-        audio.play().catch(() => {}); // inside a real click handler – always works
+        audio.play().catch(() => { }); // inside a real click handler – always works
       }
     };
     window.addEventListener("click", unlock, { once: true });
@@ -361,9 +361,8 @@ export default function MainLayout({ children }) {
           toast.custom(
             (t) => (
               <div
-                className={`${
-                  t.visible ? "animate-slide-in-toast" : "animate-slide-out-toast"
-                } max-w-sm w-full bg-white/95 backdrop-blur-xl shadow-[0_15px_30px_rgba(0,0,0,0.08)] rounded-2xl pointer-events-auto border ${borderCol} p-4 flex gap-3.5 transition-all duration-300 hover:shadow-xl hover:translate-y-[-1px] relative`}
+                className={`${t.visible ? "animate-slide-in-toast" : "animate-slide-out-toast"
+                  } max-w-sm w-full bg-white/95 backdrop-blur-xl shadow-[0_15px_30px_rgba(0,0,0,0.08)] rounded-2xl pointer-events-auto border ${borderCol} p-4 flex gap-3.5 transition-all duration-300 hover:shadow-xl hover:translate-y-[-1px] relative`}
               >
                 {/* Accent Icon Container */}
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${iconBg} shadow-sm`}>
@@ -376,17 +375,17 @@ export default function MainLayout({ children }) {
                     {data.type === "register"
                       ? "New Member"
                       : data.type === "support"
-                      ? "Support Message"
-                      : data.type === "order_create"
-                      ? "New Order Alert"
-                      : data.type === "appointment_reminder"
-                      ? "Appointment Starting Soon"
-                      : "Appointment Alert"}
+                        ? "Support Message"
+                        : data.type === "order_create"
+                          ? "New Order Alert"
+                          : data.type === "appointment_reminder"
+                            ? "Appointment Starting Soon"
+                            : "Appointment Alert"}
                   </div>
                   <div className="mt-1">
                     {renderNotificationMessage(data.message, data.type)}
                   </div>
-                  
+
                   {/* Action Link */}
                   {redirectUrl && (
                     <button
