@@ -283,7 +283,7 @@ const StockTransferPage = () => {
       <body>
         <div class="container">
           <h1>DETOXPATHY</h1>
-          <div class="subtitle">HEALTH & WELLNESS SOLUTIONS</div>
+          <div class="subtitle">HEALTH & WELLNESS</div>
           
           <h2>${transferType.toUpperCase()}</h2>
           

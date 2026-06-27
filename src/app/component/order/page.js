@@ -357,7 +357,7 @@ const OrderPage = () => {
           <div class="container">
             <div class="header">
               <h1>DETOXPATHY</h1>
-              <div class="subtitle">HEALTH & WELLNESS SOLUTIONS</div>
+              <div class="subtitle">HEALTH & WELLNESS</div>
               <h2>MONTHLY ORDER REPORT: ${displayMonth}</h2>
               <div class="metadata">
                 <strong>Total Orders:</strong> ${monthlyOrders.length} | <strong>Generated On:</strong> ${new Date().toLocaleDateString("en-GB")}
@@ -655,7 +655,7 @@ const OrderPage = () => {
           <div class="container">
             <div class="header">
               <h1>DETOXPATHY</h1>
-              <div class="subtitle">HEALTH & WELLNESS SOLUTIONS</div>
+              <div class="subtitle">HEALTH & WELLNESS</div>
               <h2>ORDER MANIFEST</h2>
               <div class="metadata">
                 <strong>Total Orders:</strong> ${selectedOrders.length} | <strong>Date:</strong> ${new Date().toLocaleDateString("en-GB")}
@@ -760,7 +760,7 @@ const OrderPage = () => {
         const postalCode = order.shippingAddress?.postalCode || "";
         const country = order.shippingAddress?.country || "India";
 
-        const branchName = order.branch?.name || order.branchId?.name || "Detoxpathy Corporate Office";
+        const branchName = order.branch?.name || order.branchId?.name || "Detoxpathy";
         const branchAddress = order.branch?.address || order.branchId?.address || "Surat, Gujarat, India";
 
         const orderIdShort = `ORD-${order._id.slice(-6).toUpperCase()}`;

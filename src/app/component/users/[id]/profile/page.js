@@ -172,7 +172,7 @@ const UserProfilePage = () => {
       const orderDate = new Date(order.createdAt).toLocaleDateString("en-GB");
       const orderId = `ORD-${order._id.slice(-6).toUpperCase()}`;
 
-      const branchName = order.branch?.name || "Detoxpathy Corporate Office";
+      const branchName = order.branch?.name || "Detoxpathy";
       const billFrom = `${branchName}, Surat, Gujarat - 400001`;
 
       const customerName = (order.shippingAddress?.name || `${order.user?.name || ""} ${order.user?.surname || ""}`).trim().toUpperCase();
@@ -260,7 +260,7 @@ const UserProfilePage = () => {
       invoicesHtml += `
         <div class="invoice-page">
           <h1>DETOXPATHY</h1>
-          <div class="subtitle">HEALTH & WELLNESS SOLUTIONS</div>
+          <div class="subtitle">HEALTH & WELLNESS</div>
           
           <h2>INVOICE</h2>
           

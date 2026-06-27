@@ -148,7 +148,7 @@ const OrderDetailsPage = () => {
     const orderDate = new Date(order.createdAt).toLocaleDateString("en-GB");
     const orderId = `ORD-${order._id.slice(-6).toUpperCase()}`;
 
-    const branchName = order.branch?.name || "Detoxpathy Corporate Office";
+    const branchName = order.branch?.name || "Detoxpathy";
     const billFrom = `${branchName}, Surat, Gujarat - 400001`;
 
     const customerName = (order.shippingAddress?.name || `${order.user?.name || ""} ${order.user?.surname || ""}`).trim().toUpperCase();
@@ -352,7 +352,7 @@ const OrderDetailsPage = () => {
       <body>
         <div class="container">
           <h1>DETOXPATHY</h1>
-          <div class="subtitle">HEALTH & WELLNESS SOLUTIONS</div>
+          <div class="subtitle">HEALTH & WELLNESS</div>
           
           <h2>INVOICE</h2>
           
@@ -430,7 +430,7 @@ const OrderDetailsPage = () => {
     const postalCode = order.shippingAddress?.postalCode || "";
     const country = order.shippingAddress?.country || "India";
 
-    const branchName = order.branch?.name || "Detoxpathy Corporate Office";
+    const branchName = order.branch?.name || "Detoxpathy";
     const branchAddress = order.branch?.address || "Surat, Gujarat, India";
 
     const orderIdShort = `ORD-${order._id.slice(-6).toUpperCase()}`;
