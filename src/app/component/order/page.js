@@ -23,6 +23,60 @@ import Dropdown from "@/utils/dropdown";
 import { useAuth } from "@/contexts/AuthContext";
 import RoleGuard from "@/components/RoleGuard";
 
+const getTodayInKolkata = () => {
+  const d = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, "0"),
+    String(d.getDate()).padStart(2, "0"),
+  ].join("-");
+};
+
+const formatKolkataDate = (date) => [
+  date.getFullYear(),
+  String(date.getMonth() + 1).padStart(2, "0"),
+  String(date.getDate()).padStart(2, "0"),
+].join("-");
+
+const getYesterdayInKolkata = () => {
+  const d = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+  d.setDate(d.getDate() - 1);
+  return formatKolkataDate(d);
+};
+
+const getWeekStartInKolkata = () => {
+  const d = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+  const day = d.getDay();
+  const diff = day === 0 ? 6 : day - 1;
+  d.setDate(d.getDate() - diff);
+  return formatKolkataDate(d);
+};
+
+const getMonthStartInKolkata = () => {
+  const d = new Date(new Date().toLocaleString("en-US", { timeZone: "Asia/Kolkata" }));
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-01`;
+};
+
+const resolveDateRange = (range) => {
+  const today = getTodayInKolkata();
+  switch (range) {
+    case "today":
+      return { startDate: today, endDate: today };
+    case "yesterday": {
+      const yesterday = getYesterdayInKolkata();
+      return { startDate: yesterday, endDate: yesterday };
+    }
+    case "week":
+      return { startDate: getWeekStartInKolkata(), endDate: today };
+    case "month":
+      return { startDate: getMonthStartInKolkata(), endDate: today };
+    case "custom":
+      return { startDate: today, endDate: today };
+    default:
+      return { startDate: "", endDate: "" };
+  }
+};
+
 const OrderPage = () => {
   const { role, permissions } = useAuth();
   const [orders, setOrders] = useState([]);
@@ -54,7 +108,10 @@ const OrderPage = () => {
     type: "",
     status: "",
     branchId: "",
-    month: ""
+    month: "",
+    dateRange: "",
+    startDate: "",
+    endDate: "",
   });
   const prevFilterRef = useRef(filter);
 
@@ -80,6 +137,9 @@ const OrderPage = () => {
         prevFilter.status !== filter.status ||
         prevFilter.branchId !== filter.branchId ||
         prevFilter.month !== filter.month ||
+        prevFilter.dateRange !== filter.dateRange ||
+        prevFilter.startDate !== filter.startDate ||
+        prevFilter.endDate !== filter.endDate ||
         prevFilter.limit !== filter.limit;
 
       if (filtersChanged) {
@@ -200,6 +260,39 @@ const OrderPage = () => {
 
   const handleFilterChange = (key, value) => {
     setFilter(prev => ({ ...prev, [key]: value, start: 1 }));
+  };
+
+  const handleDateRangeChange = (range) => {
+    const { startDate, endDate } = resolveDateRange(range);
+    setFilter(prev => ({
+      ...prev,
+      dateRange: range,
+      startDate,
+      endDate,
+      month: "",
+      start: 1,
+    }));
+  };
+
+  const handleCustomDateChange = (key, value) => {
+    setFilter(prev => ({
+      ...prev,
+      [key]: value,
+      dateRange: "custom",
+      month: "",
+      start: 1,
+    }));
+  };
+
+  const handleMonthChange = (value) => {
+    setFilter(prev => ({
+      ...prev,
+      month: value,
+      dateRange: "",
+      startDate: "",
+      endDate: "",
+      start: 1,
+    }));
   };
 
   const handleToggleSelection = (id) => {
@@ -749,8 +842,9 @@ const OrderPage = () => {
       }
 
       let labelsHtml = "";
+      const barcodeEntries = [];
 
-      selectedOrders.forEach((order) => {
+      selectedOrders.forEach((order, index) => {
         const customerName = (order.shippingAddress?.name || `${order.user?.name || ""} ${order.user?.surname || ""}`).trim().toUpperCase();
         const mobile = order.shippingAddress?.mobile || order.user?.mobileNumber || "N/A";
         const addressLine1 = order.shippingAddress?.addressLine1 || "";
@@ -765,11 +859,13 @@ const OrderPage = () => {
 
         const orderIdShort = `ORD-${order._id.slice(-6).toUpperCase()}`;
         const orderDate = new Date(order.createdAt).toLocaleDateString("en-GB");
+        const awbCode = (order.trackingId || orderIdShort).trim();
+        barcodeEntries.push({ id: `barcode-${index}`, value: awbCode });
 
         let itemsHtml = "";
         let itemsCount = 0;
         if (order.plans && order.plans.length > 0) {
-          order.plans.forEach(p => {
+          order.plans.forEach(  p => {
             itemsHtml += `
               <tr>
                 <td style="text-align: center; font-weight: 800;">${p.quantity || 1}</td>
@@ -828,8 +924,8 @@ const OrderPage = () => {
               </div>
               
               <div class="barcode-section">
-                <div class="barcode-placeholder"></div>
-                <p class="awb-text">AWB: ${order.trackingId ? order.trackingId : '<span class="blank-line">&nbsp;</span>'}</p>
+                <svg class="barcode-svg" id="barcode-${index}"></svg>
+                <p class="awb-text">AWB: ${order.trackingId || awbCode}</p>
               </div>
               
               <div class="address-section">
@@ -910,9 +1006,10 @@ const OrderPage = () => {
               margin-bottom: 4px;
               padding-bottom: 4px;
             }
-            .compact .barcode-placeholder {
-              width: 140px;
-              height: 45px;
+            .compact .barcode-svg {
+              width: 90%;
+              max-width: 200px;
+              height: 40px;
               margin: 0 auto 4px auto;
             }
             .compact .barcode-section {
@@ -940,9 +1037,10 @@ const OrderPage = () => {
             .compact-large .courier-title {
               font-size: 14px;
             }
-            .compact-large .barcode-placeholder {
-              width: 120px;
-              height: 35px;
+            .compact-large .barcode-svg {
+              width: 90%;
+              max-width: 180px;
+              height: 32px;
               margin: 0 auto 2px auto;
             }
             .compact-large .barcode-section {
@@ -952,10 +1050,6 @@ const OrderPage = () => {
             .compact-large .awb-text {
               font-size: 12px;
               margin-top: 2px;
-            }
-            .compact-large .blank-line {
-              width: 100px;
-              height: 12px;
             }
             .compact-large .to-section {
               margin-bottom: 4px;
@@ -994,26 +1088,20 @@ const OrderPage = () => {
               border-bottom: 2px dashed #000;
               margin-bottom: 8px;
             }
+            .barcode-svg {
+              width: 90%;
+              max-width: 280px;
+              height: 55px;
+              margin: 0 auto 6px auto;
+              display: block;
+            }
             .awb-text {
               font-family: monospace;
               font-size: 14px;
               font-weight: bold;
               margin-top: 4px;
               margin-bottom: 0;
-            }
-            .barcode-placeholder {
-              width: 160px;
-              height: 55px;
-              border: 1.5px dashed #000;
-              margin: 0 auto 8px auto;
-              border-radius: 4px;
-            }
-            .blank-line {
-              display: inline-block;
-              width: 130px;
-              margin-left: 4px;
-              vertical-align: bottom;
-              height: 15px;
+              letter-spacing: 0.5px;
             }
             .address-section {
               flex-grow: 1;
@@ -1090,16 +1178,31 @@ const OrderPage = () => {
         <body>
           ${labelsHtml}
           
+          <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"><\/script>
           <script>
+            const barcodeEntries = ${JSON.stringify(barcodeEntries)};
             window.onload = function() {
+              barcodeEntries.forEach(function(item) {
+                try {
+                  if (item.value) {
+                    JsBarcode("#" + item.id, item.value, {
+                      format: "CODE128",
+                      width: 1.6,
+                      height: 48,
+                      displayValue: false,
+                      margin: 2
+                    });
+                  }
+                } catch (e) {}
+              });
               setTimeout(function() {
                 window.print();
                 setTimeout(function() {
                   window.close();
                 }, 500);
-              }, 500);
+              }, 400);
             };
-          </script>
+          <\/script>
         </body>
         </html>
       `;
@@ -1247,15 +1350,57 @@ const OrderPage = () => {
               <div className="md:col-span-2"></div>
             )}
 
-            {/* Month Filter */}
+            {/* Date Range Filter */}
+            <div className="md:col-span-2">
+              <Dropdown
+                label="Date Range"
+                options={[
+                  { label: "All Time", value: "" },
+                  { label: "Today", value: "today" },
+                  { label: "Yesterday", value: "yesterday" },
+                  { label: "This Week", value: "week" },
+                  { label: "This Month", value: "month" },
+                  { label: "Custom Date", value: "custom" },
+                ]}
+                value={filter.dateRange}
+                onChange={handleDateRangeChange}
+              />
+            </div>
+
+            {filter.dateRange === "custom" && (
+              <>
+                <div className="md:col-span-2 space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase ml-1">From Date</label>
+                  <input
+                    type="date"
+                    className="w-full h-11 px-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] bg-gray-50/50 transition-all text-sm font-medium"
+                    value={filter.startDate}
+                    max={filter.endDate || undefined}
+                    onChange={(e) => handleCustomDateChange("startDate", e.target.value)}
+                  />
+                </div>
+                <div className="md:col-span-2 space-y-2">
+                  <label className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase ml-1">To Date</label>
+                  <input
+                    type="date"
+                    className="w-full h-11 px-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] bg-gray-50/50 transition-all text-sm font-medium"
+                    value={filter.endDate}
+                    min={filter.startDate || undefined}
+                    onChange={(e) => handleCustomDateChange("endDate", e.target.value)}
+                  />
+                </div>
+              </>
+            )}
+
+            {/* Month Filter (Admin monthly report) */}
             {role === "Admin" && (
               <div className="md:col-span-2 space-y-2">
-                <label className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase ml-1">Month</label>
+                <label className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase ml-1">Report Month</label>
                 <input
                   type="month"
                   className="w-full h-11 px-3 rounded-xl border border-gray-200 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] bg-gray-50/50 transition-all text-sm font-medium"
                   value={filter.month}
-                  onChange={(e) => handleFilterChange("month", e.target.value)}
+                  onChange={(e) => handleMonthChange(e.target.value)}
                 />
               </div>
             )}

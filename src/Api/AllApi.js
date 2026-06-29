@@ -1582,6 +1582,8 @@ export const getAllOrders = async (params = {}) => {
   if (params.userId) queryParams.append("userId", params.userId);
   if (params.branchId) queryParams.append("branchId", params.branchId);
   if (params.month) queryParams.append("month", params.month);
+  if (params.startDate) queryParams.append("startDate", params.startDate);
+  if (params.endDate) queryParams.append("endDate", params.endDate);
   if (params.ids) queryParams.append("ids", params.ids);
 
   const res = await axios.get(`${API_BASE}/admin/order/userOrders?${queryParams.toString()}`, {
@@ -1589,6 +1591,7 @@ export const getAllOrders = async (params = {}) => {
   });
   return res.data.data;
 };
+
 
 export const updateOrderStatus = async (id, orderStatus, extraFields = {}) => {
   const res = await axios.put(`${API_BASE}/admin/order/update/${id}`, { orderStatus, ...extraFields }, {

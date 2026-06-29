@@ -12,7 +12,7 @@ import {
     getConsultationCountByUserId
 } from "@/Api/AllApi";
 
-const ConsultationForm = ({ appointment, onClose, onSaveSuccess }) => {
+const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = false }) => {
     const [patientHistoryOptions, setPatientHistoryOptions] = useState([]);
     const [loading, setLoading] = useState(false);
     const [medicineSuggestions, setMedicineSuggestions] = useState([]);
@@ -292,24 +292,40 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess }) => {
     };
 
     return (
-        <div className="flex flex-col h-full bg-white">
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-white sticky top-0 z-10">
-                <div>
+        <div className={embedded ? "bg-white" : "flex flex-col h-full bg-white"}>
+            {!embedded ? (
+                <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-white sticky top-0 z-10">
+                    <div>
+                        <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
+                            <ClipboardCheck className="text-teal-600" /> Consultation Entry
+                        </h2>
+                        <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mt-1">
+                            Patient: {appointment.userId?.name} {appointment.userId?.surname}
+                        </p>
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400">
+                        <X size={20} />
+                    </button>
+                </div>
+            ) : (
+                <div className="pt-2 pb-4">
                     <h2 className="text-xl font-extrabold text-slate-900 flex items-center gap-2">
                         <ClipboardCheck className="text-teal-600" /> Consultation Entry
                     </h2>
                     <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mt-1">
-                        Patient: {appointment.userId?.name} {appointment.userId?.surname}
+                        Scroll up to review patient profile
                     </p>
                 </div>
-                <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400">
-                    <X size={20} />
-                </button>
-            </div>
+            )}
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar pb-24">
+            <form
+                onSubmit={handleSubmit}
+                className={
+                    embedded
+                        ? "space-y-8 pb-4"
+                        : "flex-1 overflow-y-auto p-6 space-y-8 custom-scrollbar pb-24"
+                }
+            >
 
                 {/* Patient Details */}
                 <div className="space-y-4">
@@ -663,8 +679,13 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess }) => {
                 </div>
             </form>
 
-            {/* Footer */}
-            <div className="p-6 bg-white border-t border-slate-100 flex items-center justify-end gap-3 sticky bottom-0">
+            <div
+                className={
+                    embedded
+                        ? "pt-6 mt-4 border-t border-slate-100 flex items-center justify-end gap-3"
+                        : "p-6 bg-white border-t border-slate-100 flex items-center justify-end gap-3 sticky bottom-0"
+                }
+            >
                 <button 
                     type="button" onClick={onClose}
                     className="px-6 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors"

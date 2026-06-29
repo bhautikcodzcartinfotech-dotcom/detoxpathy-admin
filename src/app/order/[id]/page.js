@@ -435,9 +435,7 @@ const OrderDetailsPage = () => {
 
     const orderIdShort = `ORD-${order._id.slice(-6).toUpperCase()}`;
     const orderDate = new Date(order.createdAt).toLocaleDateString("en-GB");
-
-
-
+    const awbCode = (order.trackingId || orderIdShort).trim();
     let itemsHtml = "";
     let itemsCount = 0;
     if (order.plans && order.plans.length > 0) {
@@ -528,9 +526,10 @@ const OrderDetailsPage = () => {
             margin-bottom: 4px;
             padding-bottom: 4px;
           }
-          .compact .barcode-placeholder {
-            width: 140px;
-            height: 45px;
+          .compact .barcode-svg {
+            width: 90%;
+            max-width: 200px;
+            height: 40px;
             margin: 0 auto 4px auto;
           }
           .compact .barcode-section {
@@ -558,9 +557,10 @@ const OrderDetailsPage = () => {
           .compact-large .courier-title {
             font-size: 14px;
           }
-          .compact-large .barcode-placeholder {
-            width: 120px;
-            height: 35px;
+          .compact-large .barcode-svg {
+            width: 90%;
+            max-width: 180px;
+            height: 32px;
             margin: 0 auto 2px auto;
           }
           .compact-large .barcode-section {
@@ -570,10 +570,6 @@ const OrderDetailsPage = () => {
           .compact-large .awb-text {
             font-size: 12px;
             margin-top: 2px;
-          }
-          .compact-large .blank-line {
-            width: 100px;
-            height: 12px;
           }
           .compact-large .to-section {
             margin-bottom: 4px;
@@ -613,11 +609,12 @@ const OrderDetailsPage = () => {
             border-bottom: 2px dashed #000;
             margin-bottom: 8px;
           }
-          .barcode-img {
-            max-width: 90%;
-            height: auto;
-            max-height: 55px;
-            object-fit: contain;
+          .barcode-svg {
+            width: 90%;
+            max-width: 280px;
+            height: 55px;
+            margin: 0 auto 6px auto;
+            display: block;
           }
           .awb-text {
             font-family: monospace;
@@ -625,20 +622,7 @@ const OrderDetailsPage = () => {
             font-weight: bold;
             margin-top: 4px;
             margin-bottom: 0;
-          }
-          .barcode-placeholder {
-            width: 160px;
-            height: 55px;
-            border: 1.5px dashed #000;
-            margin: 0 auto 8px auto;
-            border-radius: 4px;
-          }
-          .blank-line {
-            display: inline-block;
-            width: 130px;
-            margin-left: 4px;
-            vertical-align: bottom;
-            height: 15px;
+            letter-spacing: 0.5px;
           }
           .address-section {
             flex-grow: 1;
@@ -719,8 +703,8 @@ const OrderDetailsPage = () => {
           </div>
           
           <div class="barcode-section">
-            <div class="barcode-placeholder"></div>
-            <p class="awb-text">AWB: <span class="blank-line">&nbsp;</span></p>
+            <svg class="barcode-svg" id="shipping-barcode"></svg>
+            <p class="awb-text">AWB: ${order.trackingId || awbCode}</p>
           </div>
           
           <div class="address-section">
@@ -751,16 +735,26 @@ const OrderDetailsPage = () => {
           </div>
         </div>
         
+        <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"><\/script>
         <script>
           window.onload = function() {
+            try {
+              JsBarcode("#shipping-barcode", ${JSON.stringify(awbCode)}, {
+                format: "CODE128",
+                width: 1.6,
+                height: 48,
+                displayValue: false,
+                margin: 2
+              });
+            } catch (e) {}
             setTimeout(function() {
               window.print();
               setTimeout(function() {
                 window.close();
               }, 500);
-            }, 500);
+            }, 400);
           };
-        </script>
+        <\/script>
       </body>
       </html>
     `;
