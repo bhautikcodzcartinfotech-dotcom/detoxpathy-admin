@@ -61,6 +61,7 @@ import {
   getDoc,
   getDocs,
   updateDoc,
+  setDoc,
   onSnapshot,
   query,
   where,
@@ -71,6 +72,8 @@ import {
   getCommands,
   API_BASE,
   getAllBranches,
+  getAllUsers,
+  getUsersByBranch,
   sendNotificationToUserApi,
 } from "../../../Api/AllApi";
 
@@ -128,6 +131,8 @@ export default function ChatPage() {
   const [audioPreviewUrl, setAudioPreviewUrl] = useState(null);
   const [lightboxUrl, setLightboxUrl] = useState(null);
   const [users, setUsers] = useState([]);
+  const [allUsersFromApi, setAllUsersFromApi] = useState([]);
+  const [chatMetaByUserId, setChatMetaByUserId] = useState({});
   const [loading, setLoading] = useState(true);
   const [chatId, setChatId] = useState(null);
   const {
@@ -367,131 +372,201 @@ export default function ChatPage() {
     fetchCommands();
   }, []);
 
-  // Load users from chats collection with real-time listener
+  // Load all users from MongoDB (users collection)
   useEffect(() => {
-    if (!db) {
-      console.error("Firebase not initialized - db is null");
-      setLoading(false);
-      return;
+    const loadAllUsers = async () => {
+      try {
+        setLoading(true);
+        let userData = [];
+        if (role === "subadmin" && Array.isArray(branches) && branches.length) {
+          const chunks = await Promise.all(
+            branches.map((id) => getUsersByBranch(id).catch(() => []))
+          );
+          userData = chunks.flat().filter((u) => !u.isDeleted);
+        } else {
+          const data = await getAllUsers();
+          userData = (Array.isArray(data) ? data : []).filter((u) => !u.isDeleted);
+        }
+        setAllUsersFromApi(userData);
+      } catch (e) {
+        console.error("Failed to load users:", e);
+        toast.error("Failed to load users");
+      } finally {
+        setLoading(false);
+      }
+    };
+    loadAllUsers();
+  }, [role, branches]);
+
+  const mapApiUserToListItem = (apiUser, chatMeta = null) => {
+    const branchId = apiUser.branch?._id || apiUser.branch || null;
+    const fullName =
+      `${apiUser.name || ""} ${apiUser.surname || ""}`.trim() || "User";
+    const customerCareId = chatMeta?.customerCareId || branchId || null;
+
+    return {
+      id: apiUser._id,
+      name: fullName,
+      role: chatMeta?.role || "User",
+      email:
+        chatMeta?.email ||
+        (apiUser.mobileNumber
+          ? `${apiUser.mobilePrefix || ""}${apiUser.mobileNumber}`
+          : ""),
+      lastMessage: chatMeta?.lastMessage || null,
+      updatedAt: chatMeta?.updatedAt || new Date(apiUser.createdAt).getTime() || 0,
+      branchId,
+      customerCareId,
+      unreadCount: chatMeta?.unreadCount || 0,
+      deletedByDoctor: chatMeta?.deletedByDoctor || false,
+      deletedByDoctorAt: chatMeta?.deletedByDoctorAt || null,
+      branchName:
+        branchIdToName[customerCareId] ||
+        branchIdToName[branchId] ||
+        apiUser.branch?.name ||
+        "",
+    };
+  };
+
+  const mergeUsersWithChats = (apiUsers, chatMap) => {
+    let usersList = apiUsers.map((apiUser) => {
+      const chatMeta = chatMap[apiUser._id] || null;
+      return mapApiUserToListItem(apiUser, chatMeta);
+    });
+
+    if (role === "subadmin" && Array.isArray(branches) && branches.length) {
+      const branchSet = new Set(branches.map(String));
+      usersList = usersList.filter((u) => {
+        const userBranch = u.customerCareId || u.branchId;
+        return userBranch && branchSet.has(String(userBranch));
+      });
     }
 
-    setLoading(true);
-    console.log("Setting up real-time listener for users...");
+    usersList.sort((a, b) => {
+      if ((b.unreadCount || 0) !== (a.unreadCount || 0)) {
+        return (b.unreadCount || 0) - (a.unreadCount || 0);
+      }
+      return (b.updatedAt || 0) - (a.updatedAt || 0);
+    });
 
-    // Use real-time listener for chats collection
+    return usersList;
+  };
+
+  // Real-time chat metadata for unread counts and last messages
+  useEffect(() => {
+    if (!db) return;
+
     const chatsRef = collection(db, "chats");
     const unsubscribe = onSnapshot(
       chatsRef,
       async (chatsSnapshot) => {
         try {
-          console.log("Chats updated, processing...");
-          const chatDocs = chatsSnapshot.docs;
-          console.log("Found chat documents:", chatDocs.length);
+          const chatMap = {};
 
-          const userMap = new Map();
-
-          // Process all chats in parallel for better performance
-          const chatPromises = chatDocs.map(async (chatDoc) => {
+          const chatPromises = chatsSnapshot.docs.map(async (chatDoc) => {
             const chatData = chatDoc.data();
+            if (!chatData.userId) return null;
 
-            // Skip invalid entries
-            if (!chatData.userId || !chatData.userName) return null;
-
-            // Fetch messages for unread count in parallel
             const messagesSnap = await getDocs(
               collection(db, "chats", chatDoc.id, "messages")
             );
             let unreadCount = 0;
             messagesSnap.forEach((msgDoc) => {
               const msg = msgDoc.data();
-              // Count unread messages from users (not from customer care)
               if (msg.senderId !== chatData.customerCareId && !msg.read) {
                 unreadCount++;
               }
             });
 
             return {
-              id: chatData.userId,
-              name: chatData.userName,
-              role: chatData.userArea || "User",
-              email: chatData.userEmail || "",
-              lastMessage: chatData.lastMessage,
-              updatedAt: chatData.updatedAt,
-              branchId: chatData.branchId || null,
-              customerCareId: chatData.customerCareId || null,
-              unreadCount,
-              deletedByDoctor: chatData.deletedByDoctor || false,
-              deletedByDoctorAt: chatData.deletedByDoctorAt || null,
+              userId: chatData.userId,
+              meta: {
+                role: chatData.userArea || "User",
+                email: chatData.userEmail || "",
+                lastMessage: chatData.lastMessage,
+                updatedAt: chatData.updatedAt,
+                branchId: chatData.branchId || null,
+                customerCareId: chatData.customerCareId || null,
+                unreadCount,
+                deletedByDoctor: chatData.deletedByDoctor || false,
+                deletedByDoctorAt: chatData.deletedByDoctorAt || null,
+              },
             };
           });
 
-          // Wait for all chat processing to complete
-          const userResults = await Promise.all(chatPromises);
-
-          // Filter out null results and add to map
-          userResults.forEach((user) => {
-            if (user) {
-              userMap.set(user.id, user);
+          const results = await Promise.all(chatPromises);
+          results.forEach((result) => {
+            if (!result) return;
+            const existing = chatMap[result.userId];
+            if (
+              !existing ||
+              (result.meta.updatedAt || 0) > (existing.updatedAt || 0)
+            ) {
+              chatMap[result.userId] = result.meta;
             }
           });
 
-          let usersList = Array.from(userMap.values());
-          console.log("All users loaded:", usersList.length);
-
-          // Filter by customerCareId for subadmins - only show users from their assigned branches
-          if (
-            role === "subadmin" &&
-            Array.isArray(branches) &&
-            branches.length
-          ) {
-            console.log("Filtering for subadmin with branches:", branches);
-            usersList = usersList.filter((u) => {
-              // For subadmin, check if customerCareId matches any of their branches
-              if (!u.customerCareId) return false;
-              // Only show users whose customerCareId is in the subadmin's branches
-              return branches.includes(u.customerCareId);
-            });
-            console.log("Filtered users for subadmin:", usersList.length);
-          }
-          // Admin sees all users - filtering by dropdown will apply later
-
-          // Sort: unread messages first, then recent
-          usersList.sort((a, b) => {
-            if ((b.unreadCount || 0) !== (a.unreadCount || 0)) {
-              return (b.unreadCount || 0) - (a.unreadCount || 0);
-            }
-            return (b.updatedAt || 0) - (a.updatedAt || 0);
-          });
-
-          // Attach branch name (prefer customerCareId, fallback to branchId)
-          const usersWithBranchNames = usersList.map((u) => ({
-            ...u,
-            branchName:
-              branchIdToName[u?.customerCareId] ||
-              branchIdToName[u?.branchId] ||
-              "",
-          }));
-
-          setUsers(usersWithBranchNames);
-          console.log("Users updated in real-time:", usersList.length);
-          setLoading(false);
+          setChatMetaByUserId(chatMap);
         } catch (e) {
-          console.error("Error processing real-time update:", e);
-          setLoading(false);
+          console.error("Error processing chat metadata:", e);
         }
       },
       (error) => {
-        console.error("Real-time listener error:", error);
-        setLoading(false);
+        console.error("Real-time chat listener error:", error);
       }
     );
 
-    // Cleanup listener on unmount
-    return () => {
-      console.log("Cleaning up real-time listener");
-      unsubscribe();
-    };
-  }, [role, branches, branchIdToName]); // Recompute when branch map updates
+    return () => unsubscribe();
+  }, [db]);
+
+  // Merge API users with chat metadata
+  useEffect(() => {
+    if (!allUsersFromApi.length && Object.keys(chatMetaByUserId).length === 0) {
+      setUsers([]);
+      return;
+    }
+    const merged = mergeUsersWithChats(allUsersFromApi, chatMetaByUserId);
+    setUsers(merged);
+  }, [allUsersFromApi, chatMetaByUserId, branchIdToName, role, branches]);
+
+  const ensureChatExists = async (user) => {
+    const branchId = user.customerCareId || user.branchId || "admin";
+    const newChatId = `${user.id}_${branchId}`;
+
+    const chatRef = doc(db, "chats", newChatId);
+    const chatSnap = await getDoc(chatRef);
+
+    if (!chatSnap.exists()) {
+      await setDoc(chatRef, {
+        userId: user.id,
+        userName: user.name,
+        userEmail: user.email || "",
+        userArea: user.role || "User",
+        branchId: user.branchId || branchId,
+        customerCareId: branchId,
+        lastMessage: null,
+        updatedAt: Date.now(),
+        deletedByDoctor: false,
+        deletedByDoctorAt: null,
+      });
+    }
+
+    return newChatId;
+  };
+
+  const handleSelectUser = async (user) => {
+    if (isUploading) return;
+    if (selectedUser?.id === user.id) return;
+
+    try {
+      const newChatId = await ensureChatExists(user);
+      setSelectedUser(user);
+      setChatId(newChatId);
+    } catch (err) {
+      console.error("Failed to open chat:", err);
+      toast.error("Failed to open chat");
+    }
+  };
 
   // Separate effect to handle user selection when chatId changes (without refreshing users)
   useEffect(() => {
@@ -671,7 +746,9 @@ export default function ChatPage() {
     if (!newMessage.trim() || !selectedUser) return;
     const nowMs = Date.now();
     const messageId = `${nowMs}${Math.floor(Math.random() * 1000)}`;
-    const chatRef = doc(db, "chats", chatId);
+    const activeChatId = chatId || (await ensureChatExists(selectedUser));
+    if (!chatId) setChatId(activeChatId);
+    const chatRef = doc(db, "chats", activeChatId);
 
     // Get the current chat data to get customerCareId
     const chatDoc = await getDoc(chatRef);
@@ -680,7 +757,7 @@ export default function ChatPage() {
 
     const msg = {
       id: messageId,
-      chatId,
+      chatId: activeChatId,
       senderId: customerCareId,
       senderName: "You",
       type: "text",
@@ -1056,22 +1133,7 @@ export default function ChatPage() {
                   .map((user) => (
                     <div
                       key={user.id}
-                      onClick={() => {
-                        if (isUploading) {
-                          // Prevent chat switching during upload without a toast message
-                          return;
-                        }
-                        // Only update if different user to prevent unnecessary re-renders
-                        if (selectedUser?.id === user.id) return;
-
-                        console.log("User clicked:", user.name);
-                        setSelectedUser(user);
-                        // Generate chat ID using user's customerCareId
-                        const newChatId = `${user.id}_${user.customerCareId || "admin"
-                          }`;
-                        console.log("Setting chat ID:", newChatId);
-                        setChatId(newChatId);
-                      }}
+                      onClick={() => handleSelectUser(user)}
                       className={`group flex items-center gap-5 p-5 cursor-pointer rounded-2xl mx-2 transition-all duration-300 hover:scale-[1.02] ${selectedUser?.id === user.id
                           ? "bg-gradient-to-r from-yellow-400 to-amber-300 text-black shadow-xl transform scale-[1.02]"
                           : "bg-white/60 hover:bg-white/80 hover:shadow-lg"
@@ -1142,7 +1204,7 @@ export default function ChatPage() {
                               ? "📷 Image"
                               : user.lastMessage?.type === "video"
                                 ? "🎥 Video"
-                                : user.lastMessage?.text || "No messages"}
+                                : user.lastMessage?.text || "Start a conversation"}
                         </p>
                       </div>
 
