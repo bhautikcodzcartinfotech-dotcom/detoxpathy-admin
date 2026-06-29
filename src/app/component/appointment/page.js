@@ -256,9 +256,9 @@ const AppointmentPage = () => {
     }
 
     return {
-      isLiveWindow: now >= start && now <= end,
+      isLiveWindow: now >= start && now < end,
       isBeforeWindow: now < start,
-      isAfterWindow: now > end,
+      isAfterWindow: now >= end,
     };
   };
 
@@ -1044,31 +1044,7 @@ const AppointmentPage = () => {
       );
       updateAppointmentCallState(appointment._id, session.call || { status: "ongoing" });
 
-      // Fetch existing suggestion
-      try {
-        const resp = await getSuggestedProgram(appointment.userId?._id);
-        const suggestion = resp?.suggestion;
-        setActiveSuggestion(suggestion);
-        if (suggestion) {
-          if (suggestion.plans) {
-            setSelectedPlanId(suggestion.plans?._id || suggestion.plans);
-          } else {
-            setSelectedPlanId("");
-          }
-          if (suggestion.products) {
-            setSelectedProductIds(suggestion.products.map(p => p?._id || p));
-          } else {
-            setSelectedProductIds([]);
-          }
-        } else {
-          setSelectedPlanId("");
-          setSelectedProductIds([]);
-        }
-      } catch (e) {
-        console.error("Error fetching suggestion:", e);
-        setSelectedPlanId("");
-        setActiveSuggestion(null);
-      }
+      await loadExistingSuggestion(appointment.userId?._id);
 
       toast.success("Video call connected");
       if (typeof window !== "undefined") {
@@ -1117,6 +1093,7 @@ const AppointmentPage = () => {
       setShowConsultationPanel(false);
       setUserOverviewData(null);
       setUserVideoAnswers([]);
+      resetSuggestionState();
       toast.success("Video call ended");
       fetchAppointments(selectedBranchId, filterDate, filterStatus, filterType);
       if (typeof window !== "undefined" && window.history.state?.modal === "online") {
@@ -1265,7 +1242,58 @@ const AppointmentPage = () => {
     }
   };
 
+  const resetSuggestionState = () => {
+    setSelectedPlanId("");
+    setSelectedProductIds([]);
+    setActiveSuggestion(null);
+    setShowPlanPicker(false);
+    setShowProductPicker(false);
+    setPlanSearchTerm("");
+    setProductSearchTerm("");
+  };
+
+  const applySuggestionFromResponse = (suggestion) => {
+    setActiveSuggestion(suggestion || null);
+    if (suggestion) {
+      if (suggestion.plans) {
+        setSelectedPlanId(suggestion.plans?._id || suggestion.plans);
+      } else {
+        setSelectedPlanId("");
+      }
+      if (suggestion.products) {
+        setSelectedProductIds(suggestion.products.map((p) => p?._id || p));
+      } else {
+        setSelectedProductIds([]);
+      }
+    } else {
+      setSelectedPlanId("");
+      setSelectedProductIds([]);
+    }
+  };
+
+  const loadExistingSuggestion = async (userId) => {
+    if (!userId) {
+      resetSuggestionState();
+      return;
+    }
+    try {
+      const resp = await getSuggestedProgram(userId);
+      applySuggestionFromResponse(resp?.suggestion);
+    } catch (e) {
+      console.error("Error fetching suggestion:", e);
+      resetSuggestionState();
+    }
+  };
+
   const handleSuggestProgram = async () => {
+    const targetUserId =
+      activeCallAppointment?.userId?._id || activeOfflineAppointment?.userId?._id;
+
+    if (!targetUserId) {
+      toast.error("No patient selected");
+      return;
+    }
+
     if (!selectedPlanId && selectedProductIds.length === 0) {
       toast.error("Please select a program or products to suggest");
       return;
@@ -1274,7 +1302,7 @@ const AppointmentPage = () => {
     try {
       setSuggesting(true);
       await suggestProgram({
-        userId: activeCallAppointment.userId?._id,
+        userId: targetUserId,
         planId: selectedPlanId,
         products: selectedProductIds,
       });
@@ -1424,6 +1452,7 @@ const AppointmentPage = () => {
       setOfflineUserOverview(overview);
       setOfflineVideoAnswers(videoAns || []);
       setSelectedProgressDay(overview?.user?.planCurrentDay || 1);
+      await loadExistingSuggestion(appointment.userId?._id);
       setActiveOfflineAppointment({ ...appointment, offlineSession: { started: true } });
       if (typeof window !== "undefined") {
         window.history.pushState({ modal: "offline" }, "");
@@ -1455,6 +1484,7 @@ const AppointmentPage = () => {
   const closeOfflineModal = () => {
     setActiveOfflineAppointment(null);
     setOfflineUserOverview(null);
+    resetSuggestionState();
     if (typeof window !== "undefined" && window.history.state?.modal === "offline") {
       window.history.back();
     }
@@ -1605,7 +1635,7 @@ const AppointmentPage = () => {
 
     const appointmentEndMinutes = (hours * 60) + minutes;
 
-    if (appointmentEndMinutes >= currentMinutes) {
+    if (appointmentEndMinutes > currentMinutes) {
       return 'upcoming';
     }
 
@@ -1681,6 +1711,131 @@ const AppointmentPage = () => {
   };
 
   const { min: bookingMinDate, max: bookingMaxDate } = getBookingBounds();
+
+  const renderPrescriptionSuggestion = () => (
+    <div className="flex flex-col gap-2 w-full">
+      <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 px-1">Prescription Suggestion</label>
+      <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
+        <div className="relative flex-1 w-full">
+          <div
+            onClick={() => { setShowPlanPicker(!showPlanPicker); setShowProductPicker(false); }}
+            className={`flex items-center justify-between gap-3 bg-slate-50 border p-3 rounded-2xl w-full cursor-pointer transition-all hover:bg-slate-100 ${selectedPlanId ? 'border-teal-200 bg-teal-50/20' : 'border-slate-200 shadow-sm'}`}
+          >
+            <div className="flex items-center gap-3 px-1 w-full min-w-0">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${selectedPlanId ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20' : 'bg-white border border-slate-100 text-slate-400'}`}>
+                <MdOutlineCategory size={20} />
+              </div>
+              <div className="flex flex-col flex-1 truncate">
+                <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Program</span>
+                <span className={`text-sm font-black truncate ${selectedPlanId ? 'text-teal-900' : 'text-slate-500'}`}>
+                  {selectedPlanId ? allPlans.find(p => p._id === selectedPlanId)?.name : 'Select Plan...'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <AnimatePresence>
+            {showPlanPicker && (
+              <>
+                <div className="fixed inset-0 z-[100]" onClick={() => setShowPlanPicker(false)} />
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                  className="absolute bottom-full left-0 right-0 mb-6 z-[101] max-h-[300px] overflow-y-auto bg-white rounded-[1rem] border border-slate-100 shadow-[0_30px_90px_rgba(0,0,0,0.15)] p-2 custom-scrollbar"
+                >
+                  <div className="p-2 sticky top-0 bg-white border-b border-slate-50 mb-1">
+                    <input
+                      type="text" placeholder="Search plans..." value={planSearchTerm} onChange={(e) => setPlanSearchTerm(e.target.value)}
+                      className="w-full p-2 bg-slate-50 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500/10"
+                    />
+                  </div>
+                  {allPlans.filter(p => p.name.toLowerCase().includes(planSearchTerm.toLowerCase())).map(plan => (
+                    <div
+                      key={plan._id} onClick={() => { setSelectedPlanId(plan._id); setShowPlanPicker(false); }}
+                      className={`p-3 rounded-xl cursor-pointer transition-all flex items-center justify-between mb-1 ${selectedPlanId === plan._id ? 'bg-teal-600 text-white' : 'hover:bg-slate-50 text-slate-700'}`}
+                    >
+                      <div className="flex flex-col">
+                        <span className="text-xs font-black">{plan.name}</span>
+                        <span className={`text-[9px] font-bold tracking-widest uppercase ${selectedPlanId === plan._id ? 'text-teal-100' : 'text-teal-600'}`}>{currency}{plan.price} • {plan.days} Days</span>
+                      </div>
+                      {selectedPlanId === plan._id && <CheckCircle size={14} />}
+                    </div>
+                  ))}
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <div className="relative flex-1 w-full">
+          <div
+            onClick={() => { setShowProductPicker(!showProductPicker); setShowPlanPicker(false); }}
+            className={`flex items-center justify-between gap-3 bg-slate-50 border p-3 rounded-2xl w-full cursor-pointer transition-all hover:bg-slate-100 ${selectedProductIds.length > 0 ? 'border-teal-200 bg-teal-50/20' : 'border-slate-200 shadow-sm'}`}
+          >
+            <div className="flex items-center gap-3 px-1 w-full min-w-0">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${selectedProductIds.length > 0 ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20' : 'bg-white border border-slate-100 text-slate-400'}`}>
+                <LayoutGrid size={20} />
+              </div>
+              <div className="flex flex-col flex-1 truncate">
+                <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Products</span>
+                <span className={`text-sm font-black truncate ${selectedProductIds.length > 0 ? 'text-teal-900' : 'text-slate-500'}`}>
+                  {selectedProductIds.length > 0 ? `${selectedProductIds.length} Selected` : 'Select Products...'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <AnimatePresence>
+            {showProductPicker && (
+              <>
+                <div className="fixed inset-0 z-[100]" onClick={() => setShowProductPicker(false)} />
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                  className="absolute bottom-full left-0 right-0 mb-6 z-[101] max-h-[300px] overflow-y-auto bg-white rounded-[1rem] border border-slate-100 shadow-[0_30px_90px_rgba(0,0,0,0.15)] p-2 custom-scrollbar"
+                >
+                  <div className="p-2 sticky top-0 bg-white border-b border-slate-50 mb-1">
+                    <input
+                      type="text" placeholder="Search products..." value={productSearchTerm} onChange={(e) => setProductSearchTerm(e.target.value)}
+                      className="w-full p-2 bg-slate-50 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500/10"
+                    />
+                  </div>
+                  {allProducts.filter(p => p.name.toLowerCase().includes(productSearchTerm.toLowerCase())).map(product => {
+                    const isSelected = selectedProductIds.includes(product._id);
+                    return (
+                      <div
+                        key={product._id}
+                        onClick={() => {
+                          setSelectedProductIds(prev =>
+                            isSelected ? prev.filter(id => id !== product._id) : [...prev, product._id]
+                          );
+                        }}
+                        className={`p-3 rounded-xl cursor-pointer transition-all flex items-center justify-between mb-1 ${isSelected ? 'bg-teal-600 text-white' : 'hover:bg-slate-50 text-slate-700'}`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-lg bg-white border border-slate-100 overflow-hidden shrink-0">
+                            <img src={`${API_HOST}/${product.image}`} alt="" className="w-full h-full object-cover" onError={(e) => e.target.src = "/image/placeholder.avif"} />
+                          </div>
+                          <span className="text-xs font-black">{product.name}</span>
+                        </div>
+                        {isSelected && <CheckCircle size={14} />}
+                      </div>
+                    );
+                  })}
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+        </div>
+
+        <button
+          onClick={(e) => { e.stopPropagation(); handleSuggestProgram(); }}
+          disabled={suggesting}
+          className="h-12 w-full sm:w-auto px-8 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-teal-100 transition-all disabled:opacity-50 active:scale-95 whitespace-nowrap"
+        >
+          {suggesting ? "Wait..." : "Suggest"}
+        </button>
+      </div>
+    </div>
+  );
 
   return (
     <RoleGuard allow={["Admin", "subadmin"]} permission="show appointments page">
@@ -2435,6 +2590,12 @@ const AppointmentPage = () => {
                   </div>
                 )}
               </div>
+
+              {offlineUserOverview && (
+                <div className="shrink-0 border-t border-slate-100 bg-white/95 backdrop-blur-md px-4 sm:px-8 py-4 sm:py-6">
+                  {renderPrescriptionSuggestion()}
+                </div>
+              )}
             </motion.div>
           </div>
         )}
@@ -2912,130 +3073,7 @@ const AppointmentPage = () => {
                 {/* Action Footer (User's style) */}
                 <div className="lg:relative z-20 border-t border-slate-100 bg-white/80 lg:bg-white backdrop-blur-md lg:backdrop-blur-none px-4 sm:px-10 py-4 sm:py-8 transition-all">
                   <div className="flex flex-col lg:flex-row items-center gap-4 sm:gap-8 justify-between flex-wrap">
-                    <div className="flex flex-col gap-2 w-full">
-                      <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 px-1">Prescription Suggestion</label>
-                      <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
-                        {/* Plan Picker */}
-                        <div className="relative flex-1 w-full">
-                          <div
-                            onClick={() => { setShowPlanPicker(!showPlanPicker); setShowProductPicker(false); }}
-                            className={`flex items-center justify-between gap-3 bg-slate-50 border p-3 rounded-2xl w-full cursor-pointer transition-all hover:bg-slate-100 ${selectedPlanId ? 'border-teal-200 bg-teal-50/20' : 'border-slate-200 shadow-sm'}`}
-                          >
-                            <div className="flex items-center gap-3 px-1 w-full min-w-0">
-                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${selectedPlanId ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20' : 'bg-white border border-slate-100 text-slate-400'}`}>
-                                <MdOutlineCategory size={20} />
-                              </div>
-                              <div className="flex flex-col flex-1 truncate">
-                                <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Program</span>
-                                <span className={`text-sm font-black truncate ${selectedPlanId ? 'text-teal-900' : 'text-slate-500'}`}>
-                                  {selectedPlanId ? allPlans.find(p => p._id === selectedPlanId)?.name : 'Select Plan...'}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <AnimatePresence>
-                            {showPlanPicker && (
-                              <>
-                                <div className="fixed inset-0 z-[100]" onClick={() => setShowPlanPicker(false)} />
-                                <motion.div
-                                  initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                                  className="absolute bottom-full left-0 right-0 mb-6 z-[101] max-h-[300px] overflow-y-auto bg-white rounded-[1rem] border border-slate-100 shadow-[0_30px_90px_rgba(0,0,0,0.15)] p-2 custom-scrollbar"
-                                >
-                                  <div className="p-2 sticky top-0 bg-white border-b border-slate-50 mb-1">
-                                    <input
-                                      type="text" placeholder="Search plans..." value={planSearchTerm} onChange={(e) => setPlanSearchTerm(e.target.value)}
-                                      className="w-full p-2 bg-slate-50 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500/10"
-                                    />
-                                  </div>
-                                  {allPlans.filter(p => p.name.toLowerCase().includes(planSearchTerm.toLowerCase())).map(plan => (
-                                    <div
-                                      key={plan._id} onClick={() => { setSelectedPlanId(plan._id); setShowPlanPicker(false); }}
-                                      className={`p-3 rounded-xl cursor-pointer transition-all flex items-center justify-between mb-1 ${selectedPlanId === plan._id ? 'bg-teal-600 text-white' : 'hover:bg-slate-50 text-slate-700'}`}
-                                    >
-                                      <div className="flex flex-col">
-                                        <span className="text-xs font-black">{plan.name}</span>
-                                        <span className={`text-[9px] font-bold tracking-widest uppercase ${selectedPlanId === plan._id ? 'text-teal-100' : 'text-teal-600'}`}>{currency}{plan.price} • {plan.days} Days</span>
-                                      </div>
-                                      {selectedPlanId === plan._id && <CheckCircle size={14} />}
-                                    </div>
-                                  ))}
-                                </motion.div>
-                              </>
-                            )}
-                          </AnimatePresence>
-                        </div>
-
-                        {/* Product Picker */}
-                        <div className="relative flex-1 w-full">
-                          <div
-                            onClick={() => { setShowProductPicker(!showProductPicker); setShowPlanPicker(false); }}
-                            className={`flex items-center justify-between gap-3 bg-slate-50 border p-3 rounded-2xl w-full cursor-pointer transition-all hover:bg-slate-100 ${selectedProductIds.length > 0 ? 'border-teal-200 bg-teal-50/20' : 'border-slate-200 shadow-sm'}`}
-                          >
-                            <div className="flex items-center gap-3 px-1 w-full min-w-0">
-                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${selectedProductIds.length > 0 ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20' : 'bg-white border border-slate-100 text-slate-400'}`}>
-                                <LayoutGrid size={20} />
-                              </div>
-                              <div className="flex flex-col flex-1 truncate">
-                                <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Products</span>
-                                <span className={`text-sm font-black truncate ${selectedProductIds.length > 0 ? 'text-teal-900' : 'text-slate-500'}`}>
-                                  {selectedProductIds.length > 0 ? `${selectedProductIds.length} Selected` : 'Select Products...'}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
-
-                          <AnimatePresence>
-                            {showProductPicker && (
-                              <>
-                                <div className="fixed inset-0 z-[100]" onClick={() => setShowProductPicker(false)} />
-                                <motion.div
-                                  initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                                  className="absolute bottom-full left-0 right-0 mb-6 z-[101] max-h-[300px] overflow-y-auto bg-white rounded-[1rem] border border-slate-100 shadow-[0_30px_90px_rgba(0,0,0,0.15)] p-2 custom-scrollbar"
-                                >
-                                  <div className="p-2 sticky top-0 bg-white border-b border-slate-50 mb-1">
-                                    <input
-                                      type="text" placeholder="Search products..." value={productSearchTerm} onChange={(e) => setProductSearchTerm(e.target.value)}
-                                      className="w-full p-2 bg-slate-50 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500/10"
-                                    />
-                                  </div>
-                                  {allProducts.filter(p => p.name.toLowerCase().includes(productSearchTerm.toLowerCase())).map(product => {
-                                    const isSelected = selectedProductIds.includes(product._id);
-                                    return (
-                                      <div
-                                        key={product._id}
-                                        onClick={() => {
-                                          setSelectedProductIds(prev =>
-                                            isSelected ? prev.filter(id => id !== product._id) : [...prev, product._id]
-                                          );
-                                        }}
-                                        className={`p-3 rounded-xl cursor-pointer transition-all flex items-center justify-between mb-1 ${isSelected ? 'bg-teal-600 text-white' : 'hover:bg-slate-50 text-slate-700'}`}
-                                      >
-                                        <div className="flex items-center gap-3">
-                                          <div className="w-8 h-8 rounded-lg bg-white border border-slate-100 overflow-hidden shrink-0">
-                                            <img src={`${API_HOST}/${product.image}`} alt="" className="w-full h-full object-cover" onError={(e) => e.target.src = "/image/placeholder.avif"} />
-                                          </div>
-                                          <span className="text-xs font-black">{product.name}</span>
-                                        </div>
-                                        {isSelected && <CheckCircle size={14} />}
-                                      </div>
-                                    );
-                                  })}
-                                </motion.div>
-                              </>
-                            )}
-                          </AnimatePresence>
-                        </div>
-
-                        <button
-                          onClick={(e) => { e.stopPropagation(); handleSuggestProgram(); }}
-                          disabled={suggesting}
-                          className="h-12 w-full sm:w-auto px-8 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-teal-100 transition-all disabled:opacity-50 active:scale-95 whitespace-nowrap"
-                        >
-                          {suggesting ? "Wait..." : "Suggest"}
-                        </button>
-                      </div>
-                    </div>
+                    {renderPrescriptionSuggestion()}
 
                     <button
                       onClick={() => handleCutCall(activeCallAppointment)}
