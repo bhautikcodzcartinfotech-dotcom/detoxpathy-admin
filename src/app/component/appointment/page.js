@@ -264,9 +264,24 @@ const AppointmentPage = () => {
 
   const waitForPaint = () =>
     new Promise((resolve) => {
-      // Give React enough time to flush state and attach refs
-      setTimeout(resolve, 150);
+      requestAnimationFrame(() => {
+        requestAnimationFrame(resolve);
+      });
     });
+
+  const waitForVideoRefs = async (maxMs = 5000) => {
+    const step = 50;
+    const maxAttempts = Math.ceil(maxMs / step);
+
+    for (let i = 0; i < maxAttempts; i++) {
+      if (localVideoRef.current && remoteVideoGridRef.current) {
+        return true;
+      }
+      await new Promise((resolve) => setTimeout(resolve, step));
+    }
+
+    return Boolean(localVideoRef.current && remoteVideoGridRef.current);
+  };
 
   const updateAppointmentCallState = (appointmentId, nextCallState) => {
     setAppointments((currentAppointments) =>
@@ -339,6 +354,130 @@ const AppointmentPage = () => {
 
     remoteVideoGridRef.current.appendChild(tile);
     return body;
+  };
+
+  const waitForRemoteTile = async (uid, maxMs = 3000) => {
+    const step = 50;
+    const maxAttempts = Math.ceil(maxMs / step);
+
+    for (let i = 0; i < maxAttempts; i++) {
+      const body = ensureRemoteTile(uid);
+      if (body) {
+        return body;
+      }
+      await new Promise((resolve) => setTimeout(resolve, step));
+    }
+
+    return ensureRemoteTile(uid);
+  };
+
+  const applyRemoteVideoLayout = (user, remoteBody) => {
+    const tile = remoteVideoGridRef.current?.querySelector(
+      `[data-remote-uid="${String(user.uid)}"]`
+    );
+    if (!tile || !user.videoTrack) {
+      return "cover";
+    }
+
+    const videoEl = tile.querySelector("video");
+    let width = 0;
+    let height = 0;
+
+    if (videoEl?.videoWidth && videoEl?.videoHeight) {
+      width = videoEl.videoWidth;
+      height = videoEl.videoHeight;
+    } else {
+      const mediaStreamTrack = user.videoTrack.getMediaStreamTrack?.();
+      const settings = mediaStreamTrack?.getSettings?.();
+      width = settings?.width || 0;
+      height = settings?.height || 0;
+    }
+
+    if (width <= 0 || height <= 0) {
+      return "cover";
+    }
+
+    const isPortrait = height > width;
+    tile.className = isPortrait
+      ? "relative h-full max-h-[80vh] max-w-[340px] mx-auto aspect-[9/16] overflow-hidden rounded-[2.5rem] bg-slate-900 border-[6px] border-slate-800 shadow-2xl flex items-center justify-center"
+      : "relative h-full w-full aspect-video overflow-hidden rounded-2xl sm:rounded-[2rem] bg-slate-900 border border-white/5 shadow-2xl";
+
+    return isPortrait ? "contain" : "cover";
+  };
+
+  const playRemoteVideoTrack = async (user) => {
+    if (!user?.videoTrack) {
+      return false;
+    }
+
+    const remoteBody = await waitForRemoteTile(user.uid);
+    if (!remoteBody) {
+      console.warn("[AGORA] remote video container not ready for uid:", user.uid);
+      return false;
+    }
+
+    const fit = applyRemoteVideoLayout(user, remoteBody) || "cover";
+    user.videoTrack.play(remoteBody, { fit });
+
+    let lastFit = fit;
+    let checks = 0;
+    const checkInterval = setInterval(() => {
+      checks += 1;
+      const nextFit = applyRemoteVideoLayout(user, remoteBody);
+      if (nextFit && nextFit !== lastFit) {
+        lastFit = nextFit;
+        user.videoTrack.play(remoteBody, { fit: nextFit });
+      }
+      if (checks >= 15) {
+        clearInterval(checkInterval);
+      }
+    }, 400);
+
+    return true;
+  };
+
+  const subscribeAndPlayRemoteMedia = async (client, user, mediaType) => {
+    const alreadySubscribed =
+      (mediaType === "video" && user.videoTrack) ||
+      (mediaType === "audio" && user.audioTrack);
+
+    if (!alreadySubscribed) {
+      await client.subscribe(user, mediaType);
+    }
+
+    remoteUserRef.current = user;
+
+    if (mediaType === "video") {
+      try {
+        client.setRemoteVideoStreamType(user.uid, 0);
+      } catch (streamTypeError) {
+        console.warn("[AGORA] setRemoteVideoStreamType failed:", streamTypeError);
+      }
+      await playRemoteVideoTrack(user);
+    } else if (mediaType === "audio" && user.audioTrack) {
+      user.audioTrack.play();
+    }
+
+    setRemoteParticipantCount(client.remoteUsers.length);
+  };
+
+  const syncExistingRemoteUsers = async (client) => {
+    for (const user of client.remoteUsers) {
+      if (user.hasVideo) {
+        try {
+          await subscribeAndPlayRemoteMedia(client, user, "video");
+        } catch (error) {
+          console.error("[AGORA] failed to sync remote video for uid:", user.uid, error);
+        }
+      }
+      if (user.hasAudio) {
+        try {
+          await subscribeAndPlayRemoteMedia(client, user, "audio");
+        } catch (error) {
+          console.error("[AGORA] failed to sync remote audio for uid:", user.uid, error);
+        }
+      }
+    }
   };
 
   const ensureAgoraSdk = async () => {
@@ -825,6 +964,10 @@ const AppointmentPage = () => {
       setActiveCallAppointment(appointment);
       setCallSession(null);
       await waitForPaint();
+      const refsReady = await waitForVideoRefs();
+      if (!refsReady) {
+        throw new Error("Video call UI failed to load. Please try again.");
+      }
 
       const AgoraRTC = await ensureAgoraSdk();
 
@@ -845,88 +988,16 @@ const AppointmentPage = () => {
 
       await cleanupAgoraSession();
 
-      const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+      // H.264 is required for reliable web ↔ mobile (Flutter/native) interoperability
+      const client = AgoraRTC.createClient({ mode: "rtc", codec: "h264" });
       agoraSessionRef.current.client = client;
 
-      // Enhanced user-published handler with logging
       client.on("user-published", async (user, mediaType) => {
-
         try {
-          await client.subscribe(user, mediaType);
-          remoteUserRef.current = user;
-
-          if (mediaType === "video") {
-            // Explicitly request high-quality stream for the remote user
-            client.setRemoteVideoStreamType(user.uid, 0);
-
-            const remoteBody = ensureRemoteTile(user.uid);
-            if (remoteBody) {
-              user.videoTrack.play(remoteBody, { fit: "cover" });
-
-              // Dynamic orientation/device detection (mobile portrait vs laptop landscape)
-              const updateLayoutByOrientation = () => {
-                try {
-                  const tile = remoteVideoGridRef.current?.querySelector(
-                    `[data-remote-uid="${String(user.uid)}"]`
-                  );
-                  if (!tile) return;
-
-                  // Find the nested HTML video element (most reliable for real-time resolution)
-                  const videoEl = tile.querySelector("video");
-                  let width = 0;
-                  let height = 0;
-
-                  if (videoEl && videoEl.videoWidth && videoEl.videoHeight) {
-                    width = videoEl.videoWidth;
-                    height = videoEl.videoHeight;
-                  } else {
-                    // Fallback to track settings if video element hasn't loaded dimensions yet
-                    const mediaStreamTrack = user.videoTrack.getMediaStreamTrack();
-                    const settings = mediaStreamTrack?.getSettings();
-                    width = settings?.width || 0;
-                    height = settings?.height || 0;
-                  }
-
-                  if (width > 0 && height > 0) {
-                    const isPortrait = height > width;
-                    if (isPortrait) {
-                      // Styled as a vertical phone screen (e.g. mobile user)
-                      tile.className =
-                        "relative h-full max-h-[80vh] max-w-[340px] mx-auto aspect-[9/16] overflow-hidden rounded-[2.5rem] bg-slate-900 border-[6px] border-slate-800 shadow-2xl flex items-center justify-center";
-                      user.videoTrack.play(remoteBody, { fit: "contain" });
-                    } else {
-                      // Styled as standard laptop screen (landscape user)
-                      tile.className =
-                        "relative h-full w-full aspect-video overflow-hidden rounded-2xl sm:rounded-[2rem] bg-slate-900 border border-white/5 shadow-2xl";
-                      user.videoTrack.play(remoteBody, { fit: "cover" });
-                    }
-                  }
-                } catch (err) {
-                  console.error("Orientation detection failed:", err);
-                }
-              };
-
-              // Poll for 5 seconds (every 200ms) to detect dimensions once video starts playing
-              let checks = 0;
-              const checkInterval = setInterval(() => {
-                updateLayoutByOrientation();
-                checks++;
-                if (checks >= 25) {
-                  clearInterval(checkInterval);
-                }
-              }, 200);
-            } else {
-              console.warn('[AGORA] ⚠️ No remoteBody for uid:', user.uid);
-            }
-          } else if (mediaType === "audio") {
-            user.audioTrack.play();
-          }
+          await subscribeAndPlayRemoteMedia(client, user, mediaType);
         } catch (subError) {
-          console.error('[AGORA] ❌ Subscribe failed for uid:', user.uid, mediaType, subError);
+          console.error("[AGORA] Subscribe failed for uid:", user.uid, mediaType, subError);
         }
-
-        const remoteCount = client.remoteUsers.length;
-        setRemoteParticipantCount(remoteCount);
       });
 
       const handleRemoteUserExit = (user) => {
@@ -943,6 +1014,32 @@ const AppointmentPage = () => {
         setRemoteParticipantCount(client.remoteUsers.length);
       });
 
+      const session = await joinAppointmentCall(appointment._id);
+      console.log("[AGORA] Backend session:", {
+        appId: session?.appId ? `${session.appId.slice(0, 8)}...` : "MISSING",
+        channelName: session?.channelName,
+        uid: session?.uid,
+        token: session?.token ? "PRESENT" : "MISSING",
+        callStatus: session?.call?.status,
+      });
+
+      if (!session?.appId || !session?.channelName) {
+        const err = new Error("Missing Agora channel details from backend");
+        console.error("[AGORA] Backend missing session data:", session);
+        throw err;
+      }
+
+      const joinUid = session.uid != null ? Number(session.uid) : null;
+      await client.join(
+        session.appId,
+        session.channelName,
+        session.token || null,
+        joinUid
+      );
+
+      // Patient may already be in the channel — subscribe immediately after join
+      await syncExistingRemoteUsers(client);
+
       let localAudioTrack = null;
       let localVideoTrack = null;
 
@@ -955,7 +1052,7 @@ const AppointmentPage = () => {
 
       try {
         localVideoTrack = await AgoraRTC.createCameraVideoTrack({
-          encoderConfig: "720p_1", // Standard HD quality for faster startup
+          encoderConfig: "720p_1",
         });
       } catch (videoErr) {
         console.warn("Failed to create camera track config, trying default/auto resolution...", videoErr);
@@ -971,58 +1068,22 @@ const AppointmentPage = () => {
         await localVideoTrack.setOptimizationMode("detail");
       }
 
-      console.log('[AGORA]  Local tracks created:', {
+      console.log("[AGORA] Local tracks created:", {
         audio: !!localAudioTrack,
         video: !!localVideoTrack,
         videoEnabled: localVideoTrack?.enabled,
-        muted: localVideoTrack?.muted
+        muted: localVideoTrack?.muted,
       });
 
       agoraSessionRef.current.localAudioTrack = localAudioTrack;
       agoraSessionRef.current.localVideoTrack = localVideoTrack;
 
-      // Enhanced local video setup with better timing
-      if (!localVideoRef.current) {
-        console.warn('[AGORA] ⚠️ localVideoRef not ready, waiting...');
-        // Wait up to 1000ms for React to attach the ref
-        for (let i = 0; i < 20; i++) {
-          await new Promise((res) => setTimeout(res, 50));
-          if (localVideoRef.current) {
-            break;
-          }
-        }
+      if (localVideoTrack && localVideoRef.current) {
+        localVideoTrack.play(localVideoRef.current, { fit: "cover" });
+      } else if (localVideoTrack) {
+        console.error("[AGORA] localVideoRef missing after join");
+        toast.error("Failed to render camera container - check console");
       }
-
-      if (localVideoTrack) {
-        if (localVideoRef.current) {
-          localVideoTrack.play(localVideoRef.current, { fit: "cover" });
-        } else {
-          console.error('[AGORA] ❌ localVideoRef still missing after wait');
-          toast.error("Failed to render camera container - check console");
-        }
-      }
-
-      const session = await joinAppointmentCall(appointment._id);
-      console.log('[AGORA] Backend session:', {
-        appId: session?.appId ? `${session.appId.slice(0, 8)}...` : 'MISSING',
-        channelName: session?.channelName,
-        uid: session?.uid,
-        token: session?.token ? 'PRESENT' : 'MISSING',
-        callStatus: session?.call?.status
-      });
-
-      if (!session?.appId || !session?.channelName) {
-        const err = new Error("Missing Agora channel details from backend");
-        console.error('[AGORA] ❌ Backend missing session data:', session);
-        throw err;
-      }
-
-      await client.join(
-        session.appId,
-        session.channelName,
-        session.token || null,
-        session.uid || null
-      );
 
       const tracksToPublish = [];
       if (localAudioTrack) tracksToPublish.push(localAudioTrack);
@@ -1031,6 +1092,9 @@ const AppointmentPage = () => {
       if (tracksToPublish.length > 0) {
         await client.publish(tracksToPublish);
       }
+
+      // Catch any remote users who published while local tracks were being created
+      await syncExistingRemoteUsers(client);
 
       setCallSession(session);
       setCallConnected(true);
