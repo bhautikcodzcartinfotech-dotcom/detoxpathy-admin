@@ -104,7 +104,7 @@ const SearchComponent = ({
         </div>
 
         {/* Filter Dropdown */}
-        {filterOptions.length > 0 && (
+        {filterOptions.length > 0 && onFilterChange && (
           <div className="sm:w-48">
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               {filterLabel}

@@ -587,6 +587,7 @@ const UsersPage = () => {
                 ]
             }
             filterValue={filter}
+            onFilterChange={setFilter}
             filterLabel="Status"
             planOptions={role === "subadmin" ? [] : plans.map((p) => ({ label: p.name, value: p._id }))}
             selectedPlan={role === "subadmin" ? "" : selectedPlan}
