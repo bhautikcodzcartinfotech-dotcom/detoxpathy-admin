@@ -135,7 +135,8 @@ const SettingsPage = () => {
         shippingChargesGujaratMaharashtra: typeof settingsData.shippingChargesGujaratMaharashtra !== 'undefined' ? settingsData.shippingChargesGujaratMaharashtra : 0,
         minShippingChargesOther: typeof settingsData.minShippingChargesOther !== 'undefined' ? settingsData.minShippingChargesOther : 0,
         minShippingChargesGujaratMaharashtra: typeof settingsData.minShippingChargesGujaratMaharashtra !== 'undefined' ? settingsData.minShippingChargesGujaratMaharashtra : 0,
-        iosVersion: typeof settingsData.iosVersion !== 'undefined' ? settingsData.iosVersion : 1,
+        version: typeof settingsData.version !== 'undefined' ? String(settingsData.version) : '1.0.0',
+        iosVersion: typeof settingsData.iosVersion !== 'undefined' ? String(settingsData.iosVersion) : '1.0.0',
         advanceBookingDays: typeof settingsData.advanceBookingDays !== 'undefined' ? settingsData.advanceBookingDays : 30,
         bookingSlotDays: typeof settingsData.bookingSlotDays !== 'undefined' ? settingsData.bookingSlotDays : 0,
         appoinmentDescription: typeof settingsData.appoinmentDescription === 'object' && settingsData.appoinmentDescription !== null
@@ -576,12 +577,12 @@ const SettingsPage = () => {
                 value={formData.version || ""}
                 onChange={(e) => {
                   const value = e.target.value;
-                  if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                  if (value === "" || /^\d+(\.\d+){0,2}$/.test(value)) {
                     handleInputChange("version", value);
                   }
                 }}
                 className="w-full px-4 py-3 rounded-xl border border-amber-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
-                placeholder="1.0"
+                placeholder="1.0.0"
               />
             </div>
 
@@ -596,12 +597,12 @@ const SettingsPage = () => {
                 value={formData.iosVersion || ""}
                 onChange={(e) => {
                   const value = e.target.value;
-                  if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                  if (value === "" || /^\d+(\.\d+){0,2}$/.test(value)) {
                     handleInputChange("iosVersion", value);
                   }
                 }}
                 className="w-full px-4 py-3 rounded-xl border border-amber-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
-                placeholder="1.0"
+                placeholder="1.0.0"
               />
             </div>
 
