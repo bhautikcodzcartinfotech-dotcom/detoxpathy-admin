@@ -32,12 +32,14 @@ import { MdChevronLeft, MdChevronRight } from "react-icons/md";
 import { FiMessageCircle, FiLogOut } from "react-icons/fi";
 
 import { useAuth } from "../contexts/AuthContext";
+import { useSupportUnreadCount } from "../hooks/useSupportUnreadCount";
 import Image from "next/image";
 
 const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
   const pathname = usePathname();
   const { user, role, isImpersonating, exitImpersonation, permissions, branches } = useAuth();
   const [newAppointmentsCount, setNewAppointmentsCount] = useState(0);
+  const unreadSupportChatCount = useSupportUnreadCount(role, branches);
 
   useEffect(() => {
     const handleUpdate = () => {
@@ -391,8 +393,22 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                 href="/component/userchat"
                 className={linkClasses("/component/userchat")}
               >
-                <MdChat size={20} />
-                {!isCollapsed && <span>Supports</span>}
+                <div className="relative flex items-center">
+                  <MdChat size={20} />
+                  {isCollapsed && unreadSupportChatCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 w-2 h-2 bg-rose-500 rounded-full shadow-sm shadow-rose-500/30 animate-pulse" />
+                  )}
+                </div>
+                {!isCollapsed && (
+                  <div className="flex-1 flex items-center justify-between">
+                    <span>Supports</span>
+                    {unreadSupportChatCount > 0 && (
+                      <span className="px-1.5 py-0.5 text-[10px] font-black bg-rose-500 text-white rounded-full leading-none shadow-sm shadow-rose-500/30 animate-pulse">
+                        {unreadSupportChatCount > 99 ? "99+" : unreadSupportChatCount}
+                      </span>
+                    )}
+                  </div>
+                )}
               </Link>
             )}
             {(role === "Admin" || can("show emergency page")) && (
