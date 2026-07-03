@@ -2704,284 +2704,284 @@ const AppointmentPage = () => {
                             const user = userOverviewData.user;
                             return (
                               <>
-                          <div>
-                            <h4 className="text-2xl font-black text-slate-900 tracking-tight">User Profile</h4>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Scroll down for consultation form</p>
-                          </div>
-                          <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-                            <div className="flex items-center justify-between mb-6">
-                              <div className="flex flex-col sm:flex-row sm:items-center gap-5">
-                                <div className="w-16 h-16 rounded-full overflow-hidden bg-teal-500 text-white flex items-center justify-center font-bold text-2xl shrink-0 border-4 border-white shadow-lg">
-                                  {userOverviewData?.user?.image ? (
-                                    <img src={`${API_HOST}/${userOverviewData.user.image}`} className="w-full h-full object-cover" />
-                                  ) : (userOverviewData?.user?.name?.[0] || "U")}
+                                <div>
+                                  <h4 className="text-2xl font-black text-slate-900 tracking-tight">User Profile</h4>
+                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-1">Scroll down for consultation form</p>
                                 </div>
-                                <div className="flex flex-col">
-                                  <h5 className="text-xl font-black text-slate-900 leading-none mb-1">
-                                    {userOverviewData?.user?.name} {userOverviewData?.user?.surname}
-                                  </h5>
-                                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
-                                    USR-{userOverviewData?.user?._id?.slice(-6).toUpperCase()} • {userOverviewData?.user?.mobileNumber || "No Mobile"} • {userOverviewData?.user?.email || "No Email"}
-                                  </p>
+                                <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+                                  <div className="flex items-center justify-between mb-6">
+                                    <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+                                      <div className="w-16 h-16 rounded-full overflow-hidden bg-teal-500 text-white flex items-center justify-center font-bold text-2xl shrink-0 border-4 border-white shadow-lg">
+                                        {userOverviewData?.user?.image ? (
+                                          <img src={`${API_HOST}/${userOverviewData.user.image}`} className="w-full h-full object-cover" />
+                                        ) : (userOverviewData?.user?.name?.[0] || "U")}
+                                      </div>
+                                      <div className="flex flex-col">
+                                        <h5 className="text-xl font-black text-slate-900 leading-none mb-1">
+                                          {userOverviewData?.user?.name} {userOverviewData?.user?.surname}
+                                        </h5>
+                                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest flex items-center gap-2">
+                                          USR-{userOverviewData?.user?._id?.slice(-6).toUpperCase()} • {userOverviewData?.user?.mobileNumber || "No Mobile"} • {userOverviewData?.user?.email || "No Email"}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    {userOverviewData?.user?.planHoldDate && (
+                                      <div className="bg-amber-50 border border-amber-100 px-3 py-1 rounded-full">
+                                        <span className="text-[10px] font-black text-amber-600 uppercase">Hold — Day {userOverviewData?.user?.planCurrentDay || 1}</span>
+                                      </div>
+                                    )}
+                                  </div>
+
+                                  {/* Information Grid (Matches Screenshot) */}
+                                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-6 gap-x-4 border-t border-slate-50 pt-6">
+                                    <div>
+                                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Branch</p>
+                                      <p className="text-xs font-bold text-slate-700">{userOverviewData?.user?.branch?.name || "Global"}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Plan Configuration</p>
+                                      <p className="text-xs font-bold text-slate-700">{userOverviewData?.user?.plan?.name || "No Active Plan"} ({currency}{userOverviewData?.user?.plan?.price || 0})</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Gender & DOB</p>
+                                      <p className="text-xs font-bold text-slate-700">{userOverviewData?.user?.gender || "-"} • {userOverviewData?.user?.dob || "-"}</p>
+                                    </div>
+
+                                    <div>
+                                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Location</p>
+                                      <p className="text-xs font-bold text-slate-700 truncate" title={`${userOverviewData?.user?.city}, ${userOverviewData?.user?.state}, ${userOverviewData?.user?.country}`}>
+                                        {userOverviewData?.user?.city || "-"}, {userOverviewData?.user?.state || "-"}, {userOverviewData?.user?.country || "India"}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Physical Stats</p>
+                                      <p className="text-xs font-bold text-slate-700">{userOverviewData?.user?.height || "-"} cm • {userOverviewData?.user?.weight || "-"} kg</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Language & Referrer</p>
+                                      <p className="text-xs font-bold text-slate-700">{userOverviewData?.user?.language || "en"} • {userOverviewData?.user?.appReferer || "-"}</p>
+                                    </div>
+
+                                    <div>
+                                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Engagements</p>
+                                      <p className="text-xs font-bold text-slate-700">Trial: {userOverviewData?.user?.bookTrial ? "Yes" : "No"} | Meet Dr: {userOverviewData?.user?.meetDoctor} | Order: {userOverviewData?.user?.order}</p>
+                                    </div>
+                                    <div>
+                                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Medical Condition</p>
+                                      <p className="text-xs font-bold text-slate-700 truncate" title={Array.isArray(userOverviewData?.user?.medicalDescription) ? userOverviewData.user.medicalDescription.join(", ") : userOverviewData?.user?.medicalDescription}>
+                                        {Array.isArray(userOverviewData?.user?.medicalDescription) ? userOverviewData.user.medicalDescription.join(", ") : userOverviewData?.user?.medicalDescription || "-"}
+                                      </p>
+                                    </div>
+                                    <div>
+                                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Body Measurements</p>
+                                      <div className="text-[9px] font-bold text-slate-500 leading-tight">
+                                        Waist: {userOverviewData?.user?.waist || 0} • Hip: {userOverviewData?.user?.hip || 0} • Chest: {userOverviewData?.user?.chest || 0} • Thigh: {userOverviewData?.user?.thigh || 0} • Biceps: {userOverviewData?.user?.biceps || 0}
+                                      </div>
+                                    </div>
+                                  </div>
                                 </div>
-                              </div>
-                              {userOverviewData?.user?.planHoldDate && (
-                                <div className="bg-amber-50 border border-amber-100 px-3 py-1 rounded-full">
-                                  <span className="text-[10px] font-black text-amber-600 uppercase">Hold — Day {userOverviewData?.user?.planCurrentDay || 1}</span>
-                                </div>
-                              )}
-                            </div>
 
-                            {/* Information Grid (Matches Screenshot) */}
-                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-6 gap-x-4 border-t border-slate-50 pt-6">
-                              <div>
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Branch</p>
-                                <p className="text-xs font-bold text-slate-700">{userOverviewData?.user?.branch?.name || "Global"}</p>
-                              </div>
-                              <div>
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Plan Configuration</p>
-                                <p className="text-xs font-bold text-slate-700">{userOverviewData?.user?.plan?.name || "No Active Plan"} ({currency}{userOverviewData?.user?.plan?.price || 0})</p>
-                              </div>
-                              <div>
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Gender & DOB</p>
-                                <p className="text-xs font-bold text-slate-700">{userOverviewData?.user?.gender || "-"} • {userOverviewData?.user?.dob || "-"}</p>
-                              </div>
+                                {/* Section 2: Program Progress */}
+                                <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+                                  <h6 className="text-[10px] font-black uppercase tracking-widest text-teal-600 mb-4 items-center flex gap-2"><Target size={14} /> Program Progress</h6>
+                                  <div className="flex flex-wrap gap-2 mb-6">
+                                    {[...Array(userOverviewData?.user?.plan?.days || 15)].map((_, i) => {
+                                      const dayNum = i + 1;
+                                      const videoDayData = userOverviewData?.progress?.find((p) => p.day === dayNum);
+                                      const reportData = userOverviewData?.dailyReports?.find((r) => r.day === dayNum);
+                                      const checklistData = userOverviewData?.dailyChecklist?.find((c) => c.day === dayNum);
+                                      const hasData = videoDayData || reportData || checklistData;
 
-                              <div>
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Location</p>
-                                <p className="text-xs font-bold text-slate-700 truncate" title={`${userOverviewData?.user?.city}, ${userOverviewData?.user?.state}, ${userOverviewData?.user?.country}`}>
-                                  {userOverviewData?.user?.city || "-"}, {userOverviewData?.user?.state || "-"}, {userOverviewData?.user?.country || "India"}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Physical Stats</p>
-                                <p className="text-xs font-bold text-slate-700">{userOverviewData?.user?.height || "-"} cm • {userOverviewData?.user?.weight || "-"} kg</p>
-                              </div>
-                              <div>
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Language & Referrer</p>
-                                <p className="text-xs font-bold text-slate-700">{userOverviewData?.user?.language || "en"} • {userOverviewData?.user?.appReferer || "-"}</p>
-                              </div>
+                                      return (
+                                        <button
+                                          key={i}
+                                          onClick={() => setSelectedProgressDay(dayNum)}
+                                          className={`w-10 h-10 rounded-xl flex flex-col items-center justify-center transition-all hover:scale-110 active:scale-95 ${dayNum < (userOverviewData?.user?.planCurrentDay || 1) ? 'bg-teal-900 text-white shadow-md' :
+                                            dayNum === (userOverviewData?.user?.planCurrentDay || 1) ? 'bg-teal-500 text-white ring-4 ring-teal-100 shadow-lg' :
+                                              selectedProgressDay === dayNum ? 'bg-white border-2 border-teal-500 text-teal-600' :
+                                                'bg-slate-50 text-slate-400 hover:bg-slate-100'
+                                            } ${hasData ? 'ring-1 ring-teal-200' : ''}`}
+                                        >
+                                          <span className="text-[9px] font-black opacity-60 leading-none mb-0.5">DAY</span>
+                                          <span className="text-[13px] font-black leading-none">{dayNum}</span>
+                                        </button>
+                                      );
+                                    })}
+                                  </div>
 
-                              <div>
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Engagements</p>
-                                <p className="text-xs font-bold text-slate-700">Trial: {userOverviewData?.user?.bookTrial ? "Yes" : "No"} | Meet Dr: {userOverviewData?.user?.meetDoctor} | Order: {userOverviewData?.user?.order}</p>
-                              </div>
-                              <div>
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Medical Condition</p>
-                                <p className="text-xs font-bold text-slate-700 truncate" title={Array.isArray(userOverviewData?.user?.medicalDescription) ? userOverviewData.user.medicalDescription.join(", ") : userOverviewData?.user?.medicalDescription}>
-                                  {Array.isArray(userOverviewData?.user?.medicalDescription) ? userOverviewData.user.medicalDescription.join(", ") : userOverviewData?.user?.medicalDescription || "-"}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Body Measurements</p>
-                                <div className="text-[9px] font-bold text-slate-500 leading-tight">
-                                  Waist: {userOverviewData?.user?.waist || 0} • Hip: {userOverviewData?.user?.hip || 0} • Chest: {userOverviewData?.user?.chest || 0} • Thigh: {userOverviewData?.user?.thigh || 0} • Biceps: {userOverviewData?.user?.biceps || 0}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
+                                  {/* Selected Day Context */}
+                                  {selectedProgressDay && (
+                                    <div className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100">
+                                      <div className="flex items-center justify-between mb-4">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Details for Day {selectedProgressDay}</p>
+                                        {selectedProgressDay === user?.planCurrentDay && (
+                                          <span className="px-2 py-0.5 bg-teal-500 text-white text-[8px] font-black rounded-lg uppercase">Today</span>
+                                        )}
+                                      </div>
 
-                          {/* Section 2: Program Progress */}
-                          <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-                            <h6 className="text-[10px] font-black uppercase tracking-widest text-teal-600 mb-4 items-center flex gap-2"><Target size={14} /> Program Progress</h6>
-                            <div className="flex flex-wrap gap-2 mb-6">
-                              {[...Array(userOverviewData?.user?.plan?.days || 15)].map((_, i) => {
-                                const dayNum = i + 1;
-                                const videoDayData = userOverviewData?.progress?.find((p) => p.day === dayNum);
-                                const reportData = userOverviewData?.dailyReports?.find((r) => r.day === dayNum);
-                                const checklistData = userOverviewData?.dailyChecklist?.find((c) => c.day === dayNum);
-                                const hasData = videoDayData || reportData || checklistData;
+                                      {/* Daily Checklist Snippet */}
+                                      {(() => {
+                                        const checklist = userOverviewData.dailyChecklist?.find(c => c.day === selectedProgressDay);
+                                        if (!checklist) return null;
+                                        return (
+                                          <div className="mb-8 space-y-4">
+                                            <div className="flex items-center gap-3">
+                                              <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] whitespace-nowrap">Daily Vitals</span>
+                                              <div className="h-px flex-1 bg-gradient-to-r from-slate-200 to-transparent" />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-3">
+                                              {[
+                                                { label: "Water", val: checklist.waterIntake, unit: "Liters", icon: "💧", color: "text-blue-500", bg: "bg-blue-50" },
+                                                { label: "Exercise", val: checklist.exerciseMinutes, unit: "Min", icon: "🏃", color: "text-orange-500", bg: "bg-orange-50" },
+                                                { label: "Green Juice", val: checklist.greenJuice, unit: "Times", icon: "🥤", color: "text-emerald-500", bg: "bg-emerald-50" },
+                                                { label: "Pranayama", val: checklist.pranayamaMinutes, unit: "Min", icon: "🧘", color: "text-indigo-500", bg: "bg-indigo-50" },
+                                                { label: "Sleep", val: checklist.sleepHours, unit: "Hrs", icon: "🌙", color: "text-purple-500", bg: "bg-purple-50" },
+                                                { label: "Weight", val: checklist.todayWeight, unit: "Kg", icon: "⚖️", color: "text-slate-600", bg: "bg-slate-100" },
+                                              ].map((item, idx) => (
+                                                <div key={idx} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm transition-all hover:border-slate-200">
+                                                  <div className="flex items-center gap-2 mb-1.5">
+                                                    <div className={`w-5 h-5 rounded-lg ${item.bg} flex items-center justify-center text-[10px]`}>
+                                                      {item.icon}
+                                                    </div>
+                                                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{item.label}</span>
+                                                  </div>
+                                                  <div className="flex items-baseline gap-1">
+                                                    <span className={`text-sm font-black ${item.color}`}>{item.val}</span>
+                                                    <span className="text-[8px] font-bold text-slate-300 uppercase">{item.unit}</span>
+                                                  </div>
+                                                </div>
+                                              ))}
+                                            </div>
+                                            {checklist.dietMistake && (
+                                              <div className="bg-rose-50/50 p-4 rounded-2xl border border-rose-100/50">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                  <div className="w-5 h-5 bg-rose-100 rounded-lg flex items-center justify-center text-[10px]">⚠️</div>
+                                                  <span className="text-[10px] font-black text-rose-500 uppercase tracking-wider">Diet Mistake
 
-                                return (
-                                  <button
-                                    key={i}
-                                    onClick={() => setSelectedProgressDay(dayNum)}
-                                    className={`w-10 h-10 rounded-xl flex flex-col items-center justify-center transition-all hover:scale-110 active:scale-95 ${dayNum < (userOverviewData?.user?.planCurrentDay || 1) ? 'bg-teal-900 text-white shadow-md' :
-                                      dayNum === (userOverviewData?.user?.planCurrentDay || 1) ? 'bg-teal-500 text-white ring-4 ring-teal-100 shadow-lg' :
-                                        selectedProgressDay === dayNum ? 'bg-white border-2 border-teal-500 text-teal-600' :
-                                          'bg-slate-50 text-slate-400 hover:bg-slate-100'
-                                      } ${hasData ? 'ring-1 ring-teal-200' : ''}`}
-                                  >
-                                    <span className="text-[9px] font-black opacity-60 leading-none mb-0.5">DAY</span>
-                                    <span className="text-[13px] font-black leading-none">{dayNum}</span>
-                                  </button>
-                                );
-                              })}
-                            </div>
+                                                  </span>
+                                                </div>
+                                                <p className="text-[12px] font-black text-slate-700 leading-relaxed italic">
+                                                  "{checklist.dietMistake}"
+                                                </p>
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
+                                      })()}
 
-                            {/* Selected Day Context */}
-                            {selectedProgressDay && (
-                              <div className="bg-slate-50/50 rounded-2xl p-4 border border-slate-100">
-                                <div className="flex items-center justify-between mb-4">
-                                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Details for Day {selectedProgressDay}</p>
-                                  {selectedProgressDay === user?.planCurrentDay && (
-                                    <span className="px-2 py-0.5 bg-teal-500 text-white text-[8px] font-black rounded-lg uppercase">Today</span>
+                                      {/* Daily Report Questions */}
+                                      {userOverviewData.dailyReports?.find(r => r.day === selectedProgressDay) ? (
+                                        <div className="space-y-3">
+                                          <div className="flex items-center gap-2 mb-2">
+                                            <div className="h-px flex-1 bg-slate-200" />
+                                            <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Report Questions</span>
+                                            <div className="h-px flex-1 bg-slate-200" />
+                                          </div>
+                                          {userOverviewData.dailyReports.find(r => r.day === selectedProgressDay).answers.map((ans, idx) => (
+                                            <div key={idx} className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
+                                              <p className="text-[10px] font-bold text-slate-400 mb-1">{ans.question}</p>
+                                              <p className="text-xs font-black text-slate-800">A: {ans.givenAnswer}</p>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      ) : !userOverviewData.dailyChecklist?.find(c => c.day === selectedProgressDay) && (
+                                        <p className="text-[10px] font-bold text-slate-400 italic">No report or checklist submitted for this day.</p>
+                                      )}
+                                    </div>
                                   )}
                                 </div>
 
-                                {/* Daily Checklist Snippet */}
-                                {(() => {
-                                  const checklist = userOverviewData.dailyChecklist?.find(c => c.day === selectedProgressDay);
-                                  if (!checklist) return null;
-                                  return (
-                                    <div className="mb-8 space-y-4">
-                                      <div className="flex items-center gap-3">
-                                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] whitespace-nowrap">Daily Vitals</span>
-                                        <div className="h-px flex-1 bg-gradient-to-r from-slate-200 to-transparent" />
-                                      </div>
-                                      <div className="grid grid-cols-2 gap-3">
-                                        {[
-                                          { label: "Water", val: checklist.waterIntake, unit: "Liters", icon: "💧", color: "text-blue-500", bg: "bg-blue-50" },
-                                          { label: "Exercise", val: checklist.exerciseMinutes, unit: "Min", icon: "🏃", color: "text-orange-500", bg: "bg-orange-50" },
-                                          { label: "Green Juice", val: checklist.greenJuice, unit: "Times", icon: "🥤", color: "text-emerald-500", bg: "bg-emerald-50" },
-                                          { label: "Pranayama", val: checklist.pranayamaMinutes, unit: "Min", icon: "🧘", color: "text-indigo-500", bg: "bg-indigo-50" },
-                                          { label: "Sleep", val: checklist.sleepHours, unit: "Hrs", icon: "🌙", color: "text-purple-500", bg: "bg-purple-50" },
-                                          { label: "Weight", val: checklist.todayWeight, unit: "Kg", icon: "⚖️", color: "text-slate-600", bg: "bg-slate-100" },
-                                        ].map((item, idx) => (
-                                          <div key={idx} className="bg-white p-3 rounded-2xl border border-slate-100 shadow-sm transition-all hover:border-slate-200">
-                                            <div className="flex items-center gap-2 mb-1.5">
-                                              <div className={`w-5 h-5 rounded-lg ${item.bg} flex items-center justify-center text-[10px]`}>
-                                                {item.icon}
-                                              </div>
-                                              <span className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">{item.label}</span>
-                                            </div>
-                                            <div className="flex items-baseline gap-1">
-                                              <span className={`text-sm font-black ${item.color}`}>{item.val}</span>
-                                              <span className="text-[8px] font-bold text-slate-300 uppercase">{item.unit}</span>
-                                            </div>
+                                {/* Section 3: Plan History */}
+                                <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm overflow-hidden flex flex-col">
+                                  <div className="flex items-center justify-between mb-4">
+                                    <h6 className="text-[10px] font-black uppercase tracking-widest text-teal-600 items-center flex gap-2"><History size={14} /> Plan History</h6>
+                                    <span className="text-[9px] font-bold text-slate-300 italic">Recent First</span>
+                                  </div>
+                                  <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                    {userOverviewData.planHistory?.length > 0 ? (
+                                      userOverviewData.planHistory.map((history, i) => (
+                                        <div key={history._id} className={`p-4 rounded-2xl border transition-all ${i === 0 ? 'bg-teal-50/50 border-teal-100' : 'bg-slate-50 border-slate-100'}`}>
+                                          <div className="flex justify-between items-start mb-1">
+                                            <p className="text-xs font-black text-slate-800">{history.plan?.name || "Subscription"} ({currency}{history.plan?.price || 0})</p>
+                                            <p className="text-[8px] font-bold text-slate-400">{new Date(history.createdAt).toLocaleString()}</p>
                                           </div>
-                                        ))}
+                                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{history.plan?.days || history.plan?.planDays || "-"} Days</p>
+                                        </div>
+                                      ))
+                                    ) : (
+                                      <div className="py-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">No Plan History Found</p>
                                       </div>
-                                      {checklist.dietMistake && (
-                                        <div className="bg-rose-50/50 p-4 rounded-2xl border border-rose-100/50">
-                                          <div className="flex items-center gap-2 mb-2">
-                                            <div className="w-5 h-5 bg-rose-100 rounded-lg flex items-center justify-center text-[10px]">⚠️</div>
-                                            <span className="text-[10px] font-black text-rose-500 uppercase tracking-wider">Diet Mistake
+                                    )}
+                                  </div>
+                                </div>
 
+                                {/* Section 4: Video Answers (Detailed) */}
+                                <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+                                  <h6 className="text-[10px] font-black uppercase tracking-widest text-teal-600 mb-6 flex items-center gap-2"><ClipboardList size={14} /> Video Quiz Responses</h6>
+                                  <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
+                                    {userVideoAnswers && userVideoAnswers.length > 0 ? (
+                                      userVideoAnswers.map((va) => (
+                                        <div key={va._id} className="bg-slate-50/50 rounded-2xl p-6 border border-slate-100 transition-all hover:bg-white hover:shadow-md">
+                                          <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+                                            <p className="text-[11px] font-black text-slate-700 uppercase tracking-wide">
+                                              {va.videoId?.title?.english || "Task Assessment"}
+                                            </p>
+                                            <span className="text-[8px] font-bold text-slate-400 uppercase bg-white px-2 py-1 rounded-md border border-slate-100 tracking-tighter shadow-sm">
+                                              {new Date(va.createdAt).toLocaleDateString()}
                                             </span>
                                           </div>
-                                          <p className="text-[12px] font-black text-slate-700 leading-relaxed italic">
-                                            "{checklist.dietMistake}"
-                                          </p>
+                                          <div className="space-y-4">
+                                            {va.answers?.map((ans, i) => (
+                                              <div key={i} className="pl-4 border-l-2 border-teal-100 relative">
+                                                <div className="absolute top-1 -left-[3px] w-1.5 h-1.5 bg-teal-500 rounded-full" />
+                                                <p className="text-[10px] font-bold text-slate-400 leading-tight mb-1">Q: {ans.questionId?.questionText?.english || ans.questionId}</p>
+                                                <p className="text-[13px] font-black text-teal-900">A: {ans.answer}</p>
+                                              </div>
+                                            ))}
+                                          </div>
                                         </div>
-                                      )}
-                                    </div>
-                                  );
-                                })()}
-
-                                {/* Daily Report Questions */}
-                                {userOverviewData.dailyReports?.find(r => r.day === selectedProgressDay) ? (
-                                  <div className="space-y-3">
-                                    <div className="flex items-center gap-2 mb-2">
-                                      <div className="h-px flex-1 bg-slate-200" />
-                                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">Report Questions</span>
-                                      <div className="h-px flex-1 bg-slate-200" />
-                                    </div>
-                                    {userOverviewData.dailyReports.find(r => r.day === selectedProgressDay).answers.map((ans, idx) => (
-                                      <div key={idx} className="bg-white p-3 rounded-xl border border-slate-100 shadow-sm">
-                                        <p className="text-[10px] font-bold text-slate-400 mb-1">{ans.question}</p>
-                                        <p className="text-xs font-black text-slate-800">A: {ans.givenAnswer}</p>
+                                      ))
+                                    ) : (
+                                      <div className="py-12 text-center bg-slate-50 rounded-3xl border border-dashed border-slate-200">
+                                        <ClipboardList className="w-8 h-8 text-slate-200 mx-auto mb-3" />
+                                        <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest italic">No Video Responses available</p>
+                                        <p className="text-[9px] text-slate-300 mt-1">Patient hasn't completed any video quizzes yet.</p>
                                       </div>
-                                    ))}
+                                    )}
                                   </div>
-                                ) : !userOverviewData.dailyChecklist?.find(c => c.day === selectedProgressDay) && (
-                                  <p className="text-[10px] font-bold text-slate-400 italic">No report or checklist submitted for this day.</p>
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Section 3: Plan History */}
-                          <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm overflow-hidden flex flex-col">
-                            <div className="flex items-center justify-between mb-4">
-                              <h6 className="text-[10px] font-black uppercase tracking-widest text-teal-600 items-center flex gap-2"><History size={14} /> Plan History</h6>
-                              <span className="text-[9px] font-bold text-slate-300 italic">Recent First</span>
-                            </div>
-                            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                              {userOverviewData.planHistory?.length > 0 ? (
-                                userOverviewData.planHistory.map((history, i) => (
-                                  <div key={history._id} className={`p-4 rounded-2xl border transition-all ${i === 0 ? 'bg-teal-50/50 border-teal-100' : 'bg-slate-50 border-slate-100'}`}>
-                                    <div className="flex justify-between items-start mb-1">
-                                      <p className="text-xs font-black text-slate-800">{history.plan?.name || "Subscription"} ({currency}{history.plan?.price || 0})</p>
-                                      <p className="text-[8px] font-bold text-slate-400">{new Date(history.createdAt).toLocaleString()}</p>
-                                    </div>
-                                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">{history.plan?.days || history.plan?.planDays || "-"} Days</p>
-                                  </div>
-                                ))
-                              ) : (
-                                <div className="py-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
-                                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">No Plan History Found</p>
                                 </div>
-                              )}
-                            </div>
-                          </div>
 
-                          {/* Section 4: Video Answers (Detailed) */}
-                          <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-                            <h6 className="text-[10px] font-black uppercase tracking-widest text-teal-600 mb-6 flex items-center gap-2"><ClipboardList size={14} /> Video Quiz Responses</h6>
-                            <div className="space-y-6 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
-                              {userVideoAnswers && userVideoAnswers.length > 0 ? (
-                                userVideoAnswers.map((va) => (
-                                  <div key={va._id} className="bg-slate-50/50 rounded-2xl p-6 border border-slate-100 transition-all hover:bg-white hover:shadow-md">
-                                    <div className="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
-                                      <p className="text-[11px] font-black text-slate-700 uppercase tracking-wide">
-                                        {va.videoId?.title?.english || "Task Assessment"}
-                                      </p>
-                                      <span className="text-[8px] font-bold text-slate-400 uppercase bg-white px-2 py-1 rounded-md border border-slate-100 tracking-tighter shadow-sm">
-                                        {new Date(va.createdAt).toLocaleDateString()}
-                                      </span>
-                                    </div>
-                                    <div className="space-y-4">
-                                      {va.answers?.map((ans, i) => (
-                                        <div key={i} className="pl-4 border-l-2 border-teal-100 relative">
-                                          <div className="absolute top-1 -left-[3px] w-1.5 h-1.5 bg-teal-500 rounded-full" />
-                                          <p className="text-[10px] font-bold text-slate-400 leading-tight mb-1">Q: {ans.questionId?.questionText?.english || ans.questionId}</p>
-                                          <p className="text-[13px] font-black text-teal-900">A: {ans.answer}</p>
+                                {/* Section 5: User Feedback */}
+                                <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+                                  <h6 className="text-[10px] font-black uppercase tracking-widest text-teal-600 mb-5 flex items-center gap-2"><MessageSquare size={14} /> User Portfolio Feedback</h6>
+                                  {userOverviewData.feedback ? (
+                                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                                      {[
+                                        { label: "Consultant", val: userOverviewData.feedback.doctorCostultant, color: "teal" },
+                                        { label: "App Experience", val: userOverviewData.feedback.appExperience, color: "blue" },
+                                        { label: "Product Info", val: userOverviewData.feedback.product, color: "purple" },
+                                        { label: "Support Depth", val: userOverviewData.feedback.support, color: "emerald" },
+                                      ].map((f, i) => (
+                                        <div key={i} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col items-center text-center">
+                                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2 leading-none">{f.label}</span>
+                                          <p className="text-lg font-black text-slate-800 mb-1">{f.val || 0}<span className="text-[10px] text-slate-300">/5</span></p>
+                                          <div className="flex gap-0.5">
+                                            {[...Array(5)].map((_, star) => (
+                                              <div key={star} className={`w-1.5 h-1.5 rounded-full ${star < (f.val || 0) ? 'bg-amber-400 shadow-[0_0_4px_rgba(251,191,36,0.3)]' : 'bg-slate-200'}`} />
+                                            ))}
+                                          </div>
                                         </div>
                                       ))}
                                     </div>
-                                  </div>
-                                ))
-                              ) : (
-                                <div className="py-12 text-center bg-slate-50 rounded-3xl border border-dashed border-slate-200">
-                                  <ClipboardList className="w-8 h-8 text-slate-200 mx-auto mb-3" />
-                                  <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest italic">No Video Responses available</p>
-                                  <p className="text-[9px] text-slate-300 mt-1">Patient hasn't completed any video quizzes yet.</p>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-
-                          {/* Section 5: User Feedback */}
-                          <div className="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-                            <h6 className="text-[10px] font-black uppercase tracking-widest text-teal-600 mb-5 flex items-center gap-2"><MessageSquare size={14} /> User Portfolio Feedback</h6>
-                            {userOverviewData.feedback ? (
-                              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                                {[
-                                  { label: "Consultant", val: userOverviewData.feedback.doctorCostultant, color: "teal" },
-                                  { label: "App Experience", val: userOverviewData.feedback.appExperience, color: "blue" },
-                                  { label: "Product Info", val: userOverviewData.feedback.product, color: "purple" },
-                                  { label: "Support Depth", val: userOverviewData.feedback.support, color: "emerald" },
-                                ].map((f, i) => (
-                                  <div key={i} className="bg-slate-50 p-4 rounded-2xl border border-slate-100 flex flex-col items-center text-center">
-                                    <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-2 leading-none">{f.label}</span>
-                                    <p className="text-lg font-black text-slate-800 mb-1">{f.val || 0}<span className="text-[10px] text-slate-300">/5</span></p>
-                                    <div className="flex gap-0.5">
-                                      {[...Array(5)].map((_, star) => (
-                                        <div key={star} className={`w-1.5 h-1.5 rounded-full ${star < (f.val || 0) ? 'bg-amber-400 shadow-[0_0_4px_rgba(251,191,36,0.3)]' : 'bg-slate-200'}`} />
-                                      ))}
+                                  ) : (
+                                    <div className="p-8 text-center bg-slate-50 rounded-[2rem] border border-dashed border-slate-200">
+                                      <p className="text-[11px] font-bold text-slate-400 italic">No historical feedback provided by this account.</p>
                                     </div>
-                                  </div>
-                                ))}
-                              </div>
-                            ) : (
-                              <div className="p-8 text-center bg-slate-50 rounded-[2rem] border border-dashed border-slate-200">
-                                <p className="text-[11px] font-bold text-slate-400 italic">No historical feedback provided by this account.</p>
-                              </div>
-                            )}
-                          </div>
+                                  )}
+                                </div>
 
-                          <div className="border-t-4 border-teal-100 my-4" />
+                                <div className="border-t-4 border-teal-100 my-4" />
                               </>
                             );
                           })()}
