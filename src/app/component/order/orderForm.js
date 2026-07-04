@@ -150,13 +150,13 @@ const OrderForm = ({ onCancel, onSuccess }) => {
     if (suggestion.products && Array.isArray(suggestion.products) && suggestion.products.length > 0) {
       const suggestedProducts = suggestion.products
         .map(sp => {
-          const productId = sp?._id || sp;
+          const productId = sp?._id || sp?.productId || sp;
           const product = products.find(p => p._id === productId) || (typeof sp === "object" ? sp : null);
           if (!product?._id) return null;
           const sellingPrice = product.discountedPrice > 0 ? product.discountedPrice : product.basePrice;
           return {
             productId: product._id,
-            quantity: 1,
+            quantity: sp?.quantity || 1,
             name: product.name,
             basePrice: sellingPrice,
             bulkDiscount: Number(product.bulkDiscount) || 0,

@@ -45,32 +45,78 @@ const StockManagementPage = () => {
   // Filtering state
   const [timeFilter, setTimeFilter] = useState("all");
   const [customDate, setCustomDate] = useState("");
+  const [selectedWeek, setSelectedWeek] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState("");
 
   // Delete Modal State
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemsToDelete, setItemsToDelete] = useState([]);
 
+  const getWeekOptions = () => {
+    const weeks = [];
+    const today = new Date();
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(today);
+      d.setDate(d.getDate() - i * 7);
+      const start = new Date(d);
+      start.setDate(start.getDate() - start.getDay());
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 6);
+      end.setHours(23, 59, 59, 999);
+      const fmt = (dt) => dt.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      weeks.push({
+        label: `${fmt(start)} – ${fmt(end)}, ${start.getFullYear()}`,
+        value: start.toISOString(),
+        start,
+        end,
+      });
+    }
+    const unique = weeks.filter((w, idx, arr) => arr.findIndex(x => x.value === w.value) === idx);
+    return unique;
+  };
+
+  const getMonthOptions = () => {
+    const months = [];
+    const today = new Date();
+    for (let i = 0; i < 12; i++) {
+      const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      months.push({
+        label: d.toLocaleDateString("en-US", { month: "long", year: "numeric" }),
+        value: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`,
+      });
+    }
+    return months;
+  };
+
   const fetchHistory = async (page = 1) => {
     try {
       setLoading(true);
-      // Increase limit to allow frontend filtering to be more effective 
-      // since backend doesn't support date filters
       const limit = timeFilter === "all" ? 20 : 1000; 
       const historyData = await getStockHistory({ page, limit });
       let filteredHistory = Array.isArray(historyData?.history) ? historyData.history : [];
 
-      if (timeFilter === "month") {
-        const startOfMonth = new Date();
-        startOfMonth.setDate(1);
-        startOfMonth.setHours(0, 0, 0, 0);
-        filteredHistory = filteredHistory.filter(item => new Date(item.createdAt) >= startOfMonth);
-      } else if (timeFilter === "date" && customDate) {
-        const selectedDate = new Date(customDate);
+      if (timeFilter === "daily" && customDate) {
+        const selected = new Date(customDate);
         filteredHistory = filteredHistory.filter(item => {
-          const itemDate = new Date(item.createdAt);
-          return itemDate.getFullYear() === selectedDate.getFullYear() &&
-                 itemDate.getMonth() === selectedDate.getMonth() &&
-                 itemDate.getDate() === selectedDate.getDate();
+          const d = new Date(item.createdAt);
+          return d.getFullYear() === selected.getFullYear() &&
+                 d.getMonth() === selected.getMonth() &&
+                 d.getDate() === selected.getDate();
+        });
+      } else if (timeFilter === "weekly" && selectedWeek) {
+        const weekOpt = getWeekOptions().find(w => w.value === selectedWeek);
+        if (weekOpt) {
+          filteredHistory = filteredHistory.filter(item => {
+            const d = new Date(item.createdAt);
+            return d >= weekOpt.start && d <= weekOpt.end;
+          });
+        }
+      } else if (timeFilter === "monthly" && selectedMonth) {
+        const [year, month] = selectedMonth.split("-").map(Number);
+        filteredHistory = filteredHistory.filter(item => {
+          const d = new Date(item.createdAt);
+          return d.getFullYear() === year && d.getMonth() === month - 1;
         });
       }
 
@@ -86,7 +132,7 @@ const StockManagementPage = () => {
 
   useEffect(() => {
     fetchHistory(1);
-  }, [timeFilter, customDate]);
+  }, [timeFilter, customDate, selectedWeek, selectedMonth]);
 
   const fetchData = async () => {
     try {
@@ -319,31 +365,78 @@ const StockManagementPage = () => {
 
         <div className="mt-8 bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-            <div className="flex items-center gap-4">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-4">
               <h3 className="text-xl font-bold text-gray-800">Stock History</h3>
-              <div className="flex items-center gap-2">
-                <div className="w-40">
-                  <Dropdown
-                    options={[
-                      { label: "All Time", value: "all" },
-                      { label: "This Month", value: "month" },
-                      { label: "Date Wise", value: "date" }
-                    ]}
-                    value={timeFilter}
-                    onChange={setTimeFilter}
-                  />
+              <div className="flex flex-wrap items-center gap-3">
+                <div className="flex items-center bg-gray-100 rounded-xl p-1">
+                  {[
+                    { label: "All", value: "all" },
+                    { label: "Daily", value: "daily" },
+                    { label: "Weekly", value: "weekly" },
+                    { label: "Monthly", value: "monthly" },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => {
+                        setTimeFilter(opt.value);
+                        if (opt.value === "daily" && !customDate) {
+                          setCustomDate(new Date().toISOString().split("T")[0]);
+                        }
+                        if (opt.value === "weekly" && !selectedWeek) {
+                          const weeks = getWeekOptions();
+                          if (weeks.length) setSelectedWeek(weeks[0].value);
+                        }
+                        if (opt.value === "monthly" && !selectedMonth) {
+                          const months = getMonthOptions();
+                          if (months.length) setSelectedMonth(months[0].value);
+                        }
+                      }}
+                      className={`px-4 py-1.5 text-xs font-bold uppercase tracking-wider rounded-lg transition-all ${
+                        timeFilter === opt.value
+                          ? "bg-gradient-to-r from-yellow-400 to-amber-500 text-white shadow-sm"
+                          : "text-gray-500 hover:text-gray-700"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
                 </div>
-                {timeFilter === "date" && (
+
+                {timeFilter === "daily" && (
                   <input
                     type="date"
                     value={customDate}
                     onChange={(e) => setCustomDate(e.target.value)}
-                    className="px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all"
+                    className="px-3 py-1.5 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all bg-white"
                   />
+                )}
+
+                {timeFilter === "weekly" && (
+                  <div className="w-64">
+                    <Dropdown
+                      options={getWeekOptions().map(w => ({ label: w.label, value: w.value }))}
+                      value={selectedWeek}
+                      onChange={setSelectedWeek}
+                      placeholder="Select Week"
+                    />
+                  </div>
+                )}
+
+                {timeFilter === "monthly" && (
+                  <div className="w-52">
+                    <Dropdown
+                      options={getMonthOptions()}
+                      value={selectedMonth}
+                      onChange={setSelectedMonth}
+                      placeholder="Select Month"
+                    />
+                  </div>
                 )}
               </div>
             </div>
-            <span className="text-xs text-gray-400">Records per page: {timeFilter === "all" ? 20 : "Filtered"}</span>
+            <span className="text-xs text-gray-400">
+              {timeFilter === "all" ? "Records per page: 20" : "Showing filtered results"}
+            </span>
           </div>
           <StockHistoryTable
             history={history}

@@ -94,23 +94,23 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = fals
 
         const fetchConsultationCount = async () => {
             try {
-               const data = await getConsultationCountByUserId(u._id);
-               const count = data?.count || 0;
-               
-               let visit = 'first';
-               if (count === 1) visit = 'second';
-               else if (count >= 2) visit = 'third';
-               
-               setFormData(prev => ({
-                   ...prev,
-                   consultationVisit: visit,
-                   isFirstConsultation: visit === 'first'
-               }));
+                const data = await getConsultationCountByUserId(u._id);
+                const count = data?.count || 0;
+
+                let visit = 'first';
+                if (count === 1) visit = 'second';
+                else if (count >= 2) visit = 'third';
+
+                setFormData(prev => ({
+                    ...prev,
+                    consultationVisit: visit,
+                    isFirstConsultation: visit === 'first'
+                }));
             } catch (err) {
                 console.error("Failed to fetch consultation count", err);
             }
-       };
-       fetchConsultationCount();
+        };
+        fetchConsultationCount();
     }, [appointment?._id]);
 
     useEffect(() => {
@@ -389,7 +389,7 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = fals
                         </div>
                         <div className="space-y-1.5 md:col-span-2">
                             <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">C/O</label>
-                            <textarea name="co" value={formData.co} onChange={handleChange}  className="w-full h-20 p-4 rounded-2xl bg-white border border-slate-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all text-sm font-medium resize-none shadow-sm" />
+                            <textarea name="co" value={formData.co} onChange={handleChange} className="w-full h-20 p-4 rounded-2xl bg-white border border-slate-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all text-sm font-medium resize-none shadow-sm" />
                         </div>
                         <div className="space-y-1.5 md:col-span-2">
                             <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Blood Report</label>
@@ -405,26 +405,26 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = fals
                         </div>
                     </div>
                 </div>
-                
+
                 {/* Basic Info */}
                 <div className="space-y-4">
                     <div className="flex items-center gap-2 mb-2">
                         <div className="h-4 w-1 bg-teal-500 rounded-full" />
                         <h3 className="text-base font-extrabold text-slate-800 uppercase tracking-wider">Basic Assessment</h3>
                     </div>
-                    
+
                     <div className="space-y-3">
                         <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Consultation Visit</label>
                         <div className="inline-block px-4 py-2 bg-teal-50 text-teal-700 rounded-full text-xs font-bold uppercase tracking-widest">
-                           {formData.consultationVisit} Time
+                            {formData.consultationVisit} Time
                         </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div className="space-y-1.5 focus-within:transform focus-within:scale-[1.01] transition-transform">
                             <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Patient Complaints</label>
-                            <textarea 
-                                name="patientComplaint" 
+                            <textarea
+                                name="patientComplaint"
                                 value={formData.patientComplaint}
                                 onChange={handleChange}
                                 placeholder="Main health concerns..."
@@ -433,8 +433,8 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = fals
                         </div>
                         <div className="space-y-1.5 focus-within:transform focus-within:scale-[1.01] transition-transform">
                             <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Advice given</label>
-                            <textarea 
-                                name="advice" 
+                            <textarea
+                                name="advice"
                                 value={formData.advice}
                                 onChange={handleChange}
                                 placeholder="Clinical advice or plan highlights..."
@@ -480,66 +480,65 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = fals
                                 key={option._id || option.name}
                                 type="button"
                                 onClick={() => handleHistoryToggle(option.name)}
-                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
-                                    formData.patientHistory.some(ph => ph.name === option.name)
-                                    ? 'bg-teal-600 text-white border-teal-600 shadow-lg shadow-teal-100 scale-105'
-                                    : 'bg-white text-slate-500 border-slate-100 hover:border-teal-200 hover:bg-teal-50/30'
-                                }`}
+                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${formData.patientHistory.some(ph => ph.name === option.name)
+                                        ? 'bg-teal-600 text-white border-teal-600 shadow-lg shadow-teal-100 scale-105'
+                                        : 'bg-white text-slate-500 border-slate-100 hover:border-teal-200 hover:bg-teal-50/30'
+                                    }`}
                             >
                                 {option.name}
                             </button>
                         ))}
                     </div>
-                        {patientHistoryOptions.length === 0 && (
-                            <p className="text-xs text-slate-400">No patient history added for this user yet.</p>
-                        )}
+                    {patientHistoryOptions.length === 0 && (
+                        <p className="text-xs text-slate-400">No patient history added for this user yet.</p>
+                    )}
 
-                        {/* Selected histories with duration inputs */}
-                        {formData.patientHistory && formData.patientHistory.length > 0 && (
-                            <div className="mt-3 space-y-2">
-                                {formData.patientHistory.map((h, idx) => (
-                                    <div key={h.name || idx} className="flex items-center gap-2">
-                                        <div className="flex-1">
-                                            <div className="text-sm font-medium text-slate-700">{h.name}</div>
-                                        </div>
-                                        <input
-                                            value={h.duration}
-                                            onChange={(e) => {
-                                                const newPH = [...formData.patientHistory];
-                                                newPH[idx] = { ...newPH[idx], duration: e.target.value };
-                                                setFormData(prev => ({ ...prev, patientHistory: newPH }));
-                                            }}
-                                            placeholder="Duration (e.g. 2 years)"
-                                            className="w-40 p-2 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500/20"
-                                        />
-                                        <button
-                                            type="button"
-                                            onClick={async () => {
-                                                // if this history is persisted (has _id), delete it from server
-                                                if (h._id) {
-                                                    try {
-                                                        await deletePatientHistoryApi(h._id);
-                                                        // remove from options and formData
-                                                        setPatientHistoryOptions(prev => prev.filter(p => p._id !== h._id));
-                                                        setFormData(prev => ({ ...prev, patientHistory: prev.patientHistory.filter(ph => ph._id !== h._id) }));
-                                                        return;
-                                                    } catch (err) {
-                                                        console.error('Failed to delete patient history', err);
-                                                        toast.error(err.response?.data?.message || 'Failed to delete history');
-                                                    }
-                                                }
-                                                // fallback: just toggle
-                                                handleHistoryToggle(h.name);
-                                            }}
-                                            className="text-red-400 p-2 hover:text-red-600 transition-colors"
-                                            title="Remove"
-                                        >
-                                            <Trash2 size={16} />
-                                        </button>
+                    {/* Selected histories with duration inputs */}
+                    {formData.patientHistory && formData.patientHistory.length > 0 && (
+                        <div className="mt-3 space-y-2">
+                            {formData.patientHistory.map((h, idx) => (
+                                <div key={h.name || idx} className="flex items-center gap-2">
+                                    <div className="flex-1">
+                                        <div className="text-sm font-medium text-slate-700">{h.name}</div>
                                     </div>
-                                ))}
-                            </div>
-                        )}
+                                    <input
+                                        value={h.duration}
+                                        onChange={(e) => {
+                                            const newPH = [...formData.patientHistory];
+                                            newPH[idx] = { ...newPH[idx], duration: e.target.value };
+                                            setFormData(prev => ({ ...prev, patientHistory: newPH }));
+                                        }}
+                                        placeholder="Duration (e.g. 2 years)"
+                                        className="w-40 p-2 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500/20"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={async () => {
+                                            // if this history is persisted (has _id), delete it from server
+                                            if (h._id) {
+                                                try {
+                                                    await deletePatientHistoryApi(h._id);
+                                                    // remove from options and formData
+                                                    setPatientHistoryOptions(prev => prev.filter(p => p._id !== h._id));
+                                                    setFormData(prev => ({ ...prev, patientHistory: prev.patientHistory.filter(ph => ph._id !== h._id) }));
+                                                    return;
+                                                } catch (err) {
+                                                    console.error('Failed to delete patient history', err);
+                                                    toast.error(err.response?.data?.message || 'Failed to delete history');
+                                                }
+                                            }
+                                            // fallback: just toggle
+                                            handleHistoryToggle(h.name);
+                                        }}
+                                        className="text-red-400 p-2 hover:text-red-600 transition-colors"
+                                        title="Remove"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
 
                 {/* Medical Details */}
@@ -621,8 +620,8 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = fals
                     <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest">Past Surgery</h3>
                         <label className="flex items-center gap-2 cursor-pointer">
-                            <input 
-                                type="checkbox" name="pastSurgery.hasSurgery" 
+                            <input
+                                type="checkbox" name="pastSurgery.hasSurgery"
                                 checked={formData.pastSurgery.hasSurgery} onChange={handleChange}
                                 className="w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
                             />
@@ -631,7 +630,7 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = fals
                     </div>
                     {formData.pastSurgery.hasSurgery && (
                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}>
-                            <input 
+                            <input
                                 name="pastSurgery.duration" value={formData.pastSurgery.duration} onChange={handleChange}
                                 placeholder="When did it happen? (e.g. 2 years ago)"
                                 className="w-full p-3 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500/20 outline-none"
@@ -647,7 +646,7 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = fals
                             <div className="h-4 w-1 bg-teal-500 rounded-full" />
                             <h3 className="text-base font-extrabold text-slate-800 uppercase tracking-wider">Weight Loss History</h3>
                         </div>
-                        <button 
+                        <button
                             type="button" onClick={addWeightLossRow}
                             className="bg-teal-50 text-teal-600 p-2 rounded-xl hover:bg-teal-100 transition-colors"
                         >
@@ -657,17 +656,17 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = fals
                     <div className="space-y-3">
                         {formData.weightLossHistory.map((item, idx) => (
                             <div key={idx} className="flex gap-2 items-center group">
-                                <input 
+                                <input
                                     value={item.title} onChange={(e) => handleWeightLossChange(idx, "title", e.target.value)}
                                     placeholder="Program title"
                                     className="flex-1 p-3 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500/20"
                                 />
-                                <input 
+                                <input
                                     value={item.duration} onChange={(e) => handleWeightLossChange(idx, "duration", e.target.value)}
                                     placeholder="Duration"
                                     className="w-32 p-3 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500/20"
                                 />
-                                <button 
+                                <button
                                     type="button" onClick={() => removeWeightLossRow(idx)}
                                     className="text-red-400 p-2 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
                                 >
@@ -686,14 +685,14 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = fals
                         : "p-6 bg-white border-t border-slate-100 flex items-center justify-end gap-3 sticky bottom-0"
                 }
             >
-                <button 
+                <button
                     type="button" onClick={onClose}
                     className="px-6 py-3 text-[11px] font-bold text-slate-400 uppercase tracking-widest hover:text-slate-600 transition-colors"
                 >
                     Discard
                 </button>
-                <button 
-                    onClick={handleSubmit} 
+                <button
+                    onClick={handleSubmit}
                     disabled={loading}
                     className="bg-slate-900 border border-slate-800 px-8 py-3 rounded-2xl text-[11px] font-bold text-white hover:bg-black transition-all shadow-xl shadow-slate-200 flex items-center gap-2 uppercase tracking-widest disabled:opacity-50"
                 >

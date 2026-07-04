@@ -135,7 +135,7 @@ const AppointmentPage = () => {
   const [allPlans, setAllPlans] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
   const [selectedPlanId, setSelectedPlanId] = useState("");
-  const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [selectedProducts, setSelectedProducts] = useState([]);
   const [suggesting, setSuggesting] = useState(false);
   const [selectedProgressDay, setSelectedProgressDay] = useState(null);
   const [planSearchTerm, setPlanSearchTerm] = useState("");
@@ -1308,7 +1308,7 @@ const AppointmentPage = () => {
 
   const resetSuggestionState = () => {
     setSelectedPlanId("");
-    setSelectedProductIds([]);
+    setSelectedProducts([]);
     setActiveSuggestion(null);
     setShowPlanPicker(false);
     setShowProductPicker(false);
@@ -1324,14 +1324,17 @@ const AppointmentPage = () => {
       } else {
         setSelectedPlanId("");
       }
-      if (suggestion.products) {
-        setSelectedProductIds(suggestion.products.map((p) => p?._id || p));
+      if (suggestion.products && Array.isArray(suggestion.products)) {
+        setSelectedProducts(suggestion.products.map((p) => ({
+          productId: p?._id || p?.productId || p,
+          quantity: p?.quantity || 1
+        })));
       } else {
-        setSelectedProductIds([]);
+        setSelectedProducts([]);
       }
     } else {
       setSelectedPlanId("");
-      setSelectedProductIds([]);
+      setSelectedProducts([]);
     }
   };
 
@@ -1358,7 +1361,7 @@ const AppointmentPage = () => {
       return;
     }
 
-    if (!selectedPlanId && selectedProductIds.length === 0) {
+    if (!selectedPlanId && selectedProducts.length === 0) {
       toast.error("Please select a program or products to suggest");
       return;
     }
@@ -1368,13 +1371,16 @@ const AppointmentPage = () => {
       await suggestProgram({
         userId: targetUserId,
         planId: selectedPlanId,
-        products: selectedProductIds,
+        products: selectedProducts,
       });
       toast.success("Suggested successfully");
 
       // Update local suggestion state
       const suggestedPlan = allPlans.find(p => p._id === selectedPlanId);
-      const suggestedProducts = allProducts.filter(p => selectedProductIds.includes(p._id));
+      const suggestedProducts = selectedProducts.map(sp => {
+        const prod = allProducts.find(p => p._id === sp.productId);
+        return prod ? { ...prod, quantity: sp.quantity } : null;
+      }).filter(Boolean);
       setActiveSuggestion({
         plans: suggestedPlan,
         products: suggestedProducts,
@@ -1833,16 +1839,16 @@ const AppointmentPage = () => {
         <div className="relative flex-1 w-full">
           <div
             onClick={() => { setShowProductPicker(!showProductPicker); setShowPlanPicker(false); }}
-            className={`flex items-center justify-between gap-3 bg-slate-50 border p-3 rounded-2xl w-full cursor-pointer transition-all hover:bg-slate-100 ${selectedProductIds.length > 0 ? 'border-teal-200 bg-teal-50/20' : 'border-slate-200 shadow-sm'}`}
+            className={`flex items-center justify-between gap-3 bg-slate-50 border p-3 rounded-2xl w-full cursor-pointer transition-all hover:bg-slate-100 ${selectedProducts.length > 0 ? 'border-teal-200 bg-teal-50/20' : 'border-slate-200 shadow-sm'}`}
           >
             <div className="flex items-center gap-3 px-1 w-full min-w-0">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${selectedProductIds.length > 0 ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20' : 'bg-white border border-slate-100 text-slate-400'}`}>
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${selectedProducts.length > 0 ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20' : 'bg-white border border-slate-100 text-slate-400'}`}>
                 <LayoutGrid size={20} />
               </div>
               <div className="flex flex-col flex-1 truncate">
                 <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Products</span>
-                <span className={`text-sm font-black truncate ${selectedProductIds.length > 0 ? 'text-teal-900' : 'text-slate-500'}`}>
-                  {selectedProductIds.length > 0 ? `${selectedProductIds.length} Selected` : 'Select Products...'}
+                <span className={`text-sm font-black truncate ${selectedProducts.length > 0 ? 'text-teal-900' : 'text-slate-500'}`}>
+                  {selectedProducts.length > 0 ? `${selectedProducts.length} Selected (${selectedProducts.reduce((s, p) => s + p.quantity, 0)} items)` : 'Select Products...'}
                 </span>
               </div>
             </div>
@@ -1854,33 +1860,72 @@ const AppointmentPage = () => {
                 <div className="fixed inset-0 z-[100]" onClick={() => setShowProductPicker(false)} />
                 <motion.div
                   initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                  className="absolute bottom-full left-0 right-0 mb-6 z-[101] max-h-[300px] overflow-y-auto bg-white rounded-[1rem] border border-slate-100 shadow-[0_30px_90px_rgba(0,0,0,0.15)] p-2 custom-scrollbar"
+                  className="absolute bottom-full left-0 right-0 mb-6 z-[101] max-h-[350px] overflow-y-auto bg-white rounded-[1rem] border border-slate-100 shadow-[0_30px_90px_rgba(0,0,0,0.15)] p-2 custom-scrollbar"
                 >
-                  <div className="p-2 sticky top-0 bg-white border-b border-slate-50 mb-1">
+                  <div className="p-2 sticky top-0 bg-white border-b border-slate-50 mb-1 z-10">
                     <input
                       type="text" placeholder="Search products..." value={productSearchTerm} onChange={(e) => setProductSearchTerm(e.target.value)}
                       className="w-full p-2 bg-slate-50 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500/10"
                     />
                   </div>
                   {allProducts.filter(p => p.name.toLowerCase().includes(productSearchTerm.toLowerCase())).map(product => {
-                    const isSelected = selectedProductIds.includes(product._id);
+                    const selectedItem = selectedProducts.find(sp => sp.productId === product._id);
+                    const isSelected = !!selectedItem;
                     return (
                       <div
                         key={product._id}
-                        onClick={() => {
-                          setSelectedProductIds(prev =>
-                            isSelected ? prev.filter(id => id !== product._id) : [...prev, product._id]
-                          );
-                        }}
-                        className={`p-3 rounded-xl cursor-pointer transition-all flex items-center justify-between mb-1 ${isSelected ? 'bg-teal-600 text-white' : 'hover:bg-slate-50 text-slate-700'}`}
+                        className={`p-3 rounded-xl transition-all flex items-center justify-between mb-1 ${isSelected ? 'bg-teal-600 text-white' : 'hover:bg-slate-50 text-slate-700'}`}
                       >
-                        <div className="flex items-center gap-3">
+                        <div
+                          className="flex items-center gap-3 cursor-pointer flex-1 min-w-0"
+                          onClick={() => {
+                            setSelectedProducts(prev =>
+                              isSelected
+                                ? prev.filter(sp => sp.productId !== product._id)
+                                : [...prev, { productId: product._id, quantity: 1 }]
+                            );
+                          }}
+                        >
                           <div className="w-8 h-8 rounded-lg bg-white border border-slate-100 overflow-hidden shrink-0">
                             <img src={`${API_HOST}/${product.image}`} alt="" className="w-full h-full object-cover" onError={(e) => e.target.src = "/image/placeholder.avif"} />
                           </div>
-                          <span className="text-xs font-black">{product.name}</span>
+                          <span className="text-xs font-black truncate">{product.name}</span>
                         </div>
-                        {isSelected && <CheckCircle size={14} />}
+                        {isSelected && (
+                          <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedProducts(prev =>
+                                  prev.map(sp =>
+                                    sp.productId === product._id
+                                      ? { ...sp, quantity: Math.max(1, sp.quantity - 1) }
+                                      : sp
+                                  )
+                                );
+                              }}
+                              className="w-6 h-6 rounded-md bg-white/20 hover:bg-white/30 flex items-center justify-center text-white font-black text-sm transition-all active:scale-90"
+                            >
+                              −
+                            </button>
+                            <span className="w-6 text-center text-xs font-black">{selectedItem.quantity}</span>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedProducts(prev =>
+                                  prev.map(sp =>
+                                    sp.productId === product._id
+                                      ? { ...sp, quantity: sp.quantity + 1 }
+                                      : sp
+                                  )
+                                );
+                              }}
+                              className="w-6 h-6 rounded-md bg-white/20 hover:bg-white/30 flex items-center justify-center text-white font-black text-sm transition-all active:scale-90"
+                            >
+                              +
+                            </button>
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -2202,9 +2247,9 @@ const AppointmentPage = () => {
                                 <MdVideocam size={16} /> Join
                               </button>
                             )}
-                            {(role === "Admin" || permissions?.includes("reschedule appointment")) && (
+                            {/* {(role === "Admin" || permissions?.includes("reschedule appointment")) && (
                               <button className="h-9 px-4 bg-teal-50 text-teal-700 hover:bg-teal-100 rounded-xl text-xs font-bold transition-all" onClick={() => handleOpenRescheduleModal(item)}>Reschedule</button>
-                            )}
+                            )} */}
                             <button className="h-9 px-4 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 rounded-xl text-xs font-bold shadow-sm transition-all" onClick={() => router.push(`/component/users/${item.userId?._id}/profile`)}>View</button>
                             {statusLabel === 'upcoming' && (role === "Admin" || permissions?.includes("cancel appointment")) && (
                               <button onClick={() => openDeleteModal(item._id)} className="h-9 px-4 bg-white border border-red-100 hover:bg-red-50 text-red-600 rounded-xl text-xs font-bold shadow-sm transition-all">Cancel</button>
@@ -2309,9 +2354,9 @@ const AppointmentPage = () => {
                           <MdVideocam size={20} /> Join Live Call
                         </button>
                       )}
-                      {(role === "Admin" || permissions?.includes("reschedule appointment")) && (
+                      {/* {(role === "Admin" || permissions?.includes("reschedule appointment")) && (
                         <button className="h-11 bg-teal-50 text-teal-700 rounded-xl text-[11px] font-black uppercase" onClick={() => handleOpenRescheduleModal(item)}>Reschedule</button>
-                      )}
+                      )} */}
                       <button className="h-11 bg-slate-100 text-slate-700 rounded-xl text-[11px] font-black uppercase" onClick={() => router.push(`/component/users/${item.userId?._id}/profile`)}>View Profile</button>
                       {statusLabel === 'upcoming' && (role === "Admin" || permissions?.includes("cancel appointment")) && (
                         <button onClick={() => openDeleteModal(item._id)} className="h-11 border border-red-100 text-red-600 rounded-xl text-[11px] font-black uppercase col-span-2 mt-1">Cancel Appointment</button>

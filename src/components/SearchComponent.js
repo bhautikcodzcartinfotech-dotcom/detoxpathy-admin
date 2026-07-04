@@ -62,9 +62,8 @@ const SearchComponent = ({
 
   return (
     <div
-      className={`bg-white rounded-2xl shadow-lg border border-gray-200 ${
-        compact ? "p-2 mb-4" : "p-6 mb-6"
-      } ${className}`}
+      className={`bg-white rounded-2xl shadow-lg border border-gray-200 ${compact ? "p-2 mb-4" : "p-6 mb-6"
+        } ${className}`}
     >
       <div className="flex flex-col sm:flex-row gap-4">
         {/* Search Bar */}
@@ -121,223 +120,223 @@ const SearchComponent = ({
 
       {/* Additional Filters Grid */}
       {mode === "full" && (
-        (planOptions && planOptions.length > 0 && onPlanChange) || 
-        onPlanHistoryFilterChange || 
-        (languageOptions && languageOptions.length > 0 && onLanguageChange) || 
-        onDateChange || 
-        onGenderChange || 
-        onCityChange || 
-        onStateChange || 
-        onCountryChange || 
-        (referrerOptions && referrerOptions.length > 0 && onReferrerChange) || 
-        onAgeRangeChange || 
+        (planOptions && planOptions.length > 0 && onPlanChange) ||
+        onPlanHistoryFilterChange ||
+        (languageOptions && languageOptions.length > 0 && onLanguageChange) ||
+        onDateChange ||
+        onGenderChange ||
+        onCityChange ||
+        onStateChange ||
+        onCountryChange ||
+        (referrerOptions && referrerOptions.length > 0 && onReferrerChange) ||
+        onAgeRangeChange ||
         onSkipBodyMeasurementChange
       ) && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-200">
-          {/* Plan Filter */}
-          {planOptions && planOptions.length > 0 && onPlanChange && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Filter by Plan
-              </label>
-              <Dropdown
-                options={[
-                  { label: "All Plans", value: "" },
-                  ...planOptions.map((plan) => ({
-                    label: plan.name,
-                    value: plan._id,
-                  })),
-                ]}
-                value={selectedPlan}
-                onChange={onPlanChange}
-                placeholder="Select plan"
-              />
-            </div>
-          )}
-
-          {/* Plan History Filter */}
-          {onPlanHistoryFilterChange && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Plan History Status
-              </label>
-              <Dropdown
-                options={[
-                  { label: "All Users", value: "" },
-                  { label: "With Plan History", value: "with_history" },
-                  { label: "No Plan History", value: "no_history" },
-                ]}
-                value={planHistoryFilter}
-                onChange={onPlanHistoryFilterChange}
-                placeholder="Select status"
-              />
-            </div>
-          )}
-
-          {/* Language Filter */}
-          {languageOptions && languageOptions.length > 0 && onLanguageChange && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Filter by Language
-              </label>
-              <Dropdown
-                options={[
-                  { label: "All Languages", value: "" },
-                  ...languageOptions,
-                ]}
-                value={selectedLanguage}
-                onChange={onLanguageChange}
-                placeholder="Select language"
-              />
-            </div>
-          )}
-
-          {/* Gender Filter */}
-          {onGenderChange && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Filter by Gender
-              </label>
-              <Dropdown
-                options={[
-                  { label: "All Genders", value: "" },
-                  { label: "Male", value: "Male" },
-                  { label: "Female", value: "Female" },
-                  { label: "Other", value: "Other" },
-                ]}
-                value={selectedGender}
-                onChange={onGenderChange}
-              />
-            </div>
-          )}
-
-          {/* City Filter */}
-          {onCityChange && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Filter by City
-              </label>
-              <input
-                type="text"
-                value={selectedCity}
-                onChange={(e) => onCityChange(e.target.value)}
-                placeholder="Enter city..."
-                className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition text-sm shadow-sm bg-gray-50 focus:bg-white"
-              />
-            </div>
-          )}
-
-          {/* State Filter */}
-          {onStateChange && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Filter by State
-              </label>
-              <input
-                type="text"
-                value={selectedState}
-                onChange={(e) => onStateChange(e.target.value)}
-                placeholder="Enter state..."
-                className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition text-sm shadow-sm bg-gray-50 focus:bg-white"
-              />
-            </div>
-          )}
-
-          {/* Country Filter */}
-          {onCountryChange && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Filter by Country
-              </label>
-              <input
-                type="text"
-                value={selectedCountry}
-                onChange={(e) => onCountryChange(e.target.value)}
-                placeholder="Enter country..."
-                className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition text-sm shadow-sm bg-gray-50 focus:bg-white"
-              />
-            </div>
-          )}
-
-          {/* Referrer Filter */}
-          {referrerOptions && referrerOptions.length > 0 && onReferrerChange && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Filter by Referrer
-              </label>
-              <Dropdown
-                options={[{ label: "All Referrers", value: "" }, ...referrerOptions]}
-                value={selectedReferrer}
-                onChange={onReferrerChange}
-                showSearch={true}
-                placeholder="Select referrer"
-              />
-            </div>
-          )}
-
-          {/* Age Range Filter */}
-          {onAgeRangeChange && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Age Range
-              </label>
-              <input
-                type="text"
-                value={selectedAgeRange}
-                onChange={(e) => onAgeRangeChange(e.target.value)}
-                placeholder="e.g. 25, 20-30, or 50+"
-                className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition text-sm shadow-sm bg-gray-50 focus:bg-white"
-              />
-            </div>
-          )}
-
-          {/* Date Filter */}
-          {onDateChange && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Filter by Date
-              </label>
-              <div className="flex gap-2">
-                <input
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => onDateChange(e.target.value)}
-                  className="flex-1 border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition text-sm shadow-sm bg-gray-50 focus:bg-white"
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4 pt-4 border-t border-gray-200">
+            {/* Plan Filter */}
+            {planOptions && planOptions.length > 0 && onPlanChange && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Filter by Plan
+                </label>
+                <Dropdown
+                  options={[
+                    { label: "All Plans", value: "" },
+                    ...planOptions.map((plan) => ({
+                      label: plan.name,
+                      value: plan._id,
+                    })),
+                  ]}
+                  value={selectedPlan}
+                  onChange={onPlanChange}
+                  placeholder="Select plan"
                 />
-                {selectedDate && (
-                  <button
-                    onClick={() => onDateChange("")}
-                    className="px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-semibold text-gray-700 transition whitespace-nowrap"
-                  >
-                    Clear
-                  </button>
-                )}
               </div>
-            </div>
-          )}
+            )}
 
-          {/* Skip Body Measurement Dropdown */}
-          {onSkipBodyMeasurementChange && (
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Body Measurement
-              </label>
-              <Dropdown
-                options={[
-                  { label: "All Users", value: "" },
-                  { label: "Skip Body Measurement", value: "skip" },
-                  { label: "Provided", value: "provided" },
-                ]}
-                value={skipBodyMeasurement}
-                onChange={onSkipBodyMeasurementChange}
-                placeholder="Filter by measurement"
-              />
-            </div>
-          )}
+            {/* Plan History Filter */}
+            {onPlanHistoryFilterChange && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Plan History Status
+                </label>
+                <Dropdown
+                  options={[
+                    { label: "All Users", value: "" },
+                    { label: "With Plan History", value: "with_history" },
+                    { label: "No Plan History", value: "no_history" },
+                  ]}
+                  value={planHistoryFilter}
+                  onChange={onPlanHistoryFilterChange}
+                  placeholder="Select status"
+                />
+              </div>
+            )}
+
+            {/* Language Filter */}
+            {languageOptions && languageOptions.length > 0 && onLanguageChange && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Filter by Language
+                </label>
+                <Dropdown
+                  options={[
+                    { label: "All Languages", value: "" },
+                    ...languageOptions,
+                  ]}
+                  value={selectedLanguage}
+                  onChange={onLanguageChange}
+                  placeholder="Select language"
+                />
+              </div>
+            )}
+
+            {/* Gender Filter */}
+            {onGenderChange && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Filter by Gender
+                </label>
+                <Dropdown
+                  options={[
+                    { label: "All Genders", value: "" },
+                    { label: "Male", value: "Male" },
+                    { label: "Female", value: "Female" },
+                    { label: "Other", value: "Other" },
+                  ]}
+                  value={selectedGender}
+                  onChange={onGenderChange}
+                />
+              </div>
+            )}
+
+            {/* City Filter */}
+            {onCityChange && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Filter by City
+                </label>
+                <input
+                  type="text"
+                  value={selectedCity}
+                  onChange={(e) => onCityChange(e.target.value)}
+                  placeholder="Enter city..."
+                  className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition text-sm shadow-sm bg-gray-50 focus:bg-white"
+                />
+              </div>
+            )}
+
+            {/* State Filter */}
+            {onStateChange && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Filter by State
+                </label>
+                <input
+                  type="text"
+                  value={selectedState}
+                  onChange={(e) => onStateChange(e.target.value)}
+                  placeholder="Enter state..."
+                  className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition text-sm shadow-sm bg-gray-50 focus:bg-white"
+                />
+              </div>
+            )}
+
+            {/* Country Filter */}
+            {onCountryChange && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Filter by Country
+                </label>
+                <input
+                  type="text"
+                  value={selectedCountry}
+                  onChange={(e) => onCountryChange(e.target.value)}
+                  placeholder="Enter country..."
+                  className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition text-sm shadow-sm bg-gray-50 focus:bg-white"
+                />
+              </div>
+            )}
+
+            {/* Referrer Filter */}
+            {referrerOptions && referrerOptions.length > 0 && onReferrerChange && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Filter by Referrer
+                </label>
+                <Dropdown
+                  options={[{ label: "All Referrers", value: "" }, ...referrerOptions]}
+                  value={selectedReferrer}
+                  onChange={onReferrerChange}
+                  showSearch={true}
+                  placeholder="Select referrer"
+                />
+              </div>
+            )}
+
+            {/* Age Range Filter */}
+            {onAgeRangeChange && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Age Range
+                </label>
+                <input
+                  type="text"
+                  value={selectedAgeRange}
+                  onChange={(e) => onAgeRangeChange(e.target.value)}
+                  placeholder="e.g. 25, 20-30, or 50+"
+                  className="w-full border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition text-sm shadow-sm bg-gray-50 focus:bg-white"
+                />
+              </div>
+            )}
+
+            {/* Date Filter */}
+            {onDateChange && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Filter by Date
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => onDateChange(e.target.value)}
+                    className="flex-1 border border-gray-200 rounded-xl p-3 focus:outline-none focus:ring-4 focus:ring-[#134D41]/5 focus:border-[#134D41] transition text-sm shadow-sm bg-gray-50 focus:bg-white"
+                  />
+                  {selectedDate && (
+                    <button
+                      onClick={() => onDateChange("")}
+                      className="px-4 py-3 bg-gray-100 hover:bg-gray-200 rounded-xl text-sm font-semibold text-gray-700 transition whitespace-nowrap"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Skip Body Measurement Dropdown */}
+            {onSkipBodyMeasurementChange && (
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  Body Measurement
+                </label>
+                <Dropdown
+                  options={[
+                    { label: "All Users", value: "" },
+                    { label: "Skip Body Measurement", value: "skip" },
+                    { label: "Provided", value: "provided" },
+                  ]}
+                  value={skipBodyMeasurement}
+                  onChange={onSkipBodyMeasurementChange}
+                  placeholder="Filter by measurement"
+                />
+              </div>
+            )}
 
 
-        </div>
-      )}
+          </div>
+        )}
 
       {/* Search Results Indicator */}
       {searchTerm && (

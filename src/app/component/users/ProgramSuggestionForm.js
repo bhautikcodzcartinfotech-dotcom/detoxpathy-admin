@@ -16,7 +16,7 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
   const [programs, setPrograms] = useState([]);
   const [availableProducts, setAvailableProducts] = useState([]);
   const [selectedProgramId, setSelectedProgramId] = useState("");
-  const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [selectedProducts, setSelectedProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [existingSuggestion, setExistingSuggestion] = useState(null);
@@ -50,15 +50,17 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
 
             // Set current products
             if (suggestion.products && Array.isArray(suggestion.products)) {
-              const currentProductIds = suggestion.products.map(p => p._id || p);
-              setSelectedProductIds(currentProductIds);
+              setSelectedProducts(suggestion.products.map(p => ({
+                productId: p._id || p.productId || p,
+                quantity: p.quantity || 1
+              })));
             }
           }
         } catch (err) {
           // If no suggestion found, it's fine
           setExistingSuggestion(null);
           setSelectedProgramId("");
-          setSelectedProductIds([]);
+          setSelectedProducts([]);
         }
       } catch (err) {
         toast.error("Failed to load data");
@@ -74,15 +76,25 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
   };
 
   const handleProductToggle = (productId) => {
-    setSelectedProductIds(prev =>
-      prev.includes(productId)
-        ? prev.filter(id => id !== productId)
-        : [...prev, productId]
+    setSelectedProducts(prev => {
+      const exists = prev.find(p => p.productId === productId);
+      if (exists) return prev.filter(p => p.productId !== productId);
+      return [...prev, { productId, quantity: 1 }];
+    });
+  };
+
+  const handleQuantityChange = (productId, delta) => {
+    setSelectedProducts(prev =>
+      prev.map(p =>
+        p.productId === productId
+          ? { ...p, quantity: Math.max(1, p.quantity + delta) }
+          : p
+      )
     );
   };
 
   const handleSave = async () => {
-    if (!selectedProgramId && selectedProductIds.length === 0) {
+    if (!selectedProgramId && selectedProducts.length === 0) {
       toast.error("Please select at least a program or a product");
       return;
     }
@@ -92,7 +104,7 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
       const payload = {
         userId: user._id,
         planId: selectedProgramId,
-        products: selectedProductIds
+        products: selectedProducts
       };
 
       if (existingSuggestion) {
@@ -121,7 +133,7 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
       toast.success("Suggestions removed!");
       setExistingSuggestion(null);
       setSelectedProgramId("");
-      setSelectedProductIds([]);
+      setSelectedProducts([]);
       if (onSave) onSave();
     } catch (err) {
       toast.error("Failed to delete suggestions");
@@ -246,29 +258,52 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
           ) : (
             <div className="grid grid-cols-1 gap-2">
               {filteredProducts.map((product) => {
-                const isSelected = selectedProductIds.includes(product._id);
+                const selectedItem = selectedProducts.find(p => p.productId === product._id);
+                const isSelected = !!selectedItem;
                 return (
                   <div
                     key={product._id}
-                    onClick={() => handleProductToggle(product._id)}
-                    className={`p-3 rounded-xl border transition-all cursor-pointer flex items-center gap-3 ${isSelected
+                    className={`p-3 rounded-xl border transition-all flex items-center gap-3 ${isSelected
                       ? "border-teal-400 bg-teal-50 shadow-sm"
                       : "border-gray-100 bg-white hover:border-teal-100"
                       }`}
                   >
                     <div
-                      className={`w-4 h-4 rounded border flex items-center justify-center ${isSelected ? "bg-teal-500 border-teal-500" : "border-gray-300 bg-white"
-                        }`}
+                      onClick={() => handleProductToggle(product._id)}
+                      className="flex items-center gap-3 cursor-pointer flex-1 min-w-0"
                     >
-                      {isSelected && (
-                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
-                        </svg>
-                      )}
+                      <div
+                        className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${isSelected ? "bg-teal-500 border-teal-500" : "border-gray-300 bg-white"}`}
+                      >
+                        {isSelected && (
+                          <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                      </div>
+                      <span className="text-sm font-medium text-gray-700 truncate">{product.name}</span>
                     </div>
-                    <div className="flex-1 flex items-center justify-between">
-                      <span className="text-sm font-medium text-gray-700">{product.name}</span>
+                    <div className="flex items-center gap-2 shrink-0">
                       <span className="text-[10px] font-bold text-teal-600">₹{product.discountedPrice || product.basePrice}</span>
+                      {isSelected && (
+                        <div className="flex items-center gap-1 ml-1">
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); handleQuantityChange(product._id, -1); }}
+                            className="w-6 h-6 rounded-lg bg-teal-100 hover:bg-teal-200 text-teal-700 flex items-center justify-center font-black text-sm transition-all active:scale-90"
+                          >
+                            −
+                          </button>
+                          <span className="w-6 text-center text-xs font-black text-teal-800">{selectedItem.quantity}</span>
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); handleQuantityChange(product._id, 1); }}
+                            className="w-6 h-6 rounded-lg bg-teal-100 hover:bg-teal-200 text-teal-700 flex items-center justify-center font-black text-sm transition-all active:scale-90"
+                          >
+                            +
+                          </button>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

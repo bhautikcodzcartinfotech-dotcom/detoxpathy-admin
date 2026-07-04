@@ -575,8 +575,8 @@ const SettingsPage = () => {
                 type="number"
                 value={formData.version ?? ""}
                 onChange={(e) => {
-                  const value = e.target.value;
-                  handleInputChange("version", value === "" ? "" : Number(value));
+                  const value = e.target.value === "" ? "" : Number(e.target.value);
+                  handleInputChange("version", value);
                 }}
                 className="w-full px-4 py-3 rounded-xl border border-amber-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
                 placeholder="1"
@@ -592,8 +592,8 @@ const SettingsPage = () => {
                 type="number"
                 value={formData.iosVersion ?? ""}
                 onChange={(e) => {
-                  const value = e.target.value;
-                  handleInputChange("iosVersion", value === "" ? "" : Number(value));
+                  const value = e.target.value === "" ? "" : Number(e.target.value);
+                  handleInputChange("iosVersion", value);
                 }}
                 className="w-full px-4 py-3 rounded-xl border border-amber-200 focus:ring-2 focus:ring-yellow-400 focus:border-transparent bg-white/50 transition-all duration-200 outline-none font-semibold text-gray-700"
                 placeholder="1"

@@ -237,10 +237,14 @@ const ReportsPage = () => {
       let filteredBranches = branchList || [];
       const currentRole = String(role || "").toLowerCase();
 
-      if (role && currentRole !== "admin") {
-        const assignedBranchIds = Array.isArray(branches)
-          ? branches.map(b => String(b._id || b))
-          : [];
+      const assignedBranchIds = Array.isArray(branches)
+        ? branches.map(b => String(b._id || b))
+        : [];
+      const isMainBranchStaff = currentRole !== "admin" && filteredBranches.some(
+        b => assignedBranchIds.includes(String(b._id)) && b.isMainBranch
+      );
+
+      if (role && currentRole !== "admin" && !isMainBranchStaff) {
         filteredBranches = filteredBranches.filter(b => assignedBranchIds.includes(String(b._id)));
       }
 
@@ -258,7 +262,7 @@ const ReportsPage = () => {
       });
       setAllDoctors(enhancedDoctors);
 
-      if (currentRole !== "admin" && filteredBranches.length > 0) {
+      if (currentRole !== "admin" && !isMainBranchStaff && filteredBranches.length > 0) {
         setSelectedBranchId(filteredBranches[0]._id);
       } else {
         setSelectedBranchId("");

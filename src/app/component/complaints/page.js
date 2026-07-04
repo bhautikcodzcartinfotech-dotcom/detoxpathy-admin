@@ -321,6 +321,7 @@ export default function NotesPage() {
                                     <th className="px-6 py-4 font-medium">User Name</th>
                                     <th className="px-6 py-4 font-medium">User Mobile</th>
                                     <th className="px-6 py-4 font-medium">Note</th>
+                                    {isAdmin && <th className="px-6 py-4 font-medium">Sent By</th>}
                                     <th className="px-6 py-4 font-medium">Date</th>
                                     <th className="px-6 py-4 font-medium">Status</th>
                                     <th className="px-6 py-4 font-medium text-center">Action</th>
@@ -338,6 +339,14 @@ export default function NotesPage() {
                                         <td className="px-6 py-4 max-w-md truncate" title={c.complaint}>
                                             {c.complaint}
                                         </td>
+                                        {isAdmin && (
+                                            <td className="px-6 py-4 whitespace-nowrap">
+                                                {c.createdBy && typeof c.createdBy === "object"
+                                                    ? <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700">{c.createdBy.username || c.createdBy.email || "—"}</span>
+                                                    : <span className="text-gray-400">—</span>
+                                                }
+                                            </td>
+                                        )}
                                         <td className="px-6 py-4 whitespace-nowrap text-gray-500">
                                             {new Date(c.createdAt).toLocaleDateString()}
                                         </td>
