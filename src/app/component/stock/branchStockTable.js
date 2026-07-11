@@ -4,7 +4,7 @@ import { getExpiryBatches } from "@/utils/stockDisplay";
 import ExpiryToggleButton from "./ExpiryToggleButton";
 import ExpiryBatchesPanel from "./ExpiryBatchesPanel";
 
-const BranchStockTable = ({ stocks, loading }) => {
+const BranchStockTable = ({ stocks, loading, onEdit }) => {
   const [expandedId, setExpandedId] = useState(null);
 
   if (loading && stocks.length === 0) {
@@ -30,6 +30,7 @@ const BranchStockTable = ({ stocks, loading }) => {
             <th className="px-4 py-3 font-black text-center">Available</th>
             <th className="px-4 py-3 font-black text-center">Expiry Details</th>
             <th className="px-4 py-3 font-black text-center">Breakage</th>
+            {onEdit && <th className="px-4 py-3 font-black text-center">Action</th>}
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">
@@ -43,7 +44,10 @@ const BranchStockTable = ({ stocks, loading }) => {
 
             return (
               <React.Fragment key={stock._id}>
-                <tr className="group hover:bg-gray-50/50 transition-colors">
+                <tr
+                  className={`group hover:bg-gray-50/50 transition-colors ${onEdit ? "cursor-pointer" : ""}`}
+                  onClick={onEdit ? () => onEdit(stock) : undefined}
+                >
                   <td className="py-4">
                     <div className="flex items-center gap-3">
                       <span className="font-semibold text-gray-700">{name}</span>
@@ -80,10 +84,20 @@ const BranchStockTable = ({ stocks, loading }) => {
                   <td className="py-4 text-center font-bold text-gray-700">
                     {(stock.breakage || 0).toLocaleString()}
                   </td>
+                  {onEdit && (
+                    <td className="py-4 text-center" onClick={(e) => e.stopPropagation()}>
+                      <button
+                        onClick={() => onEdit(stock)}
+                        className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 bg-amber-50 text-amber-700 border border-amber-200 rounded-lg hover:bg-amber-100 transition-all"
+                      >
+                        Edit
+                      </button>
+                    </td>
+                  )}
                 </tr>
                 {isExpanded && batches.length > 0 && (
                   <tr className="bg-gradient-to-r from-amber-50/80 to-yellow-50/40">
-                    <td colSpan={6} className="px-5 py-4">
+                    <td colSpan={onEdit ? 7 : 6} className="px-5 py-4">
                       <ExpiryBatchesPanel title={`${name} — Expiry Breakdown`} batches={batches} />
                     </td>
                   </tr>

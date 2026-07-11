@@ -16,6 +16,11 @@ const StockForm = ({ role, initialValues, products, plans, branches, onSubmit, o
     type: "product",
   });
 
+  const [expiryBatches, setExpiryBatches] = useState([]);
+  const [availableWithoutExpiry, setAvailableWithoutExpiry] = useState(0);
+  const [breakageWithoutExpiry, setBreakageWithoutExpiry] = useState(0);
+  const [untrackedExpiry, setUntrackedExpiry] = useState("");
+
   useEffect(() => {
     const mainB = Array.isArray(branches) ? branches.find(b => b.isMainBranch) || branches[0] : null;
 
@@ -31,6 +36,22 @@ const StockForm = ({ role, initialValues, products, plans, branches, onSubmit, o
         isIncrement: false,
         type: initialValues.planId ? "plan" : "product",
       });
+
+      const batches = Array.isArray(initialValues.expiryBatches)
+        ? initialValues.expiryBatches.map(b => ({
+            ...b,
+            expiry: b.expiry ? new Date(b.expiry).toISOString().split('T')[0] : ""
+          }))
+        : [];
+
+      setExpiryBatches(batches);
+
+      // Calculate discrepancy
+      const sumAvail = batches.reduce((acc, b) => acc + (Number(b.available) || 0), 0);
+      const sumBreak = batches.reduce((acc, b) => acc + (Number(b.breakage) || 0), 0);
+      setAvailableWithoutExpiry(Math.max(0, (initialValues.available || 0) - sumAvail));
+      setBreakageWithoutExpiry(Math.max(0, (initialValues.breakage || 0) - sumBreak));
+      setUntrackedExpiry("");
     } else {
       setFormData(prev => ({
         ...prev,
@@ -40,6 +61,10 @@ const StockForm = ({ role, initialValues, products, plans, branches, onSubmit, o
         expiry: "",
         isIncrement: true,
       }));
+      setExpiryBatches([]);
+      setAvailableWithoutExpiry(0);
+      setBreakageWithoutExpiry(0);
+      setUntrackedExpiry("");
     }
   }, [initialValues, branches]);
 
@@ -52,13 +77,80 @@ const StockForm = ({ role, initialValues, products, plans, branches, onSubmit, o
     }));
   };
 
+  const handleAddBatch = () => {
+    setExpiryBatches((prev) => [
+      ...prev,
+      { expiry: "", available: 0, breakage: 0 }
+    ]);
+  };
+
+  const handleRemoveBatch = (index) => {
+    const batch = expiryBatches[index];
+    setAvailableWithoutExpiry(prev => prev + (Number(batch.available) || 0));
+    setBreakageWithoutExpiry(prev => prev + (Number(batch.breakage) || 0));
+    setExpiryBatches((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleBatchChange = (index, field, value) => {
+    if (field === "expiry" && !value) {
+      const batch = expiryBatches[index];
+      setAvailableWithoutExpiry(prev => prev + (Number(batch.available) || 0));
+      setBreakageWithoutExpiry(prev => prev + (Number(batch.breakage) || 0));
+      setExpiryBatches((prev) => prev.filter((_, i) => i !== index));
+      return;
+    }
+    setExpiryBatches((prev) =>
+      prev.map((batch, i) => (i === index ? { ...batch, [field]: value } : batch))
+    );
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    const payload = { ...formData };
-    // branchId is always the main branch _id — never null
+    const payload = { ...formData, branchId: formData.branchId };
+    
     if (payload.type === "product") delete payload.planId;
     else delete payload.productId;
     delete payload.type;
+
+    let finalBatches = [...expiryBatches];
+    let finalAvailWithout = Number(availableWithoutExpiry) || 0;
+    let finalBreakWithout = Number(breakageWithoutExpiry) || 0;
+
+    // Convert untracked stock to a batch if an expiry date is assigned
+    if (untrackedExpiry && finalAvailWithout > 0) {
+      finalBatches.push({
+        expiry: untrackedExpiry,
+        available: finalAvailWithout,
+        breakage: finalBreakWithout
+      });
+      finalAvailWithout = 0;
+      finalBreakWithout = 0;
+    }
+
+    if (finalBatches.length > 0) {
+      payload.expiryBatches = finalBatches.map(b => ({
+        expiry: b.expiry,
+        available: Number(b.available) || 0,
+        breakage: Number(b.breakage) || 0
+      }));
+      
+      payload.availableWithoutExpiry = finalAvailWithout;
+      payload.breakageWithoutExpiry = finalBreakWithout;
+
+      // Calculate totals from batches + untracked expiry quantities
+      payload.available = payload.expiryBatches.reduce((acc, curr) => acc + curr.available, 0) + payload.availableWithoutExpiry;
+      payload.breakage = payload.expiryBatches.reduce((acc, curr) => acc + curr.breakage, 0) + payload.breakageWithoutExpiry;
+      
+      const sorted = [...payload.expiryBatches]
+        .filter(b => b.expiry)
+        .sort((a, b) => new Date(a.expiry) - new Date(b.expiry));
+      payload.expiry = sorted[0]?.expiry || null;
+    } else {
+      payload.available = Number(payload.available) || 0;
+      payload.breakage = Number(payload.breakage) || 0;
+      payload.expiry = formData.expiry || null;
+    }
+
     onSubmit(payload);
   };
 
@@ -112,54 +204,158 @@ const StockForm = ({ role, initialValues, products, plans, branches, onSubmit, o
         </div>
       </div>
 
-      <div className="border-t pt-4 mt-4">
-        <p className="text-xs font-semibold text-gray-400 uppercase mb-4">Stock Levels</p>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Available Quantity</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              name="available"
-              value={formData.available}
-              onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, "");
-                setFormData((prev) => ({ ...prev, available: value }));
-              }}
-              placeholder="Enter quantity"
-              className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-[#134D41]/20 focus:border-[#134D41] outline-none transition-all"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Breakage Quantity</label>
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              name="breakage"
-              value={formData.breakage}
-              onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, "");
-                setFormData((prev) => ({ ...prev, breakage: value }));
-              }}
-              placeholder="Enter breakage quantity"
-              className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-[#134D41]/20 focus:border-[#134D41] outline-none transition-all"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
-            <input
-              type="date"
-              name="expiry"
-              value={formData.expiry}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-[#134D41]/20 focus:border-[#134D41] outline-none transition-all"
-            />
-          </div>
+      <div className="border-t pt-4 mt-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-semibold text-gray-400 uppercase">Stock Levels</p>
+          <button
+            type="button"
+            onClick={handleAddBatch}
+            className="text-[10px] font-black text-amber-600 hover:text-amber-700 uppercase tracking-widest transition-all cursor-pointer"
+          >
+            + Add Expiry Batch
+          </button>
         </div>
+
+        {expiryBatches.length > 0 ? (
+          <div className="space-y-4 max-h-[320px] overflow-y-auto pr-1">
+            {/* Expiry-tracked batches list */}
+            {expiryBatches.map((batch, index) => (
+              <div key={index} className="border border-gray-200 rounded-2xl p-4 bg-gray-50/50 space-y-3 relative shadow-sm">
+                <button
+                  type="button"
+                  onClick={() => handleRemoveBatch(index)}
+                  className="absolute top-3.5 right-4 text-[10px] font-black uppercase text-red-500 hover:text-red-700 transition-all cursor-pointer"
+                >
+                  Remove
+                </button>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-wider">Lot / Batch #{index + 1}</p>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-500 mb-1">Expiry Date</label>
+                    <input
+                      type="date"
+                      value={batch.expiry}
+                      onChange={(e) => handleBatchChange(index, "expiry", e.target.value)}
+                      className="w-full border border-gray-300 bg-white rounded-xl p-2 text-xs focus:ring-2 focus:ring-[#134D41]/20 focus:border-[#134D41] outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-500 mb-1">Available Qty</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      required
+                      value={batch.available}
+                      onChange={(e) => handleBatchChange(index, "available", e.target.value.replace(/\D/g, ""))}
+                      className="w-full border border-gray-300 bg-white rounded-xl p-2 text-xs focus:ring-2 focus:ring-[#134D41]/20 focus:border-[#134D41] outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-500 mb-1">Breakage Qty</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      required
+                      value={batch.breakage}
+                      onChange={(e) => handleBatchChange(index, "breakage", e.target.value.replace(/\D/g, ""))}
+                      className="w-full border border-gray-300 bg-white rounded-xl p-2 text-xs focus:ring-2 focus:ring-[#134D41]/20 focus:border-[#134D41] outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Without Expiry section */}
+            {(availableWithoutExpiry > 0 || breakageWithoutExpiry > 0) && (
+              <div className="border border-gray-200 rounded-2xl p-4 bg-gray-50/50 space-y-3 relative shadow-sm">
+                <p className="text-[10px] font-black text-amber-600 uppercase tracking-wider">No Expiry Date (Untracked)</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-500 mb-1">Set Expiry Date</label>
+                    <input
+                      type="date"
+                      value={untrackedExpiry}
+                      onChange={(e) => setUntrackedExpiry(e.target.value)}
+                      className="w-full border border-gray-300 bg-white rounded-xl p-2 text-xs focus:ring-2 focus:ring-[#134D41]/20 focus:border-[#134D41] outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-500 mb-1">Available Qty</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={availableWithoutExpiry}
+                      onChange={(e) => setAvailableWithoutExpiry(Number(e.target.value.replace(/\D/g, "")) || 0)}
+                      className="w-full border border-gray-300 bg-white rounded-xl p-2 text-xs focus:ring-2 focus:ring-[#134D41]/20 focus:border-[#134D41] outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-gray-500 mb-1">Breakage Qty</label>
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={breakageWithoutExpiry}
+                      onChange={(e) => setBreakageWithoutExpiry(Number(e.target.value.replace(/\D/g, "")) || 0)}
+                      className="w-full border border-gray-300 bg-white rounded-xl p-2 text-xs focus:ring-2 focus:ring-[#134D41]/20 focus:border-[#134D41] outline-none"
+                    />
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Available Quantity</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                name="available"
+                value={formData.available}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, "");
+                  setFormData((prev) => ({ ...prev, available: value }));
+                }}
+                placeholder="Enter quantity"
+                className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-[#134D41]/20 focus:border-[#134D41] outline-none transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Breakage Quantity</label>
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                name="breakage"
+                value={formData.breakage}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/\D/g, "");
+                  setFormData((prev) => ({ ...prev, breakage: value }));
+                }}
+                placeholder="Enter breakage quantity"
+                className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-[#134D41]/20 focus:border-[#134D41] outline-none transition-all"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Expiry Date</label>
+              <input
+                type="date"
+                name="expiry"
+                value={formData.expiry}
+                onChange={handleChange}
+                className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-[#134D41]/20 focus:border-[#134D41] outline-none transition-all"
+              />
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex gap-3 pt-6">

@@ -10,6 +10,7 @@ import {
   getBranchStocks,
   getAllBranches,
   addOrUpdateStock,
+  updateStock,
   addStockFromDocument,
   getAllProducts,
   getAllPlans,
@@ -225,7 +226,12 @@ const StockManagementPage = () => {
   const handleFormSubmit = async (formData) => {
     try {
       setLoading(true);
-      await addOrUpdateStock(formData);
+      if (editingStock?._id) {
+        // Update existing stock via PUT /update/:id (Admin only)
+        await updateStock(editingStock._id, formData);
+      } else {
+        await addOrUpdateStock(formData);
+      }
       toast.success(editingStock ? "Stock updated" : "Stock added");
       setIsDrawerOpen(false);
       fetchData();
@@ -358,7 +364,7 @@ const StockManagementPage = () => {
             <BranchStockTable
               stocks={filteredBranchStocks}
               loading={loading}
-              onEdit={handleEditStock}
+              onEdit={role === "Admin" ? handleEditStock : undefined}
             />
           </div>
         </div>
