@@ -84,6 +84,20 @@ const BranchTimePageContent = () => {
     7: "Sunday",
   };
 
+  const formatDisplayTime = (value) => {
+    if (!value) return "";
+
+    const match = String(value).trim().match(/^(\d{1,2}):(\d{2})$/);
+    if (!match) return value;
+
+    let hours = Number(match[1]);
+    const minutes = match[2];
+    const suffix = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12 || 12;
+
+    return `${hours}:${minutes} ${suffix}`;
+  };
+
   const fetchAllBranches = async () => {
     setBranchesReady(false);
     try {
@@ -406,14 +420,14 @@ const BranchTimePageContent = () => {
                         <div>
                           <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Time Window</div>
                           <div className="text-xs font-semibold text-gray-800 bg-white px-2 py-1 rounded-lg border border-gray-100 inline-block">
-                            {item.startTime} — {item.endTime}
+                            {formatDisplayTime(item.startTime)} — {formatDisplayTime(item.endTime)}
                           </div>
                         </div>
                         {item.breakStartTime && item.breakEndTime ? (
                           <div>
                             <div className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider mb-0.5">Break Time</div>
                             <div className="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-1 rounded-lg border border-amber-100 inline-block">
-                              {item.breakStartTime} — {item.breakEndTime}
+                              {formatDisplayTime(item.breakStartTime)} — {formatDisplayTime(item.breakEndTime)}
                             </div>
                           </div>
                         ) : (
@@ -500,7 +514,7 @@ const BranchTimePageContent = () => {
                   <div>
                     <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Time Window</div>
                     <div className="text-sm font-medium text-gray-800 bg-gray-50 p-2 rounded-lg border border-gray-100 inline-block">
-                      {item.startTime} — {item.endTime}
+                      {formatDisplayTime(item.startTime)} — {formatDisplayTime(item.endTime)}
                     </div>
                   </div>
 
@@ -508,7 +522,7 @@ const BranchTimePageContent = () => {
                     <div>
                       <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Break Time</div>
                       <div className="text-sm font-medium text-amber-600 bg-amber-50 p-2 rounded-lg border border-amber-100 inline-block">
-                        {item.breakStartTime} — {item.breakEndTime}
+                        {formatDisplayTime(item.breakStartTime)} — {formatDisplayTime(item.breakEndTime)}
                       </div>
                     </div>
                   ) : (

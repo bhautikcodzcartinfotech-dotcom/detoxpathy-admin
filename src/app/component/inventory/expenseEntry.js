@@ -1,9 +1,9 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { FiPlus, FiTrash2, FiSave, FiFilter, FiCalendar, FiBriefcase, FiUpload, FiX, FiPaperclip, FiDownload } from "react-icons/fi";
+import { FiPlus, FiTrash2, FiSave, FiFilter, FiCalendar, FiBriefcase, FiUpload, FiX, FiPaperclip, FiDownload, FiEye, FiEdit2 } from "react-icons/fi";
 import { FaRupeeSign } from "react-icons/fa";
 import axios from "axios";
-import { API_BASE, getAuthHeaders, getAllBranches, createExpense, getAllExpenses, deleteExpense, createAccount, getSetting, deleteAccount, resolveImageUrl } from "@/Api/AllApi";
+import { API_BASE, getAuthHeaders, getAllBranches, createExpense, updateExpense, getAllExpenses, deleteExpense, createAccount, getSetting, deleteAccount, resolveImageUrl } from "@/Api/AllApi";
 import { toast } from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import Dropdown from "@/utils/dropdown";
@@ -26,6 +26,10 @@ const ExpenseEntry = () => {
   const [accountDeleteConfirmOpen, setAccountDeleteConfirmOpen] = useState(false);
   const [accountToDelete, setAccountToDelete] = useState(null);
   const [accountDeleteType, setAccountDeleteType] = useState("Account");
+
+  // View and Edit States
+  const [viewingExpense, setViewingExpense] = useState(null);
+  const [editingExpense, setEditingExpense] = useState(null);
 
   // Form State
   const [form, setForm] = useState({
@@ -177,11 +181,39 @@ const ExpenseEntry = () => {
       return toast.error("Please fill in all required fields.");
     }
 
+    const paidFromAcc = accounts.find(a => String(a._id) === String(form.paidFromAccountId));
+    const isCashPayment = paidFromAcc && /cash/i.test(paidFromAcc.name || "");
+    const amountNum = Number(form.amount) || 0;
+
+    if (isCashPayment) {
+      if (amountNum > 5000) {
+        return toast.error("Expenses paid in Cash cannot exceed ₹5,000.");
+      }
+
+      const targetDateStr = form.expenseDate;
+      const dailyExpenses = expenses.filter(exp => {
+        if (editingExpense && String(exp._id) === String(editingExpense._id)) {
+          return false;
+        }
+        const expDateStr = exp.expenseDate ? exp.expenseDate.split('T')[0] : "";
+        const expPaidFrom = accounts.find(a => String(a._id) === String(exp.paidFromAccountId?._id || exp.paidFromAccountId));
+        const isExpCash = expPaidFrom && /cash/i.test(expPaidFrom.name || "");
+        return expDateStr === targetDateStr && isExpCash && String(exp.branchId?._id || exp.branchId) === String(form.branchId);
+      });
+
+      const dailyCashTotal = dailyExpenses.reduce((sum, exp) => sum + Number(exp.amount || 0), 0);
+      if (dailyCashTotal + amountNum > 5000) {
+        return toast.error(`Daily cash expense limit of ₹5,000 exceeded. Total other cash expenses today: ₹${dailyCashTotal}.`);
+      }
+    }
+
     try {
       setSaving(true);
       const formData = new FormData();
       if (receiptFile) {
         formData.append("receipt", receiptFile);
+      } else if (!receiptFileName && editingExpense && editingExpense.receiptUrl) {
+        formData.append("removeReceipt", "true");
       }
       formData.append("expenseAccountId", form.expenseAccountId);
       formData.append("paidFromAccountId", form.paidFromAccountId);
@@ -191,8 +223,14 @@ const ExpenseEntry = () => {
       formData.append("branchId", form.branchId || "");
       formData.append("expenseDate", form.expenseDate);
 
-      await createExpense(formData);
-      toast.success("Expense successfully saved and ledger posted!");
+      if (editingExpense) {
+        await updateExpense(editingExpense._id, formData);
+        toast.success("Expense successfully updated and ledger adjusted!");
+        setEditingExpense(null);
+      } else {
+        await createExpense(formData);
+        toast.success("Expense successfully saved and ledger posted!");
+      }
       
       clearReceipt();
       
@@ -233,6 +271,53 @@ const ExpenseEntry = () => {
     }
   };
 
+  const handleView = (expense) => {
+    setViewingExpense(expense);
+  };
+
+  const handleEditClick = (expense) => {
+    setEditingExpense(expense);
+    setForm({
+      expenseAccountId: expense.expenseAccountId?._id || expense.expenseAccountId || "",
+      paidFromAccountId: expense.paidFromAccountId?._id || expense.paidFromAccountId || "",
+      amount: String(expense.amount || ""),
+      description: expense.description || "",
+      referenceNo: expense.referenceNo || "",
+      branchId: expense.branchId?._id || expense.branchId || "",
+      expenseDate: expense.expenseDate ? expense.expenseDate.split('T')[0] : new Date().toISOString().split('T')[0]
+    });
+    if (expense.receiptUrl) {
+      const filename = expense.receiptUrl.split('/').pop();
+      setReceiptFileName(filename);
+      setReceiptFile(null);
+    } else {
+      setReceiptFileName("");
+      setReceiptFile(null);
+    }
+  };
+
+  const cancelEdit = () => {
+    setEditingExpense(null);
+    setReceiptFile(null);
+    setReceiptFileName("");
+    let defaultBranchId = "";
+    if (role === "subadmin") {
+      const firstAllowed = branches.find(b => allowedBranchIds.includes(String(b._id)));
+      if (firstAllowed) {
+        defaultBranchId = firstAllowed._id;
+      }
+    }
+    setForm({
+      expenseAccountId: "",
+      paidFromAccountId: "",
+      amount: "",
+      description: "",
+      referenceNo: "",
+      branchId: defaultBranchId,
+      expenseDate: new Date().toISOString().split('T')[0]
+    });
+  };
+
   const handleCreateAccount = async (e) => {
     e.preventDefault();
     if (!newAcc.name || !newAcc.type) {
@@ -240,7 +325,12 @@ const ExpenseEntry = () => {
     }
 
     try {
-      await createAccount(newAcc);
+      // For both subadmins and super admins, pass the selected branchId if present
+      const payload = { ...newAcc };
+      if (form.branchId) {
+        payload.branchId = form.branchId;
+      }
+      await createAccount(payload);
       toast.success(`Account "${newAcc.name}" created successfully!`);
       setModalOpen(false);
       setNewAcc({ name: "", type: "Expense" });
@@ -263,6 +353,10 @@ const ExpenseEntry = () => {
   };
 
   const handleDeleteAccount = (id, type = "Account") => {
+    const target = accounts.find(a => String(a._id) === String(id));
+    if (target && /cash/i.test(target.name || "")) {
+      return toast.error(`You cannot delete the "${target.name}" account.`);
+    }
     setAccountToDelete(id);
     setAccountDeleteType(type);
     setAccountDeleteConfirmOpen(true);
@@ -328,13 +422,26 @@ const ExpenseEntry = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         <div className="p-6 bg-white rounded-2xl shadow-sm border border-gray-100 lg:col-span-1 h-fit">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-xl font-bold text-gray-800">Add New Expense</h2>
-            <button
-              onClick={() => setModalOpen(true)}
-              className="text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1.5 rounded-lg transition"
-            >
-              + Create Category
-            </button>
+            <h2 className="text-xl font-bold text-gray-800">
+              {editingExpense ? "Edit Expense" : "Add New Expense"}
+            </h2>
+            <div className="flex gap-2">
+              {editingExpense && (
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  className="text-xs font-bold text-gray-500 hover:text-gray-800 bg-gray-100 px-3 py-1.5 rounded-lg transition"
+                >
+                  Cancel Edit
+                </button>
+              )}
+              <button
+                onClick={() => setModalOpen(true)}
+                className="text-xs font-bold text-blue-600 hover:text-blue-800 bg-blue-50 px-3 py-1.5 rounded-lg transition"
+              >
+                + Create Category
+              </button>
+            </div>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -368,6 +475,7 @@ const ExpenseEntry = () => {
                 min="0"
                 value={form.amount}
                 onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
+                onWheel={(e) => e.target.blur()}
                 className="w-full border border-gray-200 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 outline-none text-sm font-medium text-gray-800"
                 placeholder="0.00"
                 required
@@ -460,7 +568,7 @@ const ExpenseEntry = () => {
               disabled={saving}
               className="w-full bg-[#134D41] hover:bg-[#0f3d34] text-white py-3 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition active:scale-95 disabled:opacity-50 mt-4 shadow-md shadow-[#134D41]/20"
             >
-              <FiSave size={18} /> {saving ? "Saving Expense..." : "Save Expense Entry"}
+              <FiSave size={18} /> {saving ? "Saving Expense..." : editingExpense ? "Update Expense Entry" : "Save Expense Entry"}
             </button>
           </form>
         </div>
@@ -587,17 +695,36 @@ const ExpenseEntry = () => {
                     <td className="px-4 py-3 text-right font-black text-xs text-red-600 whitespace-nowrap">
                       {currency}{(exp.amount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                     </td>
-                    <td className="px-4 py-3 text-center">
-                      <button
-                        onClick={() => {
-                          setExpenseToDelete(exp._id);
-                          setDeleteConfirmOpen(true);
-                        }}
-                        className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
-                        title="Delete expense entry"
-                      >
-                        <FiTrash2 size={14} />
-                      </button>
+                    <td className="px-4 py-3 text-center whitespace-nowrap">
+                      <div className="flex items-center justify-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleView(exp)}
+                          className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition"
+                          title="View Details"
+                        >
+                          <FiEye size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleEditClick(exp)}
+                          className="p-1.5 text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50 rounded-lg transition"
+                          title="Edit Entry"
+                        >
+                          <FiEdit2 size={14} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setExpenseToDelete(exp._id);
+                            setDeleteConfirmOpen(true);
+                          }}
+                          className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                          title="Delete expense entry"
+                        >
+                          <FiTrash2 size={14} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -618,8 +745,7 @@ const ExpenseEntry = () => {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 backdrop-blur-sm transition-opacity duration-300">
           <div className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-gray-100 transform scale-100 transition-all duration-300 animate-in fade-in zoom-in-95">
             <h3 className="text-lg font-black text-gray-800 mb-2">Create Custom Account Category</h3>
-            <p className="text-xs text-gray-500 mb-4">Add a new financial account or category dynamically to populate your dropdown forms.</p>
-
+            <p className="text-xs text-gray-500 mb-1">Add a new financial account or category dynamically to populate your dropdown forms.</p>
             <form onSubmit={handleCreateAccount} className="space-y-4">
               <div>
                 <label className="block mb-1 font-semibold text-xs text-gray-600">Account Name *</label>
@@ -635,15 +761,21 @@ const ExpenseEntry = () => {
 
               <div>
                 <label className="block mb-1 font-semibold text-xs text-gray-600">Account Type *</label>
-                <select
-                  value={newAcc.type}
-                  onChange={e => setNewAcc(n => ({ ...n, type: e.target.value }))}
-                  className="w-full border border-gray-200 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 outline-none bg-white text-sm text-gray-800"
-                  required
-                >
-                  <option value="Expense">Expense Category (Rent, Utility, Snacks)</option>
-                  <option value="Asset">Asset/Payment Account (Bank Account, Cash Box)</option>
-                </select>
+                {role === "Admin" ? (
+                  <select
+                    value={newAcc.type}
+                    onChange={e => setNewAcc(n => ({ ...n, type: e.target.value }))}
+                    className="w-full border border-gray-200 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 outline-none bg-white text-sm text-gray-800"
+                    required
+                  >
+                    <option value="Expense">Expense Category (Rent, Utility, Snacks)</option>
+                    <option value="Asset">Asset/Payment Account (Bank Account, Cash Box)</option>
+                  </select>
+                ) : (
+                  <div className="w-full border border-gray-100 bg-gray-50 rounded-xl p-2.5 text-xs text-gray-500 font-medium">
+                    Expense Category (Rent, Utility, Snacks)
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-3 pt-3">
@@ -699,6 +831,121 @@ const ExpenseEntry = () => {
         cancelText="Cancel"
         type="danger"
       />
+
+      {/* View Details Modal */}
+      {viewingExpense && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 max-w-2xl w-full max-h-[90vh] overflow-y-auto transform scale-100 transition-all duration-200">
+            <div className="sticky top-0 bg-white px-8 py-5 border-b border-gray-100 flex items-center justify-between z-10">
+              <div>
+                <h3 className="text-xl font-bold text-gray-800">
+                  Expense Details
+                </h3>
+                {viewingExpense.referenceNo && (
+                  <p className="text-xs text-gray-400 mt-1">
+                    Ref No: <span className="font-semibold text-blue-600">{viewingExpense.referenceNo}</span>
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => setViewingExpense(null)}
+                className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition"
+              >
+                <FiX size={20} />
+              </button>
+            </div>
+
+            <div className="p-8 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 bg-gray-50 rounded-2xl">
+                  <span className="block text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">Expense Category</span>
+                  <span className="font-bold text-gray-800 block truncate">{viewingExpense.expenseAccountId?.name || "N/A"}</span>
+                  <span className="block text-xs text-gray-500 mt-1">Code: {viewingExpense.expenseAccountId?.code || "N/A"}</span>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-2xl">
+                  <span className="block text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">Paid From Account</span>
+                  <span className="font-bold text-gray-800 block truncate">{viewingExpense.paidFromAccountId?.name || "N/A"}</span>
+                  <span className="block text-xs text-gray-500 mt-1">Code: {viewingExpense.paidFromAccountId?.code || "N/A"}</span>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 bg-gray-50 rounded-2xl">
+                  <span className="block text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">Expense Date</span>
+                  <span className="font-bold text-gray-800 block">
+                    {viewingExpense.expenseDate ? (
+                      <>
+                        {new Date(viewingExpense.expenseDate).toLocaleDateString("en-IN", { dateStyle: 'medium' })}
+                        <span className="block text-[11px] font-normal text-gray-500 mt-1">
+                          Time: {new Date(viewingExpense.createdAt || viewingExpense.expenseDate).toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+                        </span>
+                      </>
+                    ) : "N/A"}
+                  </span>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-2xl">
+                  <span className="block text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">Branch</span>
+                  <span className="font-bold text-gray-800 block truncate">{viewingExpense.branchId?.name || "All Branches / Main"}</span>
+                </div>
+              </div>
+
+              <div className="p-4 bg-gray-50 rounded-2xl">
+                <span className="block text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">Amount</span>
+                <span className="font-black text-2xl text-red-600 block">
+                  {currency}{(viewingExpense.amount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}
+                </span>
+              </div>
+
+              <div className="p-4 bg-gray-50 rounded-2xl">
+                <span className="block text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">Description</span>
+                <p className="text-sm text-gray-700 whitespace-pre-wrap mt-1">{viewingExpense.description || "N/A"}</p>
+              </div>
+
+              <div className="p-4 bg-gray-50 rounded-2xl flex items-center justify-between">
+                <div>
+                  <span className="block text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">Receipt File</span>
+                  {viewingExpense.receiptUrl ? (
+                    <span className="text-sm font-semibold text-gray-700 truncate block max-w-xs">
+                      {viewingExpense.receiptUrl.split('/').pop()}
+                    </span>
+                  ) : (
+                    <span className="text-gray-400 text-sm italic">No receipt uploaded.</span>
+                  )}
+                </div>
+                {viewingExpense.receiptUrl && (
+                  <div className="flex gap-2">
+                    <a
+                      href={resolveImageUrl(viewingExpense.receiptUrl)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-blue-50 hover:bg-blue-100 text-blue-700 px-4 py-2 rounded-xl text-xs font-bold transition inline-flex items-center gap-1.5"
+                    >
+                      <FiEye size={14} /> View
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadReceipt(viewingExpense.receiptUrl, `Receipt_${viewingExpense.referenceNo || viewingExpense._id}`)}
+                      className="bg-green-50 hover:bg-green-100 text-green-700 px-4 py-2 rounded-xl text-xs font-bold transition inline-flex items-center gap-1.5"
+                    >
+                      <FiDownload size={14} /> Download
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="px-8 py-5 border-t border-gray-100 flex justify-end gap-3 sticky bottom-0 bg-white">
+              <button
+                type="button"
+                onClick={() => setViewingExpense(null)}
+                className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

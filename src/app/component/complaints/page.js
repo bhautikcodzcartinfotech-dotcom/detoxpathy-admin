@@ -42,6 +42,14 @@ export default function NotesPage() {
     const [statusMap, setStatusMap] = useState({});
     const [loading, setLoading] = useState(true);
     const [statusFilter, setStatusFilter] = useState("all");
+    const [dateFilter, setDateFilter] = useState("all");
+    const [selectedDate, setSelectedDate] = useState(() => {
+        const today = new Date();
+        const yyyy = today.getFullYear();
+        const mm = String(today.getMonth() + 1).padStart(2, "0");
+        const dd = String(today.getDate()).padStart(2, "0");
+        return `${yyyy}-${mm}-${dd}`;
+    });
 
     const [userId, setUserId] = useState("");
     const [complaintText, setComplaintText] = useState("");
@@ -167,14 +175,80 @@ export default function NotesPage() {
     );
 
     const filteredComplaints = useMemo(() => {
-        if (statusFilter === "all") return complaintsWithStatus;
-        return complaintsWithStatus.filter((c) => c.noteStatus === statusFilter);
-    }, [complaintsWithStatus, statusFilter]);
+        let result = complaintsWithStatus;
+
+        if (statusFilter !== "all") {
+            result = result.filter((c) => c.noteStatus === statusFilter);
+        }
+
+        if (dateFilter !== "all") {
+            const today = new Date();
+            const startOfToday = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+
+            if (dateFilter === "today") {
+                const startOfTomorrow = new Date(startOfToday);
+                startOfTomorrow.setDate(startOfTomorrow.getDate() + 1);
+                result = result.filter((c) => {
+                    if (!c.createdAt) return false;
+                    const d = new Date(c.createdAt);
+                    return d >= startOfToday && d < startOfTomorrow;
+                });
+            } else if (dateFilter === "yesterday") {
+                const startOfYesterday = new Date(startOfToday);
+                startOfYesterday.setDate(startOfYesterday.getDate() - 1);
+                result = result.filter((c) => {
+                    if (!c.createdAt) return false;
+                    const d = new Date(c.createdAt);
+                    return d >= startOfYesterday && d < startOfToday;
+                });
+            } else if (dateFilter === "week") {
+                const dayOfWeek = today.getDay();
+                const diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+                const startOfWeek = new Date(startOfToday);
+                startOfWeek.setDate(startOfWeek.getDate() + diffToMonday);
+                const startOfNextWeek = new Date(startOfWeek);
+                startOfNextWeek.setDate(startOfNextWeek.getDate() + 7);
+                result = result.filter((c) => {
+                    if (!c.createdAt) return false;
+                    const d = new Date(c.createdAt);
+                    return d >= startOfWeek && d < startOfNextWeek;
+                });
+            } else if (dateFilter === "month") {
+                const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+                const startOfNextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+                result = result.filter((c) => {
+                    if (!c.createdAt) return false;
+                    const d = new Date(c.createdAt);
+                    return d >= startOfMonth && d < startOfNextMonth;
+                });
+            } else if (dateFilter === "selected" && selectedDate) {
+                const [year, month, day] = selectedDate.split("-").map(Number);
+                const startOfSelected = new Date(year, month - 1, day);
+                const endOfSelected = new Date(year, month - 1, day + 1);
+                result = result.filter((c) => {
+                    if (!c.createdAt) return false;
+                    const d = new Date(c.createdAt);
+                    return d >= startOfSelected && d < endOfSelected;
+                });
+            }
+        }
+
+        return result;
+    }, [complaintsWithStatus, statusFilter, dateFilter, selectedDate]);
 
     const statusFilterOptions = [
         { label: "All Notes", value: "all" },
         { label: "Pending Notes", value: "pending" },
         { label: "Completed Notes", value: "completed" },
+    ];
+
+    const dateFilterOptions = [
+        { label: "All Dates", value: "all" },
+        { label: "Today", value: "today" },
+        { label: "Yesterday", value: "yesterday" },
+        { label: "This Week", value: "week" },
+        { label: "This Month", value: "month" },
+        { label: "Selected Day", value: "selected" },
     ];
 
     const handleDeleteClick = (id, userName) => {
@@ -199,17 +273,44 @@ export default function NotesPage() {
     return (
         <RoleGuard allow={["Admin", "subadmin"]} permission="show notes page">
         <div className="p-6">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                <h1 className="text-2xl font-bold text-[#134D41]">Notes</h1>
-                <div className="w-full sm:w-64">
-                    <Dropdown
-                        label="Filter"
-                        options={statusFilterOptions}
-                        value={statusFilter}
-                        onChange={setStatusFilter}
-                        placeholder="All Notes"
-                        labelClassName="text-gray-700"
-                    />
+            <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
+                <div>
+                    <h1 className="text-2xl font-bold text-[#134D41]">Notes</h1>
+                </div>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-end gap-4 w-full md:w-auto">
+                    <div className="w-full sm:w-48">
+                        <Dropdown
+                            label="Filter Status"
+                            options={statusFilterOptions}
+                            value={statusFilter}
+                            onChange={setStatusFilter}
+                            placeholder="All Notes"
+                            labelClassName="text-gray-700"
+                        />
+                    </div>
+                    <div className="w-full sm:w-48">
+                        <Dropdown
+                            label="Filter Date"
+                            options={dateFilterOptions}
+                            value={dateFilter}
+                            onChange={setDateFilter}
+                            placeholder="All Dates"
+                            labelClassName="text-gray-700"
+                        />
+                    </div>
+                    {dateFilter === "selected" && (
+                        <div className="w-full sm:w-48">
+                            <label className="block mb-1.5 font-bold text-sm tracking-wide text-gray-700">
+                                Select Date
+                            </label>
+                            <input
+                                type="date"
+                                value={selectedDate}
+                                onChange={(e) => setSelectedDate(e.target.value)}
+                                className="w-full border border-gray-200 rounded-xl p-2.5 text-sm font-medium text-gray-900 bg-white transition-all duration-300 focus:border-[#134D41] focus:ring-4 focus:ring-[#134D41]/5 shadow-sm outline-none cursor-pointer"
+                            />
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -342,7 +443,7 @@ export default function NotesPage() {
                                         {isAdmin && (
                                             <td className="px-6 py-4 whitespace-nowrap">
                                                 {c.createdBy && typeof c.createdBy === "object"
-                                                    ? <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700">{c.createdBy.username || c.createdBy.email || "—"}</span>
+                                                    ? <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700">{c.createdBy.nickname?.trim() || c.createdBy.username || c.createdBy.email || "—"}</span>
                                                     : <span className="text-gray-400">—</span>
                                                 }
                                             </td>

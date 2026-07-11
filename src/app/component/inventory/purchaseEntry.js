@@ -1,7 +1,7 @@
 "use client";
-import React, { useState, useEffect } from "react";
-import { FiPlus, FiTrash2, FiSave, FiUpload, FiX } from "react-icons/fi";
-import { getAllParties, getAllProducts, getAllBranches, createPurchase, getAllPurchases, getSetting, resolveImageUrl, getMasterStock, getBranchStocks } from "@/Api/AllApi";
+import React, { useState, useEffect, useRef } from "react";
+import { FiPlus, FiTrash2, FiSave, FiUpload, FiX, FiEdit2, FiRotateCcw, FiEye } from "react-icons/fi";
+import { getAllParties, getAllProducts, getAllBranches, createPurchase, getAllPurchases, getSetting, resolveImageUrl, getMasterStock, getBranchStocks, updatePurchase, deletePurchase, undoPurchase } from "@/Api/AllApi";
 import { toast } from "react-hot-toast";
 import Dropdown from "@/utils/dropdown";
 import { useAuth } from "@/contexts/AuthContext";
@@ -29,6 +29,11 @@ const PurchaseEntry = () => {
   const [selectedStockBranchId, setSelectedStockBranchId] = useState("");
   const [stockLoading, setStockLoading] = useState(false);
   const [expandedItemIndex, setExpandedItemIndex] = useState(null);
+  const [editingPurchase, setEditingPurchase] = useState(null);
+  const [viewingPurchase, setViewingPurchase] = useState(null);
+  const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+  const [undoConfirmId, setUndoConfirmId] = useState(null);
+  const formRef = useRef(null);
 
   const [form, setForm] = useState({
     supplierId: "",
@@ -236,6 +241,97 @@ const PurchaseEntry = () => {
     setBillFileName("");
   };
 
+  const handleView = (purchase) => {
+    setViewingPurchase(purchase);
+  };
+
+  const handleEditClick = (purchase) => {
+    if (purchase.status === 'Cancelled') {
+      toast.error("Cannot edit a cancelled purchase entry");
+      return;
+    }
+    setEditingPurchase(purchase);
+    setForm({
+      supplierId: purchase.supplierId?._id || purchase.supplierId || "",
+      gstin: purchase.gstin || "",
+      invoiceNo: purchase.invoiceNo || "",
+      branchId: purchase.branchId?._id || purchase.branchId || "",
+      purchaseDate: purchase.purchaseDate ? purchase.purchaseDate.split('T')[0] : new Date().toISOString().split('T')[0],
+      items: purchase.items.map(item => ({
+        productId: item.productId?._id || item.productId || "",
+        available: String(item.available ?? item.quantity ?? 0),
+        breakage: String(item.breakage ?? 0),
+        expiry: item.expiry ? item.expiry.split('T')[0] : "",
+        rate: item.rate ?? 0,
+        gstPercentage: item.gstPercentage ?? 0,
+        totalAmount: item.totalAmount ?? 0
+      })),
+      subTotal: purchase.subTotal ?? 0,
+      totalGst: purchase.totalGst ?? 0,
+      grandTotal: purchase.grandTotal ?? 0
+    });
+    if (purchase.billUrl) {
+      const filename = purchase.billUrl.split('/').pop();
+      setBillFileName(filename);
+      setBillFile(null);
+    } else {
+      setBillFileName("");
+      setBillFile(null);
+    }
+    setTimeout(() => {
+      formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
+  const cancelEdit = () => {
+    setEditingPurchase(null);
+    setBillFile(null);
+    setBillFileName("");
+    setForm({
+      supplierId: "",
+      gstin: "",
+      invoiceNo: "",
+      branchId: branches[0]?._id || "",
+      purchaseDate: new Date().toISOString().split('T')[0],
+      items: [{ productId: "", available: "", breakage: "", expiry: "", rate: 0, gstPercentage: 0, totalAmount: 0 }],
+      subTotal: 0,
+      totalGst: 0,
+      grandTotal: 0
+    });
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirmId) return;
+    try {
+      setLoading(true);
+      await deletePurchase(deleteConfirmId);
+      toast.success("Purchase entry deleted and stock reverted");
+      fetchPurchases();
+      fetchStockData();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to delete purchase");
+    } finally {
+      setLoading(false);
+      setDeleteConfirmId(null);
+    }
+  };
+
+  const handleUndoConfirm = async () => {
+    if (!undoConfirmId) return;
+    try {
+      setLoading(true);
+      await undoPurchase(undoConfirmId);
+      toast.success("Purchase entry cancelled and stock reverted");
+      fetchPurchases();
+      fetchStockData();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to cancel purchase");
+    } finally {
+      setLoading(false);
+      setUndoConfirmId(null);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const validItems = form.items.filter(item => item.productId !== "");
@@ -247,24 +343,31 @@ const PurchaseEntry = () => {
       return toast.error("Please enter available quantity for all products");
     }
 
-
     try {
       setLoading(true);
       const formData = new FormData();
       if (billFile) {
         formData.append("bill", billFile);
+      } else if (!billFileName && editingPurchase && editingPurchase.billUrl) {
+        formData.append("removeBill", "true");
       }
       formData.append("supplierId", form.supplierId);
       formData.append("gstin", form.gstin || "");
       formData.append("invoiceNo", form.invoiceNo);
       formData.append("purchaseDate", form.purchaseDate);
       formData.append("items", JSON.stringify(validItems));
-      await createPurchase(formData);
-      toast.success("Purchase entry saved and stock updated");
+
+      if (editingPurchase) {
+        await updatePurchase(editingPurchase._id, formData);
+        toast.success("Purchase entry updated and stock updated");
+        setEditingPurchase(null);
+      } else {
+        await createPurchase(formData);
+        toast.success("Purchase entry saved and stock updated");
+      }
       fetchPurchases();
       fetchStockData();
       clearBill();
-      // Reset form
       setForm(f => ({
         supplierId: "",
         gstin: "",
@@ -590,8 +693,21 @@ const PurchaseEntry = () => {
         </div>
       </div>
 
-      <div className="p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
-        <h2 className="text-xl font-bold mb-6 text-gray-800">New Purchase Entry</h2>
+      <div ref={formRef} className="p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-xl font-bold text-gray-800">
+            {editingPurchase ? `Edit Purchase Entry (${editingPurchase.invoiceNo})` : "New Purchase Entry"}
+          </h2>
+          {editingPurchase && (
+            <button
+              type="button"
+              onClick={cancelEdit}
+              className="px-4 py-2 text-sm font-semibold text-gray-500 hover:text-gray-800 hover:bg-gray-100 rounded-xl transition"
+            >
+              Cancel Edit
+            </button>
+          )}
+        </div>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
@@ -730,6 +846,7 @@ const PurchaseEntry = () => {
                           min="0"
                           value={item.rate}
                           onChange={e => handleItemChange(index, 'rate', e.target.value)}
+                          onWheel={(e) => e.target.blur()}
                           placeholder="0.00"
                           className="w-full text-sm bg-transparent text-right outline-none"
                         />
@@ -744,6 +861,7 @@ const PurchaseEntry = () => {
                           max="100"
                           value={item.gstPercentage}
                           onChange={e => handleItemChange(index, 'gstPercentage', e.target.value)}
+                          onWheel={(e) => e.target.blur()}
                           placeholder="0"
                           className="w-12 text-sm bg-transparent text-center outline-none"
                         />
@@ -847,7 +965,7 @@ const PurchaseEntry = () => {
               disabled={loading}
               className="bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-white px-10 py-3 rounded-xl font-black text-sm flex items-center gap-2 transition-all shadow-lg shadow-yellow-200/50 active:scale-95 disabled:opacity-50"
             >
-              <FiSave size={20} /> {loading ? "Saving..." : "Save Purchase Entry"}
+              <FiSave size={20} /> {loading ? "Saving..." : editingPurchase ? "Update Purchase Entry" : "Save Purchase Entry"}
             </button>
           </div>
         </form>
@@ -855,7 +973,7 @@ const PurchaseEntry = () => {
 
       <div className="p-6 bg-white rounded-2xl shadow-sm border border-gray-100">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
-          <h2 className="text-xl font-bold text-gray-800">Recent Purchase Entries</h2>
+          <h2 className="text-xl font-bold text-gray-800">Purchase Entries</h2>
           <div className="flex items-center gap-3">
             <input 
               type="month" 
@@ -884,13 +1002,21 @@ const PurchaseEntry = () => {
                 <th className="px-4 py-3 font-black">Items</th>
                 <th className="px-4 py-3 font-black text-right">Grand Total</th>
                 <th className="px-4 py-3 font-black text-center">Bill</th>
+                <th className="px-4 py-3 font-black text-center w-36">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y">
               {filteredPurchases.map((p, i) => (
-                <tr key={p._id} className="hover:bg-gray-50 transition">
+                <tr key={p._id} className={`hover:bg-gray-50 transition ${p.status === 'Cancelled' ? 'bg-gray-50/70 text-gray-400' : ''}`}>
                   <td className="p-3 whitespace-nowrap">{p.purchaseDate ? new Date(p.purchaseDate).toLocaleDateString() : 'N/A'}</td>
-                  <td className="p-3 font-medium text-blue-600">{p.invoiceNo}</td>
+                  <td className="p-3 font-medium text-blue-600">
+                    <span className={p.status === 'Cancelled' ? 'line-through text-gray-400' : ''}>{p.invoiceNo}</span>
+                    {p.status === 'Cancelled' && (
+                      <span className="ml-2 px-1.5 py-0.5 text-[9px] font-bold bg-red-100 text-red-600 rounded">
+                        CANCELLED
+                      </span>
+                    )}
+                  </td>
                   <td className="p-3">{p.supplierId?.name || 'N/A'}</td>
                   <td className="p-3 text-xs">{p.gstin || 'N/A'}</td>
                   <td className="p-3 text-xs text-gray-500">
@@ -919,17 +1045,214 @@ const PurchaseEntry = () => {
                       <span className="text-gray-400 text-xs">—</span>
                     )}
                   </td>
+                  <td className="p-3 whitespace-nowrap text-center">
+                    <div className="flex items-center justify-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => handleView(p)}
+                        className="p-1.5 text-blue-500 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition"
+                        title="View Details"
+                      >
+                        <FiEye size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleEditClick(p)}
+                        disabled={p.status === 'Cancelled'}
+                        className={`p-1.5 text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50 rounded-lg transition ${
+                          p.status === 'Cancelled' ? 'opacity-30 cursor-not-allowed' : ''
+                        }`}
+                        title="Edit Entry"
+                      >
+                        <FiEdit2 size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setUndoConfirmId(p._id)}
+                        disabled={p.status === 'Cancelled'}
+                        className={`p-1.5 text-orange-500 hover:text-orange-700 hover:bg-orange-50 rounded-lg transition ${
+                          p.status === 'Cancelled' ? 'opacity-30 cursor-not-allowed' : ''
+                        }`}
+                        title="Undo (Cancel)"
+                      >
+                        <FiRotateCcw size={15} />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setDeleteConfirmId(p._id)}
+                        className="p-1.5 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition"
+                        title="Delete Permanently"
+                      >
+                        <FiTrash2 size={15} />
+                      </button>
+                    </div>
+                  </td>
                 </tr>
               ))}
               {filteredPurchases.length === 0 && (
                 <tr>
-                  <td colSpan="7" className="p-8 text-center text-gray-400 italic">No purchase entries found.</td>
+                  <td colSpan="8" className="p-8 text-center text-gray-400 italic">No purchase entries found.</td>
                 </tr>
               )}
             </tbody>
           </table>
         </div>
       </div>
+
+      {/* View Details Modal */}
+      {viewingPurchase && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/55 backdrop-blur-md animate-in fade-in duration-200">
+          <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 max-w-4xl w-full max-h-[90vh] overflow-y-auto transform scale-100 transition-all duration-200">
+            <div className="sticky top-0 bg-white px-8 py-5 border-b border-gray-100 flex items-center justify-between z-10">
+              <div>
+                <h3 className="text-xl font-bold text-gray-800">
+                  Purchase Invoice Details
+                </h3>
+                <p className="text-xs text-gray-400 mt-1">
+                  Invoice No: <span className="font-semibold text-blue-600">{viewingPurchase.invoiceNo}</span>
+                </p>
+              </div>
+              <button
+                onClick={() => setViewingPurchase(null)}
+                className="p-2 hover:bg-gray-100 rounded-full text-gray-400 hover:text-gray-600 transition"
+              >
+                <FiX size={20} />
+              </button>
+            </div>
+
+            <div className="p-8 space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="p-4 bg-gray-50 rounded-2xl">
+                  <span className="block text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">Supplier</span>
+                  <span className="font-bold text-gray-800 block truncate">{viewingPurchase.supplierId?.name || "N/A"}</span>
+                  <span className="block text-xs text-gray-500 mt-1">GSTIN: {viewingPurchase.gstin || "N/A"}</span>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-2xl">
+                  <span className="block text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">Purchase Date</span>
+                  <span className="font-bold text-gray-800 block">
+                    {viewingPurchase.purchaseDate ? (
+                      <>
+                        {new Date(viewingPurchase.purchaseDate).toLocaleDateString("en-IN", { dateStyle: 'medium' })}
+                        <span className="block text-[11px] font-normal text-gray-500 mt-1">
+                          Time: {new Date(viewingPurchase.createdAt || viewingPurchase.purchaseDate).toLocaleTimeString("en-IN", { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true })}
+                        </span>
+                      </>
+                    ) : "N/A"}
+                  </span>
+                </div>
+                <div className="p-4 bg-gray-50 rounded-2xl">
+                  <span className="block text-xs text-gray-400 font-semibold uppercase tracking-wider mb-1">Branch & Status</span>
+                  <span className="font-bold text-gray-800 block truncate">{viewingPurchase.branchId?.name || "Main Branch"}</span>
+                  <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 mt-1 rounded-full text-xs font-bold ${
+                    viewingPurchase.status === 'Cancelled'
+                      ? 'bg-red-50 text-red-600 border border-red-100'
+                      : 'bg-green-50 text-green-700 border border-green-100'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${viewingPurchase.status === 'Cancelled' ? 'bg-red-500' : 'bg-green-600'}`} />
+                    {viewingPurchase.status || 'Active'}
+                  </span>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-bold text-gray-800 mb-3">Purchased Items</h4>
+                <div className="overflow-x-auto border border-gray-100 rounded-2xl">
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-gray-50 text-gray-500 text-xs font-bold uppercase tracking-wider">
+                      <tr>
+                        <th className="px-4 py-3">Product</th>
+                        <th className="px-4 py-3 text-center">Available Qty</th>
+                        <th className="px-4 py-3 text-center">Breakage Qty</th>
+                        <th className="px-4 py-3 text-center">Expiry Date</th>
+                        <th className="px-4 py-3 text-right">Rate</th>
+                        <th className="px-4 py-3 text-center">GST</th>
+                        <th className="px-4 py-3 text-right">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {viewingPurchase.items?.map((item, idx) => (
+                        <tr key={idx} className="hover:bg-gray-50/50 transition">
+                          <td className="px-4 py-3 font-medium text-gray-800">
+                            {item.productId?.name || products.find(p => p._id === (item.productId?._id || item.productId))?.name || "Unknown Product"}
+                          </td>
+                          <td className="px-4 py-3 text-center font-bold text-gray-700">{item.available ?? item.quantity ?? 0}</td>
+                          <td className="px-4 py-3 text-center text-red-500">{item.breakage ?? 0}</td>
+                          <td className="px-4 py-3 text-center text-gray-500">{item.expiry ? formatExpiryDate(item.expiry) : "—"}</td>
+                          <td className="px-4 py-3 text-right text-gray-600">{viewingPurchase.currency || "₹"}{(item.rate || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+                          <td className="px-4 py-3 text-center text-gray-600">{item.gstPercentage || 0}%</td>
+                          <td className="px-4 py-3 text-right font-bold text-gray-800">{viewingPurchase.currency || "₹"}{(item.totalAmount || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center p-5 bg-gray-50 rounded-2xl gap-4">
+                <div>
+                  {viewingPurchase.billUrl ? (
+                    <a
+                      href={resolveImageUrl(viewingPurchase.billUrl)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-yellow-400 hover:bg-yellow-500 text-yellow-950 px-5 py-2.5 rounded-xl text-sm font-bold shadow-md transition inline-flex items-center gap-2 active:scale-95"
+                    >
+                      <FiEye /> View Uploaded Bill
+                    </a>
+                  ) : (
+                    <span className="text-gray-400 text-sm italic">No bill uploaded.</span>
+                  )}
+                </div>
+                <div className="w-full md:w-80 space-y-2 text-sm text-gray-600">
+                  <div className="flex justify-between border-b pb-1">
+                    <span>Sub Total</span>
+                    <span className="font-semibold text-gray-800">{viewingPurchase.currency || "₹"}{(viewingPurchase.subTotal || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between border-b pb-1">
+                    <span>Total GST</span>
+                    <span className="font-semibold text-gray-800">{viewingPurchase.currency || "₹"}{(viewingPurchase.totalGst || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                  </div>
+                  <div className="flex justify-between pt-1 text-lg">
+                    <span className="font-bold text-gray-800">Grand Total</span>
+                    <span className="font-bold text-yellow-600">{viewingPurchase.currency || "₹"}{(viewingPurchase.grandTotal || 0).toLocaleString("en-IN", { minimumFractionDigits: 2 })}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="px-8 py-5 border-t border-gray-100 flex justify-end gap-3 sticky bottom-0 bg-white">
+              <button
+                type="button"
+                onClick={() => setViewingPurchase(null)}
+                className="px-6 py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold rounded-xl text-sm transition"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Dialogs */}
+      <ConfirmationDialog
+        isOpen={!!deleteConfirmId}
+        onClose={() => setDeleteConfirmId(null)}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Purchase Entry"
+        message="Are you sure you want to permanently delete this purchase entry? This will subtract the item quantities from stock and reverse all associated ledger balances. This action cannot be undone."
+        type="danger"
+        confirmText="Delete"
+      />
+
+      <ConfirmationDialog
+        isOpen={!!undoConfirmId}
+        onClose={() => setUndoConfirmId(null)}
+        onConfirm={handleUndoConfirm}
+        title="Cancel Purchase Entry"
+        message="Are you sure you want to cancel (undo) this purchase entry? This will revert the stock additions and reverse ledger balances. The record will remain in history as Cancelled."
+        type="warning"
+        confirmText="Cancel Entry"
+      />
     </div>
   );
 };

@@ -21,10 +21,44 @@ const BranchTimeForm = ({
     { value: "7", label: "Sunday" },
   ];
 
-  const [availability, setAvailability] = useState([
-    { day: "1", startTime: "10:00 AM", endTime: "07:00 PM", breakStartTime: "01:15 PM", breakEndTime: "02:00 PM", slotDuration: 15, bufferTime: 5 },
-  ]);
   const initializedBranches = useRef(new Set());
+
+  const toTimeInputValue = (value) => {
+    if (value == null || value === "") return "";
+
+    const normalized = String(value).trim().toUpperCase();
+
+    if (/^\d{1,2}:\d{2}$/.test(normalized)) {
+      return normalized;
+    }
+
+    const match = normalized.match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/);
+    if (!match) return "";
+
+    let hours = Number(match[1]);
+    const minutes = String(match[2]).padStart(2, "0");
+    const meridiem = match[3];
+
+    if (meridiem === "PM" && hours < 12) hours += 12;
+    if (meridiem === "AM" && hours === 12) hours = 0;
+
+    return `${String(hours).padStart(2, "0")}:${minutes}`;
+  };
+
+  const normalizeAvailability = (items = []) =>
+    (Array.isArray(items) ? items : []).map((item) => ({
+      ...item,
+      startTime: toTimeInputValue(item?.startTime),
+      endTime: toTimeInputValue(item?.endTime),
+      breakStartTime: toTimeInputValue(item?.breakStartTime),
+      breakEndTime: toTimeInputValue(item?.breakEndTime),
+    }));
+
+  const [availability, setAvailability] = useState(() =>
+    normalizeAvailability([
+      { day: "1", startTime: "10:00", endTime: "19:00", breakStartTime: "13:15", breakEndTime: "14:00", slotDuration: 15, bufferTime: 5 },
+    ])
+  );
 
   const getDraftKey = () => {
     if (!branchId) return null;
@@ -38,7 +72,7 @@ const BranchTimeForm = ({
       const saved = localStorage.getItem(key);
       if (saved) {
         const data = JSON.parse(saved);
-        setAvailability(data.availability);
+        setAvailability(normalizeAvailability(data.availability));
       }
     } catch (e) {
       console.error("Failed to load draft:", e);
@@ -85,7 +119,7 @@ const BranchTimeForm = ({
     if (hasDraft) {
       loadDraft();
     } else if (initialValues && initialValues.availability) {
-      setAvailability(initialValues.availability);
+      setAvailability(normalizeAvailability(initialValues.availability));
     }
 
     initializedBranches.current.add(branchId);
@@ -96,7 +130,7 @@ const BranchTimeForm = ({
       saveDraft(availability);
     }
   }, [availability, branchId]);
-
+ 
   const scrollRef = useRef(null);
 
   const handleAddRow = () => {
@@ -110,7 +144,7 @@ const BranchTimeForm = ({
 
     setAvailability([
       ...availability,
-      { day: unusedDay.value, startTime: "10:00 AM", endTime: "07:00 PM", breakStartTime: "01:15 PM", breakEndTime: "02:00 PM", slotDuration: 15, bufferTime: 5 },
+      { day: unusedDay.value, startTime: "10:00", endTime: "19:00", breakStartTime: "13:15", breakEndTime: "14:00", slotDuration: 15, bufferTime: 5 },
     ]);
 
     setTimeout(() => {
@@ -130,7 +164,7 @@ const BranchTimeForm = ({
     if (field === "slotDuration" || field === "bufferTime") {
       newAvailability[index][field] = Number(value);
     } else if (["startTime", "endTime", "breakStartTime", "breakEndTime"].includes(field)) {
-      newAvailability[index][field] = value.toUpperCase();
+      newAvailability[index][field] = value;
     } else {
       newAvailability[index][field] = value;
     }
@@ -178,21 +212,19 @@ const BranchTimeForm = ({
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1 whitespace-nowrap">Start Time</label>
                   <input
-                    type="text"
-                    value={item.startTime}
+                    type="time"
+                    value={item.startTime || ""}
                     onChange={(e) => handleChange(index, "startTime", e.target.value)}
                     className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition"
-                    placeholder="10:00 AM"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1 whitespace-nowrap">End Time</label>
                   <input
-                    type="text"
-                    value={item.endTime}
+                    type="time"
+                    value={item.endTime || ""}
                     onChange={(e) => handleChange(index, "endTime", e.target.value)}
                     className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition"
-                    placeholder="07:00 PM"
                   />
                 </div>
               </div>
@@ -200,21 +232,19 @@ const BranchTimeForm = ({
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1 whitespace-nowrap">Break Start Time</label>
                   <input
-                    type="text"
+                    type="time"
                     value={item.breakStartTime || ""}
                     onChange={(e) => handleChange(index, "breakStartTime", e.target.value)}
                     className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition"
-                    placeholder="01:15 PM"
                   />
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1 whitespace-nowrap">Break End Time</label>
                   <input
-                    type="text"
+                    type="time"
                     value={item.breakEndTime || ""}
                     onChange={(e) => handleChange(index, "breakEndTime", e.target.value)}
                     className="w-full border border-gray-300 rounded-xl p-2.5 focus:ring-2 focus:ring-yellow-400 focus:outline-none transition"
-                    placeholder="02:00 PM"
                   />
                 </div>
               </div>

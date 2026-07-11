@@ -81,7 +81,8 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
     can("manage expense entry") ||
     can("manage stock transfer") ||
     can("show accounting page") ||
-    can("show gst reports page");
+    can("show gst reports page") ||
+    can("show cashbook page");
 
   const hasCommunicationAccess = role === "Admin" ||
     can("show supports page") ||
@@ -107,9 +108,8 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
 
   return (
     <aside
-      className={`${
-        isCollapsed ? "w-16" : "w-64"
-      } bg-white shadow-2xl border-r border-gray-200 flex flex-col h-screen overflow-hidden transition-all duration-300 backdrop-blur-sm fixed left-0 top-0 z-10`}
+      className={`${isCollapsed ? "w-16" : "w-64"
+        } bg-white shadow-2xl border-r border-gray-200 flex flex-col h-screen overflow-hidden transition-all duration-300 backdrop-blur-sm fixed left-0 top-0 z-10`}
     >
       {/* Logo + Toggle */}
       <div className="p-5 border-b border-[#134D41]/20 flex items-center justify-between bg-[#134D41]">
@@ -135,9 +135,8 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
         <button
           aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           onClick={() => setIsCollapsed((v) => !v)}
-          className={`p-2 rounded-lg hover:bg-white/10 text-white transition-all duration-200 hover:shadow-md hover:scale-105 ${
-            isCollapsed ? "mx-auto" : "ml-2"
-          }`}
+          className={`p-2 rounded-lg hover:bg-white/10 text-white transition-all duration-200 hover:shadow-md hover:scale-105 ${isCollapsed ? "mx-auto" : "ml-2"
+            }`}
         >
           {isCollapsed ? (
             <MdChevronRight size={20} />
@@ -149,9 +148,8 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
 
       {/* Navigation */}
       <nav
-        className={`flex-1 flex flex-col gap-6 ${
-          isCollapsed ? "px-2" : "px-4"
-        } min-h-0 py-5 overflow-y-auto transition-all duration-300`}
+        className={`flex-1 flex flex-col gap-6 ${isCollapsed ? "px-2" : "px-4"
+          } min-h-0 py-5 overflow-y-auto transition-all duration-300`}
       >
         {/* Section: MAIN */}
         <div>
@@ -255,27 +253,36 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
             </Link>
           )}
           {(role === "Admin" || can("show appointments page")) && (
-            <Link
-              href="/component/appointment"
-              className={linkClasses("/component/appointment")}
-            >
-              <div className="relative flex items-center">
-                <MdCalendarMonth size={20} />
-                {isCollapsed && newAppointmentsCount > 0 && (
-                  <span className="absolute -top-1.5 -right-1.5 w-2 h-2 bg-rose-500 rounded-full shadow-sm shadow-rose-500/30 animate-pulse" />
-                )}
-              </div>
-              {!isCollapsed && (
-                <div className="flex-1 flex items-center justify-between">
-                  <span>Appointments</span>
-                  {newAppointmentsCount > 0 && (
-                    <span className="px-1.5 py-0.5 text-[10px] font-black bg-rose-500 text-white rounded-full leading-none shadow-sm shadow-rose-500/30 animate-pulse">
-                      {newAppointmentsCount}
-                    </span>
+            <>
+              <Link
+                href="/component/appointment"
+                className={linkClasses("/component/appointment")}
+              >
+                <div className="relative flex items-center">
+                  <MdCalendarMonth size={20} />
+                  {isCollapsed && newAppointmentsCount > 0 && (
+                    <span className="absolute -top-1.5 -right-1.5 w-2 h-2 bg-rose-500 rounded-full shadow-sm shadow-rose-500/30 animate-pulse" />
                   )}
                 </div>
-              )}
-            </Link>
+                {!isCollapsed && (
+                  <div className="flex-1 flex items-center justify-between">
+                    <span>Appointments</span>
+                    {newAppointmentsCount > 0 && (
+                      <span className="px-1.5 py-0.5 text-[10px] font-black bg-rose-500 text-white rounded-full leading-none shadow-sm shadow-rose-500/30 animate-pulse">
+                        {newAppointmentsCount}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </Link>
+              <Link
+                href="/component/follow-up"
+                className={linkClasses("/component/follow-up")}
+              >
+                <MdHistory size={20} />
+                {!isCollapsed && <span>Follow Up</span>}
+              </Link>
+            </>
           )}
           {(role === "Admin" || can("show staff page")) && (
             <Link
@@ -377,6 +384,15 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                 {!isCollapsed && <span>GST Reports</span>}
               </Link>
             )}
+            {(role === "Admin" || can("show cashbook page")) && (
+              <Link
+                href="/component/cashbook"
+                className={linkClasses("/component/cashbook")}
+              >
+                <MdAccountBalance size={20} />
+                {!isCollapsed && <span>Cashbook</span>}
+              </Link>
+            )}
           </div>
         )}
 
@@ -412,13 +428,13 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
               </Link>
             )}
             {(role === "Admin" || can("show emergency page")) && (
-            <Link
-              href="/component/emergency"
-              className={linkClasses("/component/emergency")}
-            >
-              <MdReportProblem size={20} />
-              {!isCollapsed && <span>Emergency</span>}
-            </Link>
+              <Link
+                href="/component/emergency"
+                className={linkClasses("/component/emergency")}
+              >
+                <MdReportProblem size={20} />
+                {!isCollapsed && <span>Emergency</span>}
+              </Link>
             )}
             {(role === "Admin" || can("show reports page")) && (
               <Link
@@ -432,25 +448,25 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
             {(role === "Admin" ||
               (role === "subadmin" &&
                 permissions?.includes("show contact categories"))) && (
-              <Link
-                href="/component/contact-category"
-                className={linkClasses("/component/contact-category")}
-              >
-                <MdCategory size={20} />
-                {!isCollapsed && <span>Contact Categories</span>}
-              </Link>
-            )}
+                <Link
+                  href="/component/contact-category"
+                  className={linkClasses("/component/contact-category")}
+                >
+                  <MdCategory size={20} />
+                  {!isCollapsed && <span>Contact Categories</span>}
+                </Link>
+              )}
             {(role === "Admin" ||
               (role === "subadmin" &&
                 permissions?.includes("show contact page"))) && (
-              <Link
-                href="/component/contact"
-                className={linkClasses("/component/contact")}
-              >
-                <MdPeople size={20} />
-                {!isCollapsed && <span>Contacts</span>}
-              </Link>
-            )}
+                <Link
+                  href="/component/contact"
+                  className={linkClasses("/component/contact")}
+                >
+                  <MdPeople size={20} />
+                  {!isCollapsed && <span>Contacts</span>}
+                </Link>
+              )}
             {(role === "Admin" || can("show messages page")) && (
               <Link
                 href="/component/message"
@@ -472,14 +488,14 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
             {(role === "Admin" ||
               (role === "subadmin" &&
                 permissions?.includes("show feedback page"))) && (
-              <Link
-                href="/component/feedback"
-                className={linkClasses("/component/feedback")}
-              >
-                <MdFeedback size={20} />
-                {!isCollapsed && <span>Feedbacks</span>}
-              </Link>
-            )}
+                <Link
+                  href="/component/feedback"
+                  className={linkClasses("/component/feedback")}
+                >
+                  <MdFeedback size={20} />
+                  {!isCollapsed && <span>Feedbacks</span>}
+                </Link>
+              )}
             {/* {role === "Admin" && (
               <Link
                 href="/component/user-requests"
@@ -503,14 +519,14 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
             {(role === "Admin" ||
               (role === "subadmin" &&
                 permissions?.includes("show Logs page"))) && (
-              <Link
-                href="/component/logs"
-                className={linkClasses("/component/logs")}
-              >
-                <MdHistory size={20} />
-                {!isCollapsed && <span>Logs</span>}
-              </Link>
-            )}
+                <Link
+                  href="/component/logs"
+                  className={linkClasses("/component/logs")}
+                >
+                  <MdHistory size={20} />
+                  {!isCollapsed && <span>Logs</span>}
+                </Link>
+              )}
             {role === "Admin" && (
               <Link
                 href="/component/settings"
@@ -592,7 +608,7 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
                     ? "Doctor"
                     : user?.adminType
                       ? user.adminType.charAt(0).toUpperCase() +
-                        user.adminType.slice(1)
+                      user.adminType.slice(1)
                       : "Sub-Admin"}
                 </span>
               )}

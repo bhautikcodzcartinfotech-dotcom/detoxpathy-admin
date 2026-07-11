@@ -1,9 +1,8 @@
 import axios from "axios";
 
-// export const API_BASE = "http://192.168.1.14:3002/api/v1";
+export const API_BASE = "http://192.168.1.9:3002/api/v1";
 // export const API_BASE = "http://69.62.73.194:4009/api/v1";
-export const API_BASE = "https://admin.detoxpathy.com/api/v1";
-// export const API_BASE = "https://backend.fatendfit.com/api/v1";
+// export const API_BASE = "https://admin.detoxpathy.com/api/v1";
 // Host base used to resolve file URLs coming from multer (e.g., uploads/..)
 export const API_HOST = API_BASE.replace(/\/?api\/?v1\/?$/, "").replace(
   /\/$/,
@@ -2040,6 +2039,27 @@ export const getPurchaseById = async (id) => {
   return res.data.data;
 };
 
+export const updatePurchase = async (id, payload) => {
+  const res = await axios.put(`${API_BASE}/admin/purchase/update/${id}`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const deletePurchase = async (id) => {
+  const res = await axios.delete(`${API_BASE}/admin/purchase/delete/${id}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+export const undoPurchase = async (id) => {
+  const res = await axios.post(`${API_BASE}/admin/purchase/undo/${id}`, {}, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
 /* -------------------- MEDICAL CONDITION APIs -------------------- */
 export const getAllMedicalConditions = async () => {
   const res = await axios.get(`${API_BASE}/admin/medicalCondition/get-all`, {
@@ -2127,6 +2147,13 @@ export const rejectBranchTimeRequest = async (requestId, adminComment = "") => {
 /* -------------------- EXPENSE APIs -------------------- */
 export const createExpense = async (payload) => {
   const res = await axios.post(`${API_BASE}/admin/expense/create`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const updateExpense = async (id, payload) => {
+  const res = await axios.put(`${API_BASE}/admin/expense/update/${id}`, payload, {
     headers: getAuthHeaders(),
   });
   return res.data.data;
@@ -2296,5 +2323,101 @@ export const updateNotificationTemplate = async (id, payload) => {
     payload,
     { headers: getAuthHeaders() }
   );
+  return res.data.data;
+};
+
+/* -------------------- STOCK TRANSFER APIs -------------------- */
+export const getAllStockTransfers = async () => {
+  const res = await axios.get(`${API_BASE}/admin/stock-transfer/get-all`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const createStockTransfer = async (payload) => {
+  const res = await axios.post(`${API_BASE}/admin/stock-transfer/create`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const updateStockTransfer = async (id, payload) => {
+  const res = await axios.put(`${API_BASE}/admin/stock-transfer/update/${id}`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const cancelStockTransfer = async (id) => {
+  const res = await axios.post(`${API_BASE}/admin/stock-transfer/cancel/${id}`, {}, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const deleteStockTransfer = async (id) => {
+  const res = await axios.delete(`${API_BASE}/admin/stock-transfer/delete/${id}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};
+
+export const getAppointmentFollowUps = async (date) => {
+  const params = new URLSearchParams();
+  if (date) params.append('date', date);
+
+  const url = `${API_BASE}/admin/appointment/follow-ups${params.toString() ? `?${params.toString()}` : ''}`;
+  const res = await axios.get(url, {
+    headers: getAuthHeaders(),
+  });
+  return res.data;
+};/* -------------------- CASHBOOK APIs -------------------- */
+// Main cashbook: all online payments (BookTrials + online orders + branch online)
+export const getCashbookMain = async (params = {}) => {
+  const res = await axios.get(`${API_BASE}/admin/cashbook/get-main`, {
+    headers: getAuthHeaders(),
+    params,
+  });
+  return res.data.data;
+};
+
+// Branch cashbook: branch-specific offline + online transactions
+export const getCashbookBranch = async (params = {}) => {
+  const res = await axios.get(`${API_BASE}/admin/cashbook/get-branch`, {
+    headers: getAuthHeaders(),
+    params,
+  });
+  return res.data.data;
+};
+
+// Summary stats for the cashbook dashboard
+export const getCashbookSummary = async (params = {}) => {
+  const res = await axios.get(`${API_BASE}/admin/cashbook/summary`, {
+    headers: getAuthHeaders(),
+    params,
+  });
+  return res.data.data;
+};
+
+/* -------------------- CONTRA APIs -------------------- */
+export const getAvailableCash = async (branchId) => {
+  const res = await axios.get(`${API_BASE}/admin/cashbook/contra/available-cash/${branchId}`, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const createContra = async (payload) => {
+  const res = await axios.post(`${API_BASE}/admin/cashbook/contra`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const getContras = async (params = {}) => {
+  const res = await axios.get(`${API_BASE}/admin/cashbook/contra`, {
+    headers: getAuthHeaders(),
+    params,
+  });
   return res.data.data;
 };

@@ -228,7 +228,8 @@ function VideoCallClient() {
     try {
       const AgoraRTC = await ensureAgoraSdk();
 
-      const client = AgoraRTC.createClient({ mode: "rtc", codec: "vp8" });
+      // Use H.264 to match mobile (Flutter/native) clients and ensure better interoperability
+      const client = AgoraRTC.createClient({ mode: "rtc", codec: "h264" });
       agoraSessionRef.current.client = client;
 
       // Remote User Published handler
@@ -334,6 +335,32 @@ function VideoCallClient() {
         setRemoteCount(client.remoteUsers.length);
       });
 
+      const syncExistingRemoteUsers = async () => {
+        for (const user of client.remoteUsers) {
+          if (user.hasVideo) {
+            try {
+              await client.subscribe(user, "video");
+              const remoteContainer = ensureRemoteTile(user.uid);
+              if (remoteContainer && user.videoTrack) {
+                remoteContainer.innerHTML = "";
+                user.videoTrack.play(remoteContainer, { fit: "contain" });
+              }
+            } catch (error) {
+              console.error("[AGORA] Failed to sync existing remote video:", user.uid, error);
+            }
+          }
+          if (user.hasAudio) {
+            try {
+              await client.subscribe(user, "audio");
+              if (user.audioTrack) user.audioTrack.play();
+            } catch (error) {
+              console.error("[AGORA] Failed to sync existing remote audio:", user.uid, error);
+            }
+          }
+        }
+        setRemoteCount(client.remoteUsers.length);
+      };
+
       // Check if we have active local tracks, otherwise create them
       let localAudioTrack = agoraSessionRef.current.localAudioTrack;
       let localVideoTrack = agoraSessionRef.current.localVideoTrack;
@@ -378,6 +405,7 @@ function VideoCallClient() {
       // Join the channel
       await client.join(appId, channelName, token, uid);
       console.log("[AGORA] Successfully joined channel:", channelName);
+      await syncExistingRemoteUsers();
 
       // Publish local tracks
       const tracksToPublish = [];
@@ -388,6 +416,7 @@ function VideoCallClient() {
         await client.publish(tracksToPublish);
         console.log("[AGORA] Published local tracks");
       }
+      await syncExistingRemoteUsers();
 
       // Re-play local video in the floating PiP window
       setJoined(true);

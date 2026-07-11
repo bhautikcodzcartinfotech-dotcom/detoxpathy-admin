@@ -7,7 +7,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "../contexts/AuthContext";
 import { FiBell, FiUserPlus, FiMessageSquare, FiCalendar, FiTrash2, FiCheckCircle, FiX, FiShoppingCart } from "react-icons/fi";
 import { io } from "socket.io-client";
-import { API_HOST } from "../Api/AllApi";
+import { API_HOST, getSetting } from "../Api/AllApi";
 import { collection, onSnapshot } from "firebase/firestore";
 import { db } from "../lib/firebase";
 
@@ -34,7 +34,8 @@ const Navbar = () => {
   const [open, setOpen] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
-  
+  const [supportPanelSoundUrl, setSupportPanelSoundUrl] = useState("/1783405039988mixkit-bell-notification-933.wav");
+
   const dropdownRef = useRef(null);
   const notificationRef = useRef(null);
   const router = useRouter();
@@ -116,7 +117,7 @@ const Navbar = () => {
             ? { ...n, read: true }
             : n
         );
-        
+
         if (typeof window !== "undefined") {
           localStorage.setItem("admin_notifications", JSON.stringify(updated));
           window.dispatchEvent(new Event("admin_notifications_updated"));
@@ -125,6 +126,41 @@ const Navbar = () => {
       });
     }
   }, [pathname]);
+
+  const resolveSettingsAudioUrl = (audioPath) => {
+    if (!audioPath) return null;
+    if (/^https?:\/\//i.test(audioPath)) return audioPath;
+
+    const cleanPath = String(audioPath).replace(/^\/+/, "").replace(/^uploads\//i, "");
+    return `${API_HOST.replace(/\/$/, "")}/uploads/${cleanPath}`;
+  };
+
+  const playSupportPanelSound = (audioPath = supportPanelSoundUrl) => {
+    const currentPath = typeof window !== "undefined" ? window.location.pathname : pathname;
+    const isUserChatPageOpen = currentPath === "/component/userchat" || currentPath.startsWith("/component/userchat/");
+    if (isUserChatPageOpen) return;
+
+    const audioUrl = resolveSettingsAudioUrl(audioPath);
+    if (!audioUrl) return;
+
+    const audio = new Audio(audioUrl);
+    audio.volume = 1;
+    audio.play().catch(() => { });
+  };
+
+  useEffect(() => {
+    const loadSupportPanelSound = async () => {
+      try {
+        const response = await getSetting();
+        const settingsData = response?.data || response?.setting || response || {};
+        setSupportPanelSoundUrl(settingsData.supportPannelSound || "/1783405039988mixkit-bell-notification-933.wav");
+      } catch (error) {
+        console.error("Failed to load support panel sound setting:", error);
+      }
+    };
+
+    loadSupportPanelSound();
+  }, []);
 
   // 1. Firebase Firestore support messages listener
   useEffect(() => {
@@ -135,7 +171,7 @@ const Navbar = () => {
       snapshot.docChanges().forEach((change) => {
         if (change.type === "added" || change.type === "modified") {
           const chatData = change.doc.data();
-          
+
           if (!chatData.userId || !chatData.userName || !chatData.lastMessage) return;
 
           const lastMsg = chatData.lastMessage;
@@ -148,14 +184,14 @@ const Navbar = () => {
             String(senderId) !== String(currentAdminId) &&
             senderId !== chatData.customerCareId
           ) {
-            const msgTime = lastMsg.createdAt?.seconds 
-              ? new Date(lastMsg.createdAt.seconds * 1000) 
-              : lastMsg.createdAt 
-                ? new Date(lastMsg.createdAt) 
+            const msgTime = lastMsg.createdAt?.seconds
+              ? new Date(lastMsg.createdAt.seconds * 1000)
+              : lastMsg.createdAt
+                ? new Date(lastMsg.createdAt)
                 : new Date();
-                
+
             const diffMs = new Date().getTime() - msgTime.getTime();
-            
+
             // Only add notifications for extremely recent messages (within 15 seconds) to prevent spamming old logs
             if (diffMs >= 0 && diffMs < 15000) {
               const newNotification = {
@@ -170,6 +206,7 @@ const Navbar = () => {
               };
 
               addNotification(newNotification);
+              playSupportPanelSound();
             }
           }
         }
@@ -179,7 +216,7 @@ const Navbar = () => {
     });
 
     return () => unsubscribe();
-  }, [user]);
+  }, [user, pathname]);
 
   // 2. Socket.io notifications listener
   useEffect(() => {
@@ -196,7 +233,7 @@ const Navbar = () => {
 
     socket.on("new_popup", (data) => {
       console.log("Navbar received socket notification:", data);
-      
+
       // Skip emergency notifications since they are handled via a full modal in MainLayout
       if (data.type === "emergency") return;
 
@@ -226,7 +263,7 @@ const Navbar = () => {
   // Filter notifications based on Doctor's branches
   const filteredNotifications = notifications.filter((n) => {
     if (role === "Admin") return true; // Super Admin sees all
-    
+
     // Doctor / Sub-admin check: show only branch-specific ones
     if (!n.branchId) return false;
     return branches && branches.includes(String(n.branchId));
@@ -254,7 +291,7 @@ const Navbar = () => {
   };
 
   const handleMarkOneRead = (id) => {
-    const updated = notifications.map((n) => 
+    const updated = notifications.map((n) =>
       n.id === id ? { ...n, read: true } : n
     );
     saveNotifications(updated);
@@ -365,10 +402,10 @@ const Navbar = () => {
         // Format: "📅 New appointment booked by Name Surname for Date at Time"
         // or "📅 Appointment rescheduled by Name Surname to Date at Time"
         const isResched = type === "appointment_reschedule";
-        const regex = isResched 
-          ? /📅 Appointment rescheduled by\s+(.+)\s+to\s+(.+)\s+at\s+(.+)/ 
+        const regex = isResched
+          ? /📅 Appointment rescheduled by\s+(.+)\s+to\s+(.+)\s+at\s+(.+)/
           : /📅 New appointment booked by\s+(.+)\s+for\s+(.+)\s+at\s+(.+)/;
-          
+
         const match = message.match(regex);
         if (match) {
           const name = match[1].trim();
@@ -473,7 +510,7 @@ const Navbar = () => {
           {/* Premium Glassmorphic Dropdown */}
           {bellOpen && (
             <div className="absolute right-0 mt-3.5 w-[340px] sm:w-[400px] bg-white/95 backdrop-blur-xl shadow-[0_20px_50px_rgba(0,0,0,0.12)] rounded-3xl border border-white/60 ring-1 ring-black/5 overflow-hidden transform origin-top-right z-50 animate-slide-in">
-              
+
               {/* Header */}
               <div className="px-5 py-4 border-b border-gray-100 bg-gradient-to-r from-gray-50/40 to-white flex items-center justify-between">
                 <div>
@@ -514,17 +551,15 @@ const Navbar = () => {
                       <div
                         key={item.id}
                         onClick={() => handleMarkOneRead(item.id)}
-                        className={`flex items-start gap-3.5 p-3.5 rounded-2xl border transition-all duration-300 cursor-pointer relative group ${
-                          style.cardBg
-                        } ${style.cardBorder} hover:shadow-md hover:shadow-gray-100/50 hover:translate-y-[-1px] ${
-                          !item.read ? "shadow-sm shadow-gray-50" : ""
-                        }`}
+                        className={`flex items-start gap-3.5 p-3.5 rounded-2xl border transition-all duration-300 cursor-pointer relative group ${style.cardBg
+                          } ${style.cardBorder} hover:shadow-md hover:shadow-gray-100/50 hover:translate-y-[-1px] ${!item.read ? "shadow-sm shadow-gray-50" : ""
+                          }`}
                       >
                         {/* Glow indicator for Unread Items */}
                         {!item.read && (
                           <span className="absolute left-2.5 top-1/2 -translate-y-1/2 w-2 h-2 bg-yellow-500 rounded-full shadow-md shadow-yellow-500/50 animate-pulse" />
                         )}
-                        
+
                         {/* Curved square icon bubble */}
                         <div className={`p-2.5 rounded-xl shrink-0 ${style.iconBg} transition-all duration-300 group-hover:scale-110 group-hover:rotate-3`}>
                           {style.icon}
@@ -584,9 +619,8 @@ const Navbar = () => {
 
           {open && (
             <div
-              className={`absolute right-0 mt-3 w-60 bg-white/90 backdrop-blur-xl shadow-md rounded-2xl border border-gray-100 overflow-hidden transform origin-top-right transition-all duration-300 ${
-                open ? "animate-fade-in" : "animate-fade-out"
-              }`}
+              className={`absolute right-0 mt-3 w-60 bg-white/90 backdrop-blur-xl shadow-md rounded-2xl border border-gray-100 overflow-hidden transform origin-top-right transition-all duration-300 ${open ? "animate-fade-in" : "animate-fade-out"
+                }`}
             >
               {/* User Info */}
               <div className="px-4 py-3 border-b border-gray-100 bg-gradient-to-r from-yellow-50 to-white">

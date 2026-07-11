@@ -183,7 +183,7 @@ const Dropdown = ({
                   </span>
                 </span>
 
-                {onDelete && (
+                {onDelete && !/cash/i.test(opt.label || "") && (
                   <button
                     type="button"
                     onClick={(e) => {

@@ -1,11 +1,10 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { FiPlus, FiDownload, FiSave, FiPrinter } from "react-icons/fi";
-import { getAllBranches, getAllProducts, getAllPlans, createPurchase } from "@/Api/AllApi"; // I need to add createStockTransfer to AllApi
+import { FiPlus, FiDownload, FiSave, FiPrinter, FiEdit2, FiRotateCcw, FiTrash2, FiX } from "react-icons/fi";
+import { getAllBranches, getAllProducts, getAllPlans, getAllStockTransfers, createStockTransfer, updateStockTransfer, cancelStockTransfer, deleteStockTransfer } from "@/Api/AllApi";
 import { toast } from "react-hot-toast";
 import Dropdown from "@/utils/dropdown";
-import axios from "axios"; // For direct calls if API not yet in AllApi
-import { API_BASE, getAuthHeaders } from "@/Api/AllApi";
+
 
 const StockTransferPage = () => {
   const [branches, setBranches] = useState([]);
@@ -13,6 +12,13 @@ const StockTransferPage = () => {
   const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(false);
   const [transfers, setTransfers] = useState([]);
+  const [editingId, setEditingId] = useState(null);
+  const [confirmModal, setConfirmModal] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    onConfirm: null
+  });
 
   const [form, setForm] = useState({
     fromBranchId: "",
@@ -26,13 +32,13 @@ const StockTransferPage = () => {
         getAllBranches(),
         getAllProducts({ limit: 1000 }),
         getAllPlans(),
-        axios.get(`${API_BASE}/admin/stock-transfer/get-all`, { headers: getAuthHeaders() })
+        getAllStockTransfers()
       ]);
       setBranches(b);
       setProducts(p.products || []);
       setPlans(pl || []);
-      setTransfers(t.data.data || []);
-      
+      setTransfers(t || []);
+
       const mainBranch = b.find(branch => branch.isMainBranch);
       if (mainBranch) {
         setForm(prev => ({ ...prev, fromBranchId: mainBranch._id }));
@@ -61,20 +67,102 @@ const StockTransferPage = () => {
     setForm({ ...form, items: newItems });
   };
 
+  const handleResetForm = () => {
+    setEditingId(null);
+    const mainBranch = branches.find(branch => branch.isMainBranch);
+    setForm({
+      fromBranchId: mainBranch ? mainBranch._id : "",
+      toBranchId: "",
+      status: "Pending",
+      items: [{ type: "product", productId: "", planId: "", quantity: 1, rate: 0, gstPercentage: 0 }]
+    });
+  };
+
+  const handleEdit = (t) => {
+    setEditingId(t._id);
+    setForm({
+      fromBranchId: t.fromBranchId?._id || t.fromBranchId,
+      toBranchId: t.toBranchId?._id || t.toBranchId,
+      status: t.status || "Pending",
+      items: t.items.map(item => ({
+        type: item.planId ? "plan" : "product",
+        productId: item.productId?._id || item.productId || "",
+        planId: item.planId?._id || item.planId || "",
+        quantity: item.quantity,
+        rate: item.rate,
+        gstPercentage: item.gstPercentage
+      }))
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelTransfer = (id) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Undo Stock Transfer",
+      message: "Are you sure you want to undo/cancel this stock transfer? This will revert all stock adjustments and ledger entries.",
+      onConfirm: async () => {
+        try {
+          setLoading(true);
+          await cancelStockTransfer(id);
+          toast.success("Stock transfer cancelled successfully");
+          const updatedTransfers = await getAllStockTransfers();
+          setTransfers(updatedTransfers || []);
+        } catch (error) {
+          toast.error(error.response?.data?.error || error.response?.data?.message || "Cancellation failed");
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
+  };
+
+  const handleDeleteTransfer = (id) => {
+    setConfirmModal({
+      isOpen: true,
+      title: "Delete Stock Transfer",
+      message: "Are you sure you want to delete this stock transfer record? This will also revert stock adjustments if not already cancelled.",
+      onConfirm: async () => {
+        try {
+          setLoading(true);
+          await deleteStockTransfer(id);
+          toast.success("Stock transfer deleted successfully");
+          const updatedTransfers = await getAllStockTransfers();
+          setTransfers(updatedTransfers || []);
+        } catch (error) {
+          toast.error(error.response?.data?.error || error.response?.data?.message || "Deletion failed");
+        } finally {
+          setLoading(false);
+        }
+      }
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.fromBranchId || !form.toBranchId || form.fromBranchId === form.toBranchId) {
       return toast.error("Please select different source and destination branches");
     }
+
+    const invalidItem = form.items.find(item => item.type === 'product' ? !item.productId : !item.planId);
+    if (invalidItem) {
+      return toast.error("Please select a product or plan for all items");
+    }
+
     try {
       setLoading(true);
-      await axios.post(`${API_BASE}/admin/stock-transfer/create`, form, { headers: getAuthHeaders() });
-      toast.success("Stock transfer successful");
-      // Refresh
-      const t = await axios.get(`${API_BASE}/admin/stock-transfer/get-all`, { headers: getAuthHeaders() });
-      setTransfers(t.data.data);
+      if (editingId) {
+        await updateStockTransfer(editingId, form);
+        toast.success("Stock transfer updated successfully");
+      } else {
+        await createStockTransfer(form);
+        toast.success("Stock transfer successful");
+      }
+      handleResetForm();
+      const updatedTransfers = await getAllStockTransfers();
+      setTransfers(updatedTransfers || []);
     } catch (error) {
-      toast.error(error.response?.data?.message || "Transfer failed");
+      toast.error(error.response?.data?.error || error.response?.data?.message || "Transfer failed");
     } finally {
       setLoading(false);
     }
@@ -94,7 +182,7 @@ const StockTransferPage = () => {
     // Find full branch details from branches state
     const fromBranchIdStr = t.fromBranchId?._id || t.fromBranchId;
     const toBranchIdStr = t.toBranchId?._id || t.toBranchId;
-    
+
     const fromBranchFull = branches.find(b => b._id === fromBranchIdStr) || {};
     const toBranchFull = branches.find(b => b._id === toBranchIdStr) || {};
 
@@ -102,7 +190,7 @@ const StockTransferPage = () => {
     const fromAddress = fromBranchFull.address || "";
     const fromGstin = fromBranchFull.gstin || "N/A";
     const fromMobile = fromBranchFull.mobile || "N/A";
-    
+
     const fromContact = [
       fromGstin && fromGstin !== "N/A" ? `GSTIN: ${fromGstin}` : null,
       fromMobile && fromMobile !== "N/A" ? `Mob: ${fromMobile}` : null,
@@ -114,7 +202,7 @@ const StockTransferPage = () => {
     const toAddress = toBranchFull.address || "";
     const toGstin = toBranchFull.gstin || "N/A";
     const toMobile = toBranchFull.mobile || "N/A";
-    
+
     const toContact = [
       toGstin && toGstin !== "N/A" ? `GSTIN: ${toGstin}` : null,
       toMobile && toMobile !== "N/A" ? `Mob: ${toMobile}` : null,
@@ -129,7 +217,7 @@ const StockTransferPage = () => {
         const planId = item.planId?._id || item.planId;
         let itemName = "Unknown";
         let hsn = "-";
-        
+
         if (prodId) {
           const productObj = products.find(p => p._id === prodId) || {};
           itemName = productObj.name || item.productId?.name || "Product";
@@ -144,7 +232,7 @@ const StockTransferPage = () => {
         const qty = item.quantity || "0";
         const gst = `${item.gstPercentage || 0}%`;
         const total = `₹${Number(item.totalAmount || (item.rate * item.quantity) || 0).toLocaleString("en-IN")}`;
-        
+
         itemsHtml += `
           <tr>
             <td>${itemName}</td>
@@ -348,7 +436,9 @@ const StockTransferPage = () => {
   return (
     <div className="px-6 py-6 space-y-8">
       <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-        <h2 className="text-xl font-bold mb-6 text-gray-800">New Stock Transfer</h2>
+        <h2 className="text-xl font-bold mb-6 text-gray-800">
+          {editingId ? "Edit Stock Transfer" : "New Stock Transfer"}
+        </h2>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
@@ -356,8 +446,7 @@ const StockTransferPage = () => {
               <Dropdown
                 options={branches.filter(b => b.isMainBranch).map(b => ({ label: b.name, value: b._id }))}
                 value={form.fromBranchId}
-
-                onChange={val => setForm({...form, fromBranchId: val})}
+                onChange={val => setForm({ ...form, fromBranchId: val })}
                 placeholder="Select Source Branch"
               />
             </div>
@@ -366,87 +455,96 @@ const StockTransferPage = () => {
               <Dropdown
                 options={branches.map(b => ({ label: b.name, value: b._id }))}
                 value={form.toBranchId}
-                onChange={val => setForm({...form, toBranchId: val})}
+                onChange={val => setForm({ ...form, toBranchId: val })}
                 placeholder="Select Destination Branch"
               />
             </div>
           </div>
 
           <div className="border rounded-xl overflow-hidden">
-             <table className="w-full">
-                <thead className="bg-gradient-to-r from-yellow-400 to-amber-300">
-                   <tr className="text-[11px] uppercase tracking-widest text-gray-700">
-                     <th className="px-4 py-3 font-black w-32">Type</th>
-                     <th className="px-4 py-3 font-black">Item</th>
-                     <th className="px-4 py-3 font-black w-32">Quantity</th>
-                     <th className="px-4 py-3 font-black w-16"></th>
-                   </tr>
-                </thead>
-                <tbody className="divide-y">
-                   {form.items.map((item, index) => (
-                     <tr key={index}>
-                       <td className="p-2">
-                         <select
-                           value={item.type || "product"}
-                           onChange={e => handleItemChange(index, 'type', e.target.value)}
-                           className="w-full border-none focus:ring-0 text-sm"
-                         >
-                           <option value="product">Product</option>
-                           <option value="plan">Plan</option>
-                         </select>
-                       </td>
-                       <td className="p-2">
-                         {item.type === "plan" ? (
-                           <select
-                             value={item.planId || ""}
-                             onChange={e => handleItemChange(index, 'planId', e.target.value)}
-                             className="w-full border-none focus:ring-0 text-sm"
-                           >
-                             <option value="">Select Plan</option>
-                             {plans.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
-                           </select>
-                         ) : (
-                           <select
-                             value={item.productId || ""}
-                             onChange={e => handleItemChange(index, 'productId', e.target.value)}
-                             className="w-full border-none focus:ring-0 text-sm"
-                           >
-                             <option value="">Select Product</option>
-                             {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
-                           </select>
-                         )}
-                       </td>
-                       <td className="p-2">
-                         <input
-                           type="number"
-                           value={item.quantity}
-                           onChange={e => handleItemChange(index, 'quantity', e.target.value)}
-                           className="w-full border-none focus:ring-0 text-sm"
-                         />
-                       </td>
-                       <td className="p-2 text-center">
-                         <button type="button" onClick={() => setForm({...form, items: form.items.filter((_, i) => i !== index)})} className="text-red-500 hover:text-red-700">×</button>
-                       </td>
-                     </tr>
-                   ))}
-                </tbody>
-             </table>
-             <button
-                type="button"
-                onClick={() => setForm({...form, items: [...form.items, { type: "product", productId: "", planId: "", quantity: 1, rate: 0, gstPercentage: 0 }]})}
-                className="w-full p-3 text-sm text-blue-600 hover:bg-blue-50 font-semibold"
-              >
-                + Add More Items
+            <table className="w-full">
+              <thead className="bg-gradient-to-r from-yellow-400 to-amber-300">
+                <tr className="text-[11px] uppercase tracking-widest text-gray-700">
+                  <th className="px-4 py-3 font-black w-32">Type</th>
+                  <th className="px-4 py-3 font-black">Item</th>
+                  <th className="px-4 py-3 font-black w-32">Quantity</th>
+                  <th className="px-4 py-3 font-black w-16"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y">
+                {form.items.map((item, index) => (
+                  <tr key={index}>
+                    <td className="p-2">
+                      <select
+                        value={item.type || "product"}
+                        onChange={e => handleItemChange(index, 'type', e.target.value)}
+                        className="w-full border-none focus:ring-0 text-sm"
+                      >
+                        <option value="product">Product</option>
+                        <option value="plan">Plan</option>
+                      </select>
+                    </td>
+                    <td className="p-2">
+                      {item.type === "plan" ? (
+                        <select
+                          value={item.planId || ""}
+                          onChange={e => handleItemChange(index, 'planId', e.target.value)}
+                          className="w-full border-none focus:ring-0 text-sm"
+                        >
+                          <option value="">Select Plan</option>
+                          {plans.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+                        </select>
+                      ) : (
+                        <select
+                          value={item.productId || ""}
+                          onChange={e => handleItemChange(index, 'productId', e.target.value)}
+                          className="w-full border-none focus:ring-0 text-sm"
+                        >
+                          <option value="">Select Product</option>
+                          {products.map(p => <option key={p._id} value={p._id}>{p.name}</option>)}
+                        </select>
+                      )}
+                    </td>
+                    <td className="p-2">
+                      <input
+                        type="number"
+                        value={item.quantity}
+                        onChange={e => handleItemChange(index, 'quantity', e.target.value)}
+                        className="w-full border-none focus:ring-0 text-sm"
+                      />
+                    </td>
+                    <td className="p-2 text-center">
+                      <button type="button" onClick={() => setForm({ ...form, items: form.items.filter((_, i) => i !== index) })} className="text-red-500 hover:text-red-700">×</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            <button
+              type="button"
+              onClick={() => setForm({ ...form, items: [...form.items, { type: "product", productId: "", planId: "", quantity: 1, rate: 0, gstPercentage: 0 }] })}
+              className="w-full p-3 text-sm text-blue-600 hover:bg-blue-50 font-semibold"
+            >
+              + Add More Items
             </button>
-        </div>
+          </div>
 
-          <div className="flex justify-end pt-4">
+          <div className="flex justify-end pt-4 gap-4">
+            {editingId && (
+              <button
+                type="button"
+                onClick={handleResetForm}
+                className="bg-gray-100 hover:bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-bold text-sm flex items-center gap-2 transition-all active:scale-95"
+              >
+                <FiX size={20} /> Cancel Edit
+              </button>
+            )}
             <button
               type="submit"
               disabled={loading}
               className="bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-white px-10 py-3 rounded-xl font-black text-sm flex items-center gap-2 transition-all shadow-lg shadow-yellow-200/50 active:scale-95 disabled:opacity-50"
             >
-              <FiSave size={20} /> {loading ? "Processing..." : "Transfer Stock"}
+              <FiSave size={20} /> {loading ? "Processing..." : editingId ? "Update Transfer" : "Transfer Stock"}
             </button>
           </div>
         </form>
@@ -467,31 +565,100 @@ const StockTransferPage = () => {
               </tr>
             </thead>
             <tbody className="divide-y">
-              {transfers.map(t => (
-                <tr key={t._id} className="text-sm">
-                  <td className="p-4">{new Date(t.transferDate).toLocaleDateString()}</td>
-                  <td className="p-4 font-medium">{t.fromBranchId?.name}</td>
-                  <td className="p-4 font-medium">{t.toBranchId?.name}</td>
-                  <td className="p-4">
-                    <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${t.transferType === 'Delivery Challan' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
-                      {t.transferType}
-                    </span>
-                  </td>
-                  <td className="p-4">Rs. {t.grandTotal.toLocaleString()}</td>
-                  <td className="p-4 text-center">
-                    <button
-                      onClick={() => handlePrintChallan(t)}
-                      className="text-blue-600 hover:text-blue-800 flex items-center gap-1 mx-auto"
-                    >
-                      <FiPrinter /> Challan
-                    </button>
-                  </td>
-                </tr>
-              ))}
+              {transfers.map(t => {
+                const canEdit = t.status !== 'Cancelled' && t.status !== 'Received';
+                const canCancel = t.status !== 'Cancelled' && t.status !== 'Received';
+                return (
+                  <tr key={t._id} className="text-sm hover:bg-gray-50 transition-colors">
+                    <td className="p-4">{new Date(t.transferDate).toLocaleDateString()}</td>
+                    <td className="p-4 font-medium text-gray-800">{t.fromBranchId?.name}</td>
+                    <td className="p-4 font-medium text-gray-800">{t.toBranchId?.name}</td>
+                    <td className="p-4">
+                      <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${t.transferType === 'Delivery Challan' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}`}>
+                        {t.transferType}
+                      </span>
+                    </td>
+                    <td className="p-4 font-semibold text-gray-900">Rs. {t.grandTotal.toLocaleString()}</td>
+                    <td className="p-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button
+                          onClick={() => handlePrintChallan(t)}
+                          className="text-blue-600 hover:text-blue-800 flex items-center gap-1 font-semibold text-xs bg-blue-50 hover:bg-blue-100 px-2.5 py-1.5 rounded-lg transition-all"
+                          title="Print Challan"
+                        >
+                          <FiPrinter size={14} /> Challan
+                        </button>
+                        
+                        {canEdit && (
+                          <button
+                            onClick={() => handleEdit(t)}
+                            className="text-amber-600 hover:text-amber-800 flex items-center gap-1 font-semibold text-xs bg-amber-50 hover:bg-amber-100 px-2.5 py-1.5 rounded-lg transition-all"
+                            title="Edit Transfer"
+                          >
+                            <FiEdit2 size={14} /> Edit
+                          </button>
+                        )}
+                        
+                        {canCancel && (
+                          <button
+                            onClick={() => handleCancelTransfer(t._id)}
+                            className="text-red-600 hover:text-red-800 flex items-center gap-1 font-semibold text-xs bg-red-50 hover:bg-red-100 px-2.5 py-1.5 rounded-lg transition-all"
+                            title="Undo / Cancel Transfer"
+                          >
+                            <FiRotateCcw size={14} /> Undo
+                          </button>
+                        )}
+
+                        <button
+                          onClick={() => handleDeleteTransfer(t._id)}
+                          className="text-gray-600 hover:text-gray-800 flex items-center gap-1 font-semibold text-xs bg-gray-50 hover:bg-gray-100 px-2.5 py-1.5 rounded-lg transition-all"
+                          title="Delete Record"
+                        >
+                          <FiTrash2 size={14} /> Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </div>
+
+      {confirmModal.isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/55 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-gray-100 transform transition-all duration-300 scale-100 flex flex-col gap-4">
+            <h3 className="text-lg font-black text-gray-900 flex items-center gap-2">
+              ⚠️ {confirmModal.title}
+            </h3>
+            <p className="text-sm text-gray-600 leading-relaxed font-semibold">
+              {confirmModal.message}
+            </p>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setConfirmModal({ ...confirmModal, isOpen: false })}
+                className="px-4 py-2 text-sm font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-all active:scale-95 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={async () => {
+                  setConfirmModal({ ...confirmModal, isOpen: false });
+                  if (confirmModal.onConfirm) {
+                    await confirmModal.onConfirm();
+                  }
+                }}
+                className="px-5 py-2 text-sm font-bold text-white bg-red-500 hover:bg-red-600 rounded-xl shadow-lg shadow-red-200 transition-all active:scale-95 cursor-pointer"
+              >
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

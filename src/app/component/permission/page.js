@@ -53,6 +53,7 @@ const PERMISSION_GROUPS = [
       { label: "Show Questions Page", value: "show questions page" },
       { label: "Show Subadmin Page", value: "show subadmin page" },
       { label: "Show User Chat Page", value: "show user chat page" },
+      { label: "Show Cashbook Page", value: "show cashbook page" },
     ]
   },
   {
