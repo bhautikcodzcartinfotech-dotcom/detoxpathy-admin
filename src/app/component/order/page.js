@@ -332,7 +332,7 @@ const OrderPage = () => {
       setLoading(true);
       // Fetch up to 2000 orders for the selected month to ensure we get them all
       const data = await getAllOrders({ ...filter, start: 1, limit: 2000 });
-      const monthlyOrders = data.orders || [];
+      const monthlyOrders = (data.orders || []).filter(order => order.orderStatus !== 6);
 
       if (monthlyOrders.length === 0) {
         toast.error("No orders found for the selected filters");

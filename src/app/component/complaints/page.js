@@ -13,6 +13,7 @@ import { FiTrash2, FiCheck } from "react-icons/fi";
 import Dropdown from "@/utils/dropdown";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import RoleGuard from "@/components/RoleGuard";
+import { Button } from "@/utils/header";
 
 const NOTE_STATUS_KEY = "detoxpathy_note_statuses";
 
@@ -50,6 +51,12 @@ export default function NotesPage() {
         const dd = String(today.getDate()).padStart(2, "0");
         return `${yyyy}-${mm}-${dd}`;
     });
+
+    const [currentPage, setCurrentPage] = useState(1);
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [statusFilter, dateFilter, selectedDate]);
 
     const [userId, setUserId] = useState("");
     const [complaintText, setComplaintText] = useState("");
@@ -235,6 +242,12 @@ export default function NotesPage() {
 
         return result;
     }, [complaintsWithStatus, statusFilter, dateFilter, selectedDate]);
+
+    const itemsPerPage = 10;
+    const totalPages = Math.ceil(filteredComplaints.length / itemsPerPage);
+    const paginatedComplaints = useMemo(() => {
+        return filteredComplaints.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+    }, [filteredComplaints, currentPage]);
 
     const statusFilterOptions = [
         { label: "All Notes", value: "all" },
@@ -429,7 +442,7 @@ export default function NotesPage() {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100 text-gray-800">
-                                {filteredComplaints.map((c) => (
+                                {paginatedComplaints.map((c) => (
                                     <tr key={c._id} className="hover:bg-gray-50/50">
                                         <td className="px-6 py-4 font-medium">
                                             {c.userId && typeof c.userId === "object" ? c.userId.name : "—"}
@@ -500,6 +513,30 @@ export default function NotesPage() {
                     </div>
                 )}
             </div>
+
+            {totalPages > 1 && (
+                <div className="mt-6 flex justify-center items-center gap-4">
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={currentPage === 1 || loading}
+                        onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    >
+                        Previous
+                    </Button>
+                    <span className="text-sm font-bold text-gray-700">
+                        Page {currentPage} of {totalPages}
+                    </span>
+                    <Button
+                        type="button"
+                        variant="secondary"
+                        disabled={currentPage === totalPages || loading}
+                        onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    >
+                        Next
+                    </Button>
+                </div>
+            )}
 
             <ConfirmationDialog
                 isOpen={deleteDialog.isOpen}

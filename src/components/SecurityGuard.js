@@ -106,63 +106,14 @@ export default function SecurityGuard({ children }) {
       clearTimeout(deactivateTimerRef.current);
       deactivateTimerRef.current = null;
     }
-
-    // 1. Direct DOM style updates for zero-latency screen blurring/blocking
-    const contentEl = document.getElementById("security-protected-content");
-    if (contentEl) {
-      contentEl.style.transition = "none";
-      contentEl.style.filter = "blur(80px)";
-      contentEl.style.opacity = "0";
-      contentEl.style.pointerEvents = "none";
-    }
-
-    const overlayEl = document.getElementById("security-guard-overlay");
-    if (overlayEl) {
-      overlayEl.style.transition = "none";
-      overlayEl.style.display = "flex";
-      overlayEl.style.opacity = "1";
-      overlayEl.style.pointerEvents = "auto";
-    }
-
-    const titleEl = document.getElementById("security-guard-title");
-    if (titleEl && overlayPreset.title) {
-      titleEl.innerText = overlayPreset.title;
-    }
-
-    const messageEl = document.getElementById("security-guard-message");
-    if (messageEl && overlayPreset.message) {
-      messageEl.innerText = overlayPreset.message;
-    }
-
-    // 2. Schedule React state update to ensure React matches the DOM state
-    setOverlay(overlayPreset);
+    setOverlay({ ...overlayPreset, visible: true });
   };
 
   const hideShield = () => {
-    // 1. Direct DOM updates to start fading out
-    const contentEl = document.getElementById("security-protected-content");
-    if (contentEl) {
-      contentEl.style.transition = "filter 0.25s ease, opacity 0.25s ease";
-      contentEl.style.filter = "";
-      contentEl.style.opacity = "";
-      contentEl.style.pointerEvents = "";
-    }
-
-    const overlayEl = document.getElementById("security-guard-overlay");
-    if (overlayEl) {
-      overlayEl.style.transition = "opacity 0.25s ease";
-      overlayEl.style.opacity = "0";
-      overlayEl.style.pointerEvents = "none";
-    }
-
-    // 2. Delayed React state update for layout cleanup after transition
     if (deactivateTimerRef.current) {
       clearTimeout(deactivateTimerRef.current);
     }
-    deactivateTimerRef.current = setTimeout(() => {
-      setOverlay(OVERLAY_HIDDEN);
-      deactivateTimerRef.current = null;
-    }, 250);
+    setOverlay(prev => ({ ...prev, visible: false }));
   };
 
   // ---------------------------------------------------------------------------
@@ -349,8 +300,16 @@ export default function SecurityGuard({ children }) {
         * { user-select: none !important; -webkit-user-select: none !important; }
       `}</style>
 
-      {/* Protected content — blur applied via direct DOM, no JSX style conflict */}
-      <div id="security-protected-content">
+      {/* Protected content */}
+      <div
+        id="security-protected-content"
+        style={{
+          filter: overlay.visible ? "blur(80px)" : "none",
+          opacity: overlay.visible ? 0 : 1,
+          pointerEvents: overlay.visible ? "none" : "auto",
+          transition: "filter 0.25s ease, opacity 0.25s ease"
+        }}
+      >
         {children}
       </div>
 
@@ -361,9 +320,9 @@ export default function SecurityGuard({ children }) {
           position:        "fixed",
           inset:           0,
           zIndex:          99999,
-          display:         overlay.visible ? "flex" : "none",
+          display:         "flex",
           opacity:         overlay.visible ? 1 : 0,
-          transition:      overlay.visible ? "none" : "opacity 0.25s ease",
+          transition:      "opacity 0.25s ease",
           backgroundColor: "#09090b",
           flexDirection:   "column",
           alignItems:      "center",

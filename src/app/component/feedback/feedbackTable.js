@@ -3,6 +3,20 @@ import React from "react";
 import { MdStar, MdStarBorder } from "react-icons/md";
 
 const FeedbackTable = ({ items, loading, selectedIds, onSelectChange, onSelectAll }) => {
+  const [expandedIds, setExpandedIds] = React.useState(new Set());
+
+  const toggleExpand = (id) => {
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
   const renderStars = (rating) => {
     return (
       <div className="flex text-yellow-400">
@@ -45,12 +59,13 @@ const FeedbackTable = ({ items, loading, selectedIds, onSelectChange, onSelectAl
                 <input
                   type="checkbox"
                   className="rounded border-gray-300 text-[#134D41] focus:ring-[#134D41]"
-                  checked={items.length > 0 && selectedIds.length === items.length}
+                  checked={items.length > 0 && items.every((item) => selectedIds.includes(item._id))}
                   onChange={(e) => onSelectAll(e.target.checked)}
                 />
               </th>
               <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">User</th>
               <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Ratings</th>
+              <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Review</th>
               <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Avg</th>
               <th className="px-6 py-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
             </tr>
@@ -58,7 +73,7 @@ const FeedbackTable = ({ items, loading, selectedIds, onSelectChange, onSelectAl
           <tbody className="divide-y divide-gray-100">
             {items.length === 0 ? (
               <tr>
-                <td colSpan="5" className="px-6 py-10 text-center text-gray-400">
+                <td colSpan="6" className="px-6 py-10 text-center text-gray-400">
                   No feedback found
                 </td>
               </tr>
@@ -100,6 +115,25 @@ const FeedbackTable = ({ items, loading, selectedIds, onSelectChange, onSelectAl
                             {renderApprovalBadge(item.isSupportApproved)}
                         </div>
                     </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    {item.review ? (
+                      <div className="max-w-xs">
+                        <p className={`text-sm text-gray-700 break-words whitespace-pre-line ${!expandedIds.has(item._id) ? "line-clamp-3" : ""}`}>
+                          {item.review}
+                        </p>
+                        {item.review.length > 90 && (
+                          <button
+                            onClick={() => toggleExpand(item._id)}
+                            className="text-xs font-bold text-yellow-600 hover:text-yellow-700 transition-colors mt-1 focus:outline-none"
+                          >
+                            {expandedIds.has(item._id) ? "Show Less" : "View More"}
+                          </button>
+                        )}
+                      </div>
+                    ) : (
+                      <span className="text-gray-400 italic">No comment</span>
+                    )}
                   </td>
                   <td className="px-6 py-4">
                     <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700 border border-green-100">
