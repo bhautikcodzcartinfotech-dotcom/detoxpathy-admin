@@ -52,7 +52,7 @@ const FollowUpPage = () => {
     };
 
     return (
-        <RoleGuard allow={["Admin", "subadmin"]} permission="show appointments page">
+        <RoleGuard allow={["Admin", "subadmin"]} permission="show follow-up page">
             <div className="w-full h-full px-4 sm:px-6 lg:px-10 xl:px-18">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                     <Header size="3xl">Follow Up</Header>

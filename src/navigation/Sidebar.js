@@ -253,36 +253,36 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
             </Link>
           )}
           {(role === "Admin" || can("show appointments page")) && (
-            <>
-              <Link
-                href="/component/appointment"
-                className={linkClasses("/component/appointment")}
-              >
-                <div className="relative flex items-center">
-                  <MdCalendarMonth size={20} />
-                  {isCollapsed && newAppointmentsCount > 0 && (
-                    <span className="absolute -top-1.5 -right-1.5 w-2 h-2 bg-rose-500 rounded-full shadow-sm shadow-rose-500/30 animate-pulse" />
+            <Link
+              href="/component/appointment"
+              className={linkClasses("/component/appointment")}
+            >
+              <div className="relative flex items-center">
+                <MdCalendarMonth size={20} />
+                {isCollapsed && newAppointmentsCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 w-2 h-2 bg-rose-500 rounded-full shadow-sm shadow-rose-500/30 animate-pulse" />
+                )}
+              </div>
+              {!isCollapsed && (
+                <div className="flex-1 flex items-center justify-between">
+                  <span>Appointments</span>
+                  {newAppointmentsCount > 0 && (
+                    <span className="px-1.5 py-0.5 text-[10px] font-black bg-rose-500 text-white rounded-full leading-none shadow-sm shadow-rose-500/30 animate-pulse">
+                      {newAppointmentsCount}
+                    </span>
                   )}
                 </div>
-                {!isCollapsed && (
-                  <div className="flex-1 flex items-center justify-between">
-                    <span>Appointments</span>
-                    {newAppointmentsCount > 0 && (
-                      <span className="px-1.5 py-0.5 text-[10px] font-black bg-rose-500 text-white rounded-full leading-none shadow-sm shadow-rose-500/30 animate-pulse">
-                        {newAppointmentsCount}
-                      </span>
-                    )}
-                  </div>
-                )}
-              </Link>
-              <Link
-                href="/component/follow-up"
-                className={linkClasses("/component/follow-up")}
-              >
-                <MdHistory size={20} />
-                {!isCollapsed && <span>Follow Up</span>}
-              </Link>
-            </>
+              )}
+            </Link>
+          )}
+          {(role === "Admin" || can("show follow-up page")) && (
+            <Link
+              href="/component/follow-up"
+              className={linkClasses("/component/follow-up")}
+            >
+              <MdHistory size={20} />
+              {!isCollapsed && <span>Follow Up</span>}
+            </Link>
           )}
           {(role === "Admin" || can("show staff page")) && (
             <Link
