@@ -45,6 +45,30 @@ const BranchTimeForm = ({
     return `${String(hours).padStart(2, "0")}:${minutes}`;
   };
 
+  const toDisplayTimeValue = (value) => {
+    if (value == null || value === "") return "";
+
+    const normalized = String(value).trim().toUpperCase();
+
+    const match24 = normalized.match(/^(\d{1,2}):(\d{2})$/);
+    if (match24) {
+      let hours = Number(match24[1]);
+      const minutes = String(match24[2]).padStart(2, "0");
+      const suffix = hours >= 12 ? "PM" : "AM";
+      hours = hours % 12 || 12;
+      return `${hours}:${minutes} ${suffix}`;
+    }
+
+    const match12 = normalized.match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/);
+    if (match12) {
+      const hours = Number(match12[1]);
+      const minutes = String(match12[2]).padStart(2, "0");
+      return `${hours % 12 || 12}:${minutes} ${match12[3]}`;
+    }
+
+    return String(value).trim();
+  };
+
   const normalizeAvailability = (items = []) =>
     (Array.isArray(items) ? items : []).map((item) => ({
       ...item,
@@ -54,10 +78,27 @@ const BranchTimeForm = ({
       breakEndTime: toTimeInputValue(item?.breakEndTime),
     }));
 
+  const createDefaultAvailabilityItem = (day = "1") => ({
+    day,
+    startTime: "10:00 AM",
+    endTime: "07:00 PM",
+    breakStartTime: "01:15 PM",
+    breakEndTime: "02:00 PM",
+    slotDuration: 15,
+    bufferTime: 5,
+  });
+
+  const formatAvailabilityForSubmit = (items = []) =>
+    (Array.isArray(items) ? items : []).map((item) => ({
+      ...item,
+      startTime: toDisplayTimeValue(item?.startTime),
+      endTime: toDisplayTimeValue(item?.endTime),
+      breakStartTime: toDisplayTimeValue(item?.breakStartTime),
+      breakEndTime: toDisplayTimeValue(item?.breakEndTime),
+    }));
+
   const [availability, setAvailability] = useState(() =>
-    normalizeAvailability([
-      { day: "1", startTime: "10:00", endTime: "19:00", breakStartTime: "13:15", breakEndTime: "14:00", slotDuration: 15, bufferTime: 5 },
-    ])
+    normalizeAvailability([createDefaultAvailabilityItem("1")])
   );
 
   const getDraftKey = () => {
@@ -144,7 +185,7 @@ const BranchTimeForm = ({
 
     setAvailability([
       ...availability,
-      { day: unusedDay.value, startTime: "10:00", endTime: "19:00", breakStartTime: "13:15", breakEndTime: "14:00", slotDuration: 15, bufferTime: 5 },
+      createDefaultAvailabilityItem(unusedDay.value),
     ]);
 
     setTimeout(() => {
@@ -181,8 +222,10 @@ const BranchTimeForm = ({
       return;
     }
 
+    const formattedAvailability = formatAvailabilityForSubmit(availability);
+
     clearDraft();
-    onSubmit({ availability });
+    onSubmit({ availability: formattedAvailability });
   };
 
   const handleCancel = () => {

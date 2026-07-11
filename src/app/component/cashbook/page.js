@@ -423,10 +423,10 @@ export default function CashbookPage() {
       {summary && (() => {
         const cOnline = summary.contraOnline?.total || 0;
         const cOffline = summary.contraOffline?.total || 0;
-        const totalAfterExpense = isDoctor
+        const isBranchSelected = isDoctor || selectedBranch !== "";
+        const totalAfterExpense = isBranchSelected
           ? (summary.branchOrders?.totalOffline || 0) - (summary.totalExpense?.total || 0)
           : (summary.grandTotal || 0) - (summary.totalExpense?.total || 0);
-        const isBranchSelected = isDoctor || selectedBranch !== "";
         const totalAfterContra = isBranchSelected
           ? totalAfterExpense - cOnline - cOffline
           : totalAfterExpense + cOnline + cOffline;
@@ -454,7 +454,7 @@ export default function CashbookPage() {
                   value={fmt(summary.branchOrders?.totalOnline || 0)}
                   icon={MdStore}
                   gradient="border-green-500"
-                  sub={`${summary.branchOrders?.count || 0} orders`}
+                  sub={`${summary.branchOrders?.countOnline || 0} orders`}
                 />
               </>
             )}
@@ -463,7 +463,7 @@ export default function CashbookPage() {
               value={fmt(summary.branchOrders?.totalOffline || 0)}
               icon={MdStore}
               gradient="border-amber-500"
-              sub={`${summary.branchOrders?.count || 0} orders`}
+              sub={`${summary.branchOrders?.countOffline || 0} orders`}
             />
             <SummaryCard
               label="Total Expense"
