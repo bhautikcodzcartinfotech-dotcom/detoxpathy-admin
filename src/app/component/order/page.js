@@ -11,11 +11,14 @@ import {
   getAllUsers,
   getAllProducts,
   getAllPlans,
-  getAllBranches
+  getAllBranches,
+  getAllCustomers,
+  createCustomer,
 } from "@/Api/AllApi";
 import OrderTable from "./orderTable";
 import toast from "react-hot-toast";
 import OrderForm from "./orderForm";
+import CustomerForm from "./CustomerForm";
 import CompanyOrderForm from "../stock/companyOrderForm";
 import Drawer from "@/utils/formanimation";
 import { Header, Button } from "@/utils/header";
@@ -82,6 +85,7 @@ const OrderPage = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isCustomerOrderDrawerOpen, setIsCustomerOrderDrawerOpen] = useState(false);
   const [isCompanyOrderDrawerOpen, setIsCompanyOrderDrawerOpen] = useState(false);
   const [selectedIds, setSelectedIds] = useState([]);
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
@@ -91,6 +95,10 @@ const OrderPage = () => {
   const [products, setProducts] = useState([]);
   const [plans, setPlans] = useState([]);
   const [branches, setBranches] = useState([]);
+  const [customers, setCustomers] = useState([]);
+  const [customerLoading, setCustomerLoading] = useState(false);
+  const [customerError, setCustomerError] = useState("");
+  const [isCustomerDrawerOpen, setIsCustomerDrawerOpen] = useState(false);
 
   const [stats, setStats] = useState({
     totalOrders: 0,
@@ -112,6 +120,7 @@ const OrderPage = () => {
     dateRange: "",
     startDate: "",
     endDate: "",
+    walkIn: 1,
   });
   const prevFilterRef = useRef(filter);
 
@@ -131,7 +140,7 @@ const OrderPage = () => {
       }
       // Only clear selectedIds if filters other than the page (start) have changed
       const prevFilter = prevFilterRef.current;
-      const filtersChanged = 
+      const filtersChanged =
         prevFilter.search !== filter.search ||
         prevFilter.type !== filter.type ||
         prevFilter.status !== filter.status ||
@@ -140,7 +149,8 @@ const OrderPage = () => {
         prevFilter.dateRange !== filter.dateRange ||
         prevFilter.startDate !== filter.startDate ||
         prevFilter.endDate !== filter.endDate ||
-        prevFilter.limit !== filter.limit;
+        prevFilter.limit !== filter.limit ||
+        prevFilter.walkIn !== filter.walkIn;
 
       if (filtersChanged) {
         setSelectedIds([]);
@@ -180,6 +190,43 @@ const OrderPage = () => {
     }
   };
 
+  const fetchCustomers = async () => {
+    try {
+      setCustomerLoading(true);
+      setCustomerError("");
+      const data = await getAllCustomers({ limit: 1000 });
+      const list = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.customers)
+          ? data.customers
+          : [];
+      setCustomers(list);
+    } catch (err) {
+      const message = err?.response?.data?.message || err?.response?.data?.error || "Failed to load customers";
+      setCustomerError(message);
+      console.error("Failed to fetch customers", err);
+    } finally {
+      setCustomerLoading(false);
+    }
+  };
+
+  const handleCustomerSubmit = async (payload) => {
+    try {
+      setCustomerLoading(true);
+      const result = await createCustomer(payload);
+      toast.success("Customer created successfully");
+      setIsCustomerDrawerOpen(false);
+      await fetchCustomers();
+      return result;
+    } catch (err) {
+      const message = err?.response?.data?.message || err?.response?.data?.error || "Failed to create customer";
+      toast.error(message);
+      throw err;
+    } finally {
+      setCustomerLoading(false);
+    }
+  };
+
   useEffect(() => {
     fetchOrders();
     fetchStats();
@@ -187,6 +234,7 @@ const OrderPage = () => {
 
   useEffect(() => {
     fetchCompanyOrderData();
+    fetchCustomers();
   }, []);
 
   // Doctor/sub-doctor of branch should see both online and offline orders, so we don't force type filter
@@ -865,7 +913,7 @@ const OrderPage = () => {
         let itemsHtml = "";
         let itemsCount = 0;
         if (order.plans && order.plans.length > 0) {
-          order.plans.forEach(  p => {
+          order.plans.forEach(p => {
             itemsHtml += `
               <tr>
                 <td style="text-align: center; font-weight: 800;">${p.quantity || 1}</td>
@@ -1222,6 +1270,7 @@ const OrderPage = () => {
 
   const handleCreateSuccess = () => {
     setIsDrawerOpen(false);
+    setIsCustomerOrderDrawerOpen(false);
     fetchOrders();
     fetchStats();
   };
@@ -1235,6 +1284,30 @@ const OrderPage = () => {
             <p className="text-sm font-bold text-gray-400 uppercase tracking-[0.2em]">Track sales, dispatch status, and fulfillment</p>
           </div>
           <div className="flex items-center gap-4">
+            {(role === "Admin" || permissions?.includes("create order")) && (
+              <Button
+                onClick={() => setIsDrawerOpen(true)}
+                variant="primary"
+              >
+                Create New Order
+              </Button>
+            )}
+            {role === "Admin" && (
+              <>
+                <Button
+                  onClick={() => setIsCustomerOrderDrawerOpen(true)}
+                  variant="secondary"
+                >
+                  Order for Customer
+                </Button>
+                <Button
+                  onClick={() => setIsCustomerDrawerOpen(true)}
+                  variant="secondary"
+                >
+                  Create New Customer
+                </Button>
+              </>
+            )}
             {role === 'subadmin' && (
               <Button
                 onClick={() => setIsCompanyOrderDrawerOpen(true)}
@@ -1243,23 +1316,15 @@ const OrderPage = () => {
                 Company Order
               </Button>
             )}
-            {role !== "Admin" && permissions?.includes("create order") && (
-              <Button
-                onClick={() => setIsDrawerOpen(true)}
-                variant="primary"
-              >
-                Create New Order
-              </Button>
-            )}
           </div>
         </div>
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 mb-5 md:grid-cols-4 gap-4">
           {[
-            { 
-              label: "TOTAL ORDERS", 
-              value: stats.totalOrders.toLocaleString(), 
+            {
+              label: "TOTAL ORDERS",
+              value: stats.totalOrders.toLocaleString(),
               color: "border-green-600",
               subText: `Online: ${stats.onlineOrders || 0} | Branch: ${stats.branchOrders || 0}`
             },
@@ -1283,7 +1348,7 @@ const OrderPage = () => {
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-lg shadow-gray-200/50 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
             {/* Search Bar */}
-            <div className="md:col-span-3 space-y-2">
+            <div className="md:col-span-2 space-y-2">
               <label className="text-[10px] font-black text-gray-400 tracking-[0.2em] uppercase ml-1">Search Orders</label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -1364,6 +1429,20 @@ const OrderPage = () => {
                 ]}
                 value={filter.dateRange}
                 onChange={handleDateRangeChange}
+              />
+            </div>
+
+            {/* Walk in Filter */}
+            <div className="md:col-span-2">
+              <Dropdown
+                label="Walk in"
+                options={[
+                  { label: "All", value: 1 },
+                  { label: "Walk-in Only", value: 2 },
+                  { label: "Exclude Walk-in", value: 3 },
+                ]}
+                value={filter.walkIn}
+                onChange={(val) => handleFilterChange("walkIn", val)}
               />
             </div>
 
@@ -1528,6 +1607,45 @@ const OrderPage = () => {
             onSuccess={handleCreateSuccess}
           />
         </Drawer>
+
+        {role === "Admin" && (
+          <>
+            <Drawer isOpen={isCustomerOrderDrawerOpen} onClose={() => setIsCustomerOrderDrawerOpen(false)}>
+              <div className="mb-6 text-center">
+                <h2 className="text-3xl font-bold text-yellow-600">Order for Customer</h2>
+                <p className="text-gray-500 text-sm mt-1">Select a customer or create a new one before placing the order.</p>
+              </div>
+              <OrderForm
+                mode="customer"
+                customers={customers}
+                onCustomerCreated={(customer) => setCustomers((prev) => [customer, ...(prev || [])])}
+                onCancel={() => setIsCustomerOrderDrawerOpen(false)}
+                onSuccess={handleCreateSuccess}
+              />
+            </Drawer>
+
+            <Drawer isOpen={isCustomerDrawerOpen} onClose={() => setIsCustomerDrawerOpen(false)}>
+              <div className="mb-6 text-center">
+                <h2 className="text-3xl font-bold text-[#134D41]">Customers</h2>
+                <p className="text-gray-500 text-sm mt-1">Fetch existing customers and create new ones.</p>
+              </div>
+              <div className="mb-4 text-sm text-gray-600">
+                {customerLoading ? (
+                  "Loading customers..."
+                ) : customerError ? (
+                  <span className="text-red-600">{customerError}</span>
+                ) : (
+                  <span>{customers.length.toLocaleString()} customers found.</span>
+                )}
+              </div>
+              <CustomerForm
+                onCancel={() => setIsCustomerDrawerOpen(false)}
+                onSubmit={handleCustomerSubmit}
+                loading={customerLoading}
+              />
+            </Drawer>
+          </>
+        )}
 
         <Drawer isOpen={isCompanyOrderDrawerOpen} onClose={() => setIsCompanyOrderDrawerOpen(false)}>
           <div className="p-6">

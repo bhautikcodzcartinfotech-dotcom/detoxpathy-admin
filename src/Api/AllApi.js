@@ -1,6 +1,6 @@
 import axios from "axios";
 
-// export const API_BASE = "http://192.168.1.9:3002/api/v1";
+// export const API_BASE = "http://localhost:3002/api/v1";
 // export const API_BASE = "http://69.62.73.194:4009/api/v1";
 export const API_BASE = "https://admin.detoxpathy.com/api/v1";
 // Host base used to resolve file URLs coming from multer (e.g., uploads/..)
@@ -361,6 +361,21 @@ export const getAllUsers = async (params = {}) => {
   const res = await axios.get(`${API_BASE}/admin/user/get`, {
     headers: getAuthHeaders(),
     params
+  });
+  return res.data.data;
+};
+
+export const getAllCustomers = async (params = {}) => {
+  const res = await axios.get(`${API_BASE}/admin/customer/get`, {
+    headers: getAuthHeaders(),
+    params,
+  });
+  return res.data.data;
+};
+
+export const createCustomer = async (payload) => {
+  const res = await axios.post(`${API_BASE}/admin/customer/create`, payload, {
+    headers: getAuthHeaders(),
   });
   return res.data.data;
 };
@@ -1584,6 +1599,7 @@ export const getAllOrders = async (params = {}) => {
   if (params.startDate) queryParams.append("startDate", params.startDate);
   if (params.endDate) queryParams.append("endDate", params.endDate);
   if (params.ids) queryParams.append("ids", params.ids);
+  if (params.walkIn) queryParams.append("walkIn", params.walkIn);
 
   const res = await axios.get(`${API_BASE}/admin/order/userOrders?${queryParams.toString()}`, {
     headers: getAuthHeaders(),
@@ -1615,6 +1631,12 @@ export const createOrder = async (payload) => {
   return res.data.data;
 };
 
+export const createCustomerOrder = async (payload) => {
+  const res = await axios.post(`${API_BASE}/admin/order/customer-order`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
 
 export const getOrderStats = async () => {
   const res = await axios.get(`${API_BASE}/admin/order/stats`, {

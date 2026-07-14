@@ -6,7 +6,7 @@ import axios from "axios";
 import { ActionButton } from "@/utils/actionbutton";
 import toast from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Truck, X, Edit } from "lucide-react";
+import { Truck, X, Edit, Check } from "lucide-react";
 
 const STATUS_LABELS = {
   1: "Pending",
@@ -105,6 +105,7 @@ const OrderTable = ({ items, loading, onRefresh, selectedIds = [], onToggleSelec
             </th>
             <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">ORD ID</th>
             <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">USER</th>
+            <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">Walk in</th>
             <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">BRANCH</th>
             <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">PRODUCT</th>
             <th className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">AMOUNT</th>
@@ -134,6 +135,13 @@ const OrderTable = ({ items, loading, onRefresh, selectedIds = [], onToggleSelec
               <td className="px-4 py-5 whitespace-nowrap text-[13px] font-medium text-gray-700">
                 {order.user ? `${order.user.name} ${order.user.surname || ""}` : (order.shippingAddress?.name || "N/A")}
               </td>
+              <td className="px-4 py-5 whitespace-nowrap text-[13px] text-gray-500">
+                {order.user?.isUser === false ? (
+                  <Check className="w-5 h-5 text-green-600 font-bold" />
+                ) : (
+                  "-"
+                )}
+              </td>
 
               <td className="px-4 py-5 whitespace-nowrap text-[13px] text-gray-500">
                 <span className="font-medium text-teal-700">{order.branch?.name || "N/A"}</span>
@@ -153,10 +161,10 @@ const OrderTable = ({ items, loading, onRefresh, selectedIds = [], onToggleSelec
               <td className="px-4 py-5 whitespace-nowrap">
                 <span
                   className={`px-2.5 py-1 rounded text-[11px] font-bold ${order.paymentMethod === "Split"
-                      ? "bg-blue-100 text-blue-600"
-                      : order.type === 2
-                        ? "bg-gray-100 text-gray-500"
-                        : "bg-blue-100 text-blue-600"
+                    ? "bg-blue-100 text-blue-600"
+                    : order.type === 2
+                      ? "bg-gray-100 text-gray-500"
+                      : "bg-blue-100 text-blue-600"
                     }`}
                 >
                   {order.paymentMethod === "Split"
@@ -250,14 +258,14 @@ const OrderTable = ({ items, loading, onRefresh, selectedIds = [], onToggleSelec
                 <Truck className="w-5 h-5 text-teal-600" />
                 Fulfillment & Courier Details
               </h3>
-              <button 
+              <button
                 onClick={() => setIsCourierModalOpen(false)}
                 className="text-gray-400 hover:text-gray-600 transition"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
-            
+
             <form onSubmit={handleSaveCourierDetails} className="p-6 space-y-4">
               <div>
                 <label className="text-[10px] font-bold text-gray-400 uppercase tracking-wider block mb-1">Courier Service</label>

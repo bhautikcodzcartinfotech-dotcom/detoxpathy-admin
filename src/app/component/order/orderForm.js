@@ -1,12 +1,12 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { getAllUsers, getAllProducts, getAllPlans, createOrder, getSetting, verifyCompanyOrderPaymentApi, deleteOrderApi, getSuggestedProgram, getAllBranches } from "@/Api/AllApi";
+import { getAllUsers, getAllProducts, getAllPlans, createOrder, createCustomerOrder, createCustomer, getSetting, verifyCompanyOrderPaymentApi, deleteOrderApi, getSuggestedProgram, getAllBranches } from "@/Api/AllApi";
 import TimeButton from "@/utils/timebutton";
 import Dropdown from "@/utils/dropdown";
 import toast from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
-const OrderForm = ({ onCancel, onSuccess }) => {
+const OrderForm = ({ onCancel, onSuccess, mode = "user", customers = [], onCustomerCreated = null }) => {
   const { role, branches: subadminBranchIds } = useAuth();
   const [subadminBranchCities, setSubadminBranchCities] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -14,6 +14,20 @@ const OrderForm = ({ onCancel, onSuccess }) => {
   const [products, setProducts] = useState([]);
   const [plans, setPlans] = useState([]);
   const [selectedUser, setSelectedUser] = useState("");
+  const [showCreateCustomer, setShowCreateCustomer] = useState(false);
+  const [customerForm, setCustomerForm] = useState({ name: "", mobilePrefix: "+91", mobileNumber: "" });
+  const [customerFormErrors, setCustomerFormErrors] = useState({});
+  const [creatingCustomer, setCreatingCustomer] = useState(false);
+  const [shippingAddress, setShippingAddress] = useState({
+    name: "",
+    mobile: "",
+    addressLine1: "",
+    addressLine2: "",
+    city: "",
+    state: "",
+    postalCode: "",
+    country: "",
+  });
   const [selectedProducts, setSelectedProducts] = useState([]); // [{productId, quantity}]
   const [selectedPlans, setSelectedPlans] = useState([]); // [{planId, name, price}]
   const [currency, setCurrency] = useState("₹");
@@ -71,14 +85,17 @@ const OrderForm = ({ onCancel, onSuccess }) => {
   }, [subadminBranchIds]);
 
   const filteredUsers = React.useMemo(() => {
+    if (mode === "customer") {
+      return customers || [];
+    }
     if (role === "Admin" || !subadminBranchIds || subadminBranchIds.length === 0) {
       return users;
     }
-    return users.filter(u => {
+    return users.filter((u) => {
       const userCity = (u.city || "").trim().toLowerCase();
       return subadminBranchCities.includes(userCity);
     });
-  }, [users, role, subadminBranchIds, subadminBranchCities]);
+  }, [users, role, subadminBranchIds, subadminBranchCities, mode, customers]);
 
   const handleAddProduct = (productId) => {
     if (!productId) return;
@@ -177,7 +194,20 @@ const OrderForm = ({ onCancel, onSuccess }) => {
     setSelectedProducts([]);
     setHasSuggestedPlan(false);
 
-    if (!userId) return;
+    if (mode === "customer") {
+      const cust = (customers || []).find((c) => (c._id || c.id) === userId);
+      if (cust) {
+        setShippingAddress((prev) => ({
+          ...prev,
+          name: cust.name || "",
+          mobile: `${cust.mobilePrefix || ""}${cust.mobileNumber || ""}`,
+        }));
+      } else {
+        setShippingAddress((prev) => ({ ...prev, name: "", mobile: "" }));
+      }
+    }
+
+    if (!userId || mode === "customer") return;
 
     try {
       setLoadingSuggestion(true);
@@ -192,9 +222,21 @@ const OrderForm = ({ onCancel, onSuccess }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!selectedUser) return toast.error("Please select a user");
-    if (selectedPlans.length === 0) return toast.error("Please select a plan");
+    if (!selectedUser) return toast.error(`Please select a ${mode === "customer" ? "customer" : "user"}`);
+    if (mode === "customer") {
+      if (selectedPlans.length === 0 && selectedProducts.length === 0) {
+        return toast.error("Please select at least one product or one plan");
+      }
+    } else {
+      if (selectedPlans.length === 0) {
+        return toast.error("Please select a plan");
+      }
+    }
 
+    if (mode === "customer") {
+      const shipErr = validateShipping();
+      if (shipErr) return toast.error(shipErr);
+    }
 
     const onlinePay = paymentMethod === "Split" ? Number(onlineAmount) || 0 : 0;
     const offlinePay = paymentMethod === "Split" ? Number(offlineAmount) || 0 : 0;
@@ -212,10 +254,22 @@ const OrderForm = ({ onCancel, onSuccess }) => {
     try {
       setLoading(true);
       const payload = {
-        userId: selectedUser,
+        ...(mode === "customer" ? { customerId: selectedUser } : { userId: selectedUser }),
         products: selectedProducts.map(({ productId, quantity }) => ({ productId, quantity })),
         plans: selectedPlans.map(p => p.planId),
         type: 2, // Branch offline order
+        ...(mode === "customer" ? {
+          shippingAddress: {
+            name: (shippingAddress.name || "").trim(),
+            mobile: (shippingAddress.mobile || "").trim(),
+            addressLine1: (shippingAddress.addressLine1 || "").trim(),
+            addressLine2: (shippingAddress.addressLine2 || "").trim(),
+            city: (shippingAddress.city || "").trim(),
+            state: (shippingAddress.state || "").trim(),
+            postalCode: (shippingAddress.postalCode || "").trim(),
+            country: (shippingAddress.country || "").trim(),
+          }
+        } : {}),
 
         paymentMethod:
           paymentMethod === "Online"
@@ -230,7 +284,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
         payload.offlineAmount = offlinePay;
       }
 
-      const res = await createOrder(payload);
+      const res = mode === "customer" ? await createCustomerOrder(payload) : await createOrder(payload);
 
       const needsRazorpay =
         paymentMethod === "Online" ||
@@ -299,6 +353,18 @@ const OrderForm = ({ onCancel, onSuccess }) => {
     }
   };
 
+  const validateShipping = () => {
+    const s = shippingAddress || {};
+    if (!s.name || String(s.name).trim() === "") return "Name is required for shipping";
+    if (!s.mobile || String(s.mobile).trim() === "") return "Mobile is required for shipping";
+    if (!s.addressLine1 || String(s.addressLine1).trim() === "") return "Address Line 1 is required";
+    if (!s.city || String(s.city).trim() === "") return "City is required";
+    if (!s.state || String(s.state).trim() === "") return "State is required";
+    if (!s.postalCode || String(s.postalCode).trim() === "") return "Postal code is required";
+    if (!s.country || String(s.country).trim() === "") return "Country is required";
+    return null;
+  };
+
   const getItemPrice = (item) => {
     return Number(item.basePrice) || 0;
   };
@@ -317,16 +383,116 @@ const OrderForm = ({ onCancel, onSuccess }) => {
     <form onSubmit={handleSubmit} className="space-y-6 px-1">
       {/* User Selection */}
       <Dropdown
-        label="Select User"
-        placeholder="-- Select User --"
+        label={mode === "customer" ? "Select Customer" : "Select User"}
+        placeholder={mode === "customer" ? "-- Select Customer --" : "-- Select User --"}
         showSearch={true}
-        options={filteredUsers.map(u => ({
+        options={filteredUsers.map((u) => ({
           value: u._id,
-          label: `${u.name} ${u.surname || ""} (${u.mobileNumber})`
+          label: `${u.name} ${u.surname || ""} (${u.mobilePrefix || "+91"}${u.mobileNumber || ""})`,
         }))}
         value={selectedUser}
         onChange={(val) => handleUserChange(val)}
       />
+
+      {mode === "customer" && role === "Admin" && (
+        <div className="space-y-3 mt-2">
+          <button
+            type="button"
+            onClick={() => setShowCreateCustomer((prev) => !prev)}
+            className="text-sm font-semibold text-[#134D41] hover:text-[#0f5132]"
+          >
+            {showCreateCustomer ? "Hide create customer" : "Create new customer"}
+          </button>
+          {showCreateCustomer && (
+            <div className="p-4 rounded-2xl border border-gray-200 bg-gray-50 space-y-4">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700">Name</label>
+                <input
+                  type="text"
+                  value={customerForm.name}
+                  onChange={(e) => setCustomerForm((prev) => ({ ...prev, name: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#134D41]"
+                  placeholder="Customer name"
+                />
+                {customerFormErrors.name && <p className="text-red-600 text-sm mt-1">{customerFormErrors.name}</p>}
+              </div>
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700">Prefix</label>
+                  <input
+                    type="text"
+                    value={customerForm.mobilePrefix}
+                    onChange={(e) => setCustomerForm((prev) => ({ ...prev, mobilePrefix: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#134D41]"
+                  />
+                  {customerFormErrors.mobilePrefix && <p className="text-red-600 text-sm mt-1">{customerFormErrors.mobilePrefix}</p>}
+                </div>
+                <div className="col-span-2">
+                  <label className="block text-sm font-semibold text-gray-700">Mobile Number</label>
+                  <input
+                    type="text"
+                    maxLength={10}
+                    value={customerForm.mobileNumber}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, "");
+                      setCustomerForm((prev) => ({ ...prev, mobileNumber: value }));
+                    }}
+                    className="w-full border border-gray-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#134D41]"
+                    placeholder="10-digit mobile number"
+                  />
+                  {customerFormErrors.mobileNumber && <p className="text-red-600 text-sm mt-1">{customerFormErrors.mobileNumber}</p>}
+                </div>
+              </div>
+              <div className="flex justify-end">
+                <button
+                  type="button"
+                  disabled={creatingCustomer}
+                  onClick={async () => {
+                    const errs = {};
+                    if (!customerForm.name.trim()) errs.name = "Name is required.";
+                    if (!customerForm.mobilePrefix.trim()) {
+                      errs.mobilePrefix = "Prefix is required.";
+                    } else if (!/^\+\d{1,4}$/.test(customerForm.mobilePrefix.trim())) {
+                      errs.mobilePrefix = "Enter valid prefix like +91 or +1.";
+                    }
+                    if (!/^\d{10}$/.test(customerForm.mobileNumber)) errs.mobileNumber = "Enter valid 10-digit mobile number.";
+                    setCustomerFormErrors(errs);
+                    if (Object.keys(errs).length > 0) return;
+                    try {
+                      setCreatingCustomer(true);
+                      const newCustomer = await createCustomer({
+                        name: customerForm.name.trim(),
+                        mobilePrefix: customerForm.mobilePrefix.trim(),
+                        mobileNumber: customerForm.mobileNumber.trim(),
+                      });
+                      setShowCreateCustomer(false);
+                      setCustomerForm({ name: "", mobilePrefix: "+91", mobileNumber: "" });
+                      setCustomerFormErrors({});
+                      if (onCustomerCreated) {
+                        onCustomerCreated(newCustomer);
+                      }
+                      setSelectedUser(newCustomer._id || newCustomer.id || "");
+                      setShippingAddress((prev) => ({
+                        ...prev,
+                        name: newCustomer.name || "",
+                        mobile: `${newCustomer.mobilePrefix || ""}${newCustomer.mobileNumber || ""}`,
+                      }));
+                      toast.success("Customer created successfully.");
+                    } catch (err) {
+                      toast.error(err?.response?.data?.message || err?.response?.data?.error || "Failed to create customer");
+                    } finally {
+                      setCreatingCustomer(false);
+                    }
+                  }}
+                  className="px-5 py-2 rounded-xl bg-[#134D41] text-white font-semibold hover:bg-[#0f5132] transition"
+                >
+                  {creatingCustomer ? "Saving..." : "Save Customer"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {loadingSuggestion && (
         <p className="text-xs font-semibold text-[#134D41]">Loading suggested plan for user...</p>
@@ -357,7 +523,7 @@ const OrderForm = ({ onCancel, onSuccess }) => {
         />
 
         <Dropdown
-          label="Select Plan *"
+          label={`Select Plan${mode !== "customer" ? " *" : ""}`}
           placeholder="-- Choose Plan --"
           showSearch={true}
           options={plans.map(p => {
@@ -373,6 +539,91 @@ const OrderForm = ({ onCancel, onSuccess }) => {
           }}
         />
       </div>
+
+      {mode === "customer" && (
+        <div className="p-4 rounded-2xl border border-gray-200 bg-gray-50 space-y-3">
+          <h3 className="font-semibold text-gray-800">Shipping Address</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="sm:col-span-1">
+              <label className="block mb-1 text-sm font-semibold text-gray-700">Name *</label>
+              <input
+                type="text"
+                value={shippingAddress.name}
+                onChange={(e) => setShippingAddress((prev) => ({ ...prev, name: e.target.value }))}
+                className="w-full border border-gray-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#134D41]"
+              />
+            </div>
+            <div className="sm:col-span-1">
+              <label className="block mb-1 text-sm font-semibold text-gray-700">Mobile *</label>
+              <input
+                type="text"
+                value={shippingAddress.mobile}
+                onChange={(e) => setShippingAddress((prev) => ({ ...prev, mobile: e.target.value }))}
+                className="w-full border border-gray-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#134D41]"
+                placeholder="+91XXXXXXXXXX"
+              />
+            </div>
+            <div className="sm:col-span-1">
+              <label className="block mb-1 text-sm font-semibold text-gray-700">Country *</label>
+              <input
+                type="text"
+                value={shippingAddress.country}
+                onChange={(e) => setShippingAddress((prev) => ({ ...prev, country: e.target.value }))}
+                className="w-full border border-gray-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#134D41]"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="block mb-1 text-sm font-semibold text-gray-700">Address Line 1 *</label>
+            <input
+              type="text"
+              value={shippingAddress.addressLine1}
+              onChange={(e) => setShippingAddress((prev) => ({ ...prev, addressLine1: e.target.value }))}
+              className="w-full border border-gray-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#134D41]"
+              placeholder="Street, locality"
+            />
+          </div>
+          <div>
+            <label className="block mb-1 text-sm font-semibold text-gray-700">Address Line 2 (optional)</label>
+            <input
+              type="text"
+              value={shippingAddress.addressLine2}
+              onChange={(e) => setShippingAddress((prev) => ({ ...prev, addressLine2: e.target.value }))}
+              className="w-full border border-gray-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#134D41]"
+              placeholder="Apartment, suite, etc."
+            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div>
+              <label className="block mb-1 text-sm font-semibold text-gray-700">City *</label>
+              <input
+                type="text"
+                value={shippingAddress.city}
+                onChange={(e) => setShippingAddress((prev) => ({ ...prev, city: e.target.value }))}
+                className="w-full border border-gray-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#134D41]"
+              />
+            </div>
+            <div>
+              <label className="block mb-1 text-sm font-semibold text-gray-700">State *</label>
+              <input
+                type="text"
+                value={shippingAddress.state}
+                onChange={(e) => setShippingAddress((prev) => ({ ...prev, state: e.target.value }))}
+                className="w-full border border-gray-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#134D41]"
+              />
+            </div>
+            <div>
+              <label className="block mb-1 text-sm font-semibold text-gray-700">Postal Code *</label>
+              <input
+                type="text"
+                value={shippingAddress.postalCode}
+                onChange={(e) => setShippingAddress((prev) => ({ ...prev, postalCode: e.target.value }))}
+                className="w-full border border-gray-300 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-[#134D41]"
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Payment Method Selection */}
       <Dropdown
