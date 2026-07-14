@@ -6,9 +6,8 @@ import { Header, Button } from "@/utils/header";
 import { getAppointmentFollowUps } from "@/Api/AllApi";
 import toast from "react-hot-toast";
 
-const getTomorrowDateString = () => {
+const getTodayDateString = () => {
     const now = new Date();
-    now.setDate(now.getDate() + 1);
     return now.toISOString().slice(0, 10);
 };
 
@@ -18,8 +17,8 @@ const normalizePhone = (prefix, number) => {
 };
 
 const FollowUpPage = () => {
-    const tomorrow = useMemo(() => getTomorrowDateString(), []);
-    const [date, setDate] = useState(tomorrow);
+    const today = useMemo(() => getTodayDateString(), []);
+    const [date, setDate] = useState(today);
     const [loading, setLoading] = useState(true);
     const [data, setData] = useState([]);
     const [success, setSuccess] = useState(false);
@@ -65,7 +64,7 @@ const FollowUpPage = () => {
                                 id="follow-up-date"
                                 type="date"
                                 value={date}
-                                min={tomorrow}
+                                min={today}
                                 onChange={handleDateChange}
                                 className="border border-gray-200 rounded-xl px-3 py-2 text-sm text-gray-900 outline-none focus:border-[#134D41]"
                             />
@@ -91,6 +90,7 @@ const FollowUpPage = () => {
                                     <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Name</th>
                                     <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Mobile</th>
                                     <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Branch</th>
+                                    <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Day</th>
                                     <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Has Appointment</th>
                                     <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Appointment</th>
                                     <th className="px-6 py-5 text-left text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Doctor</th>
@@ -99,7 +99,7 @@ const FollowUpPage = () => {
                             <tbody className="divide-y divide-gray-50 bg-white">
                                 {data.length === 0 ? (
                                     <tr>
-                                        <td colSpan="7" className="px-6 py-16 text-center text-sm text-gray-500">
+                                        <td colSpan="8" className="px-6 py-16 text-center text-sm text-gray-500">
                                             {loading ? "Fetching follow-up records..." : "No follow-up records found for this date."}
                                         </td>
                                     </tr>
@@ -113,6 +113,7 @@ const FollowUpPage = () => {
                                                 <td className="px-6 py-6 whitespace-nowrap text-[14px] font-bold text-gray-800">{`${item.name || ""}${item.surname ? ` ${item.surname}` : ""}`.trim() || "-"}</td>
                                                 <td className="px-6 py-6 whitespace-nowrap text-[13px] font-black text-gray-700">{normalizePhone(item.mobilePrefix, item.mobileNumber)}</td>
                                                 <td className="px-6 py-6 whitespace-nowrap text-[13px] font-black text-teal-700 uppercase tracking-tighter">{item.branch?.name || "-"}</td>
+                                                <td className="px-6 py-6 whitespace-nowrap text-[13px] font-semibold text-gray-700">{item.planDay ?? "-"}</td>
                                                 <td className="px-6 py-6 whitespace-nowrap text-[13px] font-semibold text-gray-700">{item.hasAppointment ? "Yes" : "No"}</td>
                                                 <td className="px-6 py-6 whitespace-nowrap text-[13px] text-gray-700">
                                                     {appointment ? (
@@ -160,6 +161,10 @@ const FollowUpPage = () => {
                                             <div>
                                                 <p className="font-black uppercase tracking-[0.2em] text-gray-400">Mobile</p>
                                                 <p className="mt-2">{normalizePhone(item.mobilePrefix, item.mobileNumber)}</p>
+                                            </div>
+                                            <div>
+                                                <p className="font-black uppercase tracking-[0.2em] text-gray-400">Day</p>
+                                                <p className="mt-2">{item.planDay ?? "-"}</p>
                                             </div>
                                             <div>
                                                 <p className="font-black uppercase tracking-[0.2em] text-gray-400">Appointment</p>
