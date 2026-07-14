@@ -134,7 +134,8 @@ const UserForm = ({
         rules: [required("Mobile number"), mobileRule],
       },
       branchId: { value: form.branchId, rules: [required("Branch")] },
-      planId: { value: form.planId, rules: [required("Plan")] },
+      // planId required only when creating (not editing)
+      ...(!initialValues ? { planId: { value: form.planId, rules: [required("Plan")] } } : {}),
     });
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -248,29 +249,26 @@ const UserForm = ({
         )}
       </div>
 
-      {/* Plan Dropdown */}
-      <div>
-        <Dropdown
-          label="Plan"
-          options={plans.map((p) => ({
-            label: `${p.name} (₹${p.price || 0})`,
-            value: p._id,
-            disabled: disabledPlanValues.includes(p._id),
-          }))}
-          value={form.planId}
-          onChange={(val) => setForm((f) => ({ ...f, planId: val }))}
-          showCheckbox
-          disabledValues={disabledPlanValues}
-        />
-        {errors.planId && (
-          <p className="text-amber-600 text-sm mt-1">{errors.planId}</p>
-        )}
-        {initialValues && disabledPlanValues.length > 0 && (
-          <p className="text-gray-500 text-xs mt-1">
-            Previously assigned plans are disabled. Select a new plan to update.
-          </p>
-        )}
-      </div>
+      {/* Plan Dropdown (hidden in editing mode) */}
+      {!initialValues && (
+        <div>
+          <Dropdown
+            label="Plan"
+            options={plans.map((p) => ({
+              label: `${p.name} (₹${p.price || 0})`,
+              value: p._id,
+              disabled: disabledPlanValues.includes(p._id),
+            }))}
+            value={form.planId}
+            onChange={(val) => setForm((f) => ({ ...f, planId: val }))}
+            showCheckbox
+            disabledValues={disabledPlanValues}
+          />
+          {errors.planId && (
+            <p className="text-amber-600 text-sm mt-1">{errors.planId}</p>
+          )}
+        </div>
+      )}
 
       {/* Plan Current Day */}
       {initialValues && (
