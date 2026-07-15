@@ -1292,7 +1292,7 @@ const OrderPage = () => {
                 Create New Order
               </Button>
             )}
-            {role === "Admin" && (
+            {(role === "Admin" || role === "subadmin") && (
               <>
                 <Button
                   onClick={() => setIsCustomerOrderDrawerOpen(true)}
@@ -1608,44 +1608,33 @@ const OrderPage = () => {
           />
         </Drawer>
 
-        {role === "Admin" && (
-          <>
-            <Drawer isOpen={isCustomerOrderDrawerOpen} onClose={() => setIsCustomerOrderDrawerOpen(false)}>
-              <div className="mb-6 text-center">
-                <h2 className="text-3xl font-bold text-yellow-600">Order for Customer</h2>
-                <p className="text-gray-500 text-sm mt-1">Select a customer or create a new one before placing the order.</p>
-              </div>
-              <OrderForm
-                mode="customer"
-                customers={customers}
-                onCustomerCreated={(customer) => setCustomers((prev) => [customer, ...(prev || [])])}
-                onCancel={() => setIsCustomerOrderDrawerOpen(false)}
-                onSuccess={handleCreateSuccess}
-              />
-            </Drawer>
+        <>
+          <Drawer isOpen={isCustomerOrderDrawerOpen} onClose={() => setIsCustomerOrderDrawerOpen(false)}>
+            <div className="mb-6 text-center">
+              <h2 className="text-3xl font-bold text-yellow-600">Order for Customer</h2>
+              <p className="text-gray-500 text-sm mt-1">Select a customer or create a new one before placing the order.</p>
+            </div>
+            <OrderForm
+              mode="customer"
+              customers={customers}
+              onCustomerCreated={(customer) => setCustomers((prev) => [customer, ...(prev || [])])}
+              onCancel={() => setIsCustomerOrderDrawerOpen(false)}
+              onSuccess={handleCreateSuccess}
+            />
+          </Drawer>
 
-            <Drawer isOpen={isCustomerDrawerOpen} onClose={() => setIsCustomerDrawerOpen(false)}>
-              <div className="mb-6 text-center">
-                <h2 className="text-3xl font-bold text-[#134D41]">Customers</h2>
-                <p className="text-gray-500 text-sm mt-1">Fetch existing customers and create new ones.</p>
-              </div>
-              <div className="mb-4 text-sm text-gray-600">
-                {customerLoading ? (
-                  "Loading customers..."
-                ) : customerError ? (
-                  <span className="text-red-600">{customerError}</span>
-                ) : (
-                  <span>{customers.length.toLocaleString()} customers found.</span>
-                )}
-              </div>
-              <CustomerForm
-                onCancel={() => setIsCustomerDrawerOpen(false)}
-                onSubmit={handleCustomerSubmit}
-                loading={customerLoading}
-              />
-            </Drawer>
-          </>
-        )}
+          <Drawer isOpen={isCustomerDrawerOpen} onClose={() => setIsCustomerDrawerOpen(false)}>
+            <div className="mb-6 text-center">
+              <h2 className="text-3xl font-bold text-[#134D41]">Customers</h2>
+              <p className="text-gray-500 text-sm mt-1">Create new customer.</p>
+            </div>
+            <CustomerForm
+              onCancel={() => setIsCustomerDrawerOpen(false)}
+              onSubmit={handleCustomerSubmit}
+              loading={customerLoading}
+            />
+          </Drawer>
+        </>
 
         <Drawer isOpen={isCompanyOrderDrawerOpen} onClose={() => setIsCompanyOrderDrawerOpen(false)}>
           <div className="p-6">

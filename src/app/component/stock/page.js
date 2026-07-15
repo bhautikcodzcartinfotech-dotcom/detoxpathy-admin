@@ -53,6 +53,9 @@ const StockManagementPage = () => {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [itemsToDelete, setItemsToDelete] = useState([]);
 
+  const isBranchScopedUser = role !== "Admin" && Array.isArray(authBranches) && authBranches.length > 0;
+  const shouldShowBranchSelector = role === "Admin" || branches.length > 1;
+
   const getWeekOptions = () => {
     const weeks = [];
     const today = new Date();
@@ -150,23 +153,31 @@ const StockManagementPage = () => {
       setMasterStocks(Array.isArray(masterData) ? masterData : []);
 
       const allBranchList = Array.isArray(branchData) ? branchData : [];
-      const filteredBranchList = role === "Admin" ? allBranchList : allBranchList.filter(b => authBranches.includes(b._id));
+      const accessibleBranchIds = (authBranches || []).map(String);
+      const filteredBranchList = role === "Admin"
+        ? allBranchList
+        : allBranchList.filter((b) => accessibleBranchIds.includes(String(b._id)));
       setBranches(filteredBranchList);
 
       const otherBranchStocks = Array.isArray(branchStockData) ? branchStockData : [];
-      const filteredBranchStocksData = role === "Admin" ? otherBranchStocks : otherBranchStocks.filter(s => authBranches.includes(s.branchId?._id));
+      const filteredBranchStocksData = role === "Admin"
+        ? otherBranchStocks
+        : otherBranchStocks.filter((s) => accessibleBranchIds.includes(String(s.branchId?._id)));
       setBranchStocks(filteredBranchStocksData);
 
       setProducts(Array.isArray(productData?.products) ? productData.products : []);
       setPlans(Array.isArray(planData) ? planData : []);
       setUsers(Array.isArray(userData?.users) ? userData.users : (Array.isArray(userData) ? userData : []));
 
-      // Default selectedBranchId to the main branch
-      if (!selectedBranchId) {
-        const mainBranch = allBranchList.find(b => b.isMainBranch);
-        const fallback = allBranchList[0];
-        if (mainBranch || fallback) {
-          setSelectedBranchId((mainBranch || fallback)._id);
+      // Default selectedBranchId to the user's assigned branch for branch-scoped roles
+      const currentSelectionIsValid = selectedBranchId && filteredBranchList.some((b) => String(b._id) === String(selectedBranchId));
+      if (!currentSelectionIsValid) {
+        const fallbackBranch = role === "Admin"
+          ? (allBranchList.find((b) => b.isMainBranch) || allBranchList[0])
+          : (filteredBranchList[0] || allBranchList.find((b) => accessibleBranchIds.includes(String(b._id))) || allBranchList[0]);
+
+        if (fallbackBranch) {
+          setSelectedBranchId(fallbackBranch._id);
         }
       }
     } catch (error) {
@@ -344,21 +355,23 @@ const StockManagementPage = () => {
                     </button>
                   </>
                 )}
-                {/* Branch selector — shows ALL branches so user can filter by any branch */}
-                <div className="w-56">
-                  <Dropdown
-                    options={[
-                      ...branches.map((b) => ({
-                        label: b.isMainBranch ? `${b.name} (Main)` : b.name,
-                        value: b._id
-                      }))
-                    ]}
-                    value={selectedBranchId}
-                    onChange={setSelectedBranchId}
-                    placeholder="Select Branch"
-                    showSearch={branches.length > 5}
-                  />
-                </div>
+                {/* Branch selector for branch-scoped users */}
+                {shouldShowBranchSelector && (
+                  <div className="w-56">
+                    <Dropdown
+                      options={[
+                        ...branches.map((b) => ({
+                          label: b.isMainBranch ? `${b.name} (Main)` : b.name,
+                          value: b._id
+                        }))
+                      ]}
+                      value={selectedBranchId}
+                      onChange={setSelectedBranchId}
+                      placeholder="Select Branch"
+                      showSearch={branches.length > 5}
+                    />
+                  </div>
+                )}
               </div>
             </div>
             <BranchStockTable
