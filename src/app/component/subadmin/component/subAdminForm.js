@@ -1,4 +1,4 @@
-"use client";
+  "use client";
 import React, { useMemo, useState, useEffect } from "react";
 import TimeButton from "@/utils/timebutton";
 import { Button } from "@/utils/header";
@@ -50,7 +50,7 @@ const SubAdminForm = ({
     email: "",
     password: "",
     image: null,
-    branchId: "", // <-- store selected branch id here
+    branchIds: [], // <-- store selected branch ids here
     commission: 0,
     role: "doctor",
   });
@@ -68,12 +68,10 @@ const SubAdminForm = ({
         email: initialValues.email || "",
         password: "",
         image: null,
-        branchId:
-          Array.isArray(initialValues.branch) && initialValues.branch.length
-            ? typeof initialValues.branch[0] === "string"
-              ? initialValues.branch[0]
-              : initialValues.branch[0]?._id
-            : "",
+        branchIds:
+          Array.isArray(initialValues.branch)
+            ? initialValues.branch.map(b => typeof b === "string" ? b : b._id)
+            : [],
         commission: initialValues.commission || 0,
         role: initialValues.adminType === "Sub Doctor" ? "sub doctor" : "doctor",
       }));
@@ -85,7 +83,7 @@ const SubAdminForm = ({
         email: "",
         password: "",
         image: null,
-        branchId: "",
+        branchIds: [],
         commission: 0,
         role: "doctor",
       });
@@ -114,11 +112,11 @@ const SubAdminForm = ({
       email: { value: form.email, rules: [validateEmail] },
       password: {
         value: form.password,
-        rules: [(v) => validatePassword(v, 6)],
+        rules: [(v) => (initialValues ? null : validatePassword(v, 6))], // password required only on create
       },
-      branchId: {
-        value: form.branchId,
-        rules: [(v) => (!v ? "Branch is required." : null)],
+      branchIds: {
+        value: form.branchIds,
+        rules: [(v) => (!v || v.length === 0 ? "At least one branch is required." : null)],
       },
       commission: {
         value: form.commission,
@@ -143,7 +141,7 @@ const SubAdminForm = ({
       email: "",
       password: "",
       image: null,
-      branchId: "",
+      branchIds: [],
       commission: 0,
       role: "doctor",
     });
@@ -254,16 +252,43 @@ const SubAdminForm = ({
         )}
       </div>
 
-      {/* Branch dropdown */}
+      {/* Branch selection checkboxes */}
       <div>
-        <Dropdown
-          label="Branch"
-          options={branchOptions}
-          value={form.branchId}
-          onChange={(val) => setForm((f) => ({ ...f, branchId: val }))}
-        />
-        {formErrors.branchId && (
-          <p className="text-red-500 text-sm mt-1">{formErrors.branchId}</p>
+        <label className="block mb-2 font-semibold text-gray-700">
+          Branches
+        </label>
+        <div className="grid grid-cols-2 gap-3">
+          {branches.map((branch) => {
+            const isChecked = form.branchIds.includes(branch._id);
+            return (
+              <label
+                key={branch._id}
+                className={`flex items-center gap-3 p-3 bg-white border rounded-xl cursor-pointer transition-all duration-300 shadow-sm min-h-[50px] ${
+                  isChecked
+                    ? "border-yellow-400 ring-2 ring-yellow-400/10 bg-yellow-50/10 scale-[1.01]"
+                    : "border-gray-200 hover:border-yellow-400/50"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={(e) => {
+                    const nextIds = e.target.checked
+                      ? [...form.branchIds, branch._id]
+                      : form.branchIds.filter((id) => id !== branch._id);
+                    setForm((f) => ({ ...f, branchIds: nextIds }));
+                  }}
+                  className="w-5 h-5 flex-shrink-0 text-yellow-500 focus:ring-yellow-400 border-gray-300 rounded cursor-pointer transition-all"
+                />
+                <span className="text-gray-700 font-semibold text-sm leading-tight">
+                  {branch.name}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+        {formErrors.branchIds && (
+          <p className="text-red-500 text-sm mt-1">{formErrors.branchIds}</p>
         )}
       </div>
 

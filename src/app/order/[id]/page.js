@@ -146,7 +146,7 @@ const OrderDetailsPage = () => {
 
     const statusLabel = STATUS_LABELS[order.orderStatus] || "Pending";
     const orderDate = new Date(order.createdAt).toLocaleDateString("en-GB");
-    const orderId = `ORD-${order._id.slice(-6).toUpperCase()}`;
+    const orderId = order.invoiceNo || `ORD-${order._id.slice(-6).toUpperCase()}`;
 
     const branchName = order.branch?.name || "Detoxpathy";
     const billFrom = `${branchName}, Surat, Gujarat - 400001`;
@@ -433,7 +433,7 @@ const OrderDetailsPage = () => {
     const branchName = order.branch?.name || "Detoxpathy";
     const branchAddress = order.branch?.address || "Surat, Gujarat, India";
 
-    const orderIdShort = `ORD-${order._id.slice(-6).toUpperCase()}`;
+    const orderIdShort = order.invoiceNo || `ORD-${order._id.slice(-6).toUpperCase()}`;
     const orderDate = new Date(order.createdAt).toLocaleDateString("en-GB");
     const awbCode = (order.trackingId || orderIdShort).trim();
     let itemsHtml = "";
@@ -468,7 +468,7 @@ const OrderDetailsPage = () => {
         itemsCount++;
       });
     }
-    
+
     const labelClass = itemsCount > 4 ? "label-container compact-large" : (itemsCount > 2 ? "label-container compact" : "label-container");
 
     const itemsSectionHtml = itemsHtml
@@ -796,7 +796,7 @@ const OrderDetailsPage = () => {
         </button>
         <div>
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-3">
-            Order #{order._id.slice(-6).toUpperCase()}
+            Order #{order.invoiceNo || order._id.slice(-6).toUpperCase()}
             <span className={`px-3 py-1 rounded-full text-xs font-bold ${STATUS_COLORS[order.orderStatus]}`}>
               {STATUS_LABELS[order.orderStatus]}
             </span>
@@ -1072,13 +1072,13 @@ const OrderDetailsPage = () => {
               <h3 className="font-bold text-lg text-gray-900">{order.user.name} {order.user.surname}</h3>
               <p className="text-sm text-gray-500 mb-6">{order.user.mobilePrefix} {order.user.mobileNumber}</p>
 
-              <button
+              {order.user.isUser && <button
                 onClick={() => router.push(`/component/users/${order.user.id}/profile`)}
                 className="w-full py-2.5 bg-gray-900 text-white rounded-xl text-sm font-bold flex items-center justify-center gap-2 hover:bg-gray-800 transition"
               >
                 View Full Profile
                 <ExternalLink size={14} />
-              </button>
+              </button>}
             </div>
           )}
 

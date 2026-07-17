@@ -94,18 +94,21 @@ const StaffPage = () => {
     try {
       setLoading(true);
       setError("");
+      const payload = {
+        name: formData.name,
+        email: formData.email,
+        role: formData.role,
+        password: formData.password || undefined,
+        branch: formData.branchIds,
+      };
       if (editing) {
         await updateStaff({
           staffId: editing._id,
-          ...formData,
-          branchId: selectedBranchId
+          ...payload
         });
         toast.success("Staff updated successfully!");
       } else {
-        await addStaff({
-          ...formData,
-          branchId: selectedBranchId
-        });
+        await addStaff(payload);
         toast.success("Staff created successfully!");
       }
       await fetchList(selectedBranchId);

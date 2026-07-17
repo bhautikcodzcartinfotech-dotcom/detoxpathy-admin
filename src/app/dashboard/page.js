@@ -107,7 +107,7 @@ const DashboardPage = () => {
       }
       case "7days": {
         const s = new Date(now);
-        s.setDate(s.getDate() - 7);
+        s.setDate(s.getDate() - 6);
         s.setHours(0, 0, 0, 0);
         const e = new Date(now);
         e.setHours(23, 59, 59, 999);
@@ -116,7 +116,6 @@ const DashboardPage = () => {
         break;
       }
       case "thisMonth": {
-        // First day of the current month
         const s = new Date(now.getFullYear(), now.getMonth(), 1);
         s.setHours(0, 0, 0, 0);
         const e = new Date(now);
@@ -126,20 +125,18 @@ const DashboardPage = () => {
         break;
       }
       case "month": {
-        const s = new Date(now);
-        s.setMonth(s.getMonth() - 1);
+        const s = new Date(now.getFullYear(), now.getMonth() - 1, 1);
         s.setHours(0, 0, 0, 0);
-        const e = new Date(now);
+        const e = new Date(now.getFullYear(), now.getMonth(), 0);
         e.setHours(23, 59, 59, 999);
         start = s.toISOString();
         end = e.toISOString();
         break;
       }
       case "year": {
-        const s = new Date(now);
-        s.setFullYear(s.getFullYear() - 1);
+        const s = new Date(now.getFullYear() - 1, 0, 1);
         s.setHours(0, 0, 0, 0);
-        const e = new Date(now);
+        const e = new Date(now.getFullYear() - 1, 11, 31);
         e.setHours(23, 59, 59, 999);
         start = s.toISOString();
         end = e.toISOString();
@@ -253,6 +250,14 @@ const DashboardPage = () => {
                         <div>
                             <span>Branch Orders: </span>
                             <span className="text-gray-700">Online: ₹{(stats.revenue?.branchOrders?.onlineAmount || 0).toLocaleString('en-IN')} ({(stats.revenue?.branchOrders?.onlineCount || 0)}) · Offline: ₹{(stats.revenue?.branchOrders?.offlineAmount || 0).toLocaleString('en-IN')} ({(stats.revenue?.branchOrders?.offlineCount || 0)})</span>
+                        </div>
+                        <div>
+                            <span>Book Trial: </span>
+                            <span className="text-gray-700">₹{(stats.revenue?.bookTrial?.total || 0).toLocaleString('en-IN')} ({(stats.revenue?.bookTrial?.count || 0)})</span>
+                        </div>
+                        <div>
+                            <span>Contra: </span>
+                            <span className="text-gray-700">Online: ₹{(stats.revenue?.contraOnline?.total || 0).toLocaleString('en-IN')} ({(stats.revenue?.contraOnline?.count || 0)}) · Offline: ₹{(stats.revenue?.contraOffline?.total || 0).toLocaleString('en-IN')} ({(stats.revenue?.contraOffline?.count || 0)})</span>
                         </div>
                     </div>
                 ), 
@@ -396,6 +401,7 @@ const DashboardPage = () => {
                   { label: "Today", value: "today" },
                   { label: "Yesterday", value: "yesterday" },
                   { label: "Last 7 Days", value: "7days" },
+                  { label: "This Month", value: "thisMonth" },
                   { label: "Last Month", value: "month" },
                   { label: "Last Year", value: "year" },
                   { label: "Custom Range", value: "custom" },
@@ -485,7 +491,7 @@ const DashboardPage = () => {
           <div className="lg:col-span-1 bg-white p-8 rounded-none shadow-xl shadow-teal-900/5 border border-gray-100 flex flex-col">
             <div className="flex items-center justify-between mb-8">
               <h2 className="text-sm font-black text-gray-900 uppercase tracking-widest px-2">Branch Performance ({getRangeLabel(dateRange)})</h2>
-              <button className="text-[10px] font-black text-teal-600 uppercase tracking-widest hover:underline">Full report</button>
+              {/* <button className="text-[10px] font-black text-teal-600 uppercase tracking-widest hover:underline">Full report</button> */}
             </div>
             
             <div className="space-y-8 flex-1">

@@ -1,22 +1,25 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { motion } from "framer-motion";
+import { createPortal } from "react-dom";
 import { X, Plus, Trash2, Save, Loader2, ClipboardCheck } from "lucide-react";
 import toast from "react-hot-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { motion, AnimatePresence } from "framer-motion";
 import {
     createPatientHistoryApi,
     deletePatientHistoryApi,
-    getMedicinesApi,
     getPatientHistoriesApi,
     submitConsultationForm,
-    getConsultationCountByUserId
+    generateUrl,
+    resolveImageUrl,
+    getUserOverview,
+    downloadConsultationPdfApi
 } from "@/Api/AllApi";
 
-const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = false }) => {
+const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = false, patient = null }) => {
+    const { user: currentUser } = useAuth();
     const [patientHistoryOptions, setPatientHistoryOptions] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [medicineSuggestions, setMedicineSuggestions] = useState([]);
-    const [activeMedIdx, setActiveMedIdx] = useState(null);
     const [formData, setFormData] = useState({
         appointmentId: appointment?._id,
         userId: appointment?.userId?._id,
@@ -32,34 +35,63 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = fals
         consultationTime: "",
         reference: "",
         occupation: "",
-        bloodReport: "",
-        patientNote: "",
-        patientMostWant: "",
-        co: "",
-        consultationVisit: "first",
-        isFirstConsultation: true,
-        patientComplaint: "",
-        advice: "",
-        patientHistory: [],
-        currentMedicine: "",
-        addiction: "",
-        stress: "",
-        other: "",
-        bimaiDiseases: [{ disease: "", medication: "" }],
-        pastSurgery: {
+        city: "",
+        state: "",
+        country: "",
+        co: [{ complaint: "", duration: "" }],
+        patientHistory: [], // Option 1: K/C/O
+        pastSurgery: { // Option 2: Past Surgery
             hasSurgery: false,
             duration: ""
         },
-        weightLossHistory: [
-            { title: "", duration: "" }
-        ]
+        weightLossHistory: [{ title: "", duration: "", howMuch: "", addiction: "" }],
+        advice: "",
+        bloodReport: "",
+        xRay: "",
+        usc: "",
+        mri: "",
+        patientNote: "",
+        beforePhoto: "",
+        afterPhoto: "",
+        planDay: ""
     });
     const [customHistory, setCustomHistory] = useState("");
+    const [fetchedUser, setFetchedUser] = useState(null);
+    const [hasLoadedUserData, setHasLoadedUserData] = useState(false);
+    const [pastConsultations, setPastConsultations] = useState([]);
+    const [selectedPastConsultation, setSelectedPastConsultation] = useState(null);
 
     useEffect(() => {
-        const u = appointment?.userId;
+        const userId = patient?._id || appointment?.userId?._id;
+        if (!userId) return;
+
+        let active = true;
+        const fetchUserData = async () => {
+            try {
+                const overview = await getUserOverview(userId);
+                if (active && overview?.user) {
+                    setFetchedUser(overview.user);
+                }
+                if (active && Array.isArray(overview?.consultations)) {
+                    setPastConsultations(overview.consultations);
+                }
+            } catch (err) {
+                console.error("Failed to fetch user overview for autofill:", err);
+            }
+        };
+
+        fetchUserData();
+        return () => {
+            active = false;
+        };
+    }, [patient?._id, appointment?.userId?._id]);
+
+    useEffect(() => {
+        const u = fetchedUser || patient || appointment?.userId;
         const dr = appointment?.doctor;
         if (!u) return;
+
+        if (hasLoadedUserData) return;
 
         const fullName = `${u.name || ""} ${u.surname || ""}`.trim();
         const weightVal = u.weight != null && u.weight !== "" ? String(u.weight) : "";
@@ -67,12 +99,15 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = fals
         let requiredLoss = "";
         if (weightVal && idealVal && !isNaN(Number(weightVal)) && !isNaN(Number(idealVal))) {
             const diff = Number(weightVal) - Number(idealVal);
-            if (diff > 0) requiredLoss = String(diff);
+            if (diff > 0) requiredLoss = String(parseFloat(diff.toFixed(2)));
         }
 
         const timeLabel = appointment?.startTime
             ? `${appointment.startTime}${appointment?.endTime ? ` - ${appointment.endTime}` : ""}`
             : "";
+
+        const isBeforeUploaded = !!(u.before?.front || u.before?.side);
+        const isAfterUploaded = !!(u.after?.front || u.after?.side);
 
         setFormData((prev) => ({
             ...prev,
@@ -81,40 +116,55 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = fals
             name: fullName,
             mobileNo: u.mobileNumber || "",
             gender: u.gender || "",
-            drName: dr?.username || dr?.name || "",
+            drName: dr?.username || dr?.name || currentUser?.username || currentUser?.name || "",
             height: u.height != null && u.height !== "" ? String(u.height) : "",
             weight: weightVal,
             idealWeight: idealVal,
             requiredLossWeight: requiredLoss,
-            consultationDate: appointment?.date || "",
+            consultationDate: appointment?.date || new Date().toISOString().split('T')[0],
             consultationTime: timeLabel,
             reference: u.appReferer || u.usedReferralCode || "",
             occupation: u.occupation || "",
+            city: u.city || "",
+            state: u.state || "",
+            country: u.country || "",
+            beforePhoto: isBeforeUploaded ? "Yes" : "No",
+            afterPhoto: isAfterUploaded ? "Yes" : "No",
+            planDay: patient?.planDay || appointment?.planDay || ""
         }));
 
-        const fetchConsultationCount = async () => {
-            try {
-                const data = await getConsultationCountByUserId(u._id);
-                const count = data?.count || 0;
-
-                let visit = 'first';
-                if (count === 1) visit = 'second';
-                else if (count >= 2) visit = 'third';
-
-                setFormData(prev => ({
-                    ...prev,
-                    consultationVisit: visit,
-                    isFirstConsultation: visit === 'first'
-                }));
-            } catch (err) {
-                console.error("Failed to fetch consultation count", err);
-            }
-        };
-        fetchConsultationCount();
-    }, [appointment?._id]);
+        if (fetchedUser || u.height || u.weight) {
+            setHasLoadedUserData(true);
+        }
+    }, [appointment?._id, patient, currentUser, fetchedUser, hasLoadedUserData]);
 
     useEffect(() => {
-        const userId = appointment?.userId?._id;
+        const weightVal = formData.weight;
+        const idealVal = formData.idealWeight;
+        if (weightVal && idealVal && !isNaN(Number(weightVal)) && !isNaN(Number(idealVal))) {
+            const diff = Number(weightVal) - Number(idealVal);
+            if (diff > 0) {
+                const rounded = String(parseFloat(diff.toFixed(2)));
+                setFormData(prev => {
+                    if (prev.requiredLossWeight === rounded) return prev;
+                    return { ...prev, requiredLossWeight: rounded };
+                });
+            } else {
+                setFormData(prev => {
+                    if (prev.requiredLossWeight === "") return prev;
+                    return { ...prev, requiredLossWeight: "" };
+                });
+            }
+        } else {
+            setFormData(prev => {
+                if (prev.requiredLossWeight === "") return prev;
+                return { ...prev, requiredLossWeight: "" };
+            });
+        }
+    }, [formData.weight, formData.idealWeight]);
+
+    useEffect(() => {
+        const userId = patient?._id || appointment?.userId?._id;
         if (!userId) {
             setPatientHistoryOptions([]);
             return;
@@ -143,14 +193,6 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = fals
         };
     }, [appointment?.userId?._id]);
 
-    const setConsultationVisit = (visit) => {
-        setFormData((prev) => ({
-            ...prev,
-            consultationVisit: visit,
-            isFirstConsultation: visit === "first",
-        }));
-    };
-
     const handleChange = (e) => {
         const { name, value, type, checked } = e.target;
         if (name.includes(".")) {
@@ -177,9 +219,8 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = fals
                 return { ...prev, patientHistory: prev.patientHistory.filter(ph => ph.name !== optionName) };
             }
 
-            // find option ID if available
             const opt = patientHistoryOptions.find(p => p.name === optionName || p._id === optionName);
-            const newEntry = { name: optionName, duration: '' };
+            const newEntry = { name: optionName, duration: '', medicine: '' };
             if (opt && opt._id) newEntry._id = opt._id;
 
             return { ...prev, patientHistory: [...prev.patientHistory, newEntry] };
@@ -210,7 +251,7 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = fals
                 ...prev,
                 patientHistory: prev.patientHistory.some(ph => ph.name === createdHistory.name)
                     ? prev.patientHistory
-                    : [...prev.patientHistory, { name: createdHistory.name, duration: '', _id: createdHistory._id }]
+                    : [...prev.patientHistory, { name: createdHistory.name, duration: '', medicine: '', _id: createdHistory._id }]
             }));
             setCustomHistory("");
         } catch (err) {
@@ -228,7 +269,7 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = fals
     const addWeightLossRow = () => {
         setFormData(prev => ({
             ...prev,
-            weightLossHistory: [...prev.weightLossHistory, { title: "", duration: "" }]
+            weightLossHistory: [...prev.weightLossHistory, { title: "", duration: "", howMuch: "", addiction: "" }]
         }));
     };
 
@@ -237,36 +278,50 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = fals
         setFormData(prev => ({ ...prev, weightLossHistory: newHistory }));
     };
 
-    const handleBimaiChange = (index, field, value) => {
-        const updated = [...formData.bimaiDiseases];
-        updated[index][field] = value;
-        setFormData(prev => ({ ...prev, bimaiDiseases: updated }));
+    const handleCoChange = (index, field, value) => {
+        const newCo = [...formData.co];
+        newCo[index][field] = value;
+        setFormData(prev => ({ ...prev, co: newCo }));
     };
 
-    const addBimaiRow = () => {
+    const addCoRow = () => {
         setFormData(prev => ({
             ...prev,
-            bimaiDiseases: [...prev.bimaiDiseases, { disease: "", medication: "" }]
+            co: [...prev.co, { complaint: "", duration: "" }]
         }));
     };
 
-    const removeBimaiRow = (index) => {
-        const updated = formData.bimaiDiseases.filter((_, i) => i !== index);
-        setFormData(prev => ({ ...prev, bimaiDiseases: updated }));
+    const removeCoRow = (index) => {
+        const newCo = formData.co.filter((_, i) => i !== index);
+        setFormData(prev => ({ ...prev, co: newCo }));
     };
 
-    const handleMedicineInput = async (idx, value) => {
-        handleBimaiChange(idx, "medication", value);
-        setActiveMedIdx(idx);
-        if (!value.trim()) {
-            setMedicineSuggestions([]);
-            return;
-        }
+    const handlePhotoUpload = async (e, type) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const uploadData = new FormData();
+        uploadData.append("image", file);
+
+        const toastId = toast.loading(`Uploading ${type} photo...`);
         try {
-            const list = await getMedicinesApi({ search: value.trim(), limit: 8 });
-            setMedicineSuggestions(Array.isArray(list) ? list : []);
-        } catch {
-            setMedicineSuggestions([]);
+            const uploadResponse = await generateUrl(uploadData);
+            const url = typeof uploadResponse === "string"
+                ? uploadResponse
+                : uploadResponse?.data;
+
+            if (!url || typeof url !== "string") {
+                throw new Error("Invalid image URL returned from upload");
+            }
+
+            setFormData(prev => ({
+                ...prev,
+                [`${type}Photo`]: url
+            }));
+            toast.success(`${type} photo uploaded successfully!`, { id: toastId });
+        } catch (err) {
+            console.error(err);
+            toast.error(`Failed to upload ${type} photo`, { id: toastId });
         }
     };
 
@@ -277,8 +332,8 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = fals
 
             const consultation = await submitConsultationForm({
                 ...formData,
-                appointmentId: appointment._id,
-                userId: appointment.userId._id
+                appointmentId: appointment?._id || undefined,
+                userId: patient?._id || appointment?.userId?._id || formData.userId
             });
 
             toast.success("Consultation saved successfully!");
@@ -291,6 +346,12 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = fals
         }
     };
 
+    const patientName = patient
+        ? `${patient.name || ""} ${patient.surname || ""}`.trim()
+        : appointment?.userId
+        ? `${appointment.userId.name || ""} ${appointment.userId.surname || ""}`.trim()
+        : "";
+
     return (
         <div className={embedded ? "bg-white" : "flex flex-col h-full bg-white"}>
             {!embedded ? (
@@ -300,7 +361,7 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = fals
                             <ClipboardCheck className="text-teal-600" /> Consultation Entry
                         </h2>
                         <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mt-1">
-                            Patient: {appointment.userId?.name} {appointment.userId?.surname}
+                            Patient: {patientName || "N/A"}
                         </p>
                     </div>
                     <button onClick={onClose} className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400">
@@ -313,7 +374,7 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = fals
                         <ClipboardCheck className="text-teal-600" /> Consultation Entry
                     </h2>
                     <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mt-1">
-                        Scroll up to review patient profile
+                        Enter the consultation details below for {patientName || "the patient"}.
                     </p>
                 </div>
             )}
@@ -327,353 +388,460 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = fals
                 }
             >
 
-                {/* Patient Details */}
+                {/* Previous Consultations List */}
+                {pastConsultations.length > 0 && (
+                    <div className="bg-amber-50/40 border border-amber-100 rounded-2xl p-4 mb-4">
+                        <div className="flex items-center gap-2 mb-3">
+                            <ClipboardCheck className="text-amber-600 w-5 h-5" />
+                            <h4 className="text-xs font-black text-amber-800 uppercase tracking-wider">Previous Consultations</h4>
+                        </div>
+                        <div className="flex flex-wrap gap-2.5">
+                            {pastConsultations.map((c) => (
+                                <div
+                                    key={c._id}
+                                    className="flex items-center gap-2 bg-white border border-slate-100 rounded-xl px-3 py-2 shadow-sm text-xs font-bold text-slate-700"
+                                >
+                                    <span>📅 {c.consultationDate || new Date(c.createdAt).toLocaleDateString()} {c.planDay ? `(Day ${c.planDay})` : ""}</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSelectedPastConsultation(c)}
+                                        className="p-1 hover:bg-slate-100 rounded text-teal-600 hover:text-teal-700 transition-colors flex items-center justify-center cursor-pointer"
+                                        title="View Details"
+                                    >
+                                        <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* 1 - Patient Details */}
                 <div className="space-y-4">
                     <div className="flex items-center gap-2 mb-2">
                         <div className="h-4 w-1 bg-teal-500 rounded-full" />
-                        <h3 className="text-base font-extrabold text-slate-800 uppercase tracking-wider">Patient Details</h3>
+                        <h3 className="text-base font-extrabold text-slate-800 uppercase tracking-wider">1 - Patient Details</h3>
                     </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    
+                    {/* Line 1 - Name, Gender, Mobile Number */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="space-y-1.5">
                             <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Name</label>
-                            <input name="name" value={formData.name} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm" />
-                        </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Mobile No</label>
-                            <input name="mobileNo" value={formData.mobileNo} readOnly className="w-full p-4 rounded-xl bg-slate-100 border border-slate-200 text-sm text-slate-600 cursor-not-allowed" />
+                            <input name="name" value={formData.name} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm font-medium" />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Gender</label>
-                            <select name="gender" value={formData.gender} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm">
-                                <option value="">Select</option>
+                            <select name="gender" value={formData.gender} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm font-medium">
+                                <option value="">Select Gender</option>
                                 <option value="Male">Male</option>
                                 <option value="Female">Female</option>
                                 <option value="Other">Other</option>
                             </select>
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Dr Name</label>
-                            <input name="drName" value={formData.drName} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm" />
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Mobile Number</label>
+                            <input name="mobileNo" value={formData.mobileNo} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm font-medium" />
+                        </div>
+                    </div>
+
+                    {/* Next line - Height, Weight, Ideal Weight, Required Loss Weight */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Height (cm)</label>
+                            <input name="height" value={formData.height} onChange={handleChange} placeholder="e.g. 170" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm font-medium" />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Height</label>
-                            <input name="height" value={formData.height} onChange={handleChange} placeholder="e.g. 170" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm" />
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Weight (kg)</label>
+                            <input name="weight" value={formData.weight} onChange={handleChange} placeholder="e.g. 75" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm font-medium" />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Weight</label>
-                            <input name="weight" value={formData.weight} onChange={handleChange} placeholder="e.g. 75" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm" />
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Ideal Weight (kg)</label>
+                            <input name="idealWeight" value={formData.idealWeight} onChange={handleChange} placeholder="e.g. 65" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm font-medium" />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Ideal Weight</label>
-                            <input name="idealWeight" value={formData.idealWeight} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm" />
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Required Loss (kg)</label>
+                            <input name="requiredLossWeight" value={formData.requiredLossWeight} onChange={handleChange} placeholder="e.g. 10" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm font-medium" />
                         </div>
-                        <div className="space-y-1.5">
-                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Required Loss Weight</label>
-                            <input name="requiredLossWeight" value={formData.requiredLossWeight} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm" />
-                        </div>
+                    </div>
+
+                    {/* Next line - Date, Time, Consultation Day, Occupation, Reference */}
+                    <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                         <div className="space-y-1.5">
                             <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Date</label>
-                            <input name="consultationDate" value={formData.consultationDate} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm" />
+                            <input name="consultationDate" value={formData.consultationDate} onChange={handleChange} placeholder="YYYY-MM-DD" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm font-medium" />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Time</label>
-                            <input name="consultationTime" value={formData.consultationTime} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm" />
+                            <input name="consultationTime" value={formData.consultationTime} onChange={handleChange} placeholder="e.g. 10:00 AM" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm font-medium" />
                         </div>
                         <div className="space-y-1.5">
-                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Reference</label>
-                            <input name="reference" value={formData.reference} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm" />
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Consultation Day</label>
+                            <input name="planDay" value={formData.planDay} onChange={handleChange} placeholder="e.g. 5" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm font-medium" />
                         </div>
                         <div className="space-y-1.5">
                             <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Occupation</label>
-                            <input name="occupation" value={formData.occupation} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm" />
+                            <input name="occupation" value={formData.occupation} onChange={handleChange} placeholder="e.g. Engineer" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm font-medium" />
                         </div>
-                        <div className="space-y-1.5 md:col-span-2">
-                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">C/O</label>
-                            <textarea name="co" value={formData.co} onChange={handleChange} className="w-full h-20 p-4 rounded-2xl bg-white border border-slate-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all text-sm font-medium resize-none shadow-sm" />
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Reference</label>
+                            <input name="reference" value={formData.reference} onChange={handleChange} placeholder="e.g. Google Search" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm font-medium" />
                         </div>
-                        <div className="space-y-1.5 md:col-span-2">
-                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Blood Report</label>
-                            <textarea name="bloodReport" value={formData.bloodReport} onChange={handleChange} placeholder="Blood report details..." className="w-full h-20 p-4 rounded-2xl bg-white border border-slate-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all text-sm font-medium resize-none shadow-sm" />
+                    </div>
+
+                    {/* Next line - Dr.Name, City, State, Country */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Dr. Name</label>
+                            <input name="drName" value={formData.drName} onChange={handleChange} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm font-medium" />
                         </div>
-                        <div className="space-y-1.5 md:col-span-2">
-                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Patient Note</label>
-                            <textarea name="patientNote" value={formData.patientNote} onChange={handleChange} className="w-full h-20 p-4 rounded-2xl bg-white border border-slate-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all text-sm font-medium resize-none shadow-sm" />
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">City</label>
+                            <input name="city" value={formData.city} onChange={handleChange} placeholder="e.g. Surat" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm font-medium" />
                         </div>
-                        <div className="space-y-1.5 md:col-span-2">
-                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Patient Most Want</label>
-                            <textarea name="patientMostWant" value={formData.patientMostWant} onChange={handleChange} className="w-full h-20 p-4 rounded-2xl bg-white border border-slate-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all text-sm font-medium resize-none shadow-sm" />
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">State</label>
+                            <input name="state" value={formData.state} onChange={handleChange} placeholder="e.g. Gujarat" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm font-medium" />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Country</label>
+                            <input name="country" value={formData.country} onChange={handleChange} placeholder="e.g. India" className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm font-medium" />
                         </div>
                     </div>
                 </div>
 
-                {/* Basic Info */}
+                {/* 2 - C/O (Complaints & Duration) */}
                 <div className="space-y-4">
-                    <div className="flex items-center gap-2 mb-2">
-                        <div className="h-4 w-1 bg-teal-500 rounded-full" />
-                        <h3 className="text-base font-extrabold text-slate-800 uppercase tracking-wider">Basic Assessment</h3>
-                    </div>
-
-                    <div className="space-y-3">
-                        <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Consultation Visit</label>
-                        <div className="inline-block px-4 py-2 bg-teal-50 text-teal-700 rounded-full text-xs font-bold uppercase tracking-widest">
-                            {formData.consultationVisit} Time
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                            <div className="h-4 w-1 bg-teal-500 rounded-full" />
+                            <h3 className="text-base font-extrabold text-slate-800 uppercase tracking-wider">2 - C/O (Complaints & Duration)</h3>
                         </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1.5 focus-within:transform focus-within:scale-[1.01] transition-transform">
-                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Patient Complaints</label>
-                            <textarea
-                                name="patientComplaint"
-                                value={formData.patientComplaint}
-                                onChange={handleChange}
-                                placeholder="Main health concerns..."
-                                className="w-full h-24 p-4 rounded-2xl bg-white border border-slate-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all text-sm font-medium resize-none shadow-sm"
-                            />
-                        </div>
-                        <div className="space-y-1.5 focus-within:transform focus-within:scale-[1.01] transition-transform">
-                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Advice given</label>
-                            <textarea
-                                name="advice"
-                                value={formData.advice}
-                                onChange={handleChange}
-                                placeholder="Clinical advice or plan highlights..."
-                                className="w-full h-24 p-4 rounded-2xl bg-white border border-slate-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all text-sm font-medium resize-none shadow-sm"
-                            />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Patient History */}
-                <div className="space-y-4">
-                    <div className="flex items-center gap-2 mb-2">
-                        <div className="h-4 w-1 bg-teal-500 rounded-full" />
-                        <h3 className="text-base font-extrabold text-slate-800 uppercase tracking-wider">Patient History</h3>
-                    </div>
-                    <div className="flex gap-2">
-                        <input
-                            type="text"
-                            value={customHistory}
-                            onChange={(e) => setCustomHistory(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === "Enter") {
-                                    e.preventDefault();
-                                    handleAddPatientHistory();
-                                }
-                            }}
-                            placeholder="Add patient history"
-                            className="flex-1 p-3 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500/20"
-                        />
                         <button
-                            type="button"
-                            onClick={handleAddPatientHistory}
-                            className="bg-teal-50 text-teal-600 p-3 rounded-xl hover:bg-teal-100 transition-colors disabled:opacity-50"
-                            disabled={!customHistory.trim()}
-                            title="Add patient history"
+                            type="button" onClick={addCoRow}
+                            className="bg-teal-50 text-teal-600 p-2 rounded-xl hover:bg-teal-100 transition-colors shrink-0"
                         >
                             <Plus size={18} />
                         </button>
                     </div>
-                    <div className="flex flex-wrap gap-2">
-                        {patientHistoryOptions.map(option => (
-                            <button
-                                key={option._id || option.name}
-                                type="button"
-                                onClick={() => handleHistoryToggle(option.name)}
-                                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${formData.patientHistory.some(ph => ph.name === option.name)
-                                        ? 'bg-teal-600 text-white border-teal-600 shadow-lg shadow-teal-100 scale-105'
-                                        : 'bg-white text-slate-500 border-slate-100 hover:border-teal-200 hover:bg-teal-50/30'
-                                    }`}
-                            >
-                                {option.name}
-                            </button>
-                        ))}
-                    </div>
-                    {patientHistoryOptions.length === 0 && (
-                        <p className="text-xs text-slate-400">No patient history added for this user yet.</p>
-                    )}
-
-                    {/* Selected histories with duration inputs */}
-                    {formData.patientHistory && formData.patientHistory.length > 0 && (
-                        <div className="mt-3 space-y-2">
-                            {formData.patientHistory.map((h, idx) => (
-                                <div key={h.name || idx} className="flex items-center gap-2">
-                                    <div className="flex-1">
-                                        <div className="text-sm font-medium text-slate-700">{h.name}</div>
-                                    </div>
-                                    <input
-                                        value={h.duration}
-                                        onChange={(e) => {
-                                            const newPH = [...formData.patientHistory];
-                                            newPH[idx] = { ...newPH[idx], duration: e.target.value };
-                                            setFormData(prev => ({ ...prev, patientHistory: newPH }));
-                                        }}
-                                        placeholder="Duration (e.g. 2 years)"
-                                        className="w-40 p-2 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500/20"
-                                    />
+                    <div className="space-y-3">
+                        {formData.co.map((item, idx) => (
+                            <div key={idx} className="flex gap-3 items-center group">
+                                <input
+                                    value={item.complaint} onChange={(e) => handleCoChange(idx, "complaint", e.target.value)}
+                                    placeholder="Complaint"
+                                    className="flex-1 p-3.5 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500/20 outline-none transition-all font-medium"
+                                />
+                                <input
+                                    value={item.duration} onChange={(e) => handleCoChange(idx, "duration", e.target.value)}
+                                    placeholder="Duration (e.g. 1 month)"
+                                    className="w-48 p-3.5 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500/20 outline-none transition-all font-medium"
+                                />
+                                {formData.co.length > 1 && (
                                     <button
-                                        type="button"
-                                        onClick={async () => {
-                                            // if this history is persisted (has _id), delete it from server
-                                            if (h._id) {
-                                                try {
-                                                    await deletePatientHistoryApi(h._id);
-                                                    // remove from options and formData
-                                                    setPatientHistoryOptions(prev => prev.filter(p => p._id !== h._id));
-                                                    setFormData(prev => ({ ...prev, patientHistory: prev.patientHistory.filter(ph => ph._id !== h._id) }));
-                                                    return;
-                                                } catch (err) {
-                                                    console.error('Failed to delete patient history', err);
-                                                    toast.error(err.response?.data?.message || 'Failed to delete history');
-                                                }
-                                            }
-                                            // fallback: just toggle
-                                            handleHistoryToggle(h.name);
-                                        }}
-                                        className="text-red-400 p-2 hover:text-red-600 transition-colors"
-                                        title="Remove"
+                                        type="button" onClick={() => removeCoRow(idx)}
+                                        className="text-red-400 p-2 hover:text-red-600 transition-colors shrink-0"
                                     >
                                         <Trash2 size={16} />
                                     </button>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-
-                {/* Medical Details */}
-                <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <div className="h-4 w-1 bg-teal-500 rounded-full" />
-                            <h3 className="text-base font-extrabold text-slate-800 uppercase tracking-wider">Clinical Details</h3>
-                        </div>
-                        <button
-                            type="button"
-                            onClick={addBimaiRow}
-                            className="bg-teal-50 text-teal-600 p-2 rounded-xl hover:bg-teal-100 transition-colors"
-                        >
-                            <Plus size={18} />
-                        </button>
-                    </div>
-                    <div className="space-y-3">
-                        {formData.bimaiDiseases.map((item, idx) => (
-                            <div key={idx} className="flex gap-2 items-center group">
-                                <input
-                                    value={item.disease}
-                                    onChange={(e) => handleBimaiChange(idx, "disease", e.target.value)}
-                                    placeholder="Disease"
-                                    className="flex-1 p-3 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400 outline-none transition-all"
-                                />
-                                <div className="flex-1 relative">
-                                    <input
-                                        value={item.medication}
-                                        onChange={(e) => handleMedicineInput(idx, e.target.value)}
-                                        onFocus={() => setActiveMedIdx(idx)}
-                                        onBlur={() => setTimeout(() => { setActiveMedIdx(null); setMedicineSuggestions([]); }, 200)}
-                                        autoComplete="off"
-                                        placeholder="Current Medicine"
-                                        className="w-full p-3 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500/20 focus:border-teal-400 outline-none transition-all"
-                                    />
-                                    {activeMedIdx === idx && medicineSuggestions.length > 0 && (
-                                        <div className="absolute z-20 w-full bg-white border border-slate-200 mt-1 rounded-xl shadow-lg max-h-40 overflow-y-auto">
-                                            {medicineSuggestions.map((med) => (
-                                                <div
-                                                    key={med._id || med.name}
-                                                    className="p-3 hover:bg-teal-50 cursor-pointer text-sm text-slate-700 font-medium border-b border-slate-50 last:border-0"
-                                                    onMouseDown={(e) => e.preventDefault()}
-                                                    onClick={() => {
-                                                        handleBimaiChange(idx, "medication", med.name);
-                                                        setMedicineSuggestions([]);
-                                                        setActiveMedIdx(null);
-                                                    }}
-                                                >
-                                                    {med.name}
-                                                </div>
-                                            ))}
-                                        </div>
-                                    )}
-                                </div>
-                                <button
-                                    type="button"
-                                    onClick={() => removeBimaiRow(idx)}
-                                    className="text-red-400 p-2 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
+                                )}
                             </div>
                         ))}
                     </div>
+                </div>
 
-                    {/* Addiction */}
-                    <div className="space-y-1.5">
-                        <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Addiction / Habits</label>
-                        <input
-                            name="addiction" value={formData.addiction} onChange={handleChange}
-                            className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:bg-white focus:ring-2 focus:ring-teal-500/20 transition-all text-sm"
-                        />
+                {/* 3 - Patient History */}
+                <div className="space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="h-4 w-1 bg-teal-500 rounded-full" />
+                        <h3 className="text-base font-extrabold text-slate-800 uppercase tracking-wider">3 - Patient History</h3>
+                    </div>
+                    
+                    {/* Option 1: K/C/O */}
+                    <div className="space-y-3">
+                        <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1 block">Option 1: K/C/O</label>
+                        <div className="flex gap-2">
+                            <input
+                                type="text"
+                                value={customHistory}
+                                onChange={(e) => setCustomHistory(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") {
+                                        e.preventDefault();
+                                        handleAddPatientHistory();
+                                    }
+                                }}
+                                placeholder="Add new K/C/O option"
+                                className="flex-1 p-3 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500/20 font-medium"
+                            />
+                            <button
+                                type="button"
+                                onClick={handleAddPatientHistory}
+                                className="bg-teal-50 text-teal-600 p-3 rounded-xl hover:bg-teal-100 transition-colors disabled:opacity-50 shrink-0"
+                                disabled={!customHistory.trim()}
+                            >
+                                <Plus size={18} />
+                            </button>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                            {patientHistoryOptions.map(option => (
+                                <button
+                                    key={option._id || option.name}
+                                    type="button"
+                                    onClick={() => handleHistoryToggle(option.name)}
+                                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${formData.patientHistory.some(ph => ph.name === option.name)
+                                            ? 'bg-teal-600 text-white border-teal-600 shadow-lg shadow-teal-100 scale-105'
+                                            : 'bg-white text-slate-500 border-slate-100 hover:border-teal-200 hover:bg-teal-50/30'
+                                        }`}
+                                >
+                                    {option.name}
+                                </button>
+                            ))}
+                        </div>
+
+                        {formData.patientHistory && formData.patientHistory.length > 0 && (
+                            <div className="mt-3 space-y-3">
+                                {formData.patientHistory.map((h, idx) => (
+                                    <div key={h.name || idx} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-center bg-slate-50/50 p-4 rounded-xl border border-slate-150">
+                                        <div className="text-sm font-black text-slate-800 truncate px-2">{h.name}</div>
+                                        <input
+                                            value={h.duration}
+                                            onChange={(e) => {
+                                                const newPH = [...formData.patientHistory];
+                                                newPH[idx] = { ...newPH[idx], duration: e.target.value };
+                                                setFormData(prev => ({ ...prev, patientHistory: newPH }));
+                                            }}
+                                            placeholder="Duration (e.g. 2 years)"
+                                            className="p-3 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500/20 font-medium"
+                                        />
+                                        <div className="flex gap-2 items-center">
+                                            <input
+                                                value={h.medicine}
+                                                onChange={(e) => {
+                                                    const newPH = [...formData.patientHistory];
+                                                    newPH[idx] = { ...newPH[idx], medicine: e.target.value };
+                                                    setFormData(prev => ({ ...prev, patientHistory: newPH }));
+                                                }}
+                                                placeholder="Medicine details"
+                                                className="flex-1 p-3 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500/20 font-medium"
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={async () => {
+                                                    if (h._id) {
+                                                        try {
+                                                            await deletePatientHistoryApi(h._id);
+                                                            setPatientHistoryOptions(prev => prev.filter(p => p._id !== h._id));
+                                                            setFormData(prev => ({ ...prev, patientHistory: prev.patientHistory.filter(ph => ph._id !== h._id) }));
+                                                            return;
+                                                        } catch (err) {
+                                                            console.error('Failed to delete patient history', err);
+                                                            toast.error(err.response?.data?.message || 'Failed to delete history');
+                                                        }
+                                                    }
+                                                    handleHistoryToggle(h.name);
+                                                }}
+                                                className="text-red-400 p-2 hover:text-red-600 transition-colors shrink-0"
+                                                title="Remove"
+                                            >
+                                                <Trash2 size={16} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="border-t border-slate-100 my-4" />
+
+                    {/* Option 2: Past Surgery */}
+                    <div className="bg-slate-50/50 p-4 rounded-xl border border-slate-100 space-y-3">
+                        <div className="flex items-center justify-between">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Option 2: Past Surgery</label>
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox" name="pastSurgery.hasSurgery"
+                                    checked={formData.pastSurgery?.hasSurgery || false} onChange={handleChange}
+                                    className="w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
+                                />
+                                <span className="text-[10px] font-bold text-slate-500 uppercase">Had Surgery</span>
+                            </label>
+                        </div>
+                        {formData.pastSurgery?.hasSurgery && (
+                            <div className="animate-fadeIn">
+                                <input
+                                    name="pastSurgery.duration" value={formData.pastSurgery.duration || ""} onChange={handleChange}
+                                    placeholder="Surgery details & duration (e.g. Appendix, 3 years ago)"
+                                    className="w-full p-3 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500/20 outline-none font-medium"
+                                />
+                            </div>
+                        )}
                     </div>
                 </div>
 
-                {/* Past Surgery */}
-                <div className="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                    <div className="flex items-center justify-between mb-4">
-                        <h3 className="text-xs font-bold text-slate-800 uppercase tracking-widest">Past Surgery</h3>
-                        <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                                type="checkbox" name="pastSurgery.hasSurgery"
-                                checked={formData.pastSurgery.hasSurgery} onChange={handleChange}
-                                className="w-4 h-4 rounded border-slate-300 text-teal-600 focus:ring-teal-500"
-                            />
-                            <span className="text-[10px] font-bold text-slate-500 uppercase">YES</span>
-                        </label>
-                    </div>
-                    {formData.pastSurgery.hasSurgery && (
-                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}>
-                            <input
-                                name="pastSurgery.duration" value={formData.pastSurgery.duration} onChange={handleChange}
-                                placeholder="When did it happen? (e.g. 2 years ago)"
-                                className="w-full p-3 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500/20 outline-none"
-                            />
-                        </motion.div>
-                    )}
-                </div>
-
-                {/* Weight Loss History */}
+                {/* 4 - Past Weight Loss History */}
                 <div className="space-y-4">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                             <div className="h-4 w-1 bg-teal-500 rounded-full" />
-                            <h3 className="text-base font-extrabold text-slate-800 uppercase tracking-wider">Weight Loss History</h3>
+                            <h3 className="text-base font-extrabold text-slate-800 uppercase tracking-wider">4 - Past Weight Loss History</h3>
                         </div>
                         <button
                             type="button" onClick={addWeightLossRow}
-                            className="bg-teal-50 text-teal-600 p-2 rounded-xl hover:bg-teal-100 transition-colors"
+                            className="bg-teal-50 text-teal-600 p-2 rounded-xl hover:bg-teal-100 transition-colors shrink-0"
                         >
                             <Plus size={18} />
                         </button>
                     </div>
+                    
                     <div className="space-y-3">
                         {formData.weightLossHistory.map((item, idx) => (
-                            <div key={idx} className="flex gap-2 items-center group">
+                            <div key={idx} className="flex gap-3 items-center group">
                                 <input
                                     value={item.title} onChange={(e) => handleWeightLossChange(idx, "title", e.target.value)}
                                     placeholder="Program title"
-                                    className="flex-1 p-3 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500/20"
+                                    className="flex-1 p-3.5 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500/20 font-medium"
                                 />
                                 <input
                                     value={item.duration} onChange={(e) => handleWeightLossChange(idx, "duration", e.target.value)}
                                     placeholder="Duration"
-                                    className="w-32 p-3 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500/20"
+                                    className="w-36 p-3.5 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500/20 font-medium"
                                 />
-                                <button
-                                    type="button" onClick={() => removeWeightLossRow(idx)}
-                                    className="text-red-400 p-2 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
+                                <input
+                                    value={item.howMuch} onChange={(e) => handleWeightLossChange(idx, "howMuch", e.target.value)}
+                                    placeholder="How much weight lost"
+                                    className="w-44 p-3.5 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500/20 font-medium"
+                                />
+                                <div className="flex gap-2 items-center flex-1">
+                                    <input
+                                        value={item.addiction} onChange={(e) => handleWeightLossChange(idx, "addiction", e.target.value)}
+                                        placeholder="Addiction / Habits details"
+                                        className="flex-1 p-3.5 rounded-xl bg-white border border-slate-200 text-sm focus:ring-2 focus:ring-teal-500/20 font-medium"
+                                    />
+                                    {formData.weightLossHistory.length > 1 && (
+                                        <button
+                                            type="button" onClick={() => removeWeightLossRow(idx)}
+                                            className="text-red-400 p-2 hover:text-red-600 transition-colors shrink-0"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         ))}
+                    </div>
+                </div>
+
+                {/* 5 - Advice & Reports */}
+                <div className="space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="h-4 w-1 bg-teal-500 rounded-full" />
+                        <h3 className="text-base font-extrabold text-slate-800 uppercase tracking-wider">5 - Advice & Medical Reports</h3>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Clinical Advice</label>
+                        <textarea
+                            name="advice"
+                            value={formData.advice}
+                            onChange={handleChange}
+                            placeholder="Clinical advice..."
+                            className="w-full h-24 p-4 rounded-2xl bg-white border border-slate-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all text-sm font-medium resize-none shadow-sm"
+                        />
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Blood Report</label>
+                            <textarea
+                                name="bloodReport"
+                                value={formData.bloodReport}
+                                onChange={handleChange}
+                                placeholder="Blood report details..."
+                                className="w-full h-20 p-4 rounded-xl bg-white border border-slate-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all text-sm font-medium resize-none shadow-sm"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">X-Ray</label>
+                            <textarea
+                                name="xRay"
+                                value={formData.xRay}
+                                onChange={handleChange}
+                                placeholder="X-Ray details..."
+                                className="w-full h-20 p-4 rounded-xl bg-white border border-slate-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all text-sm font-medium resize-none shadow-sm"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">USG (Ultrasound)</label>
+                            <textarea
+                                name="usc"
+                                value={formData.usc}
+                                onChange={handleChange}
+                                placeholder="USG details..."
+                                className="w-full h-20 p-4 rounded-xl bg-white border border-slate-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all text-sm font-medium resize-none shadow-sm"
+                            />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">CT / MRI</label>
+                            <textarea
+                                name="mri"
+                                value={formData.mri}
+                                onChange={handleChange}
+                                placeholder="CT/MRI details..."
+                                className="w-full h-20 p-4 rounded-xl bg-white border border-slate-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all text-sm font-medium resize-none shadow-sm"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                {/* 6 - Patient Note */}
+                <div className="space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="h-4 w-1 bg-teal-500 rounded-full" />
+                        <h3 className="text-base font-extrabold text-slate-800 uppercase tracking-wider">6 - Patient Notes</h3>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-[11px] font-extrabold text-slate-500 uppercase tracking-widest ml-1">Patient Note</label>
+                        <textarea name="patientNote" value={formData.patientNote} onChange={handleChange} className="w-full h-24 p-4 rounded-2xl bg-white border border-slate-200 focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 transition-all text-sm font-medium resize-none shadow-sm" />
+                    </div>
+                </div>
+
+                {/* 7 - Photo Status (Before & After) */}
+                <div className="space-y-4">
+                    <div className="flex items-center gap-2 mb-2">
+                        <div className="h-4 w-1 bg-teal-500 rounded-full" />
+                        <h3 className="text-base font-extrabold text-slate-800 uppercase tracking-wider">7 - Photos (Before & After)</h3>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* Before Photo Status */}
+                        <div className="p-5 border border-slate-100 rounded-2xl bg-slate-50/50 flex flex-col justify-between">
+                            <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest block mb-2">Before Photo Uploaded in Profile</span>
+                            <div className={`text-base font-black px-4 py-2 rounded-xl text-center w-24 ${
+                                formData.beforePhoto === "Yes"
+                                    ? 'bg-green-50 text-green-700 border border-green-200'
+                                    : 'bg-red-50 text-red-700 border border-red-200'
+                            }`}>
+                                {formData.beforePhoto === "Yes" ? "Yes" : "No"}
+                            </div>
+                        </div>
+
+                        {/* After Photo Status */}
+                        <div className="p-5 border border-slate-100 rounded-2xl bg-slate-50/50 flex flex-col justify-between">
+                            <span className="text-[11px] font-extrabold text-slate-400 uppercase tracking-widest block mb-2">After Photo Uploaded in Profile</span>
+                            <div className={`text-base font-black px-4 py-2 rounded-xl text-center w-24 ${
+                                formData.afterPhoto === "Yes"
+                                    ? 'bg-green-50 text-green-700 border border-green-200'
+                                    : 'bg-red-50 text-red-700 border border-red-200'
+                            }`}>
+                                {formData.afterPhoto === "Yes" ? "Yes" : "No"}
+                            </div>
+                        </div>
                     </div>
                 </div>
             </form>
@@ -700,6 +868,288 @@ const ConsultationForm = ({ appointment, onClose, onSaveSuccess, embedded = fals
                     {loading ? "Saving..." : "Save Consultation"}
                 </button>
             </div>
+
+            {/* View Past Consultation Modal */}
+            {typeof window !== "undefined" && createPortal(
+                <AnimatePresence>
+                    {selectedPastConsultation && (
+                    <>
+                        <motion.div
+                            className="fixed inset-0 bg-black/50 z-[60] backdrop-blur-sm"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={() => setSelectedPastConsultation(null)}
+                        />
+                        <motion.div
+                            className="fixed inset-x-4 inset-y-4 md:inset-x-20 md:inset-y-10 bg-white rounded-3xl shadow-2xl z-[70] p-6 overflow-y-auto flex flex-col"
+                            initial={{ scale: 0.9, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.9, opacity: 0 }}
+                            transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                        >
+                            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                        <ClipboardCheck className="text-teal-600" />
+                                        Past Consultation: {selectedPastConsultation.consultationDate || new Date(selectedPastConsultation.createdAt).toLocaleDateString()}
+                                    </h3>
+                                    <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mt-1">
+                                        Day: {selectedPastConsultation.planDay || "N/A"} | Doctor: {selectedPastConsultation.drName || "N/A"}
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedPastConsultation(null)}
+                                    className="p-2 hover:bg-slate-100 rounded-full transition-colors text-slate-400"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="flex-1 py-6 space-y-6 text-sm text-slate-700">
+                                {/* Section 1 - Patient Details Grid */}
+                                <div className="space-y-2">
+                                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">1 - Patient Details</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                                        <div>
+                                            <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Name</span>
+                                            <span className="text-sm font-bold text-slate-800">{selectedPastConsultation.name || "-"}</span>
+                                        </div>
+                                        <div>
+                                            <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Mobile Number</span>
+                                            <span className="text-sm font-bold text-slate-800">{selectedPastConsultation.mobileNo || "-"}</span>
+                                        </div>
+                                        <div>
+                                            <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Gender</span>
+                                            <span className="text-sm font-bold text-slate-800">{selectedPastConsultation.gender || "-"}</span>
+                                        </div>
+                                        <div>
+                                            <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Occupation</span>
+                                            <span className="text-sm font-bold text-slate-800">{selectedPastConsultation.occupation || "-"}</span>
+                                        </div>
+                                        <div>
+                                            <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Height (cm)</span>
+                                            <span className="text-sm font-bold text-slate-800">{selectedPastConsultation.height || "-"}</span>
+                                        </div>
+                                        <div>
+                                            <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Weight (kg)</span>
+                                            <span className="text-sm font-bold text-slate-800">{selectedPastConsultation.weight || "-"}</span>
+                                        </div>
+                                        <div>
+                                            <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Ideal Weight</span>
+                                            <span className="text-sm font-bold text-slate-800">{selectedPastConsultation.idealWeight || "-"}</span>
+                                        </div>
+                                        <div>
+                                            <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Required Loss</span>
+                                            <span className="text-sm font-bold text-slate-800">
+                                                {selectedPastConsultation.requiredLossWeight && !isNaN(Number(selectedPastConsultation.requiredLossWeight))
+                                                    ? parseFloat(Number(selectedPastConsultation.requiredLossWeight).toFixed(2))
+                                                    : selectedPastConsultation.requiredLossWeight || "-"}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Date</span>
+                                            <span className="text-sm font-bold text-slate-800">{selectedPastConsultation.consultationDate || "-"}</span>
+                                        </div>
+                                        <div>
+                                            <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Time</span>
+                                            <span className="text-sm font-bold text-slate-800">{selectedPastConsultation.consultationTime || "-"}</span>
+                                        </div>
+                                        <div>
+                                            <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Consultation Day</span>
+                                            <span className="text-sm font-bold text-slate-800">{selectedPastConsultation.planDay || "-"}</span>
+                                        </div>
+                                        <div>
+                                            <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Reference</span>
+                                            <span className="text-sm font-bold text-slate-800">{selectedPastConsultation.reference || "-"}</span>
+                                        </div>
+                                        <div>
+                                            <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Dr. Name</span>
+                                            <span className="text-sm font-bold text-slate-800">{selectedPastConsultation.drName || "-"}</span>
+                                        </div>
+                                        <div>
+                                            <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">City</span>
+                                            <span className="text-sm font-bold text-slate-800">{selectedPastConsultation.city || "-"}</span>
+                                        </div>
+                                        <div>
+                                            <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">State</span>
+                                            <span className="text-sm font-bold text-slate-800">{selectedPastConsultation.state || "-"}</span>
+                                        </div>
+                                        <div>
+                                            <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">Country</span>
+                                            <span className="text-sm font-bold text-slate-800">{selectedPastConsultation.country || "-"}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Section 2 - Complaints */}
+                                <div className="space-y-2">
+                                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">2 - Complaints (C/O)</h4>
+                                    {selectedPastConsultation.co && selectedPastConsultation.co.length > 0 ? (
+                                        <div className="border border-slate-100 rounded-2xl p-4 bg-white space-y-2 shadow-sm">
+                                            {selectedPastConsultation.co.map((item, idx) => (
+                                                <div key={idx} className="flex justify-between items-center border-b border-slate-50 last:border-0 pb-2 last:pb-0">
+                                                    <span className="font-bold text-slate-800">{item.complaint || "-"}</span>
+                                                    <span className="text-xs font-semibold text-slate-500">{item.duration || "-"}</span>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs italic text-slate-400 ml-1">No complaints recorded</p>
+                                    )}
+                                </div>
+
+                                {/* Section 3 - Medical Conditions & Surgery */}
+                                <div className="space-y-4">
+                                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">3 - Patient History & Surgery</h4>
+                                    
+                                    <div className="space-y-2">
+                                        <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest ml-1">Option 1: K/C/O</span>
+                                        {selectedPastConsultation.patientHistory && selectedPastConsultation.patientHistory.length > 0 ? (
+                                            <div className="border border-slate-100 rounded-2xl p-4 bg-white space-y-2 shadow-sm">
+                                                {selectedPastConsultation.patientHistory.map((item, idx) => (
+                                                    <div key={idx} className="flex justify-between items-center border-b border-slate-50 last:border-0 pb-2 last:pb-0">
+                                                        <span className="font-bold text-slate-800">{item.name || "-"}</span>
+                                                        <span className="text-xs font-semibold text-slate-500">{item.duration || "-"} {item.medicine ? `· ${item.medicine}` : ""}</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="text-xs italic text-slate-400 ml-1">No patient history recorded</p>
+                                        )}
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest ml-1">Option 2: Past Surgery</span>
+                                        <div className="border border-slate-100 rounded-2xl p-4 bg-white shadow-sm">
+                                            <span className="font-bold text-slate-800">
+                                                {selectedPastConsultation.pastSurgery?.hasSurgery ? `Yes (Duration: ${selectedPastConsultation.pastSurgery?.duration || "-"})` : "No"}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Section 4 - Weight Loss History */}
+                                <div className="space-y-2">
+                                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">4 - Past Weight Loss History</h4>
+                                    {selectedPastConsultation.weightLossHistory && selectedPastConsultation.weightLossHistory.length > 0 ? (
+                                        <div className="border border-slate-100 rounded-2xl p-4 bg-white space-y-2 shadow-sm">
+                                            {selectedPastConsultation.weightLossHistory.map((item, idx) => (
+                                                <div key={idx} className="grid grid-cols-1 sm:grid-cols-4 gap-2 border-b border-slate-50 last:border-0 pb-2 last:pb-0">
+                                                    <div>
+                                                        <span className="block text-[9px] font-extrabold text-slate-400 uppercase font-bold text-slate-400">Program</span>
+                                                        <span className="font-bold text-slate-800">{item.title || "-"}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="block text-[9px] font-extrabold text-slate-400 uppercase font-bold text-slate-400">Duration</span>
+                                                        <span className="font-semibold text-slate-600">{item.duration || "-"}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="block text-[9px] font-extrabold text-slate-400 uppercase font-bold text-slate-400">Weight Lost</span>
+                                                        <span className="font-semibold text-slate-600">{item.howMuch || "-"}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="block text-[9px] font-extrabold text-slate-400 uppercase font-bold text-slate-400">Addiction / Habits</span>
+                                                        <span className="font-semibold text-slate-600">{item.addiction || "-"}</span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <p className="text-xs italic text-slate-400 ml-1">No past weight loss history recorded</p>
+                                    )}
+                                </div>
+
+                                {/* Section 5 - Advice & Medical Reports */}
+                                <div className="space-y-4">
+                                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">5 - Advice & Medical Reports</h4>
+                                    
+                                    <div className="space-y-2">
+                                        <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest ml-1">Clinical Advice</span>
+                                        <div className="border border-slate-100 rounded-2xl p-4 bg-white shadow-sm whitespace-pre-wrap leading-relaxed">
+                                            {selectedPastConsultation.advice || "No advice recorded"}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest ml-1">Blood Report</span>
+                                            <div className="border border-slate-100 rounded-2xl p-4 bg-white shadow-sm whitespace-pre-wrap leading-relaxed">
+                                                {selectedPastConsultation.bloodReport || "No details"}
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest ml-1">X-Ray</span>
+                                            <div className="border border-slate-100 rounded-2xl p-4 bg-white shadow-sm whitespace-pre-wrap leading-relaxed">
+                                                {selectedPastConsultation.xRay || "No details"}
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest ml-1">USG (Ultrasound)</span>
+                                            <div className="border border-slate-100 rounded-2xl p-4 bg-white shadow-sm whitespace-pre-wrap leading-relaxed">
+                                                {selectedPastConsultation.usc || "No details"}
+                                            </div>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <span className="block text-[10px] font-extrabold text-slate-400 uppercase tracking-widest ml-1">CT / MRI</span>
+                                            <div className="border border-slate-100 rounded-2xl p-4 bg-white shadow-sm whitespace-pre-wrap leading-relaxed">
+                                                {selectedPastConsultation.mri || "No details"}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Section 6 - Patient Note */}
+                                <div className="space-y-2">
+                                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">6 - Doctor Notes</h4>
+                                    <div className="border border-slate-100 rounded-2xl p-4 bg-white shadow-sm whitespace-pre-wrap leading-relaxed text-amber-800 bg-amber-50/10">
+                                        {selectedPastConsultation.patientNote || "No note recorded"}
+                                    </div>
+                                </div>
+
+                                {/* Section 7 - Photos Upload Status */}
+                                <div className="space-y-2">
+                                    <h4 className="text-xs font-black text-slate-400 uppercase tracking-widest">7 - Photos Upload Status</h4>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="p-4 border border-slate-100 rounded-2xl bg-white shadow-sm flex items-center justify-between">
+                                            <span className="text-xs font-bold text-slate-600">Before Photo Uploaded</span>
+                                            <span className={`text-xs font-black px-3 py-1 rounded-lg ${
+                                                selectedPastConsultation.beforePhoto === "Yes" ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                                            }`}>{selectedPastConsultation.beforePhoto || "No"}</span>
+                                        </div>
+                                        <div className="p-4 border border-slate-100 rounded-2xl bg-white shadow-sm flex items-center justify-between">
+                                            <span className="text-xs font-bold text-slate-600">After Photo Uploaded</span>
+                                            <span className={`text-xs font-black px-3 py-1 rounded-lg ${
+                                                selectedPastConsultation.afterPhoto === "Yes" ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'
+                                            }`}>{selectedPastConsultation.afterPhoto || "No"}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="pt-4 border-t border-slate-100 flex justify-end gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => downloadConsultationPdfApi(selectedPastConsultation._id)}
+                                    className="px-6 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition-all shadow-md active:scale-95"
+                                >
+                                    Download PDF
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setSelectedPastConsultation(null)}
+                                    className="px-6 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all active:scale-95"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>,
+            document.body
+        )}
         </div>
     );
 };

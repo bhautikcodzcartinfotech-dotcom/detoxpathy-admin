@@ -10,7 +10,7 @@ export const API_HOST = API_BASE.replace(/\/?api\/?v1\/?$/, "").replace(
 
 // Resolve any stored path/filename to a fully qualified URL for images
 export const resolveImageUrl = (imagePath) => {
-  if (!imagePath) return "";
+  if (!imagePath || typeof imagePath !== "string") return "";
   if (imagePath.startsWith("http://") || imagePath.startsWith("https://") || imagePath.startsWith("data:")) {
     return imagePath;
   }
@@ -1830,6 +1830,13 @@ export const getStocks = async (params = {}) => {
 
 export const addOrUpdateStock = async (payload) => {
   const res = await axios.post(`${API_BASE}/admin/stock/addOrUpdate`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const updateStock = async (id, payload) => {
+  const res = await axios.put(`${API_BASE}/admin/stock/update/${id}`, payload, {
     headers: getAuthHeaders(),
   });
   return res.data.data;

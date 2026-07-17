@@ -789,7 +789,7 @@ const UserProfilePage = () => {
                         </div>
                         <div>
                           <div className="font-semibold text-gray-800">
-                            {c.isFirstConsultation ? "First Consultation" : "Follow-up Consultation"}
+                            {c.isFirstConsultation ? "First Consultation" : `Follow-up Consultation (Day ${c.planDay || "N/A"})`}
                           </div>
                           <div className="text-sm text-gray-500 flex flex-wrap gap-x-3">
                             <span>📅 {c.appointmentId?.date || new Date(c.createdAt).toLocaleDateString()}</span>

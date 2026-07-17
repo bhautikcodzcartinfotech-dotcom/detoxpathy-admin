@@ -1,7 +1,8 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { getRolePermissionsApi } from "@/Api/AllApi";
+import { getRolePermissionsApi, getAllBranches } from "@/Api/AllApi";
 import Dropdown from "@/utils/dropdown";
+import toast from "react-hot-toast";
 
 const StaffForm = ({ onSubmit, onCancel, loading, initialValues, submitLabel }) => {
   const [formData, setFormData] = useState({
@@ -9,8 +10,10 @@ const StaffForm = ({ onSubmit, onCancel, loading, initialValues, submitLabel }) 
     email: "",
     role: "",
     password: "",
+    branchIds: [],
   });
   const [roles, setRoles] = useState([]);
+  const [branches, setBranches] = useState([]);
 
   useEffect(() => {
     const fetchRoles = async () => {
@@ -21,7 +24,16 @@ const StaffForm = ({ onSubmit, onCancel, loading, initialValues, submitLabel }) 
         console.error("Failed to load roles", err);
       }
     };
+    const fetchBranches = async () => {
+      try {
+        const data = await getAllBranches();
+        setBranches(Array.isArray(data) ? data : []);
+      } catch (err) {
+        console.error("Failed to load branches", err);
+      }
+    };
     fetchRoles();
+    fetchBranches();
   }, []);
 
   useEffect(() => {
@@ -31,6 +43,10 @@ const StaffForm = ({ onSubmit, onCancel, loading, initialValues, submitLabel }) 
         email: initialValues.email || "",
         role: initialValues.adminType || initialValues.role || "",
         password: "", // Keep password empty on edit
+        branchIds:
+          Array.isArray(initialValues.branch)
+            ? initialValues.branch.map(b => typeof b === "string" ? b : b._id)
+            : [],
       });
     } else {
       setFormData({
@@ -38,6 +54,7 @@ const StaffForm = ({ onSubmit, onCancel, loading, initialValues, submitLabel }) 
         email: "",
         role: "",
         password: "",
+        branchIds: [],
       });
     }
   }, [initialValues]);
@@ -49,6 +66,10 @@ const StaffForm = ({ onSubmit, onCancel, loading, initialValues, submitLabel }) 
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (formData.branchIds.length === 0) {
+      toast.error("Please select at least one branch");
+      return;
+    }
     onSubmit(formData);
   };
 
@@ -95,6 +116,41 @@ const StaffForm = ({ onSubmit, onCancel, loading, initialValues, submitLabel }) 
           onChange={(val) => setFormData(prev => ({ ...prev, role: val }))}
           placeholder="Select staff role"
         />
+      </div>
+
+      {/* Branch Selection Checkboxes */}
+      <div>
+        <label className={labelClasses}>Branches</label>
+        <div className="grid grid-cols-2 gap-3 mt-1.5">
+          {branches.map((branch) => {
+            const isChecked = formData.branchIds.includes(branch._id);
+            return (
+              <label
+                key={branch._id}
+                className={`flex items-center gap-3 p-3 bg-white border rounded-xl cursor-pointer transition-all duration-300 shadow-sm min-h-[50px] ${
+                  isChecked
+                    ? "border-yellow-400 ring-2 ring-yellow-400/10 bg-yellow-50/10 scale-[1.01]"
+                    : "border-gray-200 hover:border-yellow-400/50"
+                }`}
+              >
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={(e) => {
+                    const nextIds = e.target.checked
+                      ? [...formData.branchIds, branch._id]
+                      : formData.branchIds.filter((id) => id !== branch._id);
+                    setFormData((prev) => ({ ...prev, branchIds: nextIds }));
+                  }}
+                  className="w-5 h-5 flex-shrink-0 text-yellow-500 focus:ring-yellow-400 border-gray-300 rounded cursor-pointer transition-all"
+                />
+                <span className="text-gray-700 font-semibold text-sm leading-tight">
+                  {branch.name}
+                </span>
+              </label>
+            );
+          })}
+        </div>
       </div>
 
       <div>

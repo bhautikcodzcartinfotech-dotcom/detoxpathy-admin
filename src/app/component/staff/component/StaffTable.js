@@ -86,6 +86,7 @@ const StaffTable = ({ items, loading, onEdit, onDelete, onManageLeave, role, per
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Name</th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Email</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Branches</th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-gray-700 uppercase tracking-wider">Role</th>
                 <th className="px-6 py-4 text-center text-xs font-bold text-gray-700 uppercase tracking-wider">Actions</th>
               </tr>
@@ -95,6 +96,11 @@ const StaffTable = ({ items, loading, onEdit, onDelete, onManageLeave, role, per
                 <tr key={item._id} className="hover:bg-yellow-50 transition-all duration-200">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{item.username || item.name}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium">{item.email}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 font-medium">
+                    {Array.isArray(item.branch) && item.branch.length
+                      ? item.branch.map((b) => b.name || b).join(", ")
+                      : "-"}
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider bg-teal-50 text-teal-700">
                       {(item.adminType || item.role) === "Sub Admin" ? "Doctor" : (item.adminType || item.role)}
@@ -132,7 +138,7 @@ const StaffTable = ({ items, loading, onEdit, onDelete, onManageLeave, role, per
               ))}
               {items.length === 0 && (
                 <tr>
-                  <td colSpan="4" className="px-6 py-12 text-center text-gray-400 font-medium bg-gray-50/30">
+                  <td colSpan="5" className="px-6 py-12 text-center text-gray-400 font-medium bg-gray-50/30">
                     No staff members found for this branch.
                   </td>
                 </tr>

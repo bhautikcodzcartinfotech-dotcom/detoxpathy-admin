@@ -276,7 +276,34 @@ const UserList = ({ users, loading, onEdit, onDelete, onRestore, onBulkDelete, o
                   </td>
 
                   <td className="px-2 py-3 lg:px-4 whitespace-normal text-xs lg:text-sm font-semibold text-gray-800">
-                    {u.name}
+                    <div className="flex flex-col">
+                      <span>{u.name}</span>
+                      {u.dayProgress !== undefined && u.dayProgress !== null && (
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden min-w-[50px]">
+                            <div
+                              className="h-full bg-gradient-to-r from-teal-400 to-teal-600 rounded-full transition-all duration-500"
+                              style={{
+                                width: `${Math.max(
+                                  0,
+                                  Math.min(Number(u.dayProgress) || 0, 100)
+                                )}%`,
+                              }}
+                            />
+                          </div>
+                          <span className="text-[8px] font-bold text-teal-600">
+                            {Math.round(Number(u.dayProgress) || 0)}%
+                          </span>
+                        </div>
+                      )}
+                      {(u.planCurrentDay !== undefined && u.planCurrentDay !== null || u.nextFollowUpPlanDate) && (
+                        <p className="mt-1 text-[9px] font-medium text-violet-600">
+                          {u.planCurrentDay !== undefined && u.planCurrentDay !== null && `Detox Day: ${u.planCurrentDay}`}
+                          {u.planCurrentDay !== undefined && u.planCurrentDay !== null && u.nextFollowUpPlanDate && " · "}
+                          {u.nextFollowUpPlanDate && `Next follow-up: ${u.nextFollowUpPlanDate}`}
+                        </p>
+                      )}
+                    </div>
                   </td>
                   <td className="px-2 py-3 lg:px-4 whitespace-nowrap text-xs lg:text-sm text-gray-700">
                     {u.mobilePrefix} {u.mobileNumber}
