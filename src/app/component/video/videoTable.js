@@ -182,6 +182,7 @@ const VideoTable = ({ items, loading, onEdit, onDelete }) => {
                           10: "Agora Session",
                           11: "book appointment video",
                           12: "rating screen video",
+                          13: "After Detox",
                         }[video.type] || (video.videoType === 3 ? "Agora Session" : video.type)}
                       </span>
                       {video.videoType === 3 && (

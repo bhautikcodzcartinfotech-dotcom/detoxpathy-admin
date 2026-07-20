@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { getAllUsers, getAllProducts, getAllPlans, createOrder, createCustomerOrder, createCustomer, getSetting, verifyCompanyOrderPaymentApi, deleteOrderApi, getSuggestedProgram, getAllBranches } from "@/Api/AllApi";
+import { getAllUsers, getAllProducts, getAllPlans, createOrder, createCustomerOrder, createCustomer, getSetting, verifyCompanyOrderPaymentApi, deleteOrderApi, getSuggestedProgram, getAllBranches, getShippingCharges } from "@/Api/AllApi";
 import TimeButton from "@/utils/timebutton";
 import Dropdown from "@/utils/dropdown";
 import toast from "react-hot-toast";
@@ -30,6 +30,7 @@ const OrderForm = ({ onCancel, onSuccess, mode = "user", customers = [], onCusto
   });
   const [selectedProducts, setSelectedProducts] = useState([]); // [{productId, quantity}]
   const [selectedPlans, setSelectedPlans] = useState([]); // [{planId, name, price}]
+  const [planProductSelections, setPlanProductSelections] = useState({});
   const [currency, setCurrency] = useState("₹");
   const [shippingRate, setShippingRate] = useState(0);
   const [paymentMethod, setPaymentMethod] = useState("Offline");
@@ -37,6 +38,9 @@ const OrderForm = ({ onCancel, onSuccess, mode = "user", customers = [], onCusto
   const [offlineAmount, setOfflineAmount] = useState("");
   const [loadingSuggestion, setLoadingSuggestion] = useState(false);
   const [hasSuggestedPlan, setHasSuggestedPlan] = useState(false);
+  const [orderType, setOrderType] = useState("2");
+  const [shippingChargesInfo, setShippingChargesInfo] = useState(null);
+  const [loadingShipping, setLoadingShipping] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -131,7 +135,12 @@ const OrderForm = ({ onCancel, onSuccess, mode = "user", customers = [], onCusto
     const plan = plans.find(p => p._id === planId);
     if (!plan) return;
 
-    // Replace the entire array with just the new plan to enforce single-selection
+    const groups = getPlanProductGroups(plan);
+    const selections = {};
+    groups.forEach(group => {
+      selections[group.mainProduct._id] = group.mainProduct._id;
+    });
+
     setSelectedPlans([{
       planId,
       name: plan.name,
@@ -139,6 +148,7 @@ const OrderForm = ({ onCancel, onSuccess, mode = "user", customers = [], onCusto
       bulkDiscount: Number(plan.bulkDiscount) || 0,
       weight: Number(plan.weight) || 0
     }]);
+    setPlanProductSelections({ [planId]: selections });
   };
 
   const handleRemovePlan = (planId) => {
@@ -146,11 +156,76 @@ const OrderForm = ({ onCancel, onSuccess, mode = "user", customers = [], onCusto
     setHasSuggestedPlan(false);
   };
 
+  const fetchShippingCharges = async () => {
+    if (mode !== "customer" || orderType !== "1") {
+      setShippingChargesInfo(null);
+      return;
+    }
+
+    const addressFilled = shippingAddress.name && shippingAddress.mobile && shippingAddress.addressLine1 && shippingAddress.city && shippingAddress.state && shippingAddress.postalCode && shippingAddress.country;
+    if (!addressFilled) {
+      setShippingChargesInfo(null);
+      return;
+    }
+
+    if (selectedPlans.length === 0 && selectedProducts.length === 0) {
+      setShippingChargesInfo(null);
+      return;
+    }
+
+    try {
+      setLoadingShipping(true);
+      const payload = {
+        products: selectedProducts.map(({ productId, quantity }) => ({ productId, quantity })),
+        plans: selectedPlans.map(p => p.planId),
+        shippingAddress: {
+          name: (shippingAddress.name || "").trim(),
+          mobile: (shippingAddress.mobile || "").trim(),
+          addressLine1: (shippingAddress.addressLine1 || "").trim(),
+          addressLine2: (shippingAddress.addressLine2 || "").trim(),
+          city: (shippingAddress.city || "").trim(),
+          state: (shippingAddress.state || "").trim(),
+          postalCode: (shippingAddress.postalCode || "").trim(),
+          country: (shippingAddress.country || "").trim(),
+        }
+      };
+
+      const data = await getShippingCharges(payload);
+      setShippingChargesInfo(data || null);
+    } catch (err) {
+      console.error("Failed to fetch shipping charges", err);
+      setShippingChargesInfo(null);
+    } finally {
+      setLoadingShipping(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchShippingCharges();
+  }, [orderType, selectedProducts, selectedPlans, shippingAddress]);
+
+  const getPlanProductGroups = (plan) => {
+    const productList = Array.isArray(plan.products) ? plan.products : [];
+    return productList
+      .map((item) => {
+        const mainProduct = item?.productId;
+        const altProduct = item?.alternativeProductId;
+        if (mainProduct && mainProduct._id) {
+          return {
+            mainProduct,
+            alternativeProduct: altProduct && altProduct._id ? altProduct : null,
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
+  };
+
   const applySuggestedProgram = (suggestion) => {
     if (!suggestion) return;
 
     if (suggestion.plans) {
-      const planId = suggestion.plans?._id || suggestion.plans;
+      const planId = suggestion.plans?.planId?._id || suggestion.plans?.planId || "";
       const plan = plans.find(p => p._id === planId) || (typeof suggestion.plans === "object" ? suggestion.plans : null);
       if (plan?._id) {
         setSelectedPlans([{
@@ -160,6 +235,22 @@ const OrderForm = ({ onCancel, onSuccess, mode = "user", customers = [], onCusto
           bulkDiscount: Number(plan.bulkDiscount) || 0,
           weight: Number(plan.weight) || 0
         }]);
+
+        if (suggestion.plans?.products && Array.isArray(suggestion.plans.products)) {
+          const selections = {};
+          suggestion.plans.products.forEach((item) => {
+            const mainId = item?.productId?._id;
+            if (mainId) {
+              if (item?.isMainSelected === false && item?.altProductId?._id) {
+                selections[mainId] = item.altProductId._id;
+              } else {
+                selections[mainId] = mainId;
+              }
+            }
+          });
+          setPlanProductSelections(prev => ({ ...prev, [planId]: selections }));
+        }
+
         setHasSuggestedPlan(true);
       }
     }
@@ -192,7 +283,9 @@ const OrderForm = ({ onCancel, onSuccess, mode = "user", customers = [], onCusto
     setSelectedUser(userId);
     setSelectedPlans([]);
     setSelectedProducts([]);
+    setPlanProductSelections({});
     setHasSuggestedPlan(false);
+    setOrderType("2");
 
     if (mode === "customer") {
       const cust = (customers || []).find((c) => (c._id || c.id) === userId);
@@ -236,6 +329,7 @@ const OrderForm = ({ onCancel, onSuccess, mode = "user", customers = [], onCusto
     if (mode === "customer") {
       const shipErr = validateShipping();
       if (shipErr) return toast.error(shipErr);
+      if (!orderType) return toast.error("Please select order type");
     }
 
     const onlinePay = paymentMethod === "Split" ? Number(onlineAmount) || 0 : 0;
@@ -253,11 +347,33 @@ const OrderForm = ({ onCancel, onSuccess, mode = "user", customers = [], onCusto
 
     try {
       setLoading(true);
+
+      let planSelections = {};
+      if (selectedPlans.length > 0) {
+        const plan = plans.find(p => p._id === selectedPlans[0].planId);
+        const selections = planProductSelections[selectedPlans[0].planId] || {};
+        if (plan && Array.isArray(plan.products)) {
+          planSelections[plan._id] = plan.products.map(item => {
+            const mainProduct = item?.productId;
+            const altProduct = item?.alternativeProductId;
+            const mainId = mainProduct?._id || null;
+            const altId = altProduct?._id || null;
+            const selectedId = selections[mainId] || mainId;
+            return {
+              productId: mainId,
+              altProductId: altId,
+              isMainSelected: selectedId === mainId
+            };
+          });
+        }
+      }
+
       const payload = {
         ...(mode === "customer" ? { customerId: selectedUser } : { userId: selectedUser }),
         products: selectedProducts.map(({ productId, quantity }) => ({ productId, quantity })),
         plans: selectedPlans.map(p => p.planId),
-        type: 2, // Branch offline order
+        ...(mode === "customer" ? { planSelections } : {}),
+        ...(mode === "customer" ? { type: Number(orderType) } : { type: 2 }),
         ...(mode === "customer" ? {
           shippingAddress: {
             name: (shippingAddress.name || "").trim(),
@@ -375,7 +491,9 @@ const OrderForm = ({ onCancel, onSuccess, mode = "user", customers = [], onCusto
   const itemsSubtotal = selectedProducts.reduce((sum, p) => sum + (getItemPrice(p) * p.quantity), 0) +
     selectedPlans.reduce((sum, p) => sum + getItemPrice(p), 0);
 
-  const shippingCost = 0; // Admin created orders have no shipping charges
+  const shippingCost = mode === "customer" && orderType === "1" && shippingChargesInfo?.shippingCharges
+    ? Number(shippingChargesInfo.shippingCharges)
+    : 0;
 
   const totalAmount = itemsSubtotal + shippingCost;
 
@@ -541,6 +659,97 @@ const OrderForm = ({ onCancel, onSuccess, mode = "user", customers = [], onCusto
       </div>
 
       {mode === "customer" && (
+        <Dropdown
+          label="Order Type *"
+          placeholder="-- Select Order Type --"
+          showSearch={false}
+          options={[
+            { label: "Online", value: "1" },
+            { label: "Offline", value: "2" },
+          ]}
+          value={orderType}
+          onChange={(val) => setOrderType(val)}
+        />
+      )}
+
+      {selectedPlans.length > 0 && (() => {
+        const plan = plans.find(p => p._id === selectedPlans[0].planId);
+        if (!plan) return null;
+        const groups = getPlanProductGroups(plan);
+        if (groups.length === 0) return null;
+
+        const selections = planProductSelections[plan._id] || {};
+
+        return (
+          <div className="mt-4 p-4 rounded-2xl border border-yellow-200 bg-yellow-50 space-y-3">
+            <h3 className="font-semibold text-gray-800 text-sm">Select Product Variant</h3>
+            {groups.map((group, idx) => {
+              const mainId = group.mainProduct._id;
+              const selectedId = selections[mainId] || mainId;
+              const hasAlt = !!group.alternativeProduct;
+              return (
+                <div key={mainId} className="flex flex-wrap items-center gap-2">
+                  <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide w-16 shrink-0">
+                    Product {idx + 1}
+                  </span>
+                  <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all ${selectedId === mainId ? "border-yellow-400 bg-yellow-50 shadow-sm" : "border-gray-200 bg-white hover:border-yellow-200"}`}>
+                    <input
+                      type="radio"
+                      name={`plan-product-${plan._id}-${mainId}`}
+                      checked={selectedId === mainId}
+                      onChange={() => setPlanProductSelections(prev => ({
+                        ...prev,
+                        [plan._id]: {
+                          ...(prev[plan._id] || {}),
+                          [mainId]: mainId
+                        }
+                      }))}
+                      className="accent-yellow-500 w-3.5 h-3.5"
+                    />
+                    <span className={`text-[10px] font-medium ${selectedId === mainId ? "text-yellow-800" : "text-gray-600"}`}>
+                      {group.mainProduct.name}
+                    </span>
+                    <span className="text-[10px] text-gray-400">
+                      ₹{group.mainProduct.discountedPrice || group.mainProduct.basePrice}
+                    </span>
+                    <span className="text-[9px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
+                      Main
+                    </span>
+                  </label>
+                  {hasAlt && (
+                    <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all ${selectedId === group.alternativeProduct._id ? "border-yellow-400 bg-yellow-50 shadow-sm" : "border-gray-200 bg-white hover:border-yellow-200"}`}>
+                      <input
+                        type="radio"
+                        name={`plan-product-${plan._id}-${mainId}`}
+                        checked={selectedId === group.alternativeProduct._id}
+                        onChange={() => setPlanProductSelections(prev => ({
+                          ...prev,
+                          [plan._id]: {
+                            ...(prev[plan._id] || {}),
+                            [mainId]: group.alternativeProduct._id
+                          }
+                        }))}
+                        className="accent-yellow-500 w-3.5 h-3.5"
+                      />
+                      <span className={`text-[10px] font-medium ${selectedId === group.alternativeProduct._id ? "text-yellow-800" : "text-gray-600"}`}>
+                        {group.alternativeProduct.name}
+                      </span>
+                      <span className="text-[10px] text-gray-400">
+                        ₹{group.alternativeProduct.discountedPrice || group.alternativeProduct.basePrice}
+                      </span>
+                      <span className="text-[9px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
+                        Alternative
+                      </span>
+                    </label>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        );
+      })()}
+
+      {mode === "customer" && (
         <div className="p-4 rounded-2xl border border-gray-200 bg-gray-50 space-y-3">
           <h3 className="font-semibold text-gray-800">Shipping Address</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -691,23 +900,44 @@ const OrderForm = ({ onCancel, onSuccess, mode = "user", customers = [], onCusto
 
       {/* Selected Products & Plans List */}
       <div className="space-y-2">
-        {selectedPlans.map((p, idx) => (
-          <div key={`plan-${idx}`} className="flex items-center justify-between p-3 border-2 border-yellow-200 rounded-xl bg-yellow-50 shadow-sm">
-            <div className="flex flex-col">
-              <span className="font-bold text-yellow-800">PLAN: {p.name}</span>
-              <span className="text-xs text-yellow-600 font-semibold">
-                {currency}{Math.round(getItemPrice(p)).toLocaleString()}
-              </span>
+        {selectedPlans.map((p, idx) => {
+          const plan = plans.find(pl => pl._id === p.planId);
+          const groups = plan ? getPlanProductGroups(plan) : [];
+          const selections = planProductSelections[p.planId] || {};
+
+          return (
+            <div key={`plan-${idx}`} className="flex items-center justify-between p-3 border-2 border-yellow-200 rounded-xl bg-yellow-50 shadow-sm">
+              <div className="flex flex-col">
+                <span className="font-bold text-yellow-800">PLAN: {p.name}</span>
+                <span className="text-xs text-yellow-600 font-semibold">
+                  {currency}{Math.round(getItemPrice(p)).toLocaleString()}
+                </span>
+                {groups.length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {groups.map(group => {
+                      const mainId = group.mainProduct._id;
+                      const selectedId = selections[mainId] || mainId;
+                      const isAlt = selectedId !== mainId;
+                      const selectedProduct = isAlt ? group.alternativeProduct : group.mainProduct;
+                      return (
+                        <span key={mainId} className="text-[9px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
+                          {selectedProduct.name} {isAlt ? "(Alt)" : "(Main)"}
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => handleRemovePlan(p.planId)}
+                className="text-red-500 hover:text-red-700 font-bold p-1 bg-red-50 rounded-full w-8 h-8 flex items-center justify-center transition"
+              >
+                &times;
+              </button>
             </div>
-            <button
-              type="button"
-              onClick={() => handleRemovePlan(p.planId)}
-              className="text-red-500 hover:text-red-700 font-bold p-1 bg-red-50 rounded-full w-8 h-8 flex items-center justify-center transition"
-            >
-              &times;
-            </button>
-          </div>
-        ))}
+          );
+        })}
         {selectedProducts.map((p, idx) => (
           <div key={idx} className="flex items-center justify-between p-3 border rounded-xl bg-gray-50 shadow-sm">
             <div className="flex flex-col">
@@ -756,6 +986,14 @@ const OrderForm = ({ onCancel, onSuccess, mode = "user", customers = [], onCusto
             <span>Total Weight:</span>
             <span className="text-gray-800">{(totalWeight / 1000).toFixed(2)} kg ({totalWeight}g)</span>
           </div>
+          {mode === "customer" && orderType === "1" && (
+            <div className="flex justify-between items-center text-sm font-semibold text-gray-600">
+              <span>Shipping Charges:</span>
+              <span className="text-gray-800">
+                {loadingShipping ? "Calculating..." : shippingChargesInfo ? `${currency}${Math.round(shippingChargesInfo.shippingCharges || 0).toLocaleString()}` : "-"}
+              </span>
+            </div>
+          )}
           <hr className="border-yellow-200 my-1" />
           <div className="flex justify-between items-center text-lg font-bold">
             <span className="text-gray-700">Total Estimation:</span>

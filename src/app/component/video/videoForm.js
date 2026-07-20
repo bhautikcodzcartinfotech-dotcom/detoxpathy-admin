@@ -399,8 +399,8 @@ const VideoForm = ({
         rules: [required("Plan")],
       },
       requiredCorrectAnswer: {
-        value: (isAgoraSession || typeNum === 6) ? (form.requiredCorrectAnswer || "0") : form.requiredCorrectAnswer,
-        rules: (isUpdate || typeNum === 6) ? [numberRule("Required Correct Answer")] : [required("Required Correct Answer"), numberRule("Required Correct Answer")],
+        value: (isAgoraSession || typeNum === 6 || typeNum === 13) ? (form.requiredCorrectAnswer || "0") : form.requiredCorrectAnswer,
+        rules: (isUpdate || typeNum === 6 || typeNum === 13) ? [numberRule("Required Correct Answer")] : [required("Required Correct Answer"), numberRule("Required Correct Answer")],
       },
     });
 
@@ -458,6 +458,7 @@ const VideoForm = ({
     { label: "Hold Video", value: 9 },
     { label: "book appointment video", value: 11 },
     { label: "rating screen video", value: 12 },
+    { label: "After Detox", value: 13 },
   ];
 
   const videoTypeOptions = [

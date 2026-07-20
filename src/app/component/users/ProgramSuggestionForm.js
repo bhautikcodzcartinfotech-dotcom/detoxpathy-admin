@@ -24,6 +24,7 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
   // Search states
   const [programSearch, setProgramSearch] = useState("");
   const [productSearch, setProductSearch] = useState("");
+  const [programProductSelections, setProgramProductSelections] = useState({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -44,16 +45,29 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
           if (suggestion) {
             setExistingSuggestion(suggestion);
 
-            // Set current program
-            const currentProgramId = suggestion.plans?._id || suggestion.plans || "";
+            const currentProgramId = suggestion.plans?.planId?._id || suggestion.plans?.planId || "";
             setSelectedProgramId(currentProgramId);
 
-            // Set current products
             if (suggestion.products && Array.isArray(suggestion.products)) {
               setSelectedProducts(suggestion.products.map(p => ({
                 productId: p._id || p.productId || p,
                 quantity: p.quantity || 1
               })));
+            }
+
+            if (currentProgramId && suggestion.plans?.products && Array.isArray(suggestion.plans.products)) {
+              const selections = {};
+              suggestion.plans.products.forEach((item) => {
+                const mainId = item?.productId?._id;
+                if (mainId) {
+                  if (item?.isMainSelected === false && item?.altProductId?._id) {
+                    selections[mainId] = item.altProductId._id;
+                  } else {
+                    selections[mainId] = mainId;
+                  }
+                }
+              });
+              setProgramProductSelections(prev => ({ ...prev, [currentProgramId]: selections }));
             }
           }
         } catch (err) {
@@ -73,6 +87,23 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
 
   const handleProgramSelect = (programId) => {
     setSelectedProgramId((prev) => (prev === programId ? "" : programId));
+  };
+
+  const getProgramProductGroups = (program) => {
+    const productList = Array.isArray(program.products) ? program.products : [];
+    return productList
+      .map((item) => {
+        const mainProduct = item?.productId;
+        const altProduct = item?.alternativeProductId;
+        if (mainProduct && mainProduct._id) {
+          return {
+            mainProduct,
+            alternativeProduct: altProduct && altProduct._id ? altProduct : null,
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
   };
 
   const handleProductToggle = (productId) => {
@@ -107,6 +138,25 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
         products: selectedProducts
       };
 
+      if (selectedProgramId) {
+        const selectedProgram = programs.find(p => p._id === selectedProgramId);
+        const programSelections = programProductSelections[selectedProgramId] || {};
+        if (selectedProgram && Array.isArray(selectedProgram.products)) {
+          payload.planProducts = selectedProgram.products.map(item => {
+            const mainProduct = item?.productId;
+            const altProduct = item?.alternativeProductId;
+            const mainId = mainProduct?._id || null;
+            const altId = altProduct?._id || null;
+            const selectedId = programSelections[mainId] || mainId;
+            return {
+              productId: mainId,
+              altProductId: altId,
+              isMainSelected: selectedId === mainId
+            };
+          });
+        }
+      }
+
       if (existingSuggestion) {
         await updateSuggestedProgram(user._id, payload);
         toast.success("Suggestions updated successfully!");
@@ -134,6 +184,7 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
       setExistingSuggestion(null);
       setSelectedProgramId("");
       setSelectedProducts([]);
+      setProgramProductSelections({});
       if (onSave) onSave();
     } catch (err) {
       toast.error("Failed to delete suggestions");
@@ -191,17 +242,19 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
             <div className="grid grid-cols-1 gap-3">
               {filteredPrograms.map((program) => {
                 const isSelected = selectedProgramId === program._id;
+                const productGroups = getProgramProductGroups(program);
+                const programSelections = programProductSelections[program._id] || {};
                 return (
                   <div
                     key={program._id}
                     onClick={() => handleProgramSelect(program._id)}
-                    className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex items-center gap-4 ${isSelected
+                    className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex items-start gap-4 ${isSelected
                       ? "border-yellow-400 bg-yellow-50 shadow-sm"
                       : "border-gray-100 bg-white hover:border-yellow-200"
                       }`}
                   >
                     <div
-                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${isSelected ? "border-yellow-500 bg-yellow-500" : "border-gray-300 bg-white"
+                      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${isSelected ? "border-yellow-500 bg-yellow-500" : "border-gray-300 bg-white"
                         }`}
                     >
                       <div className={`w-2 h-2 rounded-full ${isSelected ? "bg-white" : "bg-transparent"}`} />
@@ -213,9 +266,75 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
                           {program.days} Days
                         </span>
                         <span className="text-[10px] bg-green-100 px-2 py-0.5 rounded text-green-700 font-bold">
-                          ₹{program.price} 
+                          ₹{program.price}
                         </span>
                       </div>
+                      {isSelected && productGroups.length > 0 && (
+                        <div className="mt-3 space-y-2" onClick={(e) => e.stopPropagation()}>
+                          {productGroups.map((group, idx) => {
+                            const mainId = group.mainProduct._id;
+                            const selectedId = programSelections[mainId] || mainId;
+                            const hasAlt = !!group.alternativeProduct;
+                            return (
+                              <div key={mainId} className="flex flex-wrap items-center gap-2">
+                                <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wide w-16 shrink-0">
+                                  Product {idx + 1}
+                                </span>
+                                <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all ${selectedId === mainId ? "border-yellow-400 bg-yellow-50 shadow-sm" : "border-gray-200 bg-white hover:border-yellow-200"}`}>
+                                  <input
+                                    type="radio"
+                                    name={`program-product-${program._id}-${mainId}`}
+                                    checked={selectedId === mainId}
+                                    onChange={() => setProgramProductSelections(prev => ({
+                                      ...prev,
+                                      [program._id]: {
+                                        ...(prev[program._id] || {}),
+                                        [mainId]: mainId
+                                      }
+                                    }))}
+                                    className="accent-yellow-500 w-3.5 h-3.5"
+                                  />
+                                  <span className={`text-[10px] font-medium ${selectedId === mainId ? "text-yellow-800" : "text-gray-600"}`}>
+                                    {group.mainProduct.name}
+                                  </span>
+                                  <span className="text-[10px] text-gray-400">
+                                    ₹{group.mainProduct.discountedPrice || group.mainProduct.basePrice}
+                                  </span>
+                                  <span className="text-[9px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
+                                    Main
+                                  </span>
+                                </label>
+                                {hasAlt && (
+                                  <label className={`flex items-center gap-2 px-3 py-2 rounded-lg border cursor-pointer transition-all ${selectedId === group.alternativeProduct._id ? "border-yellow-400 bg-yellow-50 shadow-sm" : "border-gray-200 bg-white hover:border-yellow-200"}`}>
+                                    <input
+                                      type="radio"
+                                      name={`program-product-${program._id}-${mainId}`}
+                                      checked={selectedId === group.alternativeProduct._id}
+                                      onChange={() => setProgramProductSelections(prev => ({
+                                        ...prev,
+                                        [program._id]: {
+                                          ...(prev[program._id] || {}),
+                                          [mainId]: group.alternativeProduct._id
+                                        }
+                                      }))}
+                                      className="accent-yellow-500 w-3.5 h-3.5"
+                                    />
+                                    <span className={`text-[10px] font-medium ${selectedId === group.alternativeProduct._id ? "text-yellow-800" : "text-gray-600"}`}>
+                                      {group.alternativeProduct.name}
+                                    </span>
+                                    <span className="text-[10px] text-gray-400">
+                                      ₹{group.alternativeProduct.discountedPrice || group.alternativeProduct.basePrice}
+                                    </span>
+                                    <span className="text-[9px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">
+                                      Alternative
+                                    </span>
+                                  </label>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   </div>
                 );

@@ -14,6 +14,7 @@ import {
   downloadConsultationPdfApi,
   getAllOrders,
   getRecordingsByUserId,
+  updateUserById,
 } from "@/Api/AllApi";
 import ConfirmationDialog from "@/components/ConfirmationDialog";
 import toast from "react-hot-toast";
@@ -68,6 +69,7 @@ const UserProfilePage = () => {
   const [selectedDay, setSelectedDay] = useState(null); // for popup
   const [closing, setClosing] = useState(false);
   const [planActionLoading, setPlanActionLoading] = useState(false);
+  const [afterDetoxLoading, setAfterDetoxLoading] = useState(false);
   const [videoAnswers, setVideoAnswers] = useState([]);
   const [selectedImage, setSelectedImage] = useState(null);
   const [playingVideoUrl, setPlayingVideoUrl] = useState(null);
@@ -536,6 +538,51 @@ const UserProfilePage = () => {
     });
   };
 
+  const handleMarkAfterDetox = () => {
+    const isAfterDetox = Boolean(overview.user?.afterDetox);
+    const nextValue = !isAfterDetox;
+
+    setConfirmDialog({
+      isOpen: true,
+      title: "After Detox",
+      message: nextValue
+        ? `Mark ${overview.user?.name} as After Detox? This will set afterDetox to true for this user.`
+        : `Remove After Detox status for ${overview.user?.name}? This will set afterDetox to false.`,
+      type: nextValue ? "success" : "warning",
+      onConfirm: async () => {
+        try {
+          setAfterDetoxLoading(true);
+          await updateUserById(userId, { afterDetox: nextValue });
+
+          setOverview((prev) => ({
+            ...prev,
+            user: {
+              ...prev.user,
+              afterDetox: nextValue,
+            },
+          }));
+
+          toast.success(
+            nextValue
+              ? `${overview.user?.name} marked as After Detox`
+              : `After Detox removed for ${overview.user?.name}`
+          );
+        } catch (err) {
+          toast.error(err?.response?.data?.message || "Failed to update After Detox status");
+        } finally {
+          setAfterDetoxLoading(false);
+          setConfirmDialog({
+            isOpen: false,
+            title: "",
+            message: "",
+            type: "warning",
+            onConfirm: null,
+          });
+        }
+      },
+    });
+  };
+
   const handleResumePlan = () => {
     setConfirmDialog({
       isOpen: true,
@@ -648,7 +695,20 @@ const UserProfilePage = () => {
       <div className="py-6 px-6 md:px-12">
         <div className="flex items-center justify-between mb-6 px-8">
           <Header size="3xl">User Profile</Header>
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-center flex-wrap justify-end">
+            {!loading && overview && (
+              <Button
+                onClick={handleMarkAfterDetox}
+                disabled={afterDetoxLoading}
+                variant={overview.user?.afterDetox ? "secondary" : "primary"}
+              >
+                {afterDetoxLoading
+                  ? "Updating..."
+                  : overview.user?.afterDetox
+                    ? "After Detox (Yes)"
+                    : "After Detox"}
+              </Button>
+            )}
             <Button onClick={handlePrintUserInvoice} variant="secondary">
               Generate Invoice PDF
             </Button>
@@ -735,7 +795,7 @@ const UserProfilePage = () => {
                 <div className="border-b md:border-r md:border-b-0 border-gray-200 p-6">
                   <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1">Engagements</div>
                   <div className="text-sm font-medium text-gray-800">
-                    Trial: {formatYesNo(overview.user?.bookTrial)} {overview.user?.videoPurshaceDate && `(${formatIndianDate(overview.user.videoPurshaceDate)})`} | Meet Dr: {formatYesNo(overview.user?.meetDoctor)} | Order: {formatYesNo(overview.user?.order)}
+                    Trial: {formatYesNo(overview.user?.bookTrial)} {overview.user?.videoPurshaceDate && `(${formatIndianDate(overview.user.videoPurshaceDate)})`} | Meet Dr: {formatYesNo(overview.user?.meetDoctor)} | Order: {formatYesNo(overview.user?.order)} | After Detox: {formatYesNo(overview.user?.afterDetox)}
                   </div>
                 </div>
                 <div className="border-b md:border-r md:border-b-0 border-gray-200 p-6">

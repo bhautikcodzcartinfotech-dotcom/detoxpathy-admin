@@ -425,6 +425,7 @@ export const updateUserById = async (id, payload) => {
   if (typeof payload.branchId !== "undefined") data.append("branchId", payload.branchId);
   if (typeof payload.planId !== "undefined") data.append("planId", payload.planId);
   if (typeof payload.isDeleted !== "undefined") data.append("isDeleted", String(Boolean(payload.isDeleted)));
+  if (typeof payload.afterDetox !== "undefined") data.append("afterDetox", String(Boolean(payload.afterDetox)));
   if (typeof payload.gstin !== "undefined") data.append("gstin", payload.gstin);
   if (typeof payload.planCurrentDay !== "undefined") data.append("planCurrentDay", payload.planCurrentDay);
 
@@ -1632,6 +1633,13 @@ export const createOrder = async (payload) => {
 
 export const createCustomerOrder = async (payload) => {
   const res = await axios.post(`${API_BASE}/admin/order/customer-order`, payload, {
+    headers: getAuthHeaders(),
+  });
+  return res.data.data;
+};
+
+export const getShippingCharges = async (payload) => {
+  const res = await axios.post(`${API_BASE}/admin/order/shipping-charges`, payload, {
     headers: getAuthHeaders(),
   });
   return res.data.data;

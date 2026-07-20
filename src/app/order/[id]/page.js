@@ -171,9 +171,16 @@ const OrderDetailsPage = () => {
         const qty = planItem.quantity || "1";
         const gst = `${planItem.gstPercentage || 0}%`;
         const total = `₹${Number(planItem.totalWithTax || planItem.price || 0).toLocaleString("en-IN")}`;
+        
+        let description = planItem.name || "Membership Plan";
+        const selectedAlt = planItem.selectedAlternativeProducts?.find(s => s.selected === "alternative");
+        if (selectedAlt) {
+          description += `<br/><span style="font-size: 10px; color: #ea5800; font-weight: bold;">[Alt: ${selectedAlt.alternativeProduct?.name || selectedAlt.alternativeProduct?.productId?.name || 'Alternative Product'}]</span>`;
+        }
+        
         itemsHtml += `
           <tr>
-            <td>${planItem.name || "Membership Plan"}</td>
+            <td>${description}</td>
             <td class="text-center">${hsn}</td>
             <td class="text-right">${rate}</td>
             <td class="text-center">${qty}</td>
@@ -440,10 +447,15 @@ const OrderDetailsPage = () => {
     let itemsCount = 0;
     if (order.plans && order.plans.length > 0) {
       order.plans.forEach(p => {
+        let planName = p.name || 'Membership Plan';
+        const selectedAlt = p.selectedAlternativeProducts?.find(s => s.selected === "alternative");
+        if (selectedAlt) {
+          planName += ` [Alt: ${selectedAlt.alternativeProduct?.name || selectedAlt.alternativeProduct?.productId?.name || 'Alternative'}]`;
+        }
         itemsHtml += `
           <tr>
             <td style="text-align: center; font-weight: 800;">${p.quantity || 1}</td>
-            <td>${p.name || 'Membership Plan'}</td>
+            <td>${planName}</td>
           </tr>
         `;
         itemsCount++;
@@ -822,19 +834,33 @@ const OrderDetailsPage = () => {
               </h2>
             </div>
             <div className="p-6 space-y-4">
-              {order.plans?.map((planItem, idx) => (
-                <div key={`plan-${idx}`} className="flex items-center gap-4 p-4 bg-purple-50/50 rounded-xl border border-purple-100">
-                  <div className="w-16 h-16 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600 font-bold text-xs">PLAN</div>
-                  <div className="flex-1">
-                    <h3 className="font-bold text-gray-800">{planItem.name}</h3>
-                    <p className="text-xs text-gray-500 line-clamp-1">{planItem.description}</p>
+              {order.plans?.map((planItem, idx) => {
+                const selectedAlt = planItem.selectedAlternativeProducts?.find(s => s.selected === "alternative");
+                return (
+                  <div key={`plan-${idx}`} className="flex items-center gap-4 p-4 bg-purple-50/50 rounded-xl border border-purple-100">
+                    <div className="w-16 h-16 bg-purple-100 rounded-lg flex items-center justify-center text-purple-600 font-bold text-xs">PLAN</div>
+                    <div className="flex-1">
+                      <h3 className="font-bold text-gray-800">{planItem.name}</h3>
+                      <p className="text-xs text-gray-500 line-clamp-1">{planItem.description}</p>
+                      {selectedAlt && (
+                        <div className="mt-1 flex items-center gap-2">
+                          <span className="text-[9px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">Alt</span>
+                          <span className="text-[10px] font-medium text-gray-600">
+                            Selected: {selectedAlt.alternativeProduct?.name || selectedAlt.alternativeProduct?.productId?.name}
+                          </span>
+                          <span className="text-[10px] text-gray-400">
+                            (instead of {selectedAlt.mainProduct?.name || selectedAlt.mainProduct?.productId?.name})
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-teal-600">{order.currency || "₹"}{planItem.price}</p>
+                      <p className="text-[10px] text-gray-400">Qty: 1</p>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-bold text-teal-600">{order.currency || "₹"}{planItem.price}</p>
-                    <p className="text-[10px] text-gray-400">Qty: 1</p>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
               {/* Fallback for legacy single plan orders */}
               {order.plan && !order.plans?.length && (
                 <div className="flex items-center gap-4 p-4 bg-purple-50/50 rounded-xl border border-purple-100">

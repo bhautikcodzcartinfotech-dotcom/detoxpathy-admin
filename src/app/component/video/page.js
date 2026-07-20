@@ -169,6 +169,7 @@ const VideoPage = () => {
             { label: "Agora Session", value: "10" },
             { label: "book appointment video", value: "11" },
             { label: "rating screen video", value: "12" },
+            { label: "After Detox", value: "13" },
           ]}
           filterValue={typeFilter}
           filterLabel="Type"

@@ -66,9 +66,13 @@ const PlanForm = ({
       const initialProducts = initialData.products
         ? initialData.products.map((p) => {
           const pId = p.productId && typeof p.productId === "object" ? p.productId._id : p.productId;
+          const alternativeProductId = p.alternativeProductId && typeof p.alternativeProductId === "object"
+            ? p.alternativeProductId._id
+            : p.alternativeProductId;
           return {
             productId: pId,
             quantity: p.quantity || 1,
+            ...(alternativeProductId ? { alternativeProductId } : {}),
           };
         }).filter((p) => p.productId)
         : [];
@@ -381,7 +385,9 @@ const PlanForm = ({
           placeholder="-- Choose Product to Add --"
           showSearch={true}
           options={allProducts
-            .filter((p) => !form.products?.some((sp) => sp.productId === p._id))
+            .filter((p) => !form.products?.some(
+              (sp) => sp.productId === p._id || sp.alternativeProductId === p._id
+            ))
             .map((p) => ({
               value: p._id,
               label: p.name,
@@ -404,6 +410,16 @@ const PlanForm = ({
               const product = allProducts.find((p) => p._id === selectedProd.productId);
               if (!product) return null;
 
+              const alternativeOptions = allProducts
+                .filter((p) => {
+                  const isMainProduct = form.products.some((sp) => sp.productId === p._id);
+                  const isAlternativeForAnotherProduct = form.products.some(
+                    (sp) => sp.alternativeProductId === p._id && sp.productId !== selectedProd.productId
+                  );
+                  return !isMainProduct && !isAlternativeForAnotherProduct;
+                })
+                .map((p) => ({ value: p._id, label: p.name }));
+
               const productImg = product.images && product.images.length > 0 ? product.images[0] : null;
               const productImgUrl = productImg
                 ? (productImg.startsWith("http") ? productImg : `${API_BASE}${productImg}`)
@@ -412,8 +428,9 @@ const PlanForm = ({
               return (
                 <div
                   key={selectedProd.productId}
-                  className="flex items-center justify-between p-3 border border-yellow-200 bg-yellow-50/30 rounded-xl hover:bg-yellow-50/50 transition-all duration-200 gap-4 w-full"
+                  className="p-3 border border-yellow-200 bg-yellow-50/30 rounded-xl hover:bg-yellow-50/50 transition-all duration-200 w-full"
                 >
+                  <div className="flex items-center justify-between gap-4">
                   {/* Product Info (Thumbnail & Title) */}
                   <div className="flex items-center gap-3 min-w-0 flex-1">
                     {productImgUrl ? (
@@ -492,6 +509,47 @@ const PlanForm = ({
                     >
                       &times;
                     </button>
+                  </div>
+                  </div>
+
+                  <div className="mt-3 pt-3 border-t border-yellow-200/70 flex items-end gap-2">
+                    <div className="flex-1 min-w-0">
+                      <Dropdown
+                        label="Alternative product (optional)"
+                        placeholder="-- Choose Alternative Product --"
+                        showSearch={true}
+                        options={alternativeOptions}
+                        value={selectedProd.alternativeProductId || ""}
+                        onChange={(alternativeProductId) => {
+                          setForm((f) => ({
+                            ...f,
+                            products: (f.products || []).map((p) =>
+                              p.productId === selectedProd.productId
+                                ? { ...p, alternativeProductId }
+                                : p
+                            ),
+                          }));
+                        }}
+                      />
+                    </div>
+                    {selectedProd.alternativeProductId && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setForm((f) => ({
+                            ...f,
+                            products: (f.products || []).map((p) => {
+                              if (p.productId !== selectedProd.productId) return p;
+                              const { alternativeProductId, ...productWithoutAlternative } = p;
+                              return productWithoutAlternative;
+                            }),
+                          }));
+                        }}
+                        className="mb-0.5 text-xs font-semibold text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg px-3 py-3 transition"
+                      >
+                        Remove
+                      </button>
+                    )}
                   </div>
                 </div>
               );
