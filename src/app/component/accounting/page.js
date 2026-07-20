@@ -35,7 +35,7 @@ const AccountingPage = () => {
     try {
       setLoading(true);
       setData(null); // Clear previous data
-      const endpoint = tab === 'ledger' ? 'ledger' : tab === 'trial' ? 'trial-balance' : tab === 'pnl' ? 'pnl' : 'balance-sheet';
+      const endpoint = tab === 'ledger' ? 'ledger' : tab === 'trial' ? 'book-trial-payments' : tab === 'pnl' ? 'pnl' : 'balance-sheet';
       let url = `${API_BASE}/admin/accounting/${endpoint}`;
       if (tab === 'ledger' && selectedAccountId) {
         url += `?accountId=${selectedAccountId}`;
@@ -50,7 +50,9 @@ const AccountingPage = () => {
   };
 
   const downloadReport = () => {
-    if (!data || (Array.isArray(data) && data.length === 0)) {
+    const trialPayments = data?.payments;
+    const hasTrialData = activeTab === 'trial' ? (trialPayments && trialPayments.length > 0) : true;
+    if (!data || (activeTab !== 'trial' && Array.isArray(data) && data.length === 0) || (activeTab === 'trial' && !hasTrialData)) {
       toast.error("No data to export");
       return;
     }
@@ -139,35 +141,50 @@ const AccountingPage = () => {
       });
 
     } else if (activeTab === 'trial') {
+      const payments = data.payments || [];
       const rows = [
-        { height: 25, cells: [{ value: "Trial Balance Report", styleId: "Title", mergeAcross: 2 }] },
-        { height: 18, cells: [{ value: `Generated on ${todayStr}`, styleId: "SubTitle", mergeAcross: 2 }] },
+        { height: 25, cells: [{ value: "Trial Balance — Book Trial Payments", styleId: "Title", mergeAcross: 5 }] },
+        { height: 18, cells: [{ value: `Generated on ${todayStr}`, styleId: "SubTitle", mergeAcross: 5 }] },
         { height: 10, cells: [] },
         {
           height: 25,
           cells: [
-            { value: "Account Name", styleId: "HeaderTrial" },
-            { value: "Account Type", styleId: "HeaderTrial" },
-            { value: "Balance (INR)", styleId: "HeaderTrial" }
+            { value: "Date", styleId: "HeaderTrial" },
+            { value: "User", styleId: "HeaderTrial" },
+            { value: "Mobile", styleId: "HeaderTrial" },
+            { value: "Coupon", styleId: "HeaderTrial" },
+            { value: "Payment ID", styleId: "HeaderTrial" },
+            { value: "Amount (INR)", styleId: "HeaderTrial" }
           ]
         }
       ];
 
-      data.forEach(acc => {
-        const balance = acc.balance || 0;
+      payments.forEach((p) => {
         rows.push({
           height: 20,
           cells: [
-            { value: acc.name, styleId: "CellNormal" },
-            { value: acc.type ? String(acc.type).toUpperCase() : "N/A", styleId: "CellCenter" },
-            { value: balance, type: "Number", styleId: "CellRight" }
+            { value: p.date ? new Date(p.date).toLocaleDateString() : "", styleId: "CellCenter" },
+            { value: p.userName || "—", styleId: "CellNormal" },
+            { value: p.mobile || "—", styleId: "CellNormal" },
+            { value: p.couponCode || "—", styleId: "CellCenter" },
+            { value: p.razorpayPaymentId || p.razorpayOrderId || "—", styleId: "CellNormal" },
+            { value: p.amount || 0, type: "Number", styleId: "CellRight" }
           ]
         });
       });
 
+      rows.push({
+        height: 22,
+        cells: [
+          { value: "Total", styleId: "CellTotal", mergeAcross: 4 },
+          { value: "", styleId: "CellTotal" },
+          { value: data.totalAmount || 0, type: "Number", styleId: "CellTotalRight" }
+        ]
+      });
+
       sheets.push({
         name: "Trial Balance",
-        columns: [{ width: 250 }, { width: 130 }, { width: 130 }],
+        columns: [{ width: 90 }, { width: 180 }, { width: 120 }, { width: 80 }, { width: 160 }, { width: 110 }],
         rows
       });
 
@@ -438,27 +455,76 @@ const AccountingPage = () => {
                 </div>
               )}
 
-              {activeTab === 'trial' && Array.isArray(data) && (
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-gray-50 uppercase text-xs text-gray-500 font-bold">
-                    <tr>
-                      <th className="p-3">Account Name</th>
-                      <th className="p-3">Type</th>
-                      <th className="p-3 text-right">Balance</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y">
-                    {data?.map?.((acc, i) => (
-                      <tr key={i}>
-                        <td className="p-3 font-medium">{acc.name}</td>
-                        <td className="p-3 text-gray-500 uppercase text-[10px]">{acc.type}</td>
-                        <td className={`p-3 text-right font-bold ${(acc.balance || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                          Rs. {Math.abs(acc.balance || 0).toLocaleString()}
-                        </td>
+              {activeTab === 'trial' && data?.payments && (
+                <div className="space-y-4">
+                  <div className="flex flex-wrap gap-6 text-sm text-gray-600">
+                    <span>
+                      <strong className="text-gray-800">{data.count ?? data.payments.length}</strong> paid trial payment(s)
+                    </span>
+                    <span>
+                      Total: <strong className="text-green-700">Rs. {(data.totalAmount || 0).toLocaleString()}</strong>
+                    </span>
+                  </div>
+                  <table className="w-full text-left text-sm">
+                    <thead className="bg-gray-50 uppercase text-xs text-gray-500 font-bold">
+                      <tr>
+                        <th className="p-3">Date</th>
+                        <th className="p-3">User</th>
+                        <th className="p-3">Mobile</th>
+                        <th className="p-3">Coupon</th>
+                        <th className="p-3">Razorpay payment</th>
+                        <th className="p-3 text-right">Amount</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y">
+                      {data.payments.length === 0 ? (
+                        <tr>
+                          <td colSpan={6} className="p-8 text-center text-gray-400">
+                            No paid book trial payments found
+                          </td>
+                        </tr>
+                      ) : (
+                        data.payments.map((p) => (
+                          <tr key={p._id}>
+                            <td className="p-3 whitespace-nowrap">
+                              {p.date ? new Date(p.date).toLocaleDateString() : "—"}
+                            </td>
+                            <td className="p-3 font-medium">
+                              {p.userName || "—"}
+                              {p.patientId ? (
+                                <span className="block text-[10px] text-gray-400 font-normal">{p.patientId}</span>
+                              ) : null}
+                            </td>
+                            <td className="p-3 text-gray-600">{p.mobile || "—"}</td>
+                            <td className="p-3 text-gray-600">{p.couponCode || "—"}</td>
+                            <td className="p-3 text-xs text-gray-500 font-mono truncate max-w-[180px]" title={p.razorpayPaymentId || p.razorpayOrderId}>
+                              {p.razorpayPaymentId || p.razorpayOrderId || "—"}
+                            </td>
+                            <td className="p-3 text-right font-bold text-green-600">
+                              Rs. {(p.amount || 0).toLocaleString()}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                    {data.payments.length > 0 && (
+                      <tfoot className="bg-gray-50 font-bold">
+                        <tr>
+                          <td colSpan={5} className="p-3 text-right uppercase text-xs text-gray-500">
+                            Total
+                          </td>
+                          <td className="p-3 text-right text-green-700">
+                            Rs. {(data.totalAmount || 0).toLocaleString()}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    )}
+                  </table>
+                </div>
+              )}
+
+              {activeTab === 'trial' && !data?.payments && (
+                <div className="flex items-center justify-center h-64 text-gray-400">No data available</div>
               )}
 
               {activeTab === 'pnl' && data.revenues && (
