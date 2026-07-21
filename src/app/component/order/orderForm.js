@@ -225,7 +225,12 @@ const OrderForm = ({ onCancel, onSuccess, mode = "user", customers = [], onCusto
     if (!suggestion) return;
 
     if (suggestion.plans) {
-      const planId = suggestion.plans?.planId?._id || suggestion.plans?.planId || "";
+      const planId =
+        suggestion.plans?._id ||
+        (typeof suggestion.plans === "string" ? suggestion.plans : "") ||
+        suggestion.plans?.planId?._id ||
+        suggestion.plans?.planId ||
+        "";
       const plan = plans.find(p => p._id === planId) || (typeof suggestion.plans === "object" ? suggestion.plans : null);
       if (plan?._id) {
         setSelectedPlans([{
@@ -236,20 +241,28 @@ const OrderForm = ({ onCancel, onSuccess, mode = "user", customers = [], onCusto
           weight: Number(plan.weight) || 0
         }]);
 
-        if (suggestion.plans?.products && Array.isArray(suggestion.plans.products)) {
-          const selections = {};
+        const selections = {};
+        if (suggestion.planProducts && Array.isArray(suggestion.planProducts)) {
+          suggestion.planProducts.forEach((item) => {
+            const mainId = item?.productId?._id || item?.productId;
+            const altId = item?.altProductId?._id || item?.altProductId;
+            if (mainId && altId) {
+              selections[mainId] = altId;
+            }
+          });
+        } else if (suggestion.plans?.products && Array.isArray(suggestion.plans.products)) {
           suggestion.plans.products.forEach((item) => {
-            const mainId = item?.productId?._id;
+            const mainId = item?.productId?._id || item?.productId;
             if (mainId) {
-              if (item?.isMainSelected === false && item?.altProductId?._id) {
-                selections[mainId] = item.altProductId._id;
+              if (item?.isMainSelected === false && (item?.altProductId?._id || item?.altProductId)) {
+                selections[mainId] = item.altProductId._id || item.altProductId;
               } else {
                 selections[mainId] = mainId;
               }
             }
           });
-          setPlanProductSelections(prev => ({ ...prev, [planId]: selections }));
         }
+        setPlanProductSelections(prev => ({ ...prev, [planId]: selections }));
 
         setHasSuggestedPlan(true);
       }
@@ -372,7 +385,7 @@ const OrderForm = ({ onCancel, onSuccess, mode = "user", customers = [], onCusto
         ...(mode === "customer" ? { customerId: selectedUser } : { userId: selectedUser }),
         products: selectedProducts.map(({ productId, quantity }) => ({ productId, quantity })),
         plans: selectedPlans.map(p => p.planId),
-        ...(mode === "customer" ? { planSelections } : {}),
+        planSelections,
         ...(mode === "customer" ? { type: Number(orderType) } : { type: 2 }),
         ...(mode === "customer" ? {
           shippingAddress: {

@@ -136,6 +136,7 @@ const AppointmentPage = () => {
   const [allProducts, setAllProducts] = useState([]);
   const [selectedPlanId, setSelectedPlanId] = useState("");
   const [selectedProducts, setSelectedProducts] = useState([]);
+  const [programProductSelections, setProgramProductSelections] = useState({});
   const [suggesting, setSuggesting] = useState(false);
   const [selectedProgressDay, setSelectedProgressDay] = useState(null);
   const [planSearchTerm, setPlanSearchTerm] = useState("");
@@ -1321,27 +1322,45 @@ const AppointmentPage = () => {
     setShowProductPicker(false);
     setPlanSearchTerm("");
     setProductSearchTerm("");
+    setProgramProductSelections({});
   };
 
   const applySuggestionFromResponse = (suggestion) => {
     setActiveSuggestion(suggestion || null);
     if (suggestion) {
-      if (suggestion.plans) {
-        setSelectedPlanId(suggestion.plans?._id || suggestion.plans);
+      const planId = suggestion.plans?._id || suggestion.plans;
+      if (planId) {
+        setSelectedPlanId(planId);
+        const selections = {};
+        if (suggestion.planProducts && Array.isArray(suggestion.planProducts)) {
+          suggestion.planProducts.forEach((item) => {
+            const mainId = item?.productId?._id || item?.productId;
+            const altId = item?.altProductId?._id || item?.altProductId;
+            if (mainId && altId) {
+              selections[mainId] = altId;
+            }
+          });
+        }
+        setProgramProductSelections((prev) => ({ ...prev, [planId]: selections }));
       } else {
         setSelectedPlanId("");
+        setProgramProductSelections({});
       }
+
       if (suggestion.products && Array.isArray(suggestion.products)) {
-        setSelectedProducts(suggestion.products.map((p) => ({
-          productId: p?._id || p?.productId || p,
-          quantity: p?.quantity || 1
-        })));
+        setSelectedProducts(
+          suggestion.products.map((p) => ({
+            productId: p?._id || p?.productId || p,
+            quantity: p?.quantity || 1,
+          }))
+        );
       } else {
         setSelectedProducts([]);
       }
     } else {
       setSelectedPlanId("");
       setSelectedProducts([]);
+      setProgramProductSelections({});
     }
   };
 
@@ -1357,6 +1376,31 @@ const AppointmentPage = () => {
       console.error("Error fetching suggestion:", e);
       resetSuggestionState();
     }
+  };
+
+  const getProgramProductGroups = (program) => {
+    if (!program || !Array.isArray(program.products)) return [];
+    return program.products
+      .map((item) => {
+        let mainProduct = item?.productId;
+        let altProduct = item?.alternativeProductId;
+
+        if (typeof mainProduct === "string") {
+          mainProduct = allProducts.find((p) => p._id === mainProduct) || { _id: mainProduct, name: "Product" };
+        }
+        if (typeof altProduct === "string") {
+          altProduct = allProducts.find((p) => p._id === altProduct) || { _id: altProduct, name: "Alternative Product" };
+        }
+
+        if (mainProduct && (mainProduct._id || mainProduct.name)) {
+          return {
+            mainProduct,
+            alternativeProduct: altProduct && (altProduct._id || altProduct.name) ? altProduct : null,
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
   };
 
   const handleSuggestProgram = async () => {
@@ -1375,23 +1419,50 @@ const AppointmentPage = () => {
 
     try {
       setSuggesting(true);
+
+      let planProductsPayload = [];
+      if (selectedPlanId) {
+        const selectedPlan = allPlans.find((p) => p._id === selectedPlanId);
+        const programSelections = programProductSelections[selectedPlanId] || {};
+        if (selectedPlan && Array.isArray(selectedPlan.products)) {
+          planProductsPayload = selectedPlan.products
+            .map((item) => {
+              const mainProduct = item?.productId;
+              const altProduct = item?.alternativeProductId;
+              const mainId = mainProduct?._id || (typeof mainProduct === "string" ? mainProduct : null);
+              const altId = altProduct?._id || (typeof altProduct === "string" ? altProduct : null);
+              const selectedId = programSelections[mainId] || mainId;
+              return {
+                productId: mainId,
+                altProductId: altId,
+                isMainSelected: selectedId === mainId,
+              };
+            })
+            .filter((p) => p.productId);
+        }
+      }
+
       await suggestProgram({
         userId: targetUserId,
         planId: selectedPlanId,
         products: selectedProducts,
+        planProducts: planProductsPayload,
       });
       toast.success("Suggested successfully");
 
       // Update local suggestion state
-      const suggestedPlan = allPlans.find(p => p._id === selectedPlanId);
-      const suggestedProducts = selectedProducts.map(sp => {
-        const prod = allProducts.find(p => p._id === sp.productId);
-        return prod ? { ...prod, quantity: sp.quantity } : null;
-      }).filter(Boolean);
+      const suggestedPlan = allPlans.find((p) => p._id === selectedPlanId);
+      const suggestedProducts = selectedProducts
+        .map((sp) => {
+          const prod = allProducts.find((p) => p._id === sp.productId);
+          return prod ? { ...prod, quantity: sp.quantity } : null;
+        })
+        .filter(Boolean);
       setActiveSuggestion({
         plans: suggestedPlan,
+        planProducts: planProductsPayload,
         products: suggestedProducts,
-        suggestedAt: new Date().toISOString()
+        suggestedAt: new Date().toISOString(),
       });
     } catch (error) {
       console.error(error);
@@ -1789,169 +1860,270 @@ const AppointmentPage = () => {
 
   const { min: bookingMinDate, max: bookingMaxDate } = getBookingBounds();
 
-  const renderPrescriptionSuggestion = () => (
-    <div className="flex flex-col gap-2 w-full">
-      <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 px-1">Prescription Suggestion</label>
-      <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
-        <div className="relative flex-1 w-full">
-          <div
-            onClick={() => { setShowPlanPicker(!showPlanPicker); setShowProductPicker(false); }}
-            className={`flex items-center justify-between gap-3 bg-slate-50 border p-3 rounded-2xl w-full cursor-pointer transition-all hover:bg-slate-100 ${selectedPlanId ? 'border-teal-200 bg-teal-50/20' : 'border-slate-200 shadow-sm'}`}
-          >
-            <div className="flex items-center gap-3 px-1 w-full min-w-0">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${selectedPlanId ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20' : 'bg-white border border-slate-100 text-slate-400'}`}>
-                <MdOutlineCategory size={20} />
-              </div>
-              <div className="flex flex-col flex-1 truncate">
-                <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Program</span>
-                <span className={`text-sm font-black truncate ${selectedPlanId ? 'text-teal-900' : 'text-slate-500'}`}>
-                  {selectedPlanId ? allPlans.find(p => p._id === selectedPlanId)?.name : 'Select Plan...'}
-                </span>
+  const renderPrescriptionSuggestion = () => {
+    const selectedPlan = allPlans.find((p) => p._id === selectedPlanId);
+    const productGroups = getProgramProductGroups(selectedPlan);
+    const currentSelections = programProductSelections[selectedPlanId] || {};
+
+    return (
+      <div className="flex flex-col gap-3 w-full">
+        <label className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 px-1">Prescription Suggestion</label>
+        <div className="flex flex-col sm:flex-row items-center gap-3 w-full">
+          <div className="relative flex-1 w-full">
+            <div
+              onClick={() => { setShowPlanPicker(!showPlanPicker); setShowProductPicker(false); }}
+              className={`flex items-center justify-between gap-3 bg-slate-50 border p-3 rounded-2xl w-full cursor-pointer transition-all hover:bg-slate-100 ${selectedPlanId ? 'border-teal-200 bg-teal-50/20' : 'border-slate-200 shadow-sm'}`}
+            >
+              <div className="flex items-center gap-3 px-1 w-full min-w-0">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${selectedPlanId ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20' : 'bg-white border border-slate-100 text-slate-400'}`}>
+                  <MdOutlineCategory size={20} />
+                </div>
+                <div className="flex flex-col flex-1 truncate">
+                  <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Program</span>
+                  <span className={`text-sm font-black truncate ${selectedPlanId ? 'text-teal-900' : 'text-slate-500'}`}>
+                    {selectedPlanId ? selectedPlan?.name : 'Select Plan...'}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
 
-          <AnimatePresence>
-            {showPlanPicker && (
-              <>
-                <div className="fixed inset-0 z-[100]" onClick={() => setShowPlanPicker(false)} />
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                  className="absolute bottom-full left-0 right-0 mb-6 z-[101] max-h-[300px] overflow-y-auto bg-white rounded-[1rem] border border-slate-100 shadow-[0_30px_90px_rgba(0,0,0,0.15)] p-2 custom-scrollbar"
-                >
-                  <div className="p-2 sticky top-0 bg-white border-b border-slate-50 mb-1">
-                    <input
-                      type="text" placeholder="Search plans..." value={planSearchTerm} onChange={(e) => setPlanSearchTerm(e.target.value)}
-                      className="w-full p-2 bg-slate-50 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500/10"
-                    />
-                  </div>
-                  {allPlans.filter(p => p.name.toLowerCase().includes(planSearchTerm.toLowerCase())).map(plan => (
-                    <div
-                      key={plan._id} onClick={() => { setSelectedPlanId(plan._id); setShowPlanPicker(false); }}
-                      className={`p-3 rounded-xl cursor-pointer transition-all flex items-center justify-between mb-1 ${selectedPlanId === plan._id ? 'bg-teal-600 text-white' : 'hover:bg-slate-50 text-slate-700'}`}
-                    >
-                      <div className="flex flex-col">
-                        <span className="text-xs font-black">{plan.name}</span>
-                        <span className={`text-[9px] font-bold tracking-widest uppercase ${selectedPlanId === plan._id ? 'text-teal-100' : 'text-teal-600'}`}>{currency}{plan.price} • {plan.days} Days</span>
-                      </div>
-                      {selectedPlanId === plan._id && <CheckCircle size={14} />}
+            <AnimatePresence>
+              {showPlanPicker && (
+                <>
+                  <div className="fixed inset-0 z-[100]" onClick={() => setShowPlanPicker(false)} />
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                    className="absolute bottom-full left-0 right-0 mb-6 z-[101] max-h-[300px] overflow-y-auto bg-white rounded-[1rem] border border-slate-100 shadow-[0_30px_90px_rgba(0,0,0,0.15)] p-2 custom-scrollbar"
+                  >
+                    <div className="p-2 sticky top-0 bg-white border-b border-slate-50 mb-1">
+                      <input
+                        type="text" placeholder="Search plans..." value={planSearchTerm} onChange={(e) => setPlanSearchTerm(e.target.value)}
+                        className="w-full p-2 bg-slate-50 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500/10"
+                      />
                     </div>
-                  ))}
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
-        </div>
-
-        <div className="relative flex-1 w-full">
-          <div
-            onClick={() => { setShowProductPicker(!showProductPicker); setShowPlanPicker(false); }}
-            className={`flex items-center justify-between gap-3 bg-slate-50 border p-3 rounded-2xl w-full cursor-pointer transition-all hover:bg-slate-100 ${selectedProducts.length > 0 ? 'border-teal-200 bg-teal-50/20' : 'border-slate-200 shadow-sm'}`}
-          >
-            <div className="flex items-center gap-3 px-1 w-full min-w-0">
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${selectedProducts.length > 0 ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20' : 'bg-white border border-slate-100 text-slate-400'}`}>
-                <LayoutGrid size={20} />
-              </div>
-              <div className="flex flex-col flex-1 truncate">
-                <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Products</span>
-                <span className={`text-sm font-black truncate ${selectedProducts.length > 0 ? 'text-teal-900' : 'text-slate-500'}`}>
-                  {selectedProducts.length > 0 ? `${selectedProducts.length} Selected (${selectedProducts.reduce((s, p) => s + p.quantity, 0)} items)` : 'Select Products...'}
-                </span>
-              </div>
-            </div>
+                    {allPlans.filter(p => p.name.toLowerCase().includes(planSearchTerm.toLowerCase())).map(plan => (
+                      <div
+                        key={plan._id} onClick={() => { setSelectedPlanId(plan._id); setShowPlanPicker(false); }}
+                        className={`p-3 rounded-xl cursor-pointer transition-all flex items-center justify-between mb-1 ${selectedPlanId === plan._id ? 'bg-teal-600 text-white' : 'hover:bg-slate-50 text-slate-700'}`}
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-xs font-black">{plan.name}</span>
+                          <span className={`text-[9px] font-bold tracking-widest uppercase ${selectedPlanId === plan._id ? 'text-teal-100' : 'text-teal-600'}`}>{currency}{plan.price} • {plan.days} Days</span>
+                        </div>
+                        {selectedPlanId === plan._id && <CheckCircle size={14} />}
+                      </div>
+                    ))}
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
           </div>
 
-          <AnimatePresence>
-            {showProductPicker && (
-              <>
-                <div className="fixed inset-0 z-[100]" onClick={() => setShowProductPicker(false)} />
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                  className="absolute bottom-full left-0 right-0 mb-6 z-[101] max-h-[350px] overflow-y-auto bg-white rounded-[1rem] border border-slate-100 shadow-[0_30px_90px_rgba(0,0,0,0.15)] p-2 custom-scrollbar"
-                >
-                  <div className="p-2 sticky top-0 bg-white border-b border-slate-50 mb-1 z-10">
-                    <input
-                      type="text" placeholder="Search products..." value={productSearchTerm} onChange={(e) => setProductSearchTerm(e.target.value)}
-                      className="w-full p-2 bg-slate-50 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500/10"
-                    />
-                  </div>
-                  {allProducts.filter(p => p.name.toLowerCase().includes(productSearchTerm.toLowerCase())).map(product => {
-                    const selectedItem = selectedProducts.find(sp => sp.productId === product._id);
-                    const isSelected = !!selectedItem;
-                    return (
-                      <div
-                        key={product._id}
-                        className={`p-3 rounded-xl transition-all flex items-center justify-between mb-1 ${isSelected ? 'bg-teal-600 text-white' : 'hover:bg-slate-50 text-slate-700'}`}
-                      >
+          <div className="relative flex-1 w-full">
+            <div
+              onClick={() => { setShowProductPicker(!showProductPicker); setShowPlanPicker(false); }}
+              className={`flex items-center justify-between gap-3 bg-slate-50 border p-3 rounded-2xl w-full cursor-pointer transition-all hover:bg-slate-100 ${selectedProducts.length > 0 ? 'border-teal-200 bg-teal-50/20' : 'border-slate-200 shadow-sm'}`}
+            >
+              <div className="flex items-center gap-3 px-1 w-full min-w-0">
+                <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${selectedProducts.length > 0 ? 'bg-teal-500 text-white shadow-lg shadow-teal-500/20' : 'bg-white border border-slate-100 text-slate-400'}`}>
+                  <LayoutGrid size={20} />
+                </div>
+                <div className="flex flex-col flex-1 truncate">
+                  <span className="text-[8px] font-black uppercase text-slate-400 tracking-widest">Products</span>
+                  <span className={`text-sm font-black truncate ${selectedProducts.length > 0 ? 'text-teal-900' : 'text-slate-500'}`}>
+                    {selectedProducts.length > 0 ? `${selectedProducts.length} Selected (${selectedProducts.reduce((s, p) => s + p.quantity, 0)} items)` : 'Select Products...'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <AnimatePresence>
+              {showProductPicker && (
+                <>
+                  <div className="fixed inset-0 z-[100]" onClick={() => setShowProductPicker(false)} />
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                    className="absolute bottom-full left-0 right-0 mb-6 z-[101] max-h-[350px] overflow-y-auto bg-white rounded-[1rem] border border-slate-100 shadow-[0_30px_90px_rgba(0,0,0,0.15)] p-2 custom-scrollbar"
+                  >
+                    <div className="p-2 sticky top-0 bg-white border-b border-slate-50 mb-1 z-10">
+                      <input
+                        type="text" placeholder="Search products..." value={productSearchTerm} onChange={(e) => setProductSearchTerm(e.target.value)}
+                        className="w-full p-2 bg-slate-50 rounded-lg text-xs font-bold outline-none focus:ring-2 focus:ring-teal-500/10"
+                      />
+                    </div>
+                    {allProducts.filter(p => p.name.toLowerCase().includes(productSearchTerm.toLowerCase())).map(product => {
+                      const selectedItem = selectedProducts.find(sp => sp.productId === product._id);
+                      const isSelected = !!selectedItem;
+                      return (
                         <div
-                          className="flex items-center gap-3 cursor-pointer flex-1 min-w-0"
-                          onClick={() => {
-                            setSelectedProducts(prev =>
-                              isSelected
-                                ? prev.filter(sp => sp.productId !== product._id)
-                                : [...prev, { productId: product._id, quantity: 1 }]
-                            );
-                          }}
+                          key={product._id}
+                          className={`p-3 rounded-xl transition-all flex items-center justify-between mb-1 ${isSelected ? 'bg-teal-600 text-white' : 'hover:bg-slate-50 text-slate-700'}`}
                         >
-                          <div className="w-8 h-8 rounded-lg bg-white border border-slate-100 overflow-hidden shrink-0">
-                            <img src={`${API_HOST}/${product.image}`} alt="" className="w-full h-full object-cover" onError={(e) => e.target.src = "/image/placeholder.avif"} />
+                          <div
+                            className="flex items-center gap-3 cursor-pointer flex-1 min-w-0"
+                            onClick={() => {
+                              setSelectedProducts(prev =>
+                                isSelected
+                                  ? prev.filter(sp => sp.productId !== product._id)
+                                  : [...prev, { productId: product._id, quantity: 1 }]
+                              );
+                            }}
+                          >
+                            <div className="w-8 h-8 rounded-lg bg-white border border-slate-100 overflow-hidden shrink-0">
+                              <img src={`${API_HOST}/${product.image}`} alt="" className="w-full h-full object-cover" onError={(e) => e.target.src = "/image/placeholder.avif"} />
+                            </div>
+                            <span className="text-xs font-black truncate">{product.name}</span>
                           </div>
-                          <span className="text-xs font-black truncate">{product.name}</span>
+                          {isSelected && (
+                            <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedProducts(prev =>
+                                    prev.map(sp =>
+                                      sp.productId === product._id
+                                        ? { ...sp, quantity: Math.max(1, sp.quantity - 1) }
+                                        : sp
+                                    )
+                                  );
+                                }}
+                                className="w-6 h-6 rounded-md bg-white/20 hover:bg-white/30 flex items-center justify-center text-white font-black text-sm transition-all active:scale-90"
+                              >
+                                −
+                              </button>
+                              <span className="w-6 text-center text-xs font-black">{selectedItem.quantity}</span>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedProducts(prev =>
+                                    prev.map(sp =>
+                                      sp.productId === product._id
+                                        ? { ...sp, quantity: sp.quantity + 1 }
+                                        : sp
+                                    )
+                                  );
+                                }}
+                                className="w-6 h-6 rounded-md bg-white/20 hover:bg-white/30 flex items-center justify-center text-white font-black text-sm transition-all active:scale-90"
+                              >
+                                +
+                              </button>
+                            </div>
+                          )}
                         </div>
-                        {isSelected && (
-                          <div className="flex items-center gap-1.5 shrink-0 ml-2">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedProducts(prev =>
-                                  prev.map(sp =>
-                                    sp.productId === product._id
-                                      ? { ...sp, quantity: Math.max(1, sp.quantity - 1) }
-                                      : sp
-                                  )
-                                );
-                              }}
-                              className="w-6 h-6 rounded-md bg-white/20 hover:bg-white/30 flex items-center justify-center text-white font-black text-sm transition-all active:scale-90"
-                            >
-                              −
-                            </button>
-                            <span className="w-6 text-center text-xs font-black">{selectedItem.quantity}</span>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setSelectedProducts(prev =>
-                                  prev.map(sp =>
-                                    sp.productId === product._id
-                                      ? { ...sp, quantity: sp.quantity + 1 }
-                                      : sp
-                                  )
-                                );
-                              }}
-                              className="w-6 h-6 rounded-md bg-white/20 hover:bg-white/30 flex items-center justify-center text-white font-black text-sm transition-all active:scale-90"
-                            >
-                              +
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </motion.div>
-              </>
-            )}
-          </AnimatePresence>
+                      );
+                    })}
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <button
+            onClick={(e) => { e.stopPropagation(); handleSuggestProgram(); }}
+            disabled={suggesting}
+            className="h-12 w-full sm:w-auto px-8 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-teal-100 transition-all disabled:opacity-50 active:scale-95 whitespace-nowrap"
+          >
+            {suggesting ? "Wait..." : "Suggest"}
+          </button>
         </div>
 
-        <button
-          onClick={(e) => { e.stopPropagation(); handleSuggestProgram(); }}
-          disabled={suggesting}
-          className="h-12 w-full sm:w-auto px-8 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl text-[11px] font-black uppercase tracking-widest shadow-xl shadow-teal-100 transition-all disabled:opacity-50 active:scale-95 whitespace-nowrap"
-        >
-          {suggesting ? "Wait..." : "Suggest"}
-        </button>
+        {selectedPlanId && productGroups.length > 0 && (
+          <div className="mt-1 bg-slate-50/80 border border-slate-200/80 rounded-2xl p-3 flex flex-col gap-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[10px] font-black uppercase tracking-wider text-slate-600">
+                Plan Product Options:
+              </span>
+              <span className="text-[9px] font-bold text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full border border-teal-100">
+                {productGroups.filter((g) => g.alternativeProduct).length} Alternative(s) Available
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-[160px] overflow-y-auto custom-scrollbar pr-1">
+              {productGroups.map((group, idx) => {
+                const mainId = group.mainProduct._id;
+                const altId = group.alternativeProduct?._id;
+                const selectedId = currentSelections[mainId] || mainId;
+
+                return (
+                  <div key={mainId || idx} className="bg-white border border-slate-100 p-2 rounded-xl flex flex-col gap-1.5 shadow-2xs">
+                    <span className="text-[9px] font-extrabold uppercase tracking-wide text-slate-400">
+                      Product {idx + 1}
+                    </span>
+                    <div className="flex flex-col gap-1">
+                      <label
+                        className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border cursor-pointer transition-all ${
+                          selectedId === mainId
+                            ? "border-teal-500 bg-teal-50/60 shadow-xs"
+                            : "border-slate-100 bg-slate-50/50 hover:bg-slate-100"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <input
+                            type="radio"
+                            name={`plan-product-${selectedPlanId}-${mainId}`}
+                            checked={selectedId === mainId}
+                            onChange={() =>
+                              setProgramProductSelections((prev) => ({
+                                ...prev,
+                                [selectedPlanId]: {
+                                  ...(prev[selectedPlanId] || {}),
+                                  [mainId]: mainId,
+                                },
+                              }))
+                            }
+                            className="accent-teal-600 w-3 h-3 shrink-0"
+                          />
+                          <span className={`text-xs font-bold truncate ${selectedId === mainId ? "text-teal-900" : "text-slate-700"}`}>
+                            {group.mainProduct.name}
+                          </span>
+                        </div>
+                        <span className="text-[9px] font-bold bg-teal-100 text-teal-800 px-1.5 py-0.5 rounded shrink-0">
+                          Main
+                        </span>
+                      </label>
+
+                      {group.alternativeProduct && (
+                        <label
+                          className={`flex items-center justify-between gap-2 px-2.5 py-1.5 rounded-lg border cursor-pointer transition-all ${
+                            selectedId === altId
+                              ? "border-amber-500 bg-amber-50/60 shadow-xs"
+                              : "border-slate-100 bg-slate-50/50 hover:bg-slate-100"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 min-w-0">
+                            <input
+                              type="radio"
+                              name={`plan-product-${selectedPlanId}-${mainId}`}
+                              checked={selectedId === altId}
+                              onChange={() =>
+                                setProgramProductSelections((prev) => ({
+                                  ...prev,
+                                  [selectedPlanId]: {
+                                    ...(prev[selectedPlanId] || {}),
+                                    [mainId]: altId,
+                                  },
+                                }))
+                              }
+                              className="accent-amber-600 w-3 h-3 shrink-0"
+                            />
+                            <span className={`text-xs font-bold truncate ${selectedId === altId ? "text-amber-900" : "text-slate-700"}`}>
+                              {group.alternativeProduct.name}
+                            </span>
+                          </div>
+                          <span className="text-[9px] font-bold bg-amber-100 text-amber-800 px-1.5 py-0.5 rounded shrink-0">
+                            Alt
+                          </span>
+                        </label>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
     <RoleGuard allow={["Admin", "subadmin"]} permission="show appointments page">

@@ -45,7 +45,12 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
           if (suggestion) {
             setExistingSuggestion(suggestion);
 
-            const currentProgramId = suggestion.plans?.planId?._id || suggestion.plans?.planId || "";
+            const currentProgramId =
+              suggestion.plans?._id ||
+              (typeof suggestion.plans === "string" ? suggestion.plans : "") ||
+              suggestion.plans?.planId?._id ||
+              suggestion.plans?.planId ||
+              "";
             setSelectedProgramId(currentProgramId);
 
             if (suggestion.products && Array.isArray(suggestion.products)) {
@@ -55,18 +60,28 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
               })));
             }
 
-            if (currentProgramId && suggestion.plans?.products && Array.isArray(suggestion.plans.products)) {
+            if (currentProgramId) {
               const selections = {};
-              suggestion.plans.products.forEach((item) => {
-                const mainId = item?.productId?._id;
-                if (mainId) {
-                  if (item?.isMainSelected === false && item?.altProductId?._id) {
-                    selections[mainId] = item.altProductId._id;
-                  } else {
-                    selections[mainId] = mainId;
+              if (suggestion.planProducts && Array.isArray(suggestion.planProducts)) {
+                suggestion.planProducts.forEach((item) => {
+                  const mainId = item?.productId?._id || item?.productId;
+                  const altId = item?.altProductId?._id || item?.altProductId;
+                  if (mainId && altId) {
+                    selections[mainId] = altId;
                   }
-                }
-              });
+                });
+              } else if (suggestion.plans?.products && Array.isArray(suggestion.plans.products)) {
+                suggestion.plans.products.forEach((item) => {
+                  const mainId = item?.productId?._id || item?.productId;
+                  if (mainId) {
+                    if (item?.isMainSelected === false && (item?.altProductId?._id || item?.altProductId)) {
+                      selections[mainId] = item.altProductId._id || item.altProductId;
+                    } else {
+                      selections[mainId] = mainId;
+                    }
+                  }
+                });
+              }
               setProgramProductSelections(prev => ({ ...prev, [currentProgramId]: selections }));
             }
           }
@@ -145,15 +160,15 @@ const ProgramSuggestionForm = ({ user, onCancel, onSave }) => {
           payload.planProducts = selectedProgram.products.map(item => {
             const mainProduct = item?.productId;
             const altProduct = item?.alternativeProductId;
-            const mainId = mainProduct?._id || null;
-            const altId = altProduct?._id || null;
+            const mainId = mainProduct?._id || (typeof mainProduct === "string" ? mainProduct : null);
+            const altId = altProduct?._id || (typeof altProduct === "string" ? altProduct : null);
             const selectedId = programSelections[mainId] || mainId;
             return {
               productId: mainId,
               altProductId: altId,
               isMainSelected: selectedId === mainId
             };
-          });
+          }).filter(p => p.productId);
         }
       }
 
