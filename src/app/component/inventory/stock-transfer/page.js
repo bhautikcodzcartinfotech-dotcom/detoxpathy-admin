@@ -220,12 +220,12 @@ const StockTransferPage = () => {
 
         if (prodId) {
           const productObj = products.find(p => p._id === prodId) || {};
-          itemName = productObj.name || item.productId?.name || "Product";
-          hsn = productObj.hsnCode || "-";
+          itemName = item.productId?.name || productObj.name || "Product";
+          hsn = item.productId?.hsnCode || productObj.hsnCode || "-";
         } else if (planId) {
           const planObj = plans.find(p => p._id === planId) || {};
-          itemName = planObj.name || item.planId?.name || "Plan";
-          hsn = planObj.planCode || "-";
+          itemName = item.planId?.name || planObj.name || "Plan";
+          hsn = item.planId?.planCode || planObj.planCode || "-";
         }
 
         const rate = `₹${Number(item.rate || 0).toLocaleString("en-IN")}`;
@@ -588,7 +588,7 @@ const StockTransferPage = () => {
                         >
                           <FiPrinter size={14} /> Challan
                         </button>
-                        
+
                         {canEdit && (
                           <button
                             onClick={() => handleEdit(t)}
@@ -598,7 +598,7 @@ const StockTransferPage = () => {
                             <FiEdit2 size={14} /> Edit
                           </button>
                         )}
-                        
+
                         {canCancel && (
                           <button
                             onClick={() => handleCancelTransfer(t._id)}
