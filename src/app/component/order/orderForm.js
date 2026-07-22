@@ -329,14 +329,8 @@ const OrderForm = ({ onCancel, onSuccess, mode = "user", customers = [], onCusto
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!selectedUser) return toast.error(`Please select a ${mode === "customer" ? "customer" : "user"}`);
-    if (mode === "customer") {
-      if (selectedPlans.length === 0 && selectedProducts.length === 0) {
-        return toast.error("Please select at least one product or one plan");
-      }
-    } else {
-      if (selectedPlans.length === 0) {
-        return toast.error("Please select a plan");
-      }
+    if (selectedPlans.length === 0 && selectedProducts.length === 0) {
+      return toast.error("Please select at least one product or one plan");
     }
 
     if (mode === "customer") {
@@ -654,7 +648,7 @@ const OrderForm = ({ onCancel, onSuccess, mode = "user", customers = [], onCusto
         />
 
         <Dropdown
-          label={`Select Plan${mode !== "customer" ? " *" : ""}`}
+          label="Select Plan"
           placeholder="-- Choose Plan --"
           showSearch={true}
           options={plans.map(p => {
