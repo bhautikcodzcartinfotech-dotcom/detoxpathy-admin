@@ -82,6 +82,75 @@ const UserProfilePage = () => {
   });
   const [recordings, setRecordings] = useState([]);
   const [recordingsLoading, setRecordingsLoading] = useState(false);
+  const [selectedKitId, setSelectedKitId] = useState("all");
+
+  const userKits = React.useMemo(() => {
+    if (!overview) return [];
+    const kitMap = new Map();
+
+    // 1. Process planHistory (chronological order: oldest to newest)
+    if (Array.isArray(overview.planHistory) && overview.planHistory.length > 0) {
+      const chronologicalHistory = [...overview.planHistory].reverse();
+      chronologicalHistory.forEach((h) => {
+        if (h.plan && h.plan._id) {
+          const idStr = String(h.plan._id);
+          if (!kitMap.has(idStr)) {
+            kitMap.set(idStr, {
+              _id: idStr,
+              name: h.plan.name || `Kit ${kitMap.size + 1}`,
+              days: Number(h.plan.days) || 0,
+              price: h.plan.price || 0,
+              kitIndex: kitMap.size + 1,
+              isHistory: true,
+            });
+          }
+        }
+      });
+    }
+
+    // 2. Active plan from user object
+    if (overview.user?.plan && overview.user.plan._id) {
+      const activeIdStr = String(overview.user.plan._id);
+      if (kitMap.has(activeIdStr)) {
+        const existing = kitMap.get(activeIdStr);
+        existing.isActive = true;
+        existing.name = overview.user.plan.name || existing.name;
+        existing.days = Number(overview.user.plan.days) || existing.days;
+      } else {
+        kitMap.set(activeIdStr, {
+          _id: activeIdStr,
+          name: overview.user.plan.name || `Kit ${kitMap.size + 1}`,
+          days: Number(overview.user.plan.days) || 0,
+          price: overview.user.plan.price || 0,
+          kitIndex: kitMap.size + 1,
+          isActive: true,
+        });
+      }
+    }
+
+    // 3. Daily checklists with planId
+    if (Array.isArray(overview.dailyChecklist)) {
+      overview.dailyChecklist.forEach((c) => {
+        if (c.planId && typeof c.planId === "object" && c.planId._id) {
+          const cIdStr = String(c.planId._id);
+          if (!kitMap.has(cIdStr)) {
+            kitMap.set(cIdStr, {
+              _id: cIdStr,
+              name: c.planId.name || `Kit ${kitMap.size + 1}`,
+              days: Number(c.planId.days) || 0,
+              kitIndex: kitMap.size + 1,
+            });
+          }
+        }
+      });
+    }
+
+    const kitsList = Array.from(kitMap.values());
+    if (kitsList.length > 0 && !kitsList.some((k) => k.isActive)) {
+      kitsList[kitsList.length - 1].isActive = true;
+    }
+    return kitsList;
+  }, [overview]);
 
   useEffect(() => {
     const load = async () => {
@@ -138,11 +207,17 @@ const UserProfilePage = () => {
     }, 200);
   };
 
-  const handleDayClick = (dayObj) => {
+  const handleDayClick = (dayObj, kitId) => {
     const report =
       overview?.dailyReports?.find((r) => r.day === dayObj.day) || {};
     const checklist =
-      overview?.dailyChecklist?.find((c) => c.day === dayObj.day) || null;
+      overview?.dailyChecklist?.find((c) => {
+        const cPlanId = String(c.planId?._id || c.planId || "");
+        if (kitId) {
+          return (cPlanId === String(kitId) || (!c.planId && userKits.length === 1)) && c.day === dayObj.day;
+        }
+        return c.day === dayObj.day;
+      }) || null;
     setSelectedDay({ ...dayObj, answers: report.answers || [], checklist });
   };
 
@@ -1120,81 +1195,174 @@ const UserProfilePage = () => {
 
             {/* ------------------ Program Progress ------------------ */}
             <div className="mx-8 bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
-              <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-gray-50/50">
-                <h3 className="text-lg font-bold text-gray-800">
-                  Program Progress
-                </h3>
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                  {overview.user?.plan?.name || "Standard Plan"} • {overview.user?.plan?.days || 0} Days
-                </span>
+              <div className="p-6 border-b border-gray-200 flex items-center justify-between bg-gray-50/50 flex-wrap gap-4">
+                <div>
+                  <h3 className="text-lg font-bold text-gray-800">
+                    Program Progress
+                  </h3>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    View daily progress and checklist reports across all kits/plans
+                  </p>
+                </div>
+
+                {/* Kit selector tabs */}
+                {userKits.length > 0 && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <button
+                      onClick={() => setSelectedKitId("all")}
+                      className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm ${
+                        selectedKitId === "all"
+                          ? "bg-[#134D41] text-white ring-2 ring-teal-600/30"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                    >
+                      All Kits ({userKits.length})
+                    </button>
+                    {userKits.map((kit, idx) => {
+                      const isSelected = selectedKitId === String(kit._id);
+                      return (
+                        <button
+                          key={kit._id}
+                          onClick={() => setSelectedKitId(String(kit._id))}
+                          className={`px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 transition-all shadow-sm ${
+                            isSelected
+                              ? "bg-[#134D41] text-white ring-2 ring-teal-600/30"
+                              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          }`}
+                        >
+                          <span>{kit.name || `Kit ${idx + 1}`}</span>
+                          {kit.isActive ? (
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-blue-500 text-white uppercase tracking-wider">
+                              Active
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-[9px] font-black bg-emerald-700 text-emerald-100 uppercase tracking-wider">
+                              Completed
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
 
-              {overview?.user?.plan?.days ? (
-                <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-[#134D41]">
-                      <tr className="text-[10px] font-black text-white uppercase tracking-widest whitespace-nowrap">
-                        <th className="px-4 py-4 text-left">Day</th>
-                        <th className="px-4 py-4 text-left">Weight</th>
-                        <th className="px-4 py-4 text-left">Water</th>
-                        <th className="px-4 py-4 text-left">Sleep</th>
-                        <th className="px-4 py-4 text-left">Exercise</th>
-                        <th className="px-4 py-4 text-left">Juice</th>
-                        <th className="px-4 py-4 text-left">Pranayama</th>
-                        <th className="px-4 py-4 text-left">Video</th>
-                        <th className="px-6 py-4 text-left">Food Mistake</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-100">
-                      {Array.from({ length: overview.user.plan.days })
-                        .slice(0, overview.user.planCurrentDay || 0)
-                        .map((_, index) => {
-                          const dayNum = index + 1;
-                          const isCompleted = dayNum <= (overview.user.planCurrentDay || 0);
-                          const isCurrent = dayNum === (overview.user.planCurrentDay || 0);
+              {userKits.length > 0 ? (
+                <div className="divide-y divide-gray-200">
+                  {userKits
+                    .filter((kit) => selectedKitId === "all" || selectedKitId === String(kit._id))
+                    .map((kit, kitIdx) => {
+                      const isCurrentActiveKit = kit.isActive || String(kit._id) === String(overview.user?.plan?._id);
+                      const currentDay = isCurrentActiveKit ? (overview.user?.planCurrentDay || 0) : kit.days;
+                      const maxDaysToDisplay = kit.days > 0 ? kit.days : (currentDay || 1);
 
-                          const videoDayData = overview.progress?.find((p) => p.day === dayNum);
-                          const checklistData = overview.dailyChecklist?.find((c) => c.day === dayNum);
+                      return (
+                        <div key={kit._id} className="p-6">
+                          <div className="flex items-center justify-between mb-4 bg-teal-50/60 p-4 rounded-xl border border-teal-100 flex-wrap gap-2">
+                            <div className="flex items-center gap-3">
+                              <span className="w-8 h-8 rounded-full bg-[#134D41] text-white flex items-center justify-center text-xs font-bold shadow-sm">
+                                {kit.kitIndex || kitIdx + 1}
+                              </span>
+                              <div>
+                                <h4 className="font-bold text-gray-800 text-sm flex items-center gap-2">
+                                  {kit.name}
+                                  {isCurrentActiveKit && (
+                                    <span className="px-2.5 py-0.5 text-[10px] font-black bg-blue-100 text-blue-700 rounded-full uppercase tracking-wider">
+                                      Active Plan — Day {overview.user?.planCurrentDay || 0} of {kit.days}
+                                    </span>
+                                  )}
+                                </h4>
+                                <p className="text-xs text-gray-500">
+                                  Total Duration: {kit.days} Days
+                                </p>
+                              </div>
+                            </div>
+                            <span className="text-xs font-bold text-[#134D41] bg-white px-3 py-1 rounded-full border border-teal-200 shadow-sm uppercase tracking-wider">
+                              {kit.days} Days Program
+                            </span>
+                          </div>
 
-                          return (
-                            <tr key={dayNum} className={`hover:bg-teal-50/30 transition-colors ${isCurrent ? 'bg-teal-50/50 font-bold' : ''}`}>
-                              <td className="px-4 py-4 whitespace-nowrap text-xs font-bold text-gray-700">
-                                Day {dayNum}
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
-                                {checklistData?.todayWeight ? `${checklistData.todayWeight} kg` : '-'}
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
-                                {checklistData?.waterIntake ? `${checklistData.waterIntake} L` : '-'}
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
-                                {checklistData?.sleepHours ? `${checklistData.sleepHours} hr` : '-'}
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
-                                {checklistData?.exerciseMinutes ? `${checklistData.exerciseMinutes} min` : '-'}
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
-                                {checklistData?.greenJuice ? `${checklistData.greenJuice}x` : '-'}
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
-                                {checklistData?.pranayamaMinutes ? `${checklistData.pranayamaMinutes} min` : '-'}
-                              </td>
-                              <td className="px-4 py-4 whitespace-nowrap text-[10px] font-bold">
-                                {videoDayData?.dayProgressPercent > 0 ? (
-                                  <span className="text-red-600 uppercase tracking-tight">Watched</span>
-                                ) : <span className="text-gray-300">-</span>}
-                              </td>
-                              <td className="px-6 py-4 text-xs text-red-500 max-w-[200px] truncate" title={checklistData?.dietMistake}>
-                                {checklistData?.dietMistake || '-'}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                    </tbody>
-                  </table>
+                          <div className="overflow-x-auto rounded-xl border border-gray-200">
+                            <table className="min-w-full divide-y divide-gray-200">
+                              <thead className="bg-[#134D41]">
+                                <tr className="text-[10px] font-black text-white uppercase tracking-widest whitespace-nowrap">
+                                  <th className="px-4 py-4 text-left">Day</th>
+                                  <th className="px-4 py-4 text-left">Weight</th>
+                                  <th className="px-4 py-4 text-left">Water</th>
+                                  <th className="px-4 py-4 text-left">Sleep</th>
+                                  <th className="px-4 py-4 text-left">Exercise</th>
+                                  <th className="px-4 py-4 text-left">Juice</th>
+                                  <th className="px-4 py-4 text-left">Pranayama</th>
+                                  <th className="px-4 py-4 text-left">Video</th>
+                                  <th className="px-6 py-4 text-left">Diet Mistake</th>
+                                </tr>
+                              </thead>
+                              <tbody className="bg-white divide-y divide-gray-100">
+                                {Array.from({ length: maxDaysToDisplay }).map((_, index) => {
+                                  const dayNum = index + 1;
+                                  const isCompletedDay = dayNum <= currentDay;
+                                  const isCurrentDay = isCurrentActiveKit && dayNum === currentDay;
+
+                                  const videoDayData = overview.progress?.find((p) => p.day === dayNum);
+                                  const checklistData = overview.dailyChecklist?.find((c) => {
+                                    const cPlanId = String(c.planId?._id || c.planId || "");
+                                    return (cPlanId === String(kit._id) || (!c.planId && userKits.length === 1)) && c.day === dayNum;
+                                  });
+
+                                  return (
+                                    <tr
+                                      key={dayNum}
+                                      onClick={() => handleDayClick({ day: dayNum }, kit._id)}
+                                      className={`hover:bg-teal-50/40 transition-colors cursor-pointer ${
+                                        isCurrentDay ? "bg-teal-50/70 font-bold" : !isCompletedDay ? "opacity-60 bg-gray-50/50" : ""
+                                      }`}
+                                    >
+                                      <td className="px-4 py-4 whitespace-nowrap text-xs font-bold text-gray-700 flex items-center gap-2">
+                                        Day {dayNum}
+                                        {isCurrentDay && (
+                                          <span className="w-2 h-2 rounded-full bg-teal-500 animate-pulse"></span>
+                                        )}
+                                      </td>
+                                      <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
+                                        {checklistData?.todayWeight ? `${checklistData.todayWeight} kg` : "-"}
+                                      </td>
+                                      <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
+                                        {checklistData?.waterIntake ? `${checklistData.waterIntake} L` : "-"}
+                                      </td>
+                                      <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
+                                        {checklistData?.sleepHours ? `${checklistData.sleepHours} hr` : "-"}
+                                      </td>
+                                      <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
+                                        {checklistData?.exerciseMinutes ? `${checklistData.exerciseMinutes} min` : "-"}
+                                      </td>
+                                      <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
+                                        {checklistData?.greenJuice ? `${checklistData.greenJuice}x` : "-"}
+                                      </td>
+                                      <td className="px-4 py-4 whitespace-nowrap text-xs text-gray-600">
+                                        {checklistData?.pranayamaMinutes ? `${checklistData.pranayamaMinutes} min` : "-"}
+                                      </td>
+                                      <td className="px-4 py-4 whitespace-nowrap text-[10px] font-bold">
+                                        {videoDayData?.dayProgressPercent > 0 ? (
+                                          <span className="text-red-600 uppercase tracking-tight">Watched</span>
+                                        ) : (
+                                          <span className="text-gray-300">-</span>
+                                        )}
+                                      </td>
+                                      <td className="px-6 py-4 text-xs text-red-500 max-w-[200px] truncate" title={checklistData?.dietMistake}>
+                                        {checklistData?.dietMistake || "-"}
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
+                        </div>
+                      );
+                    })}
                 </div>
               ) : (
-                <div className="p-10 text-center text-gray-500 italic">No program plan active.</div>
+                <div className="p-10 text-center text-gray-500 italic">No program plan active or recorded.</div>
               )}
             </div>
 
