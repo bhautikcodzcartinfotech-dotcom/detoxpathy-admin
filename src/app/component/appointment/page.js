@@ -162,6 +162,7 @@ const AppointmentPage = () => {
   const recordingChunksRef = useRef([]);
   const mediaRecorderRef = useRef(null);
   const recordedVideoRef = useRef(null);
+  const audioContextRef = useRef(null);
 
   const [currency, setCurrency] = useState("₹");
   const [advanceBookingDays, setAdvanceBookingDays] = useState(30);
@@ -1190,27 +1191,56 @@ const AppointmentPage = () => {
       setCurrentRecording(recording);
 
       // Start MediaRecorder
-      const tracks = [];
+      const videoTracks = [];
+      const audioTracks = [];
 
       // Add remote video track if available
       if (remoteUserRef.current?.videoTrack) {
-        tracks.push(remoteUserRef.current.videoTrack.getMediaStreamTrack());
+        videoTracks.push(remoteUserRef.current.videoTrack.getMediaStreamTrack());
       }
 
       // Add audio tracks (remote + local)
       if (remoteUserRef.current?.audioTrack) {
-        tracks.push(remoteUserRef.current.audioTrack.getMediaStreamTrack());
+        audioTracks.push(remoteUserRef.current.audioTrack.getMediaStreamTrack());
       }
       if (agoraSessionRef.current.localAudioTrack) {
-        tracks.push(agoraSessionRef.current.localAudioTrack.getMediaStreamTrack());
+        audioTracks.push(agoraSessionRef.current.localAudioTrack.getMediaStreamTrack());
       }
 
-      if (tracks.length === 0) {
+      if (videoTracks.length === 0 && audioTracks.length === 0) {
         toast.error("No video/audio tracks available to record");
         return;
       }
 
-      const mediaStream = new MediaStream(tracks);
+      let mediaStream;
+
+      if (audioTracks.length > 1) {
+        // We have multiple audio tracks, mix them using Web Audio API
+        const AudioContext = window.AudioContext || window['webkitAudioContext'];
+        const audioCtx = new AudioContext();
+        const dest = audioCtx.createMediaStreamAudioDestination();
+
+        audioTracks.forEach(track => {
+          const trackStream = new MediaStream([track]);
+          const source = audioCtx.createMediaStreamSource(trackStream);
+          source.connect(dest);
+        });
+
+        // The mixed audio track
+        const mixedAudioTrack = dest.stream.getAudioTracks()[0];
+        
+        // Combine mixed audio track with video tracks
+        const combinedTracks = [...videoTracks, mixedAudioTrack];
+        mediaStream = new MediaStream(combinedTracks);
+        
+        // Store audioCtx on ref to close it later
+        audioContextRef.current = audioCtx;
+      } else {
+        // Only 1 or 0 audio tracks, no mixing needed
+        const combinedTracks = [...videoTracks, ...audioTracks];
+        mediaStream = new MediaStream(combinedTracks);
+      }
+
       const mediaRecorder = new MediaRecorder(mediaStream);
       mediaRecorderRef.current = mediaRecorder;
       recordingChunksRef.current = [];
@@ -1225,6 +1255,16 @@ const AppointmentPage = () => {
         const blob = new Blob(recordingChunksRef.current, { type: 'video/webm' });
         const videoFile = new File([blob], `recording-${Date.now()}.webm`, { type: 'video/webm' });
         recordedVideoRef.current = videoFile;
+
+        // Clean up audio context
+        if (audioContextRef.current) {
+          try {
+            await audioContextRef.current.close();
+            audioContextRef.current = null;
+          } catch (e) {
+            console.error("Error closing AudioContext:", e);
+          }
+        }
       };
 
       mediaRecorder.start();
