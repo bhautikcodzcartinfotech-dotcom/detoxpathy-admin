@@ -163,6 +163,8 @@ const AppointmentPage = () => {
   const mediaRecorderRef = useRef(null);
   const recordedVideoRef = useRef(null);
   const audioContextRef = useRef(null);
+  const recordingStreamRef = useRef(null);
+  const audioContextDestinationRef = useRef(null);
 
   const [currency, setCurrency] = useState("₹");
   const [advanceBookingDays, setAdvanceBookingDays] = useState(30);
@@ -456,8 +458,26 @@ const AppointmentPage = () => {
         console.warn("[AGORA] setRemoteVideoStreamType failed:", streamTypeError);
       }
       await playRemoteVideoTrack(user);
+      
+      // Update recording video track dynamically if recording is active
+      if (user.videoTrack) {
+        updateRecordingVideoTrack(user.videoTrack.getMediaStreamTrack());
+      }
     } else if (mediaType === "audio" && user.audioTrack) {
       user.audioTrack.play();
+      
+      // Dynamically connect remote audio track to the recording's AudioContext if active
+      if (audioContextRef.current && audioContextDestinationRef.current) {
+        try {
+          const track = user.audioTrack.getMediaStreamTrack();
+          const trackStream = new MediaStream([track]);
+          const source = audioContextRef.current.createMediaStreamSource(trackStream);
+          source.connect(audioContextDestinationRef.current);
+          console.log("[AGORA] Dynamically connected remote audio track to recording AudioContext");
+        } catch (e) {
+          console.error("Failed to dynamically connect remote audio track:", e);
+        }
+      }
     }
 
     setRemoteParticipantCount(client.remoteUsers.length);
@@ -1123,6 +1143,11 @@ const AppointmentPage = () => {
       if (typeof window !== "undefined") {
         window.history.pushState({ modal: "online" }, "");
       }
+      
+      // Auto-start recording
+      setTimeout(() => {
+        handleStartRecording(appointment._id);
+      }, 1500);
     } catch (error) {
       console.error('[AGORA]  FULL CALL ERROR:', error);
       setCallError(error?.response?.data?.message || error.message);
@@ -1146,8 +1171,8 @@ const AppointmentPage = () => {
     try {
       setCallLoadingId(appointment._id);
       // Stop recording if active
-      if (currentRecording && currentRecording.status !== 'stopped') {
-        await handleStopRecording();
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        await handleStopRecording(currentRecording?._id);
       }
       await cleanupAgoraSession();
       const updatedAppointment = await endAppointmentCall(appointment._id);
@@ -1183,63 +1208,84 @@ const AppointmentPage = () => {
   };
 
   // Recording handlers
-  const handleStartRecording = async () => {
-    if (!activeCallAppointment?._id) return;
+  // Helper to dynamically update the video track in the running MediaRecorder stream
+  const updateRecordingVideoTrack = (newTrack) => {
+    if (recordingStreamRef.current && newTrack) {
+      try {
+        const currentVideoTracks = recordingStreamRef.current.getVideoTracks();
+        currentVideoTracks.forEach(track => {
+          recordingStreamRef.current.removeTrack(track);
+        });
+        recordingStreamRef.current.addTrack(newTrack);
+        console.log("[RECORDING] Video track updated in recording stream dynamically");
+      } catch (error) {
+        console.error("Error updating recording video track dynamically:", error);
+      }
+    }
+  };
+
+  // Recording handlers
+  const handleStartRecording = async (passedId) => {
+    const appointmentId = passedId || activeCallAppointment?._id;
+    if (!appointmentId) return;
     try {
       setRecordingLoading(true);
-      const recording = await startRecording(activeCallAppointment._id);
+      const recording = await startRecording(appointmentId);
       setCurrentRecording(recording);
 
       // Start MediaRecorder
       const videoTracks = [];
       const audioTracks = [];
 
-      // Add remote video track if available
+      // Add remote video track if available, else fallback to local video track
       if (remoteUserRef.current?.videoTrack) {
         videoTracks.push(remoteUserRef.current.videoTrack.getMediaStreamTrack());
+      } else if (agoraSessionRef.current?.localVideoTrack) {
+        videoTracks.push(agoraSessionRef.current.localVideoTrack.getMediaStreamTrack());
       }
 
-      // Add audio tracks (remote + local)
+      // Add local audio track
+      if (agoraSessionRef.current?.localAudioTrack) {
+        audioTracks.push(agoraSessionRef.current.localAudioTrack.getMediaStreamTrack());
+      }
+      // Add remote audio track if already available
       if (remoteUserRef.current?.audioTrack) {
         audioTracks.push(remoteUserRef.current.audioTrack.getMediaStreamTrack());
       }
-      if (agoraSessionRef.current.localAudioTrack) {
-        audioTracks.push(agoraSessionRef.current.localAudioTrack.getMediaStreamTrack());
-      }
 
       if (videoTracks.length === 0 && audioTracks.length === 0) {
-        toast.error("No video/audio tracks available to record");
+        console.warn("[RECORDING] No tracks available to start recording");
         return;
       }
 
       let mediaStream;
 
-      if (audioTracks.length > 1) {
-        // We have multiple audio tracks, mix them using Web Audio API
-        const AudioContext = window.AudioContext || window['webkitAudioContext'];
-        const audioCtx = new AudioContext();
-        const dest = audioCtx.createMediaStreamDestination();
+      // Always initialize AudioContext to allow dynamic mixed audio connections
+      const AudioContext = window.AudioContext || window['webkitAudioContext'];
+      const audioCtx = new AudioContext();
+      const dest = audioCtx.createMediaStreamDestination();
 
-        audioTracks.forEach(track => {
-          const trackStream = new MediaStream([track]);
-          const source = audioCtx.createMediaStreamSource(trackStream);
-          source.connect(dest);
-        });
+      audioContextRef.current = audioCtx;
+      audioContextDestinationRef.current = dest;
 
-        // The mixed audio track
-        const mixedAudioTrack = dest.stream.getAudioTracks()[0];
-        
-        // Combine mixed audio track with video tracks
-        const combinedTracks = [...videoTracks, mixedAudioTrack];
-        mediaStream = new MediaStream(combinedTracks);
-        
-        // Store audioCtx on ref to close it later
-        audioContextRef.current = audioCtx;
-      } else {
-        // Only 1 or 0 audio tracks, no mixing needed
-        const combinedTracks = [...videoTracks, ...audioTracks];
-        mediaStream = new MediaStream(combinedTracks);
+      // Connect available audio tracks to the destination node
+      audioTracks.forEach(track => {
+        const trackStream = new MediaStream([track]);
+        const source = audioCtx.createMediaStreamSource(trackStream);
+        source.connect(dest);
+      });
+
+      // The mixed audio track
+      const mixedAudioTrack = dest.stream.getAudioTracks()[0];
+      
+      // Combine mixed audio track with video tracks
+      const combinedTracks = [...videoTracks];
+      if (mixedAudioTrack) {
+        combinedTracks.push(mixedAudioTrack);
       }
+      
+      mediaStream = new MediaStream(combinedTracks);
+      recordingStreamRef.current = mediaStream;
 
       const mediaRecorder = new MediaRecorder(mediaStream);
       mediaRecorderRef.current = mediaRecorder;
@@ -1265,65 +1311,31 @@ const AppointmentPage = () => {
             console.error("Error closing AudioContext:", e);
           }
         }
+        recordingStreamRef.current = null;
+        audioContextDestinationRef.current = null;
       };
 
       mediaRecorder.start();
-      toast.success("Recording started");
+      console.log("[RECORDING] Auto recording started successfully");
     } catch (error) {
-      console.error(error);
-      toast.error(error?.response?.data?.message || "Failed to start recording");
+      console.error("[RECORDING] Auto start recording failed:", error);
     } finally {
       setRecordingLoading(false);
     }
   };
 
-  const handlePauseRecording = async () => {
-    if (!currentRecording?._id) return;
-    try {
-      setRecordingLoading(true);
-      const recording = await pauseRecording(currentRecording._id);
-      setCurrentRecording(recording);
-
-      // Pause MediaRecorder
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-        mediaRecorderRef.current.pause();
+  const handleStopRecording = async (passedId) => {
+    const recordingId = passedId || currentRecording?._id;
+    if (!recordingId) {
+      // Clean up MediaRecorder state if no recording ID was assigned
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+        mediaRecorderRef.current.stop();
       }
-
-      toast.success("Recording paused");
-    } catch (error) {
-      console.error(error);
-      toast.error(error?.response?.data?.message || "Failed to pause recording");
-    } finally {
-      setRecordingLoading(false);
+      return;
     }
-  };
-
-  const handleResumeRecording = async () => {
-    if (!currentRecording?._id) return;
     try {
       setRecordingLoading(true);
-      const recording = await resumeRecording(currentRecording._id);
-      setCurrentRecording(recording);
-
-      // Resume MediaRecorder
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
-        mediaRecorderRef.current.resume();
-      }
-
-      toast.success("Recording resumed");
-    } catch (error) {
-      console.error(error);
-      toast.error(error?.response?.data?.message || "Failed to resume recording");
-    } finally {
-      setRecordingLoading(false);
-    }
-  };
-
-  const handleStopRecording = async () => {
-    if (!currentRecording?._id) return;
-    try {
-      setRecordingLoading(true);
-      const recording = await stopRecording(currentRecording._id);
+      const recording = await stopRecording(recordingId);
       setCurrentRecording(recording);
 
       // Stop MediaRecorder and upload
@@ -1335,7 +1347,7 @@ const AppointmentPage = () => {
           if (recordedVideoRef.current) {
             try {
               toast.success("Uploading recording...");
-              await uploadRecordingVideo(currentRecording._id, recordedVideoRef.current);
+              await uploadRecordingVideo(recordingId, recordedVideoRef.current);
               toast.success("Recording uploaded successfully");
             } catch (uploadError) {
               console.error(uploadError);
@@ -1344,11 +1356,8 @@ const AppointmentPage = () => {
           }
         }, 500);
       }
-
-      toast.success("Recording stopped");
     } catch (error) {
-      console.error(error);
-      toast.error(error?.response?.data?.message || "Failed to stop recording");
+      console.error("[RECORDING] Failed to stop recording:", error);
     } finally {
       setRecordingLoading(false);
     }
@@ -2758,66 +2767,7 @@ const AppointmentPage = () => {
                         Live
                       </span>
 
-                      {/* Recording Controls */}
-                      {!currentRecording || currentRecording.status === 'stopped' ? (
-                        <button
-                          onClick={handleStartRecording}
-                          disabled={recordingLoading}
-                          className="inline-flex items-center gap-1.5 rounded-full px-3 sm:px-6 py-1.5 sm:py-2.5 text-[9px] sm:text-xs font-black uppercase tracking-widest transition-all bg-red-600 text-white hover:bg-red-700 shadow-lg disabled:opacity-50"
-                        >
-                          {recordingLoading ? (
-                            <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <div className="w-3 h-3 rounded-full bg-white" />
-                          )}
-                          <span>Record</span>
-                        </button>
-                      ) : (
-                        <>
-                          {currentRecording.status === 'paused' ? (
-                            <button
-                              onClick={handleResumeRecording}
-                              disabled={recordingLoading}
-                              className="inline-flex items-center gap-1.5 rounded-full px-3 sm:px-6 py-1.5 sm:py-2.5 text-[9px] sm:text-xs font-black uppercase tracking-widest transition-all bg-green-600 text-white hover:bg-green-700 shadow-lg disabled:opacity-50"
-                            >
-                              {recordingLoading ? (
-                                <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                              ) : (
-                                <div className="w-0 h-0 border-t-4 border-t-transparent border-b-4 border-b-transparent border-l-6 border-l-white" />
-                              )}
-                              <span>Resume</span>
-                            </button>
-                          ) : (
-                            <button
-                              onClick={handlePauseRecording}
-                              disabled={recordingLoading}
-                              className="inline-flex items-center gap-1.5 rounded-full px-3 sm:px-6 py-1.5 sm:py-2.5 text-[9px] sm:text-xs font-black uppercase tracking-widest transition-all bg-yellow-600 text-white hover:bg-yellow-700 shadow-lg disabled:opacity-50"
-                            >
-                              {recordingLoading ? (
-                                <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                              ) : (
-                                <div className="flex gap-1">
-                                  <div className="w-1 h-4 bg-white rounded-sm" />
-                                  <div className="w-1 h-4 bg-white rounded-sm" />
-                                </div>
-                              )}
-                              <span>Pause</span>
-                            </button>
-                          )}
-                          <button
-                            onClick={handleStopRecording}
-                            disabled={recordingLoading}
-                            className="inline-flex items-center gap-1.5 rounded-full px-3 sm:px-6 py-1.5 sm:py-2.5 text-[9px] sm:text-xs font-black uppercase tracking-widest transition-all bg-slate-700 text-white hover:bg-slate-800 shadow-lg disabled:opacity-50"
-                          >
-                            {recordingLoading ? (
-                              <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                            ) : (
-                              <div className="w-3 h-3 rounded-sm bg-white" />
-                            )}
-                            <span>Stop</span>
-                          </button>
-                        </>
-                      )}
+
 
                       <button
                         onClick={toggleConsultationPanel}
