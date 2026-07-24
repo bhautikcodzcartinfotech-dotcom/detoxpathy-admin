@@ -1218,7 +1218,7 @@ const AppointmentPage = () => {
         // We have multiple audio tracks, mix them using Web Audio API
         const AudioContext = window.AudioContext || window['webkitAudioContext'];
         const audioCtx = new AudioContext();
-        const dest = audioCtx.createMediaStreamAudioDestination();
+        const dest = audioCtx.createMediaStreamDestination();
 
         audioTracks.forEach(track => {
           const trackStream = new MediaStream([track]);
