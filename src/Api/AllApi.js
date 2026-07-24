@@ -1491,6 +1491,30 @@ export const getRecordingsByUserId = async (userId) => {
   return res.data.data;
 };
 
+export const downloadRecordingVideoApi = async (recordingId, filename) => {
+  try {
+    const response = await axios.get(
+      `${API_BASE}/admin/recording/download/${recordingId}`,
+      {
+        headers: getAuthHeaders(),
+        responseType: "blob",
+      }
+    );
+
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", filename || `recording-${recordingId}.webm`);
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    window.URL.revokeObjectURL(url);
+  } catch (err) {
+    console.error("Download error:", err);
+    throw err;
+  }
+};
+
 export const createBranchTime = async (payload) => {
   const res = await axios.post(`${API_BASE}/admin/branchTime/create`, payload, {
     headers: getAuthHeaders(),
