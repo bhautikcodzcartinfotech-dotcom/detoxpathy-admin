@@ -165,6 +165,9 @@ const AppointmentPage = () => {
   const audioContextRef = useRef(null);
   const recordingStreamRef = useRef(null);
   const audioContextDestinationRef = useRef(null);
+  const currentRecordingIdRef = useRef(null);
+  const isStoppingRecordingRef = useRef(false);
+  const recordingStartAttemptedRef = useRef(false);
 
   const [currency, setCurrency] = useState("₹");
   const [advanceBookingDays, setAdvanceBookingDays] = useState(30);
@@ -1144,7 +1147,8 @@ const AppointmentPage = () => {
         window.history.pushState({ modal: "online" }, "");
       }
       
-      // Auto-start recording
+      // Auto-start recording once local media is ready
+      recordingStartAttemptedRef.current = false;
       setTimeout(() => {
         handleStartRecording(appointment._id);
       }, 1500);
@@ -1170,10 +1174,8 @@ const AppointmentPage = () => {
 
     try {
       setCallLoadingId(appointment._id);
-      // Stop recording if active
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-        await handleStopRecording(currentRecording?._id);
-      }
+      // Always finalize recording (and upload) before tearing down Agora tracks
+      await handleStopRecording(currentRecordingIdRef.current || currentRecording?._id);
       await cleanupAgoraSession();
       const updatedAppointment = await endAppointmentCall(appointment._id);
       updateAppointmentCallState(
@@ -1221,46 +1223,124 @@ const AppointmentPage = () => {
       } catch (error) {
         console.error("Error updating recording video track dynamically:", error);
       }
+    } else if (newTrack && !mediaRecorderRef.current && recordingStartAttemptedRef.current) {
+      // Tracks arrived after the first attempt failed — retry start
+      handleStartRecording();
     }
+  };
+
+  const setRecordingState = (recording) => {
+    setCurrentRecording(recording);
+    currentRecordingIdRef.current = recording?._id || null;
+  };
+
+  const cleanupRecordingAudioContext = async () => {
+    if (audioContextRef.current) {
+      try {
+        await audioContextRef.current.close();
+      } catch (e) {
+        console.error("Error closing AudioContext:", e);
+      }
+      audioContextRef.current = null;
+    }
+    recordingStreamRef.current = null;
+    audioContextDestinationRef.current = null;
+  };
+
+  const stopMediaRecorderAndGetFile = () => {
+    return new Promise((resolve) => {
+      const recorder = mediaRecorderRef.current;
+      if (!recorder || recorder.state === 'inactive') {
+        resolve(recordedVideoRef.current || null);
+        return;
+      }
+
+      recorder.onstop = async () => {
+        try {
+          const blob = new Blob(recordingChunksRef.current, { type: 'video/webm' });
+          recordingChunksRef.current = [];
+          if (!blob.size) {
+            recordedVideoRef.current = null;
+            await cleanupRecordingAudioContext();
+            resolve(null);
+            return;
+          }
+          const videoFile = new File([blob], `recording-${Date.now()}.webm`, { type: 'video/webm' });
+          recordedVideoRef.current = videoFile;
+          await cleanupRecordingAudioContext();
+          resolve(videoFile);
+        } catch (error) {
+          console.error("[RECORDING] Failed to build recording file:", error);
+          await cleanupRecordingAudioContext();
+          resolve(null);
+        } finally {
+          mediaRecorderRef.current = null;
+        }
+      };
+
+      try {
+        // Flush any remaining buffered data before stop
+        if (recorder.state === 'recording') {
+          try {
+            recorder.requestData();
+          } catch (_) {
+            // Some browsers throw if requestData is unsupported mid-stream
+          }
+        }
+        recorder.stop();
+      } catch (error) {
+        console.error("[RECORDING] MediaRecorder stop failed:", error);
+        mediaRecorderRef.current = null;
+        resolve(recordedVideoRef.current || null);
+      }
+    });
+  };
+
+  const collectRecordingTracks = () => {
+    const videoTracks = [];
+    const audioTracks = [];
+
+    if (remoteUserRef.current?.videoTrack) {
+      videoTracks.push(remoteUserRef.current.videoTrack.getMediaStreamTrack());
+    } else if (agoraSessionRef.current?.localVideoTrack) {
+      videoTracks.push(agoraSessionRef.current.localVideoTrack.getMediaStreamTrack());
+    }
+
+    if (agoraSessionRef.current?.localAudioTrack) {
+      audioTracks.push(agoraSessionRef.current.localAudioTrack.getMediaStreamTrack());
+    }
+    if (remoteUserRef.current?.audioTrack) {
+      audioTracks.push(remoteUserRef.current.audioTrack.getMediaStreamTrack());
+    }
+
+    return { videoTracks, audioTracks };
   };
 
   // Recording handlers
   const handleStartRecording = async (passedId) => {
     const appointmentId = passedId || activeCallAppointment?._id;
     if (!appointmentId) return;
+
+    // Avoid duplicate MediaRecorder instances
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      return;
+    }
+
+    recordingStartAttemptedRef.current = true;
+
     try {
       setRecordingLoading(true);
-      const recording = await startRecording(appointmentId);
-      setCurrentRecording(recording);
 
-      // Start MediaRecorder
-      const videoTracks = [];
-      const audioTracks = [];
-
-      // Add remote video track if available, else fallback to local video track
-      if (remoteUserRef.current?.videoTrack) {
-        videoTracks.push(remoteUserRef.current.videoTrack.getMediaStreamTrack());
-      } else if (agoraSessionRef.current?.localVideoTrack) {
-        videoTracks.push(agoraSessionRef.current.localVideoTrack.getMediaStreamTrack());
-      }
-
-      // Add local audio track
-      if (agoraSessionRef.current?.localAudioTrack) {
-        audioTracks.push(agoraSessionRef.current.localAudioTrack.getMediaStreamTrack());
-      }
-      // Add remote audio track if already available
-      if (remoteUserRef.current?.audioTrack) {
-        audioTracks.push(remoteUserRef.current.audioTrack.getMediaStreamTrack());
-      }
-
+      const { videoTracks, audioTracks } = collectRecordingTracks();
       if (videoTracks.length === 0 && audioTracks.length === 0) {
-        console.warn("[RECORDING] No tracks available to start recording");
+        console.warn("[RECORDING] No tracks available yet — will retry when media arrives");
         return;
       }
 
-      let mediaStream;
+      // Create/reuse DB recording only after we know we can capture media
+      const recording = await startRecording(appointmentId);
+      setRecordingState(recording);
 
-      // Always initialize AudioContext to allow dynamic mixed audio connections
       const AudioContext = window.AudioContext || window['webkitAudioContext'];
       const audioCtx = new AudioContext();
       const dest = audioCtx.createMediaStreamDestination();
@@ -1268,98 +1348,113 @@ const AppointmentPage = () => {
       audioContextRef.current = audioCtx;
       audioContextDestinationRef.current = dest;
 
-      // Connect available audio tracks to the destination node
       audioTracks.forEach(track => {
         const trackStream = new MediaStream([track]);
         const source = audioCtx.createMediaStreamSource(trackStream);
         source.connect(dest);
       });
 
-      // The mixed audio track
       const mixedAudioTrack = dest.stream.getAudioTracks()[0];
-      
-      // Combine mixed audio track with video tracks
       const combinedTracks = [...videoTracks];
       if (mixedAudioTrack) {
         combinedTracks.push(mixedAudioTrack);
       }
-      
-      mediaStream = new MediaStream(combinedTracks);
+
+      const mediaStream = new MediaStream(combinedTracks);
       recordingStreamRef.current = mediaStream;
 
-      const mediaRecorder = new MediaRecorder(mediaStream);
+      const preferredMimeType = MediaRecorder.isTypeSupported('video/webm;codecs=vp9,opus')
+        ? 'video/webm;codecs=vp9,opus'
+        : MediaRecorder.isTypeSupported('video/webm;codecs=vp8,opus')
+          ? 'video/webm;codecs=vp8,opus'
+          : MediaRecorder.isTypeSupported('video/webm')
+            ? 'video/webm'
+            : '';
+
+      let mediaRecorder;
+      try {
+        mediaRecorder = preferredMimeType
+          ? new MediaRecorder(mediaStream, { mimeType: preferredMimeType })
+          : new MediaRecorder(mediaStream);
+      } catch (recorderError) {
+        console.warn("[RECORDING] Preferred mimeType failed, falling back:", recorderError);
+        mediaRecorder = new MediaRecorder(mediaStream);
+      }
       mediaRecorderRef.current = mediaRecorder;
       recordingChunksRef.current = [];
+      recordedVideoRef.current = null;
 
       mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) {
+        if (e.data && e.data.size > 0) {
           recordingChunksRef.current.push(e.data);
         }
       };
 
-      mediaRecorder.onstop = async () => {
-        const blob = new Blob(recordingChunksRef.current, { type: 'video/webm' });
-        const videoFile = new File([blob], `recording-${Date.now()}.webm`, { type: 'video/webm' });
-        recordedVideoRef.current = videoFile;
-
-        // Clean up audio context
-        if (audioContextRef.current) {
-          try {
-            await audioContextRef.current.close();
-            audioContextRef.current = null;
-          } catch (e) {
-            console.error("Error closing AudioContext:", e);
-          }
-        }
-        recordingStreamRef.current = null;
-        audioContextDestinationRef.current = null;
-      };
-
-      mediaRecorder.start();
+      // Collect chunks every second so we don't lose the whole recording if stop races
+      mediaRecorder.start(1000);
       console.log("[RECORDING] Auto recording started successfully");
     } catch (error) {
       console.error("[RECORDING] Auto start recording failed:", error);
+      // If DB row exists but MediaRecorder failed, stop it so status isn't stuck
+      const failedId = currentRecordingIdRef.current;
+      if (failedId) {
+        try {
+          await stopRecording(failedId);
+        } catch (stopError) {
+          console.error("[RECORDING] Failed to roll back recording after start error:", stopError);
+        }
+        setRecordingState(null);
+      }
+      await cleanupRecordingAudioContext();
+      mediaRecorderRef.current = null;
     } finally {
       setRecordingLoading(false);
     }
   };
 
   const handleStopRecording = async (passedId) => {
-    const recordingId = passedId || currentRecording?._id;
-    if (!recordingId) {
-      // Clean up MediaRecorder state if no recording ID was assigned
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-        mediaRecorderRef.current.stop();
-      }
-      return;
-    }
+    if (isStoppingRecordingRef.current) return;
+    isStoppingRecordingRef.current = true;
+
+    const recordingId = passedId || currentRecordingIdRef.current || currentRecording?._id;
+
     try {
       setRecordingLoading(true);
-      const recording = await stopRecording(recordingId);
-      setCurrentRecording(recording);
 
-      // Stop MediaRecorder and upload
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-        mediaRecorderRef.current.stop();
+      // 1) Stop MediaRecorder and wait for the final blob (no setTimeout race)
+      const videoFile = await stopMediaRecorderAndGetFile();
 
-        // Wait for onstop to create the blob/file
-        setTimeout(async () => {
-          if (recordedVideoRef.current) {
-            try {
-              toast.success("Uploading recording...");
-              await uploadRecordingVideo(recordingId, recordedVideoRef.current);
-              toast.success("Recording uploaded successfully");
-            } catch (uploadError) {
-              console.error(uploadError);
-              toast.error("Failed to upload recording");
-            }
-          }
-        }, 500);
+      // 2) Mark recording stopped in DB even if upload fails / no media
+      if (recordingId) {
+        try {
+          await stopRecording(recordingId);
+        } catch (stopError) {
+          console.error("[RECORDING] Failed to stop recording in DB:", stopError);
+        }
       }
+
+      // 3) Upload video if we have one
+      if (recordingId && videoFile) {
+        try {
+          toast.success("Uploading recording...");
+          await uploadRecordingVideo(recordingId, videoFile);
+          toast.success("Recording uploaded successfully");
+        } catch (uploadError) {
+          console.error(uploadError);
+          toast.error("Failed to upload recording");
+        }
+      } else if (recordingId && !videoFile) {
+        console.warn("[RECORDING] Recording stopped but no video file was produced");
+      }
+
+      setRecordingState(null);
+      recordedVideoRef.current = null;
+      recordingStartAttemptedRef.current = false;
     } catch (error) {
       console.error("[RECORDING] Failed to stop recording:", error);
     } finally {
       setRecordingLoading(false);
+      isStoppingRecordingRef.current = false;
     }
   };
 
@@ -1578,8 +1673,10 @@ const AppointmentPage = () => {
             .find(r => r.status !== 'stopped');
           if (activeRecording) {
             setCurrentRecording(activeRecording);
+            currentRecordingIdRef.current = activeRecording._id;
           } else {
             setCurrentRecording(null);
+            currentRecordingIdRef.current = null;
           }
         } catch (error) {
           console.error("Failed to fetch recordings:", error);
@@ -1589,6 +1686,8 @@ const AppointmentPage = () => {
     } else {
       // Reset recording state when modal closes
       setCurrentRecording(null);
+      currentRecordingIdRef.current = null;
+      recordingStartAttemptedRef.current = false;
     }
   }, [isCallModalOpen, activeCallAppointment?._id]);
 
