@@ -270,7 +270,7 @@ const UserProfilePage = () => {
 
       if (order.plans && order.plans.length > 0) {
         order.plans.forEach(planItem => {
-          const hsn = planItem.hsnCode || "-";
+          const hsn = planItem.hsnCode || process.env.NEXT_PUBLIC_PLAN_HSN_CODE || process.env.PLAN_HSN_CODE || "21069099";
           const rate = `₹${Number(planItem.price || 0).toLocaleString("en-IN")}`;
           const qty = planItem.quantity || "1";
           const gst = `${planItem.gstPercentage || 0}%`;
@@ -287,7 +287,7 @@ const UserProfilePage = () => {
           `;
         });
       } else if (order.plan) {
-        const hsn = order.plan.hsnCode || "-";
+        const hsn = order.plan.hsnCode || process.env.NEXT_PUBLIC_PLAN_HSN_CODE || process.env.PLAN_HSN_CODE || "21069099";
         const rate = `₹${Number(order.plan.price || 0).toLocaleString("en-IN")}`;
         const qty = "1";
         const gst = `${order.plan.gstPercentage || 0}%`;
