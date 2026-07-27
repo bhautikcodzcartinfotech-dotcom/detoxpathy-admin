@@ -163,21 +163,24 @@ const OrderDetailsPage = () => {
     const billTo = `${customerName} | Mob: ${mobile} | ${addressParts.join(", ")}`;
 
     let itemsHtml = "";
+    let calculatedSubTotal = 0;
 
     if (order.plans && order.plans.length > 0) {
       order.plans.forEach(planItem => {
+        const itemTotal = Number(planItem.totalWithTax || planItem.price || 0);
+        calculatedSubTotal += itemTotal;
         const hsn = planItem.hsnCode || process.env.NEXT_PUBLIC_PLAN_HSN_CODE || process.env.PLAN_HSN_CODE || "21069099";
         const rate = `₹${Number(planItem.price || 0).toLocaleString("en-IN")}`;
         const qty = planItem.quantity || "1";
         const gst = `${planItem.gstPercentage || 0}%`;
-        const total = `₹${Number(planItem.totalWithTax || planItem.price || 0).toLocaleString("en-IN")}`;
-        
+        const total = `₹${itemTotal.toLocaleString("en-IN")}`;
+
         let description = planItem.name || "Membership Plan";
         const selectedAlt = planItem.selectedAlternativeProducts?.find(s => s.selected === "alternative");
         if (selectedAlt) {
           description += `<br/><span style="font-size: 10px; color: #ea5800; font-weight: bold;">[Alt: ${selectedAlt.alternativeProduct?.name || selectedAlt.alternativeProduct?.productId?.name || 'Alternative Product'}]</span>`;
         }
-        
+
         itemsHtml += `
           <tr>
             <td>${description}</td>
@@ -190,11 +193,13 @@ const OrderDetailsPage = () => {
         `;
       });
     } else if (order.plan) {
+      const itemTotal = Number(order.plan.totalWithTax || order.plan.price || 0);
+      calculatedSubTotal += itemTotal;
       const hsn = order.plan.hsnCode || process.env.NEXT_PUBLIC_PLAN_HSN_CODE || process.env.PLAN_HSN_CODE || "21069099";
       const rate = `₹${Number(order.plan.price || 0).toLocaleString("en-IN")}`;
       const qty = "1";
       const gst = `${order.plan.gstPercentage || 0}%`;
-      const total = `₹${Number(order.plan.totalWithTax || order.plan.price || 0).toLocaleString("en-IN")}`;
+      const total = `₹${itemTotal.toLocaleString("en-IN")}`;
       itemsHtml += `
         <tr>
           <td>${order.plan.name || "Membership Plan"}</td>
@@ -209,11 +214,13 @@ const OrderDetailsPage = () => {
 
     if (order.products && order.products.length > 0) {
       order.products.forEach(prod => {
+        const itemTotal = Number(prod.totalWithTax || (prod.price * prod.quantity) || 0);
+        calculatedSubTotal += itemTotal;
         const hsn = prod.hsnCode || "-";
         const rate = `₹${Number(prod.price || 0).toLocaleString("en-IN")}`;
         const qty = prod.quantity || "1";
         const gst = `${prod.gstPercentage || 0}%`;
-        const total = `₹${Number(prod.totalWithTax || (prod.price * prod.quantity) || 0).toLocaleString("en-IN")}`;
+        const total = `₹${itemTotal.toLocaleString("en-IN")}`;
         itemsHtml += `
           <tr>
             <td>${prod.name || "Product"}</td>
@@ -231,7 +238,7 @@ const OrderDetailsPage = () => {
     const sgstVal = `₹${Number(order.sgst || 0).toLocaleString("en-IN")}`;
     const igstVal = order.igst > 0 ? `₹${Number(order.igst).toLocaleString("en-IN")}` : null;
     const totalVal = `₹${Number(order.totalAmount || 0).toLocaleString("en-IN")}`;
-    const subTotalVal = `₹${Number(order.subTotal || order.totalAmount || 0).toLocaleString("en-IN")}`;
+    const subTotalVal = `₹${Number(calculatedSubTotal || order.subTotal || order.totalAmount || 0).toLocaleString("en-IN")}`;
 
     let taxSummary = `<strong>CGST:</strong> ${cgstVal} | <strong>SGST:</strong> ${sgstVal}`;
     if (igstVal) {
@@ -364,7 +371,7 @@ const OrderDetailsPage = () => {
           <h2>INVOICE</h2>
           
           <div class="metadata">
-            <strong>Order ID:</strong> ${orderId} | <strong>Date:</strong> ${orderDate} | <strong>Status:</strong> ${statusLabel}
+            <strong>Order ID:</strong> ${orderId} | <strong>Date:</strong> ${orderDate}
           </div>
           
           <hr />
