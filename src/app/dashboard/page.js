@@ -255,6 +255,14 @@ const DashboardPage = () => {
                             <span>Book Trial: </span>
                             <span className="text-gray-700">₹{(stats.revenue?.bookTrial?.total || 0).toLocaleString('en-IN')} ({(stats.revenue?.bookTrial?.count || 0)})</span>
                         </div>
+                        {/* {(stats.revenue?.contraOnline?.total > 0 || stats.revenue?.contraOffline?.total > 0) && (
+                            <div>
+                                <span>Contra (Branch → Main): </span>
+                                <span className="text-gray-700">
+                                    Online: ₹{(stats.revenue?.contraOnline?.total || 0).toLocaleString('en-IN')} ({stats.revenue?.contraOnline?.count || 0}) · Offline: ₹{(stats.revenue?.contraOffline?.total || 0).toLocaleString('en-IN')} ({stats.revenue?.contraOffline?.count || 0})
+                                </span>
+                            </div>
+                        )} */}
                     </div>
                 ), 
                 color: "border-orange-500 shadow-orange-900/5",
