@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import Loader from "@/utils/loader";
 import { validateEmail, validatePassword } from "@/utils/validation";
 import { FiEye, FiEyeOff } from "react-icons/fi";
+import { getDefaultRoute } from "@/utils/defaultRoute";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -17,14 +18,14 @@ export default function LoginPage() {
   // ✅ store field-specific errors
   const [errors, setErrors] = useState({ email: "", password: "" });
 
-  const { login, isAuthenticated, loading: authLoading } = useAuth();
+  const { login, isAuthenticated, loading: authLoading, role, permissions } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!authLoading && isAuthenticated()) {
-      router.push("/dashboard");
+      router.push(getDefaultRoute(role, permissions));
     }
-  }, [isAuthenticated, authLoading, router]);
+  }, [isAuthenticated, authLoading, router, role, permissions]);
 
   const handleFocus = (field) => {
     setErrors((prev) => ({ ...prev, [field]: "" }));
@@ -60,7 +61,16 @@ export default function LoginPage() {
 
     if (result.success) {
       toast.success("Login Successful!");
-      router.push("/dashboard");
+      const storedUser = localStorage.getItem("user");
+      let nextRoute = "/dashboard";
+      try {
+        const admin = storedUser ? JSON.parse(storedUser) : null;
+        const adminRole = admin?.adminType?.toLowerCase().replace(/\s+/g, "") === "admin" ? "Admin" : "subadmin";
+        nextRoute = getDefaultRoute(adminRole, admin?.permissions || []);
+      } catch {
+        nextRoute = getDefaultRoute(role, permissions);
+      }
+      router.push(nextRoute);
     } else {
       toast.error(result.error);
     }

@@ -21,6 +21,7 @@ const PERMISSION_GROUPS = [
   {
     category: "Page Access",
     permissions: [
+      { label: "Show Dashboard Page", value: "show dashboard page" },
       { label: "Show Users Page", value: "show users page" },
       { label: "Show Appointments Page", value: "show appointments page" },
       { label: "Show Follow Up Page", value: "show follow-up page" },

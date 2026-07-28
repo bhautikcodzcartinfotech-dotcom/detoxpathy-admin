@@ -158,10 +158,12 @@ const Sidebar = ({ isCollapsed, setIsCollapsed }) => {
               MAIN
             </h2>
           )}
-          <Link href="/dashboard" className={linkClasses("/dashboard")}>
-            <MdDashboard size={20} />
-            {!isCollapsed && <span>Dashboard</span>}
-          </Link>
+          {(role === "Admin" || can("show dashboard page")) && (
+            <Link href="/dashboard" className={linkClasses("/dashboard")}>
+              <MdDashboard size={20} />
+              {!isCollapsed && <span>Dashboard</span>}
+            </Link>
+          )}
           {role === "Admin" && (
             <>
               <Link
