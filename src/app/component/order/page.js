@@ -409,7 +409,6 @@ const OrderPage = () => {
         const orderId = order.invoiceNo || `ORD-${order._id.slice(-6).toUpperCase()}`;
         const invoiceNo = `Invoice No: ${113 + index}`;
 
-        const branchName = order.branch?.name || "Surat";
         const billFrom = order.branch?.address + ", " + order.branch?.city + ", " + order.branch?.state + ", " + order.branch?.pincode;
 
         const customerName = (order.shippingAddress?.name || `${order.user?.name || ""} ${order.user?.surname || ""}`).trim().toUpperCase();
