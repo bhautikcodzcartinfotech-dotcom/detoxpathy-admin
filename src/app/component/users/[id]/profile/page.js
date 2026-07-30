@@ -269,15 +269,17 @@ const UserProfilePage = () => {
       let itemsHtml = "";
       let calculatedSubTotal = 0;
 
+      const format2Dec = (val) => Number(val || 0).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
       if (order.plans && order.plans.length > 0) {
         order.plans.forEach(planItem => {
           const itemTotal = Number(planItem.totalWithTax || planItem.price || 0);
           calculatedSubTotal += itemTotal;
           const hsn = planItem.hsnCode || process.env.NEXT_PUBLIC_PLAN_HSN_CODE || process.env.PLAN_HSN_CODE || "21069099";
-          const rate = `₹${Number(planItem.price || 0).toLocaleString("en-IN")}`;
+          const rate = `₹${format2Dec(planItem.price)}`;
           const qty = planItem.quantity || "1";
-          const gst = `${planItem.gstPercentage || 0}%`;
-          const total = `₹${itemTotal.toLocaleString("en-IN")}`;
+          const gst = `${planItem.gstPercentage || 5}%`;
+          const total = `₹${format2Dec(itemTotal)}`;
           itemsHtml += `
             <tr>
               <td>${planItem.name || "Membership Plan"}</td>
@@ -293,10 +295,10 @@ const UserProfilePage = () => {
         const itemTotal = Number(order.plan.totalWithTax || order.plan.price || 0);
         calculatedSubTotal += itemTotal;
         const hsn = order.plan.hsnCode || process.env.NEXT_PUBLIC_PLAN_HSN_CODE || process.env.PLAN_HSN_CODE || "21069099";
-        const rate = `₹${Number(order.plan.price || 0).toLocaleString("en-IN")}`;
+        const rate = `₹${format2Dec(order.plan.price)}`;
         const qty = "1";
-        const gst = `${order.plan.gstPercentage || 0}%`;
-        const total = `₹${itemTotal.toLocaleString("en-IN")}`;
+        const gst = `${order.plan.gstPercentage || 5}%`;
+        const total = `₹${format2Dec(itemTotal)}`;
         itemsHtml += `
           <tr>
             <td>${order.plan.name || "Membership Plan"}</td>
@@ -314,10 +316,10 @@ const UserProfilePage = () => {
           const itemTotal = Number(prod.totalWithTax || (prod.price * prod.quantity) || 0);
           calculatedSubTotal += itemTotal;
           const hsn = prod.hsnCode || "-";
-          const rate = `₹${Number(prod.price || 0).toLocaleString("en-IN")}`;
+          const rate = `₹${format2Dec(prod.price)}`;
           const qty = prod.quantity || "1";
           const gst = `${prod.gstPercentage || 0}%`;
-          const total = `₹${itemTotal.toLocaleString("en-IN")}`;
+          const total = `₹${format2Dec(itemTotal)}`;
           itemsHtml += `
             <tr>
               <td>${prod.name || "Product"}</td>
@@ -331,11 +333,55 @@ const UserProfilePage = () => {
         });
       }
 
-      const cgstVal = `₹${Number(order.cgst || 0).toLocaleString("en-IN")}`;
-      const sgstVal = `₹${Number(order.sgst || 0).toLocaleString("en-IN")}`;
-      const igstVal = order.igst > 0 ? `₹${Number(order.igst).toLocaleString("en-IN")}` : null;
-      const totalVal = `₹${Number(order.totalAmount || 0).toLocaleString("en-IN")}`;
-      const subTotalVal = `₹${Number(calculatedSubTotal || order.subTotal || order.totalAmount || 0).toLocaleString("en-IN")}`;
+      let accumulatedGst = 0;
+      if (order.plans && order.plans.length > 0) {
+        order.plans.forEach(p => {
+          const pTot = Number(p.totalWithTax || p.price || 0);
+          const rate = Number(p.gstPercentage || 5);
+          const taxable = pTot / (1 + rate / 100);
+          accumulatedGst += (pTot - taxable);
+        });
+      } else if (order.plan) {
+        const pTot = Number(order.plan.totalWithTax || order.plan.price || 0);
+        const rate = Number(order.plan.gstPercentage || 5);
+        const taxable = pTot / (1 + rate / 100);
+        accumulatedGst += (pTot - taxable);
+      }
+      if (order.products && order.products.length > 0) {
+        order.products.forEach(p => {
+          if (p.gstAmount !== undefined && p.gstAmount !== null && Number(p.gstAmount) > 0) {
+            accumulatedGst += Number(p.gstAmount);
+          } else {
+            const pTot = Number(p.totalWithTax || (p.price * p.quantity) || 0);
+            const rate = Number(p.gstPercentage || 0);
+            if (rate > 0) {
+              const taxable = pTot / (1 + rate / 100);
+              accumulatedGst += (pTot - taxable);
+            }
+          }
+        });
+      }
+
+      const calcTotalGst = accumulatedGst > 0 ? accumulatedGst : Number(order.totalGst || 0);
+      let calcCgst = 0;
+      let calcSgst = 0;
+      let calcIgst = 0;
+
+      if (order.igst > 0) {
+        calcIgst = calcTotalGst;
+      } else {
+        calcCgst = calcTotalGst / 2;
+        calcSgst = calcTotalGst / 2;
+      }
+
+      const grossTotal = Number(order.totalAmount || calculatedSubTotal || 0);
+      const taxableSubTotal = Math.max(0, grossTotal - calcTotalGst);
+
+      const cgstVal = `₹${format2Dec(calcCgst)}`;
+      const sgstVal = `₹${format2Dec(calcSgst)}`;
+      const igstVal = calcIgst > 0 ? `₹${format2Dec(calcIgst)}` : null;
+      const subTotalVal = `₹${format2Dec(taxableSubTotal)}`;
+      const totalVal = `₹${format2Dec(grossTotal)}`;
 
       let taxSummary = `<strong>CGST:</strong> ${cgstVal} | <strong>SGST:</strong> ${sgstVal}`;
       if (igstVal) {
@@ -1221,8 +1267,8 @@ const UserProfilePage = () => {
                     <button
                       onClick={() => setSelectedKitId("all")}
                       className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all shadow-sm ${selectedKitId === "all"
-                          ? "bg-[#134D41] text-white ring-2 ring-teal-600/30"
-                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        ? "bg-[#134D41] text-white ring-2 ring-teal-600/30"
+                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                         }`}
                     >
                       All Kits ({userKits.length})
@@ -1234,8 +1280,8 @@ const UserProfilePage = () => {
                           key={kit._id}
                           onClick={() => setSelectedKitId(String(kit._id))}
                           className={`px-3.5 py-1.5 rounded-full text-xs font-bold flex items-center gap-2 transition-all shadow-sm ${isSelected
-                              ? "bg-[#134D41] text-white ring-2 ring-teal-600/30"
-                              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            ? "bg-[#134D41] text-white ring-2 ring-teal-600/30"
+                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                             }`}
                         >
                           <span>{kit.name || `Kit ${idx + 1}`}</span>

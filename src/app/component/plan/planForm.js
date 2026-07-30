@@ -431,85 +431,85 @@ const PlanForm = ({
                   className="p-3 border border-yellow-200 bg-yellow-50/30 rounded-xl hover:bg-yellow-50/50 transition-all duration-200 w-full"
                 >
                   <div className="flex items-center justify-between gap-4">
-                  {/* Product Info (Thumbnail & Title) */}
-                  <div className="flex items-center gap-3 min-w-0 flex-1">
-                    {productImgUrl ? (
-                      <img
-                        src={productImgUrl}
-                        alt={product.name}
-                        className="w-11 h-11 object-cover rounded-lg border border-yellow-200/60 shadow-xs flex-shrink-0"
-                        onError={(e) => {
-                          e.target.src = "/image/placeholder.avif";
-                        }}
-                      />
-                    ) : (
-                      <div className="w-11 h-11 rounded-lg bg-gray-100 flex items-center justify-center text-[9px] text-gray-400 font-bold border flex-shrink-0">
-                        NO IMG
+                    {/* Product Info (Thumbnail & Title) */}
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      {productImgUrl ? (
+                        <img
+                          src={productImgUrl}
+                          alt={product.name}
+                          className="w-11 h-11 object-cover rounded-lg border border-yellow-200/60 shadow-xs flex-shrink-0"
+                          onError={(e) => {
+                            e.target.src = "/image/placeholder.avif";
+                          }}
+                        />
+                      ) : (
+                        <div className="w-11 h-11 rounded-lg bg-gray-100 flex items-center justify-center text-[9px] text-gray-400 font-bold border flex-shrink-0">
+                          NO IMG
+                        </div>
+                      )}
+                      <div className="flex flex-col min-w-0 flex-1">
+                        <span className="text-sm font-semibold text-gray-800 break-words">
+                          {product.name}
+                        </span>
+                        <span className="text-[11px] text-gray-400 font-semibold">
+                          Qty: {selectedProd.quantity || 1}
+                        </span>
                       </div>
-                    )}
-                    <div className="flex flex-col min-w-0 flex-1">
-                      <span className="text-sm font-semibold text-gray-800 break-words">
-                        {product.name}
-                      </span>
-                      <span className="text-[11px] text-gray-400 font-semibold">
-                        Qty: {selectedProd.quantity || 1}
-                      </span>
                     </div>
-                  </div>
 
-                  {/* Quantity Controls & Delete Button */}
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <div className="flex items-center border border-yellow-300 rounded-lg bg-white overflow-hidden shadow-xs h-8">
+                    {/* Quantity Controls & Delete Button */}
+                    <div className="flex items-center gap-3 flex-shrink-0">
+                      <div className="flex items-center border border-yellow-300 rounded-lg bg-white overflow-hidden shadow-xs h-8">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setForm((f) => ({
+                              ...f,
+                              products: (f.products || []).map((p) =>
+                                p.productId === selectedProd.productId
+                                  ? { ...p, quantity: Math.max(1, (p.quantity || 1) - 1) }
+                                  : p
+                              ),
+                            }));
+                          }}
+                          className="w-8 bg-yellow-50 hover:bg-yellow-100 active:bg-yellow-200 transition font-black text-sm text-yellow-700 h-full flex items-center justify-center select-none"
+                        >
+                          -
+                        </button>
+                        <span className="px-2 text-xs font-bold min-w-[24px] text-center text-yellow-900">
+                          {selectedProd.quantity || 1}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setForm((f) => ({
+                              ...f,
+                              products: (f.products || []).map((p) =>
+                                p.productId === selectedProd.productId
+                                  ? { ...p, quantity: (p.quantity || 1) + 1 }
+                                  : p
+                              ),
+                            }));
+                          }}
+                          className="w-8 bg-yellow-50 hover:bg-yellow-100 active:bg-yellow-200 transition font-black text-sm text-yellow-700 h-full flex items-center justify-center select-none"
+                        >
+                          +
+                        </button>
+                      </div>
+
                       <button
                         type="button"
                         onClick={() => {
                           setForm((f) => ({
                             ...f,
-                            products: (f.products || []).map((p) =>
-                              p.productId === selectedProd.productId
-                                ? { ...p, quantity: Math.max(1, (p.quantity || 1) - 1) }
-                                : p
-                            ),
+                            products: (f.products || []).filter((p) => p.productId !== selectedProd.productId),
                           }));
                         }}
-                        className="w-8 bg-yellow-50 hover:bg-yellow-100 active:bg-yellow-200 transition font-black text-sm text-yellow-700 h-full flex items-center justify-center select-none"
+                        className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full w-8 h-8 flex items-center justify-center text-lg font-black transition border border-transparent hover:border-red-100"
                       >
-                        -
-                      </button>
-                      <span className="px-2 text-xs font-bold min-w-[24px] text-center text-yellow-900">
-                        {selectedProd.quantity || 1}
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setForm((f) => ({
-                            ...f,
-                            products: (f.products || []).map((p) =>
-                              p.productId === selectedProd.productId
-                                ? { ...p, quantity: (p.quantity || 1) + 1 }
-                                : p
-                            ),
-                          }));
-                        }}
-                        className="w-8 bg-yellow-50 hover:bg-yellow-100 active:bg-yellow-200 transition font-black text-sm text-yellow-700 h-full flex items-center justify-center select-none"
-                      >
-                        +
+                        &times;
                       </button>
                     </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setForm((f) => ({
-                          ...f,
-                          products: (f.products || []).filter((p) => p.productId !== selectedProd.productId),
-                        }));
-                      }}
-                      className="text-red-500 hover:text-red-700 hover:bg-red-50 rounded-full w-8 h-8 flex items-center justify-center text-lg font-black transition border border-transparent hover:border-red-100"
-                    >
-                      &times;
-                    </button>
-                  </div>
                   </div>
 
                   <div className="mt-3 pt-3 border-t border-yellow-200/70 flex items-end gap-2">
