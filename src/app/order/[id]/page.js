@@ -178,9 +178,22 @@ const OrderDetailsPage = () => {
         const total = `₹${format2Dec(itemTotal)}`;
 
         let description = planItem.name || "Membership Plan";
-        const selectedAlt = planItem.selectedAlternativeProducts?.find(s => s.selected === "alternative");
-        if (selectedAlt) {
-          description += `<br/><span style="font-size: 10px; color: #ea5800; font-weight: bold;">[Alt: ${selectedAlt.alternativeProduct?.name || selectedAlt.alternativeProduct?.productId?.name || 'Alternative Product'}]</span>`;
+        const altItems = [];
+        if (Array.isArray(planItem.selectedAlternativeProducts) && planItem.selectedAlternativeProducts.length > 0) {
+          planItem.selectedAlternativeProducts.forEach(s => {
+            const altName = s.alternativeProduct?.name || s.alternativeProduct?.productId?.name || (typeof s.alternativeProduct === 'string' ? s.alternativeProduct : null);
+            if (altName) altItems.push(altName);
+          });
+        } else if (Array.isArray(planItem.products) && planItem.products.length > 0) {
+          planItem.products.forEach(prod => {
+            if (prod.altProductId) {
+              const altName = prod.altProductId.name || (typeof prod.altProductId === 'string' ? prod.altProductId : null);
+              if (altName) altItems.push(altName);
+            }
+          });
+        }
+        if (altItems.length > 0) {
+          description += `<br/><span style="font-size: 10px; color: #ea5800; font-weight: bold;">[Alt: ${altItems.join(", ")}]</span>`;
         }
 
         itemsHtml += `
@@ -501,9 +514,23 @@ const OrderDetailsPage = () => {
     if (order.plans && order.plans.length > 0) {
       order.plans.forEach(p => {
         let planName = p.name || 'Membership Plan';
-        const selectedAlt = p.selectedAlternativeProducts?.find(s => s.selected === "alternative");
-        if (selectedAlt) {
-          planName += ` [Alt: ${selectedAlt.alternativeProduct?.name || selectedAlt.alternativeProduct?.productId?.name || 'Alternative'}]`;
+        const altItems = [];
+        if (Array.isArray(p.selectedAlternativeProducts) && p.selectedAlternativeProducts.length > 0) {
+          p.selectedAlternativeProducts.forEach(s => {
+            const altName = s.alternativeProduct?.name || s.alternativeProduct?.productId?.name || (typeof s.alternativeProduct === 'string' ? s.alternativeProduct : null);
+            if (altName) altItems.push(altName);
+          });
+        } else if (Array.isArray(p.products) && p.products.length > 0) {
+          p.products.forEach(prod => {
+            if (prod.altProductId) {
+              const altName = prod.altProductId.name || (typeof prod.altProductId === 'string' ? prod.altProductId : null);
+              if (altName) altItems.push(altName);
+            }
+          });
+        }
+
+        if (altItems.length > 0) {
+          planName += `<br/><span style="font-size: 10px; color: #ea5800; font-weight: bold;">[Alt: ${altItems.join(", ")}]</span>`;
         }
         itemsHtml += `
           <tr>
@@ -514,10 +541,21 @@ const OrderDetailsPage = () => {
         itemsCount++;
       });
     } else if (order.plan) {
+      let planName = order.plan.name || 'Membership Plan';
+      const altItems = [];
+      if (Array.isArray(order.plan.selectedAlternativeProducts) && order.plan.selectedAlternativeProducts.length > 0) {
+        order.plan.selectedAlternativeProducts.forEach(s => {
+          const altName = s.alternativeProduct?.name || s.alternativeProduct?.productId?.name || (typeof s.alternativeProduct === 'string' ? s.alternativeProduct : null);
+          if (altName) altItems.push(altName);
+        });
+      }
+      if (altItems.length > 0) {
+        planName += `<br/><span style="font-size: 10px; color: #ea5800; font-weight: bold;">[Alt: ${altItems.join(", ")}]</span>`;
+      }
       itemsHtml += `
         <tr>
           <td style="text-align: center; font-weight: 800;">1</td>
-          <td>${order.plan.name || 'Membership Plan'}</td>
+          <td>${planName}</td>
         </tr>
       `;
       itemsCount++;
@@ -895,17 +933,23 @@ const OrderDetailsPage = () => {
                     <div className="flex-1">
                       <h3 className="font-bold text-gray-800">{planItem.name}</h3>
                       <p className="text-xs text-gray-500 line-clamp-1">{planItem.description}</p>
-                      {selectedAlt && (
-                        <div className="mt-1 flex items-center gap-2">
-                          <span className="text-[9px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">Alt</span>
-                          <span className="text-[10px] font-medium text-gray-600">
-                            Selected: {selectedAlt.alternativeProduct?.name || selectedAlt.alternativeProduct?.productId?.name}
-                          </span>
-                          <span className="text-[10px] text-gray-400">
-                            (instead of {selectedAlt.mainProduct?.name || selectedAlt.mainProduct?.productId?.name})
-                          </span>
-                        </div>
-                      )}
+                      {((Array.isArray(planItem.selectedAlternativeProducts) && planItem.selectedAlternativeProducts.length > 0) ? planItem.selectedAlternativeProducts : (planItem.products || []).filter(prod => prod.altProductId)).map((s, altIdx) => {
+                        const altName = s.alternativeProduct?.name || s.alternativeProduct?.productId?.name || s.altProductId?.name;
+                        const mainName = s.mainProduct?.name || s.mainProduct?.productId?.name || s.productId?.name;
+                        return (
+                          <div key={`alt-${altIdx}`} className="mt-1 flex items-center gap-2">
+                            <span className="text-[9px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wide">Alt</span>
+                            <span className="text-[10px] font-medium text-gray-600">
+                              Selected: {altName || 'Alternative Product'}
+                            </span>
+                            {mainName && (
+                              <span className="text-[10px] text-gray-400">
+                                (instead of {mainName})
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                     <div className="text-right">
                       <p className="font-bold text-teal-600">{order.currency || "₹"}{planItem.price}</p>

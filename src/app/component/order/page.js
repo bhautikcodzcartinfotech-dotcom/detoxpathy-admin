@@ -437,9 +437,22 @@ const OrderPage = () => {
             const total = `₹${format2Dec(itemTotal)}`;
 
             let description = planItem.name || "Membership Plan";
-            const selectedAlt = planItem.selectedAlternativeProducts?.find(s => s.selected === "alternative");
-            if (selectedAlt) {
-              description += `<br/><span style="font-size: 10px; color: #ea5800; font-weight: bold;">[Alt: ${selectedAlt.alternativeProduct?.name || selectedAlt.alternativeProduct?.productId?.name || 'Alternative Product'}]</span>`;
+            const altItems = [];
+            if (Array.isArray(planItem.selectedAlternativeProducts) && planItem.selectedAlternativeProducts.length > 0) {
+              planItem.selectedAlternativeProducts.forEach(s => {
+                const altName = s.alternativeProduct?.name || s.alternativeProduct?.productId?.name || (typeof s.alternativeProduct === 'string' ? s.alternativeProduct : null);
+                if (altName) altItems.push(altName);
+              });
+            } else if (Array.isArray(planItem.products) && planItem.products.length > 0) {
+              planItem.products.forEach(prod => {
+                if (prod.altProductId) {
+                  const altName = prod.altProductId.name || (typeof prod.altProductId === 'string' ? prod.altProductId : null);
+                  if (altName) altItems.push(altName);
+                }
+              });
+            }
+            if (altItems.length > 0) {
+              description += `<br/><span style="font-size: 10px; color: #ea5800; font-weight: bold;">[Alt: ${altItems.join(", ")}]</span>`;
             }
 
             itemsHtml += `
@@ -1118,19 +1131,50 @@ const OrderPage = () => {
         let itemsCount = 0;
         if (order.plans && order.plans.length > 0) {
           order.plans.forEach(p => {
+            let planName = p.name || 'Membership Plan';
+            const altItems = [];
+            if (Array.isArray(p.selectedAlternativeProducts) && p.selectedAlternativeProducts.length > 0) {
+              p.selectedAlternativeProducts.forEach(s => {
+                const altName = s.alternativeProduct?.name || s.alternativeProduct?.productId?.name || (typeof s.alternativeProduct === 'string' ? s.alternativeProduct : null);
+                if (altName) altItems.push(altName);
+              });
+            } else if (Array.isArray(p.products) && p.products.length > 0) {
+              p.products.forEach(prod => {
+                if (prod.altProductId) {
+                  const altName = prod.altProductId.name || (typeof prod.altProductId === 'string' ? prod.altProductId : null);
+                  if (altName) altItems.push(altName);
+                }
+              });
+            }
+
+            if (altItems.length > 0) {
+              planName += `<br/><span style="font-size: 10px; color: #ea5800; font-weight: bold;">[Alt: ${altItems.join(", ")}]</span>`;
+            }
+
             itemsHtml += `
               <tr>
                 <td style="text-align: center; font-weight: 800;">${p.quantity || 1}</td>
-                <td>${p.name || 'Membership Plan'}</td>
+                <td>${planName}</td>
               </tr>
             `;
             itemsCount++;
           });
         } else if (order.plan) {
+          let planName = order.plan.name || 'Membership Plan';
+          const altItems = [];
+          if (Array.isArray(order.plan.selectedAlternativeProducts) && order.plan.selectedAlternativeProducts.length > 0) {
+            order.plan.selectedAlternativeProducts.forEach(s => {
+              const altName = s.alternativeProduct?.name || s.alternativeProduct?.productId?.name || (typeof s.alternativeProduct === 'string' ? s.alternativeProduct : null);
+              if (altName) altItems.push(altName);
+            });
+          }
+          if (altItems.length > 0) {
+            planName += `<br/><span style="font-size: 10px; color: #ea5800; font-weight: bold;">[Alt: ${altItems.join(", ")}]</span>`;
+          }
           itemsHtml += `
             <tr>
               <td style="text-align: center; font-weight: 800;">1</td>
-              <td>${order.plan.name || 'Membership Plan'}</td>
+              <td>${planName}</td>
             </tr>
           `;
           itemsCount++;
