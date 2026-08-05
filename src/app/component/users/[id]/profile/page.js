@@ -22,7 +22,8 @@ import toast from "react-hot-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
 const UserProfilePage = () => {
-  const { role } = useAuth();
+  const { role, permissions } = useAuth();
+  const canShowRecordings = role === "Admin" || (role === "subadmin" && permissions?.includes("show appointment recordings"));
   const isDoctor = role === "subadmin";
   const params = useParams();
   const router = useRouter();
@@ -179,7 +180,7 @@ const UserProfilePage = () => {
         }
 
         // Fetch user recordings
-        if (role === "Admin") {
+        if (canShowRecordings) {
           try {
             setRecordingsLoading(true);
             const rData = await getRecordingsByUserId(userId);
@@ -1625,7 +1626,7 @@ const UserProfilePage = () => {
             </div>
 
             {/* ------------------ Recordings ------------------ */}
-            {role === "Admin" && (
+            {canShowRecordings && (
               <div className="p-6 mx-8 bg-white rounded-2xl shadow-lg border border-gray-200">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-xl font-bold text-gray-800">Appointment Recordings</h3>
